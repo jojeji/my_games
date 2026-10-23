@@ -1,0 +1,235 @@
+#!/usr/bin/env node
+// Headless balance simulation for Replikator using the REAL game logic.
+// Scripted greedy player: buys generators/upgrades, prestiges when the gain is "worth it",
+// runs challenges right after an Expansion, buys research.
+//
+//   node tools/simulate.mjs [--hours 30] [--dt 1] [--act 1] [--quiet]
+//
+// --act N : the simulated player only interacts every N seconds (autobuyers still run every tick),
+//           use e.g. --act 60 to see how the game behaves when played "idle".
+import { pathToFileURL } from 'node:url';
+import { createReplikator } from '../games/replikator/logic.js';
+import { formatNumber as f, formatDuration } from '../engine/format.js';
+
+const RESEARCH_ORDER = ['kern', 'b_ernte', 'c_auto', 'a_dichte', 'b_kosten', 'a_fluss', 'd_pruef', 'a_schmiede', 'c_schnell', 'c_zeit', 'z_horizont'];
+
+/** Default strategy parameters ("worth it" factors: reset when gain >= factor * currency held-this-run). */
+export const STRATEGY = {
+  repFactor: 1.0, // replicate when gain >= repFactor * blueprints earned this expansion run
+  expFactor: 1.0,
+  singFactor: 1.0,
+  repMinGain: 1,
+  expMinGain: 2,
+  singMinGain: 8,
+  repMinTime: 20, // never replicate more often than this (seconds of run time)
+  expMinTime: 60,
+  singMinTime: 120,
+  repStall: 900, // reset anyway when stuck this long and gain >= 1
+  expStall: 2700,
+  singStall: 5400,
+  challengeTimeout: 600, // give a challenge up after this many seconds
+  challengeRetryExp: 1, // retry a failed challenge after this many more expansions
+};
+
+const hms = (s) => {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+};
+
+export function runSim({ hours = 30, dt = 1, act: actEvery = 1, quiet = false, verbose = false, strategy = {}, stopAtEnd = true } = {}) {
+  const S = { ...STRATEGY, ...strategy };
+  const g = createReplikator();
+  let t = 0;
+  const log = [];
+  const firsts = {};
+  const events = []; // meaningful events for gap analysis
+  const chInfo = {}; // id -> { enteredAt, failedExp }
+  let activeSince = 0;
+  let endTime = null;
+  const upgTimes = {};
+
+  const note = (msg, key) => {
+    const line = `${hms(t)}  ${msg}`;
+    log.push(line);
+    if (!quiet && (verbose || key !== 'quiet')) console.log(line);
+  };
+
+  g.emit = (type, p) => {
+    if (type === 'prestige') {
+      const L = g.layerById[p.id];
+      const n = g.state.layers[p.id].count;
+      events.push(t);
+      if (!firsts[p.id]) {
+        firsts[p.id] = { t, gain: p.gain, matter: g.state.cur.matter.run, bp: g.state.cur.blueprints.run, systems: g.state.cur.systems.run };
+        note(`ERSTE ${L.name.toUpperCase()}: +${f(p.gain)} ${g.def.currencies.find((c) => c.id === L.currency).name}`);
+      } else if (verbose || n % (p.id === 'replication' ? 25 : p.id === 'expansion' ? 5 : 1) === 0) {
+        note(`${L.name} #${n}: +${f(p.gain)}  (Run ${formatDuration(g.state.layers[p.id].lastTime)}, Gesamt ${f(g.state.cur[L.currency].total)})`, 'quiet');
+      }
+    } else if (type === 'challenge-done') {
+      events.push(t);
+      firsts['ch_' + p.id] = { t };
+      note(`Challenge geschafft: ${g.chalById[p.id].name} (Versuch ${g.state.challenge.entered[p.id]})`);
+    } else if (type === 'upgrade') {
+      events.push(t);
+      if (!upgTimes[p.id]) upgTimes[p.id] = t;
+    } else if (type === 'layer-unlocked') {
+      note(`Layer freigeschaltet: ${g.layerById[p.id].name}`);
+    } else if (type === 'milestone') {
+      note(`Meilenstein: ${p.def.name}`, 'quiet');
+    }
+  };
+
+  const research = () => {
+    for (const id of RESEARCH_ORDER) if (g.upgCanBuy(id)) g.upgBuy(id);
+  };
+
+  const wantPrestige = (id, factor, minTime, stall, minGain = 1) => {
+    if (!g.canPrestige(id)) return false;
+    const L = g.layerById[id];
+    const ls = g.state.layers[id];
+    const gain = g.prestigeGain(id);
+    const held = g.state.cur[L.currency].run;
+    if (ls.runTime < minTime && ls.count > 0) return false;
+    if (gain.gte(held.mul(factor).max(minGain))) return true;
+    return ls.runTime > stall;
+  };
+
+  const doChallenges = () => {
+    const act = g.chActive();
+    if (act) {
+      const info = chInfo[act.id];
+      if (t - info.enteredAt > S.challengeTimeout) {
+        g.chExit();
+        info.failedExp = g.state.layers.expansion.count;
+        note(`Challenge abgebrochen: ${act.name}`, 'quiet');
+      }
+      return;
+    }
+    if (!g.chUnlocked()) return;
+    // enter right after an expansion (fresh state), when not stuck in a long run
+    const exp = g.state.layers.expansion;
+    if (exp.runTime > 120 + actEvery) return;
+    for (const c of g.def.challenges) {
+      if (g.chDone(c.id)) continue;
+      const info = chInfo[c.id] || (chInfo[c.id] = {});
+      if (info.failedExp != null && exp.count < info.failedExp + S.challengeRetryExp) continue;
+      if (g.chEnter(c.id)) {
+        info.enteredAt = t;
+        events.push(t);
+        note(`Betrete Challenge: ${c.name}`, 'quiet');
+      }
+      return;
+    }
+  };
+
+  const player = () => {
+    research();
+    g.upgBuyAll('expansion');
+    g.upgBuyAll('replication');
+    g.genBuyAllMax('matter');
+    if (wantPrestige('singularity', S.singFactor, S.singMinTime, S.singStall, S.singMinGain)) g.prestige('singularity');
+    else if (wantPrestige('expansion', S.expFactor, S.expMinTime, S.expStall, S.expMinGain)) {
+      // do not leave a challenge by expanding: expansion is blocked in challenges anyway
+      g.prestige('expansion');
+    } else if (wantPrestige('replication', S.repFactor, S.repMinTime, S.repStall, S.repMinGain)) g.prestige('replication');
+    doChallenges();
+  };
+
+  const snapshotLine = () => {
+    const s = g.state;
+    return (
+      `${hms(t)}  [Stand] Materie ${f(s.cur.matter.amount)} (+${f(g.incomePerSec('matter'))}/s)  ` +
+      `BP ${f(s.cur.blueprints.amount)}  Sys ${f(s.cur.systems.amount)}  QK ${f(s.cur.cores.amount)}  ` +
+      `Rep ${s.layers.replication.count} Exp ${s.layers.expansion.count} Sing ${s.layers.singularity.count}  ` +
+      `Chal ${g.chDoneCount()}/8  Erf ${g.achCount()}`
+    );
+  };
+
+  let nextSnap = 1800;
+  let sinceAct = 0;
+  const maxT = hours * 3600;
+  const researchTotal = g.def.upgrades.filter((u) => u.group === 'research').length - 1; // one exclusive branch stays unbought
+  while (t < maxT) {
+    g.tick(dt);
+    t += dt;
+    sinceAct += dt;
+    if (sinceAct >= actEvery) {
+      sinceAct = 0;
+      player();
+    }
+    if (t >= nextSnap) {
+      const line = snapshotLine();
+      log.push(line);
+      if (!quiet) console.log(line);
+      nextSnap += 1800;
+    }
+    if (endTime === null) {
+      const owned = g.def.upgrades.filter((u) => u.group === 'research' && g.upgLevel(u.id) > 0).length;
+      if (g.chDoneCount() >= g.def.challenges.length && owned >= researchTotal) {
+        endTime = t;
+        note('=== ENDE v1: alle Challenges + alle (erreichbaren) Forschungsknoten ===');
+        if (stopAtEnd) break;
+      }
+    }
+  }
+
+  // dead-wall analysis: longest gaps between meaningful events
+  const gaps = [];
+  let prev = 0;
+  for (const e of [...events, t]) {
+    if (e - prev > 0) gaps.push({ from: prev, len: e - prev });
+    prev = e;
+  }
+  gaps.sort((a, b) => b.len - a.len);
+
+  const result = { t, endTime, firsts, log, gaps: gaps.slice(0, 8), game: g, upgTimes };
+  if (!quiet) {
+    console.log('\n=== Zusammenfassung ===');
+    for (const id of ['replication', 'expansion', 'singularity']) {
+      const fi = firsts[id];
+      console.log(`Erste ${g.layerById[id].name}: ${fi ? hms(fi.t) + ` (+${f(fi.gain)}, Materie-Run ${f(fi.matter)})` : 'nicht erreicht'}`);
+    }
+    console.log(
+      'Challenges: ' +
+        g.def.challenges.map((c) => `${c.name} ${firsts['ch_' + c.id] ? hms(firsts['ch_' + c.id].t) : '—'}`).join(' | '),
+    );
+    console.log(
+      'Forschung: ' +
+        g.def.upgrades
+          .filter((u) => u.group === 'research')
+          .map((u) => `${u.id} ${upgTimes[u.id] ? hms(upgTimes[u.id]) : '—'}`)
+          .join(' | '),
+    );
+    console.log('Ende v1: ' + (endTime ? hms(endTime) : 'nicht erreicht in ' + hours + ' h'));
+    console.log(snapshotLine());
+    console.log(
+      'Längste Pausen ohne Kauf/Reset: ' + gaps.slice(0, 5).map((x) => `${formatDuration(x.len)} @${hms(x.from)}`).join(', '),
+    );
+  }
+  return result;
+}
+
+function parseArgs(argv) {
+  const out = {};
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a.startsWith('--')) {
+      const k = a.slice(2);
+      const next = argv[i + 1];
+      if (next !== undefined && !next.startsWith('--')) {
+        out[k] = Number(next);
+        i++;
+      } else out[k] = true;
+    }
+  }
+  return out;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const a = parseArgs(process.argv.slice(2));
+  const started = Date.now();
+  runSim({ hours: a.hours ?? 30, dt: a.dt ?? 1, act: a.act ?? 1, quiet: !!a.quiet, verbose: !!a.verbose });
+  console.log(`(Simulation dauerte ${((Date.now() - started) / 1000).toFixed(1)} s Rechenzeit)`);
+}

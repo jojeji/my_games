@@ -1,0 +1,649 @@
+// Replikator - game definition (data + hooks). Pure, DOM-free: runs in Node for tests and simulation.
+import { D, Decimal, ONE } from '../../engine/decimal.js';
+import { prestigeAuto } from '../../engine/kit/game.js';
+import { formatNumber as fmt, formatMult, formatPercent } from '../../engine/format.js';
+import { TUNE as T } from './tune.js';
+
+/** Active level of an upgrade (0 while suppressed by a challenge). */
+const lvl = (g, id) => (g.upgActive(id) ? g.upgLevel(id) : 0);
+const act = (g, id) => g.upgActive(id);
+const pow = (a, b) => Decimal.pow(a, b);
+
+/* ------------------------------------------------------------------ */
+/* Multiplier model (single source of truth for production and UI)    */
+/* ------------------------------------------------------------------ */
+
+export function bpBoostExp(g) {
+  return T.bpBoostExp + 0.03 * lvl(g, 'katalog') + 0.03 * lvl(g, 'archive');
+}
+
+/** (1+x)^e, but beyond `cap` the exponent halves (soft cap keeps late loops from running away). */
+export function boost(x, e, cap) {
+  if (x.lte(cap)) return x.add(1).pow(e);
+  return D(cap + 1).pow(e).mul(x.div(cap).pow(e / 2));
+}
+
+/** Labeled global production multipliers. Returned parts are multiplied for the total. */
+export function globalParts(g) {
+  const s = g.state;
+  const parts = [];
+  const bp = s.cur.blueprints.run;
+  if (!g.rule('noBpBoost', false)) parts.push(['Blaupausen', boost(bp, bpBoostExp(g), T.bpCap)]);
+  parts.push(['Sternsysteme', boost(s.cur.systems.run, T.sysBoostExp + 0.1 * lvl(g, 'sternkarten'), T.sysCap)]);
+  parts.push(['Quantenkerne', boost(s.cur.cores.total, T.coreBoostExp, T.coreCap)]);
+  parts.push(['Erfolge', D(1 + 0.02 * g.achCount())]);
+  if (lvl(g, 'tick')) parts.push(['Tick-Beschleuniger', pow(1.15, lvl(g, 'tick'))]);
+  if (act(g, 'resonanz')) parts.push(['Materie-Resonanz', D(1 + Math.max(0, s.cur.matter.run.log10()) / 5)]);
+  if (lvl(g, 'generationen')) parts.push(['Generationen', pow(1.25, lvl(g, 'generationen'))]);
+  if (act(g, 'kern')) parts.push(['Reaktor', D(5)]);
+  if (act(g, 'a_dichte')) parts.push(['Verdichtete Materie', D(5)]);
+  if (act(g, 'a_fluss')) parts.push(['Quantenfluss', s.cur.cores.total.add(1).pow(0.5).mul(3)]);
+  if (act(g, 'a_schmiede')) parts.push(['Singularitätsschmiede', D(30)]);
+  if (act(g, 'z_horizont')) parts.push(['Ereignishorizont', D(100)]);
+  const ch = challengeGlobal(g);
+  if (ch.gt(1)) parts.push(['Herausforderungen', ch]);
+  return parts;
+}
+
+export function challengeGlobal(g) {
+  let m = ONE;
+  if (g.chDone('c_hand')) m = m.mul(3);
+  if (g.chDone('c_dunkel')) m = m.mul(5);
+  if (g.chDone('c_gipfel')) m = m.mul(10);
+  return act(g, 'd_pruef') ? m.pow(1.5) : m;
+}
+
+export function tierMult(g, i) {
+  let m = ONE;
+  if (i === 0 && act(g, 'bohrer')) m = m.mul(3);
+  if (i === 1 && act(g, 'schmelzer')) m = m.mul(3);
+  if ((i === 2 || i === 3) && act(g, 'fliess')) m = m.mul(2);
+  if (i <= 3 && g.chDone('c_enge')) m = m.mul(1.5);
+  if (i <= 3 && act(g, 'kolonien')) m = m.mul(2);
+  if (i >= 4 && act(g, 'dysonnetz')) m = m.mul(2);
+  return m;
+}
+
+export function startMatter(g) {
+  let best = 10;
+  for (const [id, v] of T.startMatter) if (g.hasMs(id)) best = Math.max(best, v);
+  const b = lvl(g, 'bruecken');
+  const fromUpg = b ? D(T.bruckenkopf[b - 1]) : D(0);
+  return fromUpg.max(best);
+}
+
+function autoInterval(g) {
+  let t = 1;
+  t *= Math.pow(0.5, lvl(g, 'speed'));
+  if (g.chDone('c_hand')) t *= 0.5;
+  if (act(g, 'c_schnell')) t *= 0.25;
+  return Math.max(0.05, t);
+}
+
+/* ------------------------------------------------------------------ */
+/* Definition                                                          */
+/* ------------------------------------------------------------------ */
+
+const bpUpg = (o) => ({ group: 'replication', layer: 1, currency: 'blueprints', ...o });
+const exUpg = (o) => ({ group: 'expansion', layer: 2, currency: 'systems', keep: keepEx, ...o });
+const rsUpg = (o) => ({ group: 'research', layer: 3, currency: 'cores', max: 1, ...o });
+
+// BP upgrades that survive an Expansion with milestone ex1 (automation + tier unlocks)
+const keepEx1 = (g, L) => L >= 2 && g.hasMs('ex1');
+const keepAll = (g, L) => L >= 2 && g.hasMs('ex3');
+const keepBp = keepAll;
+const keepEx = (g, L) => L >= 3 && g.hasMs('s1');
+
+const tierNames = ['Bohrdrohne', 'Schmelzer', 'Fabrik', 'Montagewerk', 'Werft', 'Orbitalwerft', 'Dyson-Segment', 'Sternschmiede'];
+const tierDescs = [
+  'Kratzt Erz von Asteroiden.',
+  'Schmilzt Gestein zu Bohrdrohnen.',
+  'Fertigt Schmelzer am Fließband.',
+  'Setzt ganze Fabriken zusammen.',
+  'Baut Montagewerke im Dutzend.',
+  'Werften im freien Fall – baut Werften.',
+  'Fängt Sternenlicht und fertigt Orbitalwerften.',
+  'Schmiedet Dyson-Segmente aus Sternenstaub.',
+];
+
+const autoGens = tierNames.map((n, i) => ({
+  id: 'auto_gen' + i,
+  name: 'Autokauf: ' + n,
+  desc: 'Kauft ' + n + ' automatisch.',
+  group: 'gen',
+  kind: 'gen',
+  tier: i,
+  unlock: (g) => act(g, ['auto1', 'auto1', 'auto2', 'auto2', 'auto3', 'auto3', 'auto4', 'auto4'][i]),
+  interval: autoInterval,
+  run: (g) => {
+    g.genBuy('matter', i, 'max');
+  },
+}));
+
+export const def = {
+  id: 'replikator',
+  title: 'Replikator',
+  version: 1,
+
+  currencies: [
+    { id: 'matter', name: 'Materie', layer: 0, start: 10 },
+    { id: 'blueprints', name: 'Blaupausen', layer: 1, start: 0 },
+    { id: 'systems', name: 'Sternsysteme', layer: 2, start: 0 },
+    { id: 'cores', name: 'Quantenkerne', layer: 3, start: 0 },
+  ],
+
+  chains: [
+    {
+      id: 'matter',
+      currency: 'matter',
+      layer: 0,
+      bundle: 10,
+      bundleMult: 2,
+      tiers: tierNames.map((name, i) => ({
+        name,
+        desc: tierDescs[i],
+        baseCost: T.baseCost[i],
+        costMult: T.costMult[i],
+        unlock: i === 4 || i === 5 ? (g) => act(g, 'docks') : i >= 6 ? (g) => act(g, 'dyson') : null,
+      })),
+    },
+  ],
+
+  layers: [
+    {
+      id: 'replication',
+      name: 'Replikation',
+      verb: 'Replizieren',
+      layer: 1,
+      currency: 'blueprints',
+      basis: 'matter',
+      formula: { threshold: T.repThreshold, exp: T.repExp, softcap: T.repSoftcap },
+      mult: (g) => {
+        let m = ONE;
+        if (g.upgActive('logistik')) m = m.mul(pow(2, lvl(g, 'logistik')));
+        if (g.chDone('c_ohne_bp')) m = m.mul(2);
+        if (act(g, 'b_ernte')) m = m.mul(3);
+        if (g.hasMs('ex20')) m = m.mul(2);
+        return m;
+      },
+      blurb: 'Setze Materie und Generatoren zurück und erhalte Blaupausen.',
+    },
+    {
+      id: 'expansion',
+      name: 'Expansion',
+      verb: 'Expandieren',
+      layer: 2,
+      currency: 'systems',
+      basis: 'blueprints',
+      formula: { threshold: T.expThreshold, exp: (g) => T.expExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.expSoftcap },
+      mult: (g) => {
+        let m = ONE;
+        if (g.chDone('c_zeitlupe')) m = m.mul(2);
+        if (act(g, 'b_ernte')) m = m.mul(3);
+        return m;
+      },
+      blurb: 'Setze Replikation zurück und besiedle neue Sternsysteme.',
+    },
+    {
+      id: 'singularity',
+      name: 'Singularität',
+      verb: 'Kollabieren',
+      layer: 3,
+      currency: 'cores',
+      basis: 'systems',
+      unlockWhen: (g) => g.state.cur.systems.total.gte(T.singUnlock),
+      formula: { threshold: T.singThreshold, exp: (g) => T.singExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.singSoftcap },
+      mult: (g) => {
+        let m = ONE;
+        if (g.chDone('c_gipfel')) m = m.mul(2);
+        m = m.mul(pow(2, lvl(g, 'kernbau')));
+        return m;
+      },
+      blurb: 'Setze alles zurück und verdichte die Galaxie zu Quantenkernen.',
+    },
+  ],
+
+  /* ----------------------------- upgrades ----------------------------- */
+  upgrades: [
+    // --- Replikation (Blaupausen) ---
+    bpUpg({ id: 'bohrer', name: 'Diamantbohrer', desc: 'Bohrdrohnen produzieren ×3.', cost: 1, keep: keepBp }),
+    bpUpg({ id: 'schmelzer', name: 'Plasmaschmelzer', desc: 'Schmelzer produzieren ×3.', cost: 2, requires: ['bohrer'], keep: keepBp }),
+    bpUpg({ id: 'auto1', name: 'Autokauf I', desc: 'Kauft Bohrdrohnen und Schmelzer automatisch.', cost: T.auto1, keep: keepEx1 }),
+    bpUpg({ id: 'fliess', name: 'Fließbandfertigung', desc: 'Fabriken und Montagewerke produzieren ×2.', cost: 6, requires: ['schmelzer'], keep: keepBp }),
+    bpUpg({
+      id: 'kompress',
+      name: 'Kostenkompression',
+      desc: 'Basiskosten aller Generatoren ÷1,6 pro Stufe.',
+      max: 5,
+      cost: (l) => 12 * Math.pow(3.5, l),
+      effect: (l) => pow(1.6, l),
+      fmt: (e) => 'Kosten ÷' + fmt(e),
+      keep: keepBp,
+    }),
+    bpUpg({ id: 'docks', name: 'Orbitale Docks', desc: 'Schaltet Werft und Orbitalwerft frei (Stufe 5–6).', cost: T.docks, keep: keepEx1 }),
+    bpUpg({
+      id: 'tick',
+      name: 'Tick-Beschleuniger',
+      desc: 'Gesamte Produktion ×1,15 pro Stufe.',
+      max: 20,
+      cost: (l) => T.tickBase * Math.pow(T.tickGrow, l),
+      effect: (l) => pow(1.15, l),
+      fmt: (e) => formatMult(e),
+      keep: keepBp,
+    }),
+    bpUpg({ id: 'auto2', name: 'Autokauf II', desc: 'Kauft Fabriken und Montagewerke automatisch.', cost: T.auto2, requires: ['auto1'], keep: keepEx1 }),
+    bpUpg({
+      id: 'resonanz',
+      name: 'Materie-Resonanz',
+      desc: 'Produktion ×(1 + log10(Materie) ÷ 5).',
+      cost: T.resonanz,
+      effect: (l, g) => (l ? D(1 + Math.max(0, g.state.cur.matter.run.log10()) / 5) : D(1)),
+      fmt: (e) => formatMult(e),
+      keep: keepBp,
+    }),
+    bpUpg({
+      id: 'katalog',
+      name: 'Blaupausen-Katalog',
+      desc: 'Der Blaupausen-Bonus wächst stärker (Exponent +0,03).',
+      max: 5,
+      cost: (l) => 30 * Math.pow(4, l),
+      effect: (l, g) => bpBoostExp(g),
+      fmt: (e) => 'Exponent ' + fmt(e, { sig: 3 }),
+      keep: keepBp,
+    }),
+    bpUpg({ id: 'auto3', name: 'Autokauf III', desc: 'Kauft Werften und Orbitalwerften automatisch.', cost: T.auto3, requires: ['docks', 'auto2'], keep: keepEx1 }),
+    bpUpg({
+      id: 'buendel',
+      name: 'Bündel-Optimierung',
+      desc: 'Der Bonus pro 10er-Bündel steigt um 0,05.',
+      max: 3,
+      cost: (l) => T.buendel * Math.pow(6, l),
+      effect: (l) => 2 + 0.05 * l,
+      fmt: (e) => 'Bündelbonus ×' + fmt(e),
+      keep: keepBp,
+    }),
+    bpUpg({ id: 'dyson', name: 'Dyson-Protokoll', desc: 'Schaltet Dyson-Segment und Sternschmiede frei (Stufe 7–8).', cost: T.dyson, requires: ['docks'], keep: keepEx1 }),
+    bpUpg({ id: 'auto4', name: 'Autokauf IV', desc: 'Kauft Dyson-Segmente und Sternschmieden automatisch.', cost: T.auto4, requires: ['dyson', 'auto3'], keep: keepEx1 }),
+
+    // --- Expansion (Sternsysteme) ---
+    exUpg({
+      id: 'logistik',
+      name: 'Galaktische Logistik',
+      desc: 'Blaupausen-Gewinn ×2 pro Stufe.',
+      max: 4,
+      cost: (l) => Math.pow(3, l),
+      effect: (l) => pow(2, l),
+      fmt: (e) => 'Gewinn ' + formatMult(e),
+    }),
+    exUpg({ id: 'kolonien', name: 'Kolonienetz', desc: 'Stufen 1–4 produzieren ×2.', cost: 2 }),
+    exUpg({
+      id: 'bruecken',
+      name: 'Brückenkopf',
+      desc: 'Jede Replikation startet mit viel Materie (1e5 / 1e8 / 1e11).',
+      max: 3,
+      cost: (l) => [3, 20, 120][l],
+      effect: (l) => (l ? D(T.bruckenkopf[l - 1]) : D(0)),
+      fmt: (e) => 'Start: ' + fmt(e),
+    }),
+    exUpg({ id: 'dysonnetz', name: 'Dyson-Netz', desc: 'Stufen 5–8 produzieren ×2.', cost: 8 }),
+    exUpg({
+      id: 'archive',
+      name: 'Tiefe Archive',
+      desc: 'Blaupausen-Bonus: Exponent +0,03 pro Stufe.',
+      max: 4,
+      cost: (l) => 4 * Math.pow(3.5, l),
+      effect: (l, g) => bpBoostExp(g),
+      fmt: (e) => 'Exponent ' + fmt(e, { sig: 3 }),
+    }),
+    exUpg({
+      id: 'handel',
+      name: 'Handelsrouten',
+      desc: 'Basiskosten aller Generatoren ÷3 pro Stufe.',
+      max: 4,
+      cost: (l) => 6 * Math.pow(4, l),
+      effect: (l) => pow(3, l),
+      fmt: (e) => 'Kosten ÷' + fmt(e),
+    }),
+    exUpg({
+      id: 'sternkarten',
+      name: 'Sternenkarten',
+      desc: 'Sternsystem-Bonus: Exponent +0,1 pro Stufe.',
+      max: 3,
+      cost: (l) => 10 * Math.pow(5, l),
+      effect: (l) => T.sysBoostExp + 0.1 * l,
+      fmt: (e) => 'Exponent ' + fmt(e, { sig: 3 }),
+    }),
+    exUpg({
+      id: 'generationen',
+      name: 'Generationen',
+      desc: 'Gesamte Produktion ×1,25 pro Stufe.',
+      max: 12,
+      cost: (l) => 12 * Math.pow(2.2, l),
+      effect: (l) => pow(1.25, l),
+      fmt: (e) => formatMult(e),
+    }),
+    exUpg({
+      id: 'buendel2',
+      name: 'Bündel II',
+      desc: 'Der Bonus pro 10er-Bündel steigt um 0,02 pro Stufe.',
+      max: 4,
+      cost: (l) => 40 * Math.pow(5, l),
+      effect: (l) => 0.02 * l,
+      fmt: (e) => '+' + fmt(e, { sig: 2 }),
+    }),
+    exUpg({
+      id: 'speed',
+      name: 'Schnellere Automaten',
+      desc: 'Autokauf-Intervall halbiert sich pro Stufe.',
+      max: 3,
+      cost: (l) => 15 * Math.pow(5, l),
+      effect: (l) => Math.pow(0.5, l),
+      fmt: (e) => fmt(e, { sig: 3 }) + ' s',
+    }),
+    exUpg({
+      id: 'kernbau',
+      name: 'Kernfertigung',
+      desc: 'Quantenkern-Gewinn ×2 pro Stufe.',
+      max: 3,
+      cost: (l) => 200 * Math.pow(10, l),
+      effect: (l) => pow(2, l),
+      fmt: (e) => 'Gewinn ' + formatMult(e),
+    }),
+
+    // --- Forschung (Quantenkerne) ---
+    rsUpg({ id: 'kern', name: 'Quantenkern-Reaktor', desc: 'Produktion ×5. Öffnet die Forschungszweige.', cost: 2 }),
+    // Zweig A: Masse
+    rsUpg({ id: 'a_dichte', name: 'Verdichtete Materie', desc: 'Produktion ×5.', cost: 8, requires: ['kern'], branch: 'A' }),
+    rsUpg({ id: 'a_fluss', name: 'Quantenfluss', desc: 'Produktion ×3 und wächst mit Quantenkernen.', cost: 40, requires: ['a_dichte'], branch: 'A' }),
+    rsUpg({
+      id: 'a_schmiede',
+      name: 'Singularitätsschmiede',
+      desc: 'Produktion ×30. Schließt „Entropie-Ernte“ aus.',
+      cost: 300,
+      requires: ['a_fluss'],
+      excl: ['b_entropie'],
+      branch: 'A',
+    }),
+    // Zweig B: Effizienz
+    rsUpg({ id: 'b_ernte', name: 'Doppelte Ernte', desc: 'Gewinn von Blaupausen und Sternsystemen ×3.', cost: 8, requires: ['kern'], branch: 'B' }),
+    rsUpg({ id: 'b_kosten', name: 'Billige Replikate', desc: 'Basiskosten aller Generatoren ÷30.', cost: 40, requires: ['b_ernte'], branch: 'B' }),
+    rsUpg({
+      id: 'b_entropie',
+      name: 'Entropie-Ernte',
+      desc: 'Gewinn-Exponenten von Expansion und Singularität +0,05. Schließt „Singularitätsschmiede“ aus.',
+      cost: 300,
+      requires: ['b_kosten'],
+      excl: ['a_schmiede'],
+      branch: 'B',
+    }),
+    // Zweig C: Automation
+    rsUpg({ id: 'c_auto', name: 'Auto-Expansion', desc: 'Schaltet die automatische Expansion frei.', cost: 10, requires: ['kern'], branch: 'C' }),
+    rsUpg({ id: 'c_schnell', name: 'Schnelle Automaten', desc: 'Autokauf-Intervall ÷4.', cost: 60, requires: ['c_auto'], branch: 'C' }),
+    rsUpg({ id: 'c_zeit', name: 'Zeitschleife', desc: 'Offline-Limit +48 Stunden.', cost: 400, requires: ['c_schnell'], branch: 'C' }),
+    // Quer: Verstärker + Finale
+    rsUpg({
+      id: 'd_pruef',
+      name: 'Prüfstand-Kalibrierung',
+      desc: 'Globale Challenge-Belohnungen werden ^1,5 genommen.',
+      cost: 100,
+      requiresAny: ['a_fluss', 'b_kosten'],
+      branch: 'D',
+    }),
+    rsUpg({
+      id: 'z_horizont',
+      name: 'Ereignishorizont',
+      desc: 'Produktion ×100.',
+      cost: 1500,
+      requires: ['c_zeit', 'd_pruef'],
+      requiresAny: ['a_schmiede', 'b_entropie'],
+      branch: 'D',
+    }),
+  ],
+
+  /* ----------------------------- milestones ----------------------------- */
+  milestones: [
+    { id: 'rep1', layer: 'replication', at: 1, name: '1 Replikation', desc: 'Jede Replikation startet mit 100 Materie.' },
+    { id: 'rep5', layer: 'replication', at: 5, name: '5 Replikationen', desc: 'Start mit 10.000 Materie.' },
+    { id: 'rep15', layer: 'replication', at: 15, name: '15 Replikationen', desc: 'Start mit 1 Mio Materie.' },
+    { id: 'rep40', layer: 'replication', at: 40, name: '40 Replikationen', desc: 'Start mit 100 Mio Materie.' },
+    { id: 'ex1', layer: 'expansion', at: 1, name: '1 Expansion', desc: 'Autokauf- und Freischalt-Upgrades bleiben erhalten. Schaltet Challenges frei.' },
+    { id: 'ex2', layer: 'expansion', at: 2, name: '2 Expansionen', desc: 'Start mit 1 Mrd Materie nach jeder Replikation.' },
+    { id: 'ex3', layer: 'expansion', at: 3, name: '3 Expansionen', desc: 'Alle Blaupausen-Upgrades bleiben bei Expansion und Singularität erhalten.' },
+    { id: 'ex5', layer: 'expansion', at: 5, name: '5 Expansionen', desc: 'Schaltet die automatische Replikation frei.' },
+    { id: 'ex10', layer: 'expansion', at: 10, name: '10 Expansionen', desc: 'Start mit 1e12 Materie nach jeder Replikation.' },
+    { id: 'ex20', layer: 'expansion', at: 20, name: '20 Expansionen', desc: 'Blaupausen-Gewinn ×2.' },
+    { id: 's1', layer: 'singularity', at: 1, name: '1 Singularität', desc: 'Alle Expansions-Upgrades bleiben bei einer Singularität erhalten.' },
+    { id: 's2', layer: 'singularity', at: 2, name: '2 Singularitäten', desc: 'Kauft Blaupausen-Upgrades automatisch.' },
+    { id: 's3', layer: 'singularity', at: 3, name: '3 Singularitäten', desc: 'Jede Singularität startet mit 5 Sternsystemen.' },
+    { id: 's5', layer: 'singularity', at: 5, name: '5 Singularitäten', desc: 'Kauft Expansions-Upgrades automatisch.' },
+    { id: 's10', layer: 'singularity', at: 10, name: '10 Singularitäten', desc: 'Jede Singularität startet mit 50 Sternsystemen.' },
+  ],
+
+  /* ----------------------------- challenges ----------------------------- */
+  challengesUnlocked: (g) => g.hasMs('ex1'),
+  challenges: [
+    {
+      id: 'c_enge',
+      name: 'Enge Rohre',
+      desc: 'Nur die ersten 4 Generatorstufen sind verfügbar.',
+      rules: { maxTier: 4 },
+      goal: { currency: 'matter', amount: T.chGoal[0] },
+      reward: 'Stufen 1–4 produzieren dauerhaft ×1,5.',
+      resetLayer: 2,
+    },
+    {
+      id: 'c_teuer',
+      name: 'Teure Rohstoffe',
+      desc: 'Die Kosten wachsen doppelt so schnell.',
+      rules: { growthPow: 2 },
+      goal: { currency: 'matter', amount: T.chGoal[1] },
+      reward: 'Das Kostenwachstum aller Generatoren sinkt dauerhaft um 8 %.',
+      resetLayer: 2,
+    },
+    {
+      id: 'c_ohne_bp',
+      name: 'Ohne Baupläne',
+      desc: 'Blaupausen-Upgrades sind deaktiviert.',
+      rules: { noBpUpgrades: true },
+      goal: { currency: 'matter', amount: T.chGoal[2] },
+      reward: 'Blaupausen-Gewinn dauerhaft ×2.',
+      resetLayer: 2,
+    },
+    {
+      id: 'c_buendel',
+      name: 'Kein Bündelbonus',
+      desc: 'Der Bonus pro 10er-Bündel entfällt.',
+      rules: { noBundle: true },
+      goal: { currency: 'matter', amount: T.chGoal[3] },
+      reward: 'Bündelbonus dauerhaft +0,05.',
+      resetLayer: 2,
+    },
+    {
+      id: 'c_zeitlupe',
+      name: 'Zeitlupe',
+      desc: 'Die Materie-Produktion wird mit Exponent 0,5 gedämpft.',
+      rules: { prodPow: 0.5 },
+      goal: { currency: 'matter', amount: T.chGoal[4] },
+      reward: 'Sternsystem-Gewinn dauerhaft ×2.',
+      resetLayer: 2,
+    },
+    {
+      id: 'c_hand',
+      name: 'Handarbeit',
+      desc: 'Keine Autokäufer und kein Blaupausen-Bonus.',
+      rules: { noAuto: true, noBpBoost: true },
+      goal: { currency: 'matter', amount: T.chGoal[5] },
+      reward: 'Produktion dauerhaft ×3, Autokäufer doppelt so schnell.',
+      resetLayer: 2,
+    },
+    {
+      id: 'c_dunkel',
+      name: 'Dunkle Materie',
+      desc: 'Nur 6 Stufen, und die Kosten wachsen 1,5-mal so schnell.',
+      rules: { maxTier: 6, growthPow: 1.5 },
+      goal: { currency: 'matter', amount: T.chGoal[6] },
+      reward: 'Produktion dauerhaft ×5.',
+      resetLayer: 2,
+    },
+    {
+      id: 'c_gipfel',
+      name: 'Gipfelsturm',
+      desc: 'Nur 4 Stufen, 1,5× Kostenwachstum, kein Bündelbonus, keine Blaupausen-Upgrades.',
+      rules: { maxTier: 4, growthPow: 1.5, noBundle: true, noBpUpgrades: true },
+      goal: { currency: 'matter', amount: T.chGoal[7] },
+      reward: 'Produktion ×10 und Quantenkern-Gewinn ×2.',
+      resetLayer: 2,
+    },
+  ],
+
+  /* ----------------------------- autobuyers ----------------------------- */
+  autos: [
+    ...autoGens,
+    prestigeAuto({
+      id: 'auto_rep',
+      layer: 'replication',
+      name: 'Auto-Replikation',
+      desc: 'Repliziert automatisch, sobald der Schwellwert erreicht ist.',
+      unlock: (g) => g.hasMs('ex5'),
+      interval: () => 1,
+    }),
+    prestigeAuto({
+      id: 'auto_exp',
+      layer: 'expansion',
+      name: 'Auto-Expansion',
+      desc: 'Expandiert automatisch, sobald der Schwellwert erreicht ist.',
+      unlock: (g) => act(g, 'c_auto'),
+      interval: () => 1,
+    }),
+    {
+      id: 'auto_bpupg',
+      name: 'Auto-Blaupausen-Upgrades',
+      desc: 'Kauft Blaupausen-Upgrades automatisch.',
+      group: 'upg',
+      kind: 'upg',
+      unlock: (g) => g.hasMs('s2'),
+      interval: () => 1,
+      run: (g) => {
+        g.upgBuyAll('replication');
+      },
+    },
+    {
+      id: 'auto_exupg',
+      name: 'Auto-Expansions-Upgrades',
+      desc: 'Kauft Expansions-Upgrades automatisch.',
+      group: 'upg',
+      kind: 'upg',
+      unlock: (g) => g.hasMs('s5'),
+      interval: () => 1,
+      run: (g) => {
+        g.upgBuyAll('expansion');
+      },
+    },
+  ],
+
+  /* ----------------------------- achievements ----------------------------- */
+  achievements: buildAchievements(),
+
+  story: [
+    { id: 'st_start', text: 'Ein einzelner Prototyp erwacht im Asteroidengürtel. Sein Auftrag: mehr werden.', cond: () => true },
+    { id: 'st_rep', text: 'Die erste Kopie ist fertig – mit allen Fehlern des Originals. Die Blaupausen sind nun gesichert.', cond: (g) => g.state.layers.replication.count >= 1 },
+    { id: 'st_dock', text: 'Orbitale Docks: Die Drohnen bauen nun Werften, die Werften bauen Drohnen, die …', cond: (g) => act(g, 'docks') },
+    { id: 'st_exp', text: 'Ein ganzes Sternsystem ist erschlossen. Der Rest der Galaxie wartet geduldig.', cond: (g) => g.state.layers.expansion.count >= 1 },
+    { id: 'st_chal', text: 'Prüfstände entdeckt: Alte Konstruktionspläne mit seltsamen Auflagen. Wer sie meistert, wird belohnt.', cond: (g) => g.hasMs('ex1') },
+    { id: 'st_sing', text: 'Die Materie kollabiert zu einem einzigen Punkt. Er summt. Er denkt.', cond: (g) => g.state.layers.singularity.count >= 1 },
+    { id: 'st_res', text: 'Quantenkerne erlauben Entscheidungen: Wer man werden will, kostet etwas.', cond: (g) => act(g, 'kern') },
+    { id: 'st_end', text: 'Alle Pfade sind beschritten. Die Galaxie gehört dir – und ist doch nur der Anfang.', cond: (g) => act(g, 'z_horizont') && g.chDoneCount() >= 8 },
+  ],
+
+  settingsDefaults: {},
+
+  /* ----------------------------- hooks ----------------------------- */
+  hooks: {
+    genMaxTier: (g) => g.rule('maxTier', 8),
+    genGrowthPow: (g) => {
+      let p = g.rule('growthPow', 1);
+      if (g.chDone('c_teuer')) p *= 0.92;
+      return p;
+    },
+    genCostDiv: (g) => {
+      let d = ONE;
+      if (act(g, 'kompress')) d = d.mul(g.upgEffect('kompress'));
+      if (act(g, 'handel')) d = d.mul(g.upgEffect('handel'));
+      if (act(g, 'b_kosten')) d = d.mul(30);
+      return d;
+    },
+    bundleMult: (g) => {
+      if (g.rule('noBundle', false)) return 1;
+      let b = 2 + 0.05 * lvl(g, 'buendel') + 0.02 * lvl(g, 'buendel2');
+      if (g.chDone('c_buendel')) b += 0.05;
+      return b;
+    },
+    genGlobalMult: (g) => globalParts(g).reduce((acc, [, v]) => acc.mul(v), ONE),
+    genTierMult: (g, chain, i) => tierMult(g, i),
+    genRate0: (g, chain, rate) => {
+      const p = g.rule('prodPow', 1);
+      return p === 1 || rate.lt(1) ? rate : rate.pow(p);
+    },
+    upgradeDisabled: (g, u) => u.group === 'replication' && g.rule('noBpUpgrades', false),
+    offlineCapBonusHours: (g) => (act(g, 'c_zeit') ? 48 : 0),
+    afterReset: (g, L) => {
+      const start = startMatter(g);
+      const have = g.get('matter');
+      if (have.lt(start)) g.grant('matter', start.sub(have));
+      if (L >= 3) {
+        if (g.hasMs('s10')) g.add('systems', 50);
+        else if (g.hasMs('s3')) g.add('systems', 5);
+      }
+    },
+  },
+};
+
+function buildAchievements() {
+  const A = [];
+  const add = (id, name, desc, cond) => A.push({ id, name, desc, cond });
+  add('first', 'Erster Funke', 'Kaufe eine Bohrdrohne.', (g) => g.state.gens.matter[0].bought >= 1);
+  for (let i = 1; i < 8; i++) {
+    add('tier' + (i + 1), tierNames[i] + ' online', 'Kaufe einen ' + tierNames[i] + '.', (g) => g.state.gens.matter[i].bought >= 1);
+  }
+  const matterSteps = [
+    [3, 'Kleinvieh', '1.000 Materie'],
+    [6, 'Millionär', '1 Mio Materie'],
+    [9, 'Milliardär', '1 Mrd Materie'],
+    [12, 'Billionär', '1 Bio Materie'],
+    [18, 'Trillionär', '1e18 Materie'],
+    [30, 'Astronomisch', '1e30 Materie'],
+    [50, 'Jenseits der Zahlen', '1e50 Materie'],
+    [80, 'Weltraumschrott', '1e80 Materie (so viele Atome hat das Universum)'],
+    [120, 'Unvorstellbar', '1e120 Materie'],
+  ];
+  for (const [e, name, desc] of matterSteps) {
+    add('m' + e, name, 'Erreiche ' + desc + '.', (g) => g.state.cur.matter.best.gte(Decimal.pow(10, e)));
+  }
+  for (const [n, name] of [[1, 'Es lebt!'], [10, 'Fließband'], [50, 'Kopierwahn'], [250, 'Massenproduktion']]) {
+    add('rep' + n, name, 'Repliziere ' + n + '×.', (g) => g.state.layers.replication.count >= n);
+  }
+  for (const [n, name] of [[1, 'Neue Heimat'], [5, 'Kolonisator'], [25, 'Galaktischer Herrscher']]) {
+    add('exp' + n, name, 'Expandiere ' + n + '×.', (g) => g.state.layers.expansion.count >= n);
+  }
+  for (const [n, name] of [[1, 'Punktlandung'], [5, 'Schwarzes Loch'], [25, 'Ereignishorizont']]) {
+    add('sing' + n, name, 'Kollabiere ' + n + '×.', (g) => g.state.layers.singularity.count >= n);
+  }
+  for (const [n, name] of [[1, 'Prüfling'], [4, 'Prüfstandsprofi'], [8, 'Meister der Auflagen']]) {
+    add('ch' + n, name, 'Schließe ' + n + ' Challenge' + (n > 1 ? 's' : '') + ' ab.', (g) => g.chDoneCount() >= n);
+  }
+  add('bpall', 'Alles geplant', 'Kaufe alle Blaupausen-Upgrades auf Maximalstufe.', (g) =>
+    g.def.upgrades.filter((u) => u.group === 'replication').every((u) => g.upgMaxed(u.id)),
+  );
+  add('exall', 'Sternenkartograf', 'Kaufe alle Expansions-Upgrades auf Maximalstufe.', (g) =>
+    g.def.upgrades.filter((u) => u.group === 'expansion').every((u) => g.upgMaxed(u.id)),
+  );
+  add('res6', 'Forscherdrang', 'Besitze 6 Forschungsknoten gleichzeitig.', (g) =>
+    g.def.upgrades.filter((u) => u.group === 'research' && g.upgLevel(u.id) > 0).length >= 6,
+  );
+  add('time1', 'Dranbleiber', 'Spiele insgesamt 1 Stunde.', (g) => g.state.time.played >= 3600);
+  add('time10', 'Langstrecke', 'Spiele insgesamt 10 Stunden.', (g) => g.state.time.played >= 36000);
+  add('lazy', 'Faulpelz', 'Schalte alle Generator-Autokäufer frei.', (g) => g.def.autos.filter((a) => a.kind === 'gen').every((a) => g.autoUnlocked(a.id)));
+  return A;
+}
+
+export { formatPercent };

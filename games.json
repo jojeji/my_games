@@ -1,0 +1,10 @@
+[
+  {
+    "id": "replikator",
+    "title": "Replikator",
+    "description": "Selbstreplizierende Sonden erobern die Galaxie. Generatoren, drei Prestige-Ebenen, Challenges und ein Forschungsbaum – gebaut für das Smartphone.",
+    "path": "games/replikator/",
+    "icon": "games/replikator/icons/icon.svg",
+    "status": "playable"
+  }
+]

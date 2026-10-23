@@ -1,0 +1,13 @@
+/* Hub / launcher */
+.hub { max-width: var(--col); margin: 0 auto; padding: calc(env(safe-area-inset-top) + 28px) var(--pad-r) calc(env(safe-area-inset-bottom) + 32px) var(--pad-l); display: flex; flex-direction: column; gap: 22px; }
+.hub-head h1 { font-size: 30px; letter-spacing: -0.02em; }
+.hub-head p { margin-top: 4px; }
+.games { display: flex; flex-direction: column; gap: 14px; }
+.game-card { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: start; padding: 14px; }
+.game-card img { width: 72px; height: 72px; border-radius: 18px; background: var(--surface2); }
+.game-card h2 { font-size: 20px; }
+.game-card p { color: #c7d0e0; font-size: 14px; margin-top: 4px; }
+.game-actions { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; }
+.game-actions .btn { flex: 1; text-decoration: none; }
+.game-card .badge { align-self: center; }
+.game-card.soon { opacity: 0.6; }

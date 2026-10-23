@@ -1,0 +1,6 @@
+/* Theme overrides (see engine/engine.css for all variables). */
+:root {
+  --accent: #fbbf24;
+  --accent-ink: #261a02;
+  --accent2: #f472b6;
+}

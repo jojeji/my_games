@@ -1,0 +1,10 @@
+/* Replikator theme: deep space, cyan/violet accents. Overrides engine.css variables only. */
+:root {
+  --bg: #080c14;
+  --bg2: #0f1a2e;
+  --surface: #131b2a;
+  --surface2: #1b2639;
+  --accent: #38d6f2;
+  --accent-ink: #03222b;
+  --accent2: #9b8cff;
+}
