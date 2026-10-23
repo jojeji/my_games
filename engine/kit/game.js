@@ -319,9 +319,10 @@ export class Game {
 
 /**
  * Build an autobuyer definition for "prestige automatically".
- * Config lives in state.auto[id]: mode 'amount' (gain >= value) | 'mult' (gain >= value * layer currency run total).
+ * Config lives in state.auto[id]: mode 'amount' (gain >= value) | 'mult' (gain >= value * layer currency run total, at least minGain).
+ * `on`/`mode`/`value` are the defaults a fresh save gets.
  */
-export function prestigeAuto({ id, layer, name, desc, unlock, interval, group }) {
+export function prestigeAuto({ id, layer, name, desc, unlock, interval, group, on = false, mode = 'amount', value = 1, minGain = 1 }) {
   return {
     id,
     name,
@@ -331,12 +332,12 @@ export function prestigeAuto({ id, layer, name, desc, unlock, interval, group })
     kind: 'prestige',
     unlock,
     interval: interval || (() => 1),
-    defaults: { on: false, mode: 'amount', value: D(1) },
+    defaults: { on, mode, value: D(value) },
     run(g, st) {
       const gain = g.prestigeGain(layer);
       if (gain.lt(1) || g.prestigeBlocked(layer)) return;
       const l = g.layerById[layer];
-      const need = st.mode === 'mult' ? g.state.cur[l.currency].run.mul(st.value).max(1) : D(st.value);
+      const need = st.mode === 'mult' ? g.state.cur[l.currency].run.mul(st.value).max(minGain) : D(st.value);
       if (gain.gte(need)) g.prestige(layer);
     },
   };

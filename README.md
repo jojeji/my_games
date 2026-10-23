@@ -32,11 +32,11 @@ eigenes Manifest und installiert sich als eigene App. Nach dem ersten Laden läu
 ## Replikator spielen (Kurzanleitung)
 
 1. **Generatoren**: Kaufe Bohrdrohnen; jede Stufe produziert die Stufe darunter. Alle 10 Käufe einer Stufe verdoppeln deren Ausbeute.
-   Kaufen-Taste gedrückt halten = Schnellkauf, Zeile lang drücken = Details.
-2. **Replikation** (nach ca. 5 Min): Materie zurücksetzen → Blaupausen für Upgrades und einen Produktionsbonus.
+   Kaufen-Taste gedrückt halten = Schnellkauf, Zeile antippen = Details.
+2. **Replikation** (nach ca. 5 Min; ab der 1. Expansion auch automatisch): Materie zurücksetzen → Blaupausen für Upgrades und einen Produktionsbonus.
 3. **Expansion** (ca. 40 Min): Blaupausen zurücksetzen → Sternsysteme, dauerhafte Upgrades und **Challenges** (eingeschränkte Durchläufe mit Belohnung).
-4. **Singularität** (ca. 3–4 Std): alles zurücksetzen → Quantenkerne für den **Forschungsbaum** (ein Pfad schließt den anderen aus; Neuverteilen möglich).
-5. Meilensteine schalten Autokäufer und Starthilfen frei; Erfolge geben einen globalen Bonus.
+4. **Singularität** (ca. 3–4 Std; jede bisherige Singularität erhöht den Quantenkern-Gewinn): alles zurücksetzen → Quantenkerne für den **Forschungsbaum** (ein Pfad schließt den anderen aus; Neuverteilen möglich).
+5. Meilensteine schalten Autokäufer (Replikation, Blaupausen-Upgrades, Expansion, Challenges, Expansions-Upgrades) und Starthilfen frei – so lässt sich das Spiel auch in kurzen Sitzungen spielen; Erfolge geben einen globalen Bonus.
 
 Speichern: automatisch (alle 10 s und beim Verlassen). Unter **Mehr → Einstellungen** gibt es Export/Import als Text, Zahlenformat,
 Offline-Limit und das Zurücksetzen.

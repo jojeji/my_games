@@ -3,12 +3,17 @@
 // Scripted greedy player: buys generators/upgrades, prestiges when the gain is "worth it",
 // runs challenges right after an Expansion, buys research.
 //
-//   node tools/simulate.mjs [--hours 30] [--dt 1] [--act 1] [--quiet]
+//   node tools/simulate.mjs [--hours 30] [--dt 1] [--act 1] [--quiet] [--idle] [--both]
 //
 // --act N : the simulated player only interacts every N seconds (autobuyers still run every tick),
 //           use e.g. --act 60 to see how the game behaves when played "idle".
+// --idle  : shorthand for --act 120 --session 20 ("check in every 2 minutes for ~20 s", phone sessions).
+// --session N : player acts continuously for N seconds at the start of each --act interval (default 0 = one action per interval).
+// --both  : run active (act 1) and idle (act 120) and print a comparison (idle should finish in <= ~2x active time).
 import { pathToFileURL } from 'node:url';
 import { createReplikator } from '../games/replikator/logic.js';
+import { chPower } from '../games/replikator/def.js';
+import { TUNE as T } from '../games/replikator/tune.js';
 import { formatNumber as f, formatDuration } from '../engine/format.js';
 
 const RESEARCH_ORDER = ['kern', 'b_ernte', 'c_auto', 'a_dichte', 'b_kosten', 'a_fluss', 'd_pruef', 'a_schmiede', 'c_schnell', 'c_zeit', 'z_horizont'];
@@ -17,7 +22,7 @@ const RESEARCH_ORDER = ['kern', 'b_ernte', 'c_auto', 'a_dichte', 'b_kosten', 'a_
 export const STRATEGY = {
   repFactor: 1.0, // replicate when gain >= repFactor * blueprints earned this expansion run
   expFactor: 1.0,
-  singFactor: 1.0,
+  singFactor: 0.25,
   repMinGain: 1,
   expMinGain: 2,
   singMinGain: 8,
@@ -38,7 +43,7 @@ const hms = (s) => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 };
 
-export function runSim({ hours = 30, dt = 1, act: actEvery = 1, quiet = false, verbose = false, strategy = {}, stopAtEnd = true } = {}) {
+export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true } = {}) {
   const S = { ...STRATEGY, ...strategy };
   const g = createReplikator();
   let t = 0;
@@ -97,12 +102,14 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, quiet = false, v
   };
 
   const doChallenges = () => {
+    if (g.autoUnlocked('auto_chal') && g.state.auto.auto_chal.on) return; // the in-game autobuyer picks challenges
     const act = g.chActive();
     if (act) {
       const info = chInfo[act.id];
       if (t - info.enteredAt > S.challengeTimeout) {
         g.chExit();
         info.failedExp = g.state.layers.expansion.count;
+        info.failPower = chPower(g);
         note(`Challenge abgebrochen: ${act.name}`, 'quiet');
       }
       return;
@@ -112,9 +119,10 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, quiet = false, v
     const exp = g.state.layers.expansion;
     if (exp.runTime > 120 + actEvery) return;
     for (const c of g.def.challenges) {
-      if (g.chDone(c.id)) continue;
+      if (g.chDone(c.id) || !g.chAvailable(c.id)) continue;
       const info = chInfo[c.id] || (chInfo[c.id] = {});
       if (info.failedExp != null && exp.count < info.failedExp + S.challengeRetryExp) continue;
+      if (info.failPower != null && chPower(g) < info.failPower + T.chRetryPower) continue; // same rule as the in-game Auto-Challenges
       if (g.chEnter(c.id)) {
         info.enteredAt = t;
         events.push(t);
@@ -155,7 +163,10 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, quiet = false, v
     g.tick(dt);
     t += dt;
     sinceAct += dt;
-    if (sinceAct >= actEvery) {
+    // session > 0: the player checks in every `actEvery` s and acts every tick for `session` s (a short phone session)
+    if (session > 0 && actEvery > dt) {
+      if (t % actEvery < session) player();
+    } else if (sinceAct >= actEvery) {
       sinceAct = 0;
       player();
     }
@@ -230,6 +241,19 @@ function parseArgs(argv) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const a = parseArgs(process.argv.slice(2));
   const started = Date.now();
-  runSim({ hours: a.hours ?? 30, dt: a.dt ?? 1, act: a.act ?? 1, quiet: !!a.quiet, verbose: !!a.verbose });
+  if (a.both) {
+    const res = {};
+    for (const [label, act] of [['aktiv (alle 1 s)', 1], ['idle (120 s / 20 s)', 120]]) {
+      const r = runSim({ hours: a.hours ?? 40, dt: a.dt ?? 1, act, session: act > 1 ? 20 : 0, quiet: true, stopAtEnd: true });
+      res[label] = r;
+      const ch = r.game.def.challenges.map((c) => (r.firsts['ch_' + c.id] ? hms(r.firsts['ch_' + c.id].t) : '--')).join(' ');
+      console.log(`${label.padEnd(18)} Rep ${hms(r.firsts.replication?.t ?? 0)}  Exp ${hms(r.firsts.expansion?.t ?? 0)}  Sing ${hms(r.firsts.singularity?.t ?? 0)}  Ende ${r.endTime ? hms(r.endTime) : 'nicht erreicht'}`);
+      console.log(`${''.padEnd(18)} Challenges: ${ch}`);
+    }
+    const [a1, a2] = Object.values(res);
+    if (a1.endTime && a2.endTime) console.log(`Idle/Aktiv = ${(a2.endTime / a1.endTime).toFixed(2)}x`);
+    process.exit(0);
+  }
+  runSim({ hours: a.hours ?? 30, dt: a.dt ?? 1, act: a.idle ? 120 : a.act ?? 1, session: a.idle ? 20 : a.session ?? 0, quiet: !!a.quiet, verbose: !!a.verbose });
   console.log(`(Simulation dauerte ${((Date.now() - started) / 1000).toFixed(1)} s Rechenzeit)`);
 }

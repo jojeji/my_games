@@ -125,3 +125,29 @@ test('definition sanity: unique ids, references exist', () => {
   for (const u of d.upgrades) for (const r of [...(u.requires || []), ...(u.requiresAny || []), ...(u.excl || [])]) assert.ok(g.upgById[r], r);
   assert.ok(d.achievements.length >= 30);
 });
+
+test('challenges: per-challenge unlock gate, auto-challenge state is not shared between games', () => {
+  const g = createReplikator();
+  g.state.ms.ex1 = true; // challenges unlocked
+  assert.equal(g.chAvailable('c_enge'), true);
+  assert.equal(g.chAvailable('c_gipfel'), false); // needs Singularitäten
+  assert.equal(g.chEnter('c_gipfel'), false);
+  g.state.layers.singularity.count = 7;
+  assert.equal(g.chAvailable('c_gipfel'), true);
+  assert.equal(g.chEnter('c_enge'), true);
+  assert.ok(g.chRunTime() >= 0);
+  const g2 = createReplikator();
+  g.state.auto.auto_chal.fail.c_enge = 5;
+  assert.deepEqual(g2.state.auto.auto_chal.fail, {});
+});
+
+test('auto-challenge enters the next open challenge right after an expansion and gives up after the timeout', () => {
+  const g = createReplikator();
+  g.state.ms.ex1 = g.state.ms.ex4 = true;
+  g.tick(1.1);
+  assert.equal(g.chActive()?.id, 'c_enge');
+  g.state.time.played += 700;
+  g.tick(1);
+  assert.equal(g.chActive()?.id, 'c_teuer'); // c_enge timed out and is not retried yet; the next open one starts
+  assert.ok('c_enge' in g.state.auto.auto_chal.fail);
+});

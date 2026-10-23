@@ -45,6 +45,12 @@ export function globalParts(g) {
   return parts;
 }
 
+/** Persistent "strength" proxy (log10) used by Auto-Challenges to decide when a failed challenge is worth another try. */
+export function chPower(g) {
+  const s = g.state.cur;
+  return s.systems.total.add(1).log10() + 1.5 * s.cores.total.add(1).log10() + 0.3 * g.chDoneCount();
+}
+
 export function challengeGlobal(g) {
   let m = ONE;
   if (g.chDone('c_hand')) m = m.mul(3);
@@ -113,7 +119,8 @@ const autoGens = tierNames.map((n, i) => ({
   group: 'gen',
   kind: 'gen',
   tier: i,
-  unlock: (g) => act(g, ['auto1', 'auto1', 'auto2', 'auto2', 'auto3', 'auto3', 'auto4', 'auto4'][i]),
+  // owned, not "active": the autobuyers keep working in "Ohne Baupläne" (only Handarbeit switches automation off)
+  unlock: (g) => g.upgLevel(['auto1', 'auto1', 'auto2', 'auto2', 'auto3', 'auto3', 'auto4', 'auto4'][i]) > 0,
   interval: autoInterval,
   run: (g) => {
     g.genBuy('matter', i, 'max');
@@ -127,9 +134,9 @@ export const def = {
 
   currencies: [
     { id: 'matter', name: 'Materie', layer: 0, start: 10 },
-    { id: 'blueprints', name: 'Blaupausen', layer: 1, start: 0 },
-    { id: 'systems', name: 'Sternsysteme', layer: 2, start: 0 },
-    { id: 'cores', name: 'Quantenkerne', layer: 3, start: 0 },
+    { id: 'blueprints', name: 'Blaupausen', short: 'BP', layer: 1, start: 0 },
+    { id: 'systems', name: 'Sternsysteme', short: 'Sys', layer: 2, start: 0 },
+    { id: 'cores', name: 'Quantenkerne', short: 'QK', layer: 3, start: 0 },
   ],
 
   chains: [
@@ -153,6 +160,7 @@ export const def = {
     {
       id: 'replication',
       name: 'Replikation',
+      plural: 'Replikationen',
       verb: 'Replizieren',
       layer: 1,
       currency: 'blueprints',
@@ -171,6 +179,7 @@ export const def = {
     {
       id: 'expansion',
       name: 'Expansion',
+      plural: 'Expansionen',
       verb: 'Expandieren',
       layer: 2,
       currency: 'systems',
@@ -187,6 +196,7 @@ export const def = {
     {
       id: 'singularity',
       name: 'Singularität',
+      plural: 'Singularitäten',
       verb: 'Kollabieren',
       layer: 3,
       currency: 'cores',
@@ -197,9 +207,12 @@ export const def = {
         let m = ONE;
         if (g.chDone('c_gipfel')) m = m.mul(2);
         m = m.mul(pow(2, lvl(g, 'kernbau')));
+        m = m.mul(pow(T.kernverdichterMult, lvl(g, 'kernverdichter')));
+        if (g.hasMs('s2')) m = m.mul(1 + T.singEcho * g.state.layers.singularity.count);
+        if (g.hasMs('s5')) m = m.mul(1.5);
         return m;
       },
-      blurb: 'Setze alles zurück und verdichte die Galaxie zu Quantenkernen.',
+      blurb: 'Setze alles zurück und verdichte die Galaxie zu Quantenkernen. Ab der 2. Singularität wächst der Gewinn mit jeder bisherigen.',
     },
   ],
 
@@ -349,6 +362,15 @@ export const def = {
       effect: (l) => pow(2, l),
       fmt: (e) => 'Gewinn ' + formatMult(e),
     }),
+    exUpg({
+      id: 'kernverdichter',
+      name: 'Kernverdichter',
+      desc: 'Quantenkern-Gewinn ×1,5 pro Stufe.',
+      max: 6,
+      cost: (l) => T.kernverdichterCost * Math.pow(3.5, l),
+      effect: (l) => pow(T.kernverdichterMult, l),
+      fmt: (e) => 'Gewinn ' + formatMult(e),
+    }),
 
     // --- Forschung (Quantenkerne) ---
     rsUpg({ id: 'kern', name: 'Quantenkern-Reaktor', desc: 'Produktion ×5. Öffnet die Forschungszweige.', cost: 2 }),
@@ -377,7 +399,7 @@ export const def = {
       branch: 'B',
     }),
     // Zweig C: Automation
-    rsUpg({ id: 'c_auto', name: 'Auto-Expansion', desc: 'Schaltet die automatische Expansion frei.', cost: 10, requires: ['kern'], branch: 'C' }),
+    rsUpg({ id: 'c_auto', name: 'Autopilot', desc: 'Schaltet die automatische Singularität frei.', cost: 10, requires: ['kern'], branch: 'C' }),
     rsUpg({ id: 'c_schnell', name: 'Schnelle Automaten', desc: 'Autokauf-Intervall ÷4.', cost: 60, requires: ['c_auto'], branch: 'C' }),
     rsUpg({ id: 'c_zeit', name: 'Zeitschleife', desc: 'Offline-Limit +48 Stunden.', cost: 400, requires: ['c_schnell'], branch: 'C' }),
     // Quer: Verstärker + Finale
@@ -406,16 +428,17 @@ export const def = {
     { id: 'rep5', layer: 'replication', at: 5, name: '5 Replikationen', desc: 'Start mit 10.000 Materie.' },
     { id: 'rep15', layer: 'replication', at: 15, name: '15 Replikationen', desc: 'Start mit 1 Mio Materie.' },
     { id: 'rep40', layer: 'replication', at: 40, name: '40 Replikationen', desc: 'Start mit 100 Mio Materie.' },
-    { id: 'ex1', layer: 'expansion', at: 1, name: '1 Expansion', desc: 'Autokauf- und Freischalt-Upgrades bleiben erhalten. Schaltet Challenges frei.' },
-    { id: 'ex2', layer: 'expansion', at: 2, name: '2 Expansionen', desc: 'Start mit 1 Mrd Materie nach jeder Replikation.' },
-    { id: 'ex3', layer: 'expansion', at: 3, name: '3 Expansionen', desc: 'Alle Blaupausen-Upgrades bleiben bei Expansion und Singularität erhalten.' },
-    { id: 'ex5', layer: 'expansion', at: 5, name: '5 Expansionen', desc: 'Schaltet die automatische Replikation frei.' },
+    { id: 'ex1', layer: 'expansion', at: 1, name: '1 Expansion', desc: 'Autokauf- und Freischalt-Upgrades bleiben erhalten. Schaltet Challenges und die automatische Replikation frei.' },
+    { id: 'ex2', layer: 'expansion', at: 2, name: '2 Expansionen', desc: 'Start mit 1 Mrd Materie nach jeder Replikation. Kauft Blaupausen-Upgrades automatisch.' },
+    { id: 'ex3', layer: 'expansion', at: 3, name: '3 Expansionen', desc: 'Alle Blaupausen-Upgrades bleiben bei Expansion und Singularität erhalten. Schaltet die automatische Expansion frei.' },
+    { id: 'ex4', layer: 'expansion', at: 4, name: '4 Expansionen', desc: 'Schaltet die automatische Challenge-Wahl frei.' },
+    { id: 'ex5', layer: 'expansion', at: 5, name: '5 Expansionen', desc: 'Kauft Expansions-Upgrades automatisch.' },
     { id: 'ex10', layer: 'expansion', at: 10, name: '10 Expansionen', desc: 'Start mit 1e12 Materie nach jeder Replikation.' },
     { id: 'ex20', layer: 'expansion', at: 20, name: '20 Expansionen', desc: 'Blaupausen-Gewinn ×2.' },
     { id: 's1', layer: 'singularity', at: 1, name: '1 Singularität', desc: 'Alle Expansions-Upgrades bleiben bei einer Singularität erhalten.' },
-    { id: 's2', layer: 'singularity', at: 2, name: '2 Singularitäten', desc: 'Kauft Blaupausen-Upgrades automatisch.' },
+    { id: 's2', layer: 'singularity', at: 2, name: '2 Singularitäten', desc: 'Echo: Quantenkern-Gewinn +20 % pro bisheriger Singularität.' },
     { id: 's3', layer: 'singularity', at: 3, name: '3 Singularitäten', desc: 'Jede Singularität startet mit 5 Sternsystemen.' },
-    { id: 's5', layer: 'singularity', at: 5, name: '5 Singularitäten', desc: 'Kauft Expansions-Upgrades automatisch.' },
+    { id: 's5', layer: 'singularity', at: 5, name: '5 Singularitäten', desc: 'Quantenkern-Gewinn ×1,5.' },
     { id: 's10', layer: 'singularity', at: 10, name: '10 Singularitäten', desc: 'Jede Singularität startet mit 50 Sternsystemen.' },
   ],
 
@@ -474,6 +497,8 @@ export const def = {
       rules: { noAuto: true, noBpBoost: true },
       goal: { currency: 'matter', amount: T.chGoal[5] },
       reward: 'Produktion dauerhaft ×3, Autokäufer doppelt so schnell.',
+      unlock: (g) => g.state.layers.singularity.count >= 2,
+      lockText: '2 Singularitäten nötig.',
       resetLayer: 2,
     },
     {
@@ -483,6 +508,8 @@ export const def = {
       rules: { maxTier: 6, growthPow: 1.5 },
       goal: { currency: 'matter', amount: T.chGoal[6] },
       reward: 'Produktion dauerhaft ×5.',
+      unlock: (g) => g.state.layers.singularity.count >= 4,
+      lockText: '4 Singularitäten nötig.',
       resetLayer: 2,
     },
     {
@@ -492,6 +519,8 @@ export const def = {
       rules: { maxTier: 4, growthPow: 1.5, noBundle: true, noBpUpgrades: true },
       goal: { currency: 'matter', amount: T.chGoal[7] },
       reward: 'Produktion ×10 und Quantenkern-Gewinn ×2.',
+      unlock: (g) => g.state.layers.singularity.count >= 7,
+      lockText: '7 Singularitäten nötig.',
       resetLayer: 2,
     },
   ],
@@ -503,17 +532,36 @@ export const def = {
       id: 'auto_rep',
       layer: 'replication',
       name: 'Auto-Replikation',
-      desc: 'Repliziert automatisch, sobald der Schwellwert erreicht ist.',
-      unlock: (g) => g.hasMs('ex5'),
+      desc: 'Repliziert automatisch, sobald sich der Gewinn lohnt.',
+      unlock: (g) => g.hasMs('ex1'),
       interval: () => 1,
+      on: true,
+      mode: 'mult',
+      value: 1,
     }),
     prestigeAuto({
       id: 'auto_exp',
       layer: 'expansion',
       name: 'Auto-Expansion',
-      desc: 'Expandiert automatisch, sobald der Schwellwert erreicht ist.',
+      desc: 'Expandiert automatisch, sobald sich der Gewinn lohnt.',
+      unlock: (g) => g.hasMs('ex3'),
+      interval: () => 1,
+      on: true,
+      mode: 'mult',
+      value: 1,
+      minGain: 2,
+    }),
+    prestigeAuto({
+      id: 'auto_sing',
+      layer: 'singularity',
+      name: 'Auto-Singularität',
+      desc: 'Kollabiert automatisch, sobald sich der Gewinn lohnt.',
       unlock: (g) => act(g, 'c_auto'),
       interval: () => 1,
+      on: true,
+      mode: 'mult',
+      value: 0.25,
+      minGain: 8,
     }),
     {
       id: 'auto_bpupg',
@@ -521,7 +569,7 @@ export const def = {
       desc: 'Kauft Blaupausen-Upgrades automatisch.',
       group: 'upg',
       kind: 'upg',
-      unlock: (g) => g.hasMs('s2'),
+      unlock: (g) => g.hasMs('ex2'),
       interval: () => 1,
       run: (g) => {
         g.upgBuyAll('replication');
@@ -533,10 +581,26 @@ export const def = {
       desc: 'Kauft Expansions-Upgrades automatisch.',
       group: 'upg',
       kind: 'upg',
-      unlock: (g) => g.hasMs('s5'),
+      unlock: (g) => g.hasMs('ex5'),
       interval: () => 1,
       run: (g) => {
         g.upgBuyAll('expansion');
+      },
+    },
+    {
+      id: 'auto_chal',
+      name: 'Auto-Challenges',
+      desc: 'Startet nach jeder Expansion die nächste offene Challenge und gibt sie nach 10 Minuten auf. Neuer Versuch erst, wenn die Produktion deutlich gewachsen ist.',
+      group: 'chal',
+      kind: 'misc',
+      defaults: () => ({ fail: {} }),
+      unlock: (g) => g.hasMs('ex4'),
+      interval: () => 1,
+      run: (g, st) => {
+        if (g.chActive() || !g.chUnlocked() || g.state.layers.expansion.runTime > T.chFreshSeconds) return;
+        const now = chPower(g);
+        const next = g.def.challenges.find((c) => g.chAvailable(c.id) && !(c.id in st.fail && now < st.fail[c.id] + T.chRetryPower));
+        if (next) g.chEnter(next.id);
       },
     },
   ],
@@ -585,6 +649,15 @@ export const def = {
       return p === 1 || rate.lt(1) ? rate : rate.pow(p);
     },
     upgradeDisabled: (g, u) => u.group === 'replication' && g.rule('noBpUpgrades', false),
+    // Auto-Challenges: give up a stuck challenge (works even inside "Handarbeit", which disables autobuyers)
+    onTick: (g) => {
+      const c = g.chActive();
+      const st = g.state.auto.auto_chal;
+      if (c && st.on && g.autoUnlocked('auto_chal') && g.chRunTime() > T.chTimeout) {
+        st.fail[c.id] = chPower(g);
+        g.chExit();
+      }
+    },
     offlineCapBonusHours: (g) => (act(g, 'c_zeit') ? 48 : 0),
     afterReset: (g, L) => {
       const start = startMatter(g);

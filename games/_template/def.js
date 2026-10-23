@@ -28,6 +28,7 @@ export const def = {
     {
       id: 'rebirth',
       name: 'Wiedergeburt',
+      plural: 'Wiedergeburten',
       verb: 'Wiedergeboren werden',
       layer: 1,
       currency: 'gems',

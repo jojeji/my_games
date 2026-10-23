@@ -23,7 +23,7 @@ export const TUNE = {
   // Soft caps: above these values a boost's exponent halves
   bpCap: 1e7,
   sysCap: 1e4,
-  coreCap: 1e3,
+  coreCap: 1e5,
 
   // Start matter after a reset (milestone id -> amount) and Brückenkopf levels
   startMatter: [
@@ -48,8 +48,18 @@ export const TUNE = {
   resonanz: 80,
   buendel: 400,
 
+  // Singularität: gain bonus +singEcho per previous Singularität (milestone s2); Kernverdichter upgrade
+  singEcho: 0.2,
+  kernverdichterMult: 1.5,
+  kernverdichterCost: 400,
+
+  // Auto-Challenges: abort after chTimeout s; retry a failed one when chPower() (def.js) grew by chRetryPower
+  chTimeout: 600,
+  chRetryPower: 0.3,
+  chFreshSeconds: 30, // only start a challenge this soon after an Expansion (nothing is lost)
+
   // Challenge goals (Materie reached within one replication run)
-  chGoal: [1e16, 1e18, 1e20, 1e22, 1e12, 1e24, 1e26, 1e29],
+  chGoal: [1e16, 1e18, 1e20, 1e22, 1e16, 1e44, 1e50, 1e31],
 };
 
 // Dev only: `TUNE_OVERRIDE='{"singExp":0.5}' node tools/simulate.mjs` for quick balance experiments (Node only).

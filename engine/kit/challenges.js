@@ -43,10 +43,22 @@ export const challengeMethods = {
     return Math.max(0, Math.min(1, have.log10() / goal.log10()));
   },
 
+  /** Seconds spent in the active challenge (0 when none). */
+  chRunTime() {
+    return this.chActive() ? this.state.time.played - this.state.challenge.t0 : 0;
+  },
+
+  /** Challenge can be started now (globally unlocked + its own optional `unlock(g)` condition). */
+  chAvailable(id) {
+    const c = this.chalById[id];
+    return !!c && this.chUnlocked() && !this.chDone(id) && (!c.unlock || !!c.unlock(this));
+  },
+
   chEnter(id) {
     const c = this.chalById[id];
-    if (!c || !this.chUnlocked() || this.chDone(id)) return false;
+    if (!this.chAvailable(id)) return false;
     this.state.challenge.active = id;
+    this.state.challenge.t0 = this.state.time.played;
     this.state.challenge.entered[id] = (this.state.challenge.entered[id] || 0) + 1;
     this.resetBelow(c.resetLayer);
     this.hook('afterReset', c.resetLayer);

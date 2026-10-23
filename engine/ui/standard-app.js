@@ -1,6 +1,7 @@
 // Standard mobile UI for kit games: header, generator tab, one tab per prestige layer,
 // achievements, "Mehr" (statistics, settings, log). Games customise it through `options`.
-import { h, txt, setHidden, setDisabled } from './dom.js';
+import { h, txt, setHidden, setDisabled, svgIcon } from './dom.js';
+import { ICONS } from './icons.js';
 import { mountApp } from './app.js';
 import { openModal } from './modal.js';
 import { buildSettingsPanel } from './settings.js';
@@ -69,16 +70,21 @@ export function mountStandardApp({ root, runtime, options, offline }) {
       const val = h('b', { class: 'hdr-val num' });
       const rate = h('span', { class: 'hdr-rate num' });
       const mult = h('button', { class: 'hdr-mult', type: 'button', onClick: showMultDetails });
-      const btn = h('button', { class: 'btn btn-primary hdr-btn', type: 'button' });
+      const btnIcon = h('span', { class: 'hdr-btn-icon' });
+      const btnText = h('span', { class: 'hdr-btn-text' });
+      const btn = h('button', { class: 'btn btn-primary hdr-btn', type: 'button' }, btnIcon, btnText);
       let btnLayer = null;
+      let shownIcon = null;
       btn.addEventListener('click', () => btnLayer && doPrestige(ctx, btnLayer));
+      const layerIcon = (id) => options.layers.find((x) => x.id === id)?.icon;
       const top = h('div', { class: 'hdr-top' },
-        h('div', { class: 'hdr-cur' }, h('span', { class: 'hdr-label', text: primary.name }), val, rate),
+        h('div', { class: 'hdr-cur' }, val, h('div', { class: 'hdr-sub' }, h('span', { class: 'hdr-label', text: primary.name }), rate)),
         btn,
       );
       const chips = (options.chips || []).map((id) => {
+        const c = g.currencyById[id];
         const v = h('b', { class: 'num' });
-        const el = h('span', { class: 'chip', hidden: true }, h('small', { text: g.currencyById[id].name }), v);
+        const el = h('span', { class: 'chip', hidden: true, title: c.name }, h('small', { text: c.short || c.name }), v);
         return { id, v, el };
       });
       const chipRow = h('div', { class: 'hdr-chips' }, ...chips.map((c) => c.el), mult);
@@ -102,21 +108,28 @@ export function mountStandardApp({ root, runtime, options, offline }) {
           // prestige shortcut: highest layer that can be used now, else the first visible layer
           let target = layersDesc.find((l) => g.canPrestige(l.id));
           let label;
-          if (target) label = `${target.verb} +${fmt(g.prestigeGain(target.id))}`;
-          else {
+          if (target) {
+            const c = g.currencyById[target.currency];
+            label = `+${fmt(g.prestigeGain(target.id))} ${c.short || c.name}`;
+          } else {
             target = g.def.layers.find((l) => g.layerUnlocked(l.id) || (options.layers.find((x) => x.id === l.id)?.visible?.(g)));
             label = target ? target.verb : '';
           }
           btnLayer = target ? target.id : null;
           setHidden(btn, !target);
           if (target) {
-            txt(btn, label);
+            if (shownIcon !== target.id) {
+              shownIcon = target.id;
+              btnIcon.replaceChildren(svgIcon(ICONS[layerIcon(target.id)] || ICONS.more));
+            }
+            txt(btnText, label);
+            btn.title = target.verb;
             setDisabled(btn, !g.canPrestige(target.id));
           }
           const ch = g.chActive();
           setHidden(chBanner, !ch);
           if (ch) {
-            txt(chText, `Challenge: ${ch.name} · ${fmt(g.state.cur[ch.goal.currency].run)} / ${fmt(ch.goal.amount)}`);
+            txt(chText, `${ch.name} · ${fmt(g.state.cur[ch.goal.currency].run)} / ${fmt(ch.goal.amount)}`);
             chBar.set(g.chProgress(ch));
           }
         },
@@ -137,7 +150,7 @@ export function mountStandardApp({ root, runtime, options, offline }) {
       const list = generatorList(g, chainId, { onDetails: showGenDetails });
       const autos = autoPanel(g);
       const autoSection = section('Automatisierung', autos.el, { open: false });
-      const hint = h('p', { class: 'muted small center', text: 'Tipp: Kaufen-Taste gedrückt halten für Schnellkauf, Zeile lang drücken für Details.' });
+      const hint = h('p', { class: 'muted small center', text: 'Tipp: Kaufen-Taste gedrückt halten für Schnellkauf, Zeile antippen für Details.' });
       const intro = options.generators.intro ? options.generators.intro(ctx) : null;
       const el = h('div', { class: 'stack' }, intro && intro.el, modeBar.el, list.el, autoSection, hint);
       return {

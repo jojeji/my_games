@@ -26,7 +26,8 @@ export function createState(def, now = Date.now()) {
 
   const auto = {};
   for (const a of def.autos || []) {
-    auto[a.id] = { on: true, t: 0, ...(a.defaults || {}) };
+    const d = typeof a.defaults === 'function' ? a.defaults() : a.defaults; // function = fresh mutable defaults per state
+    auto[a.id] = { on: true, t: 0, ...(d || {}) };
   }
 
   return {
@@ -40,7 +41,7 @@ export function createState(def, now = Date.now()) {
     ach: {},
     story: {},
     auto,
-    challenge: { active: null, done: {}, entered: {} },
+    challenge: { active: null, done: {}, entered: {}, t0: 0 },
     stats: {},
     settings: {
       notation: 'standard',

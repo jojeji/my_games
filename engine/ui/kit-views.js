@@ -59,24 +59,24 @@ export function generatorList(g, chainId, { onDetails } = {}) {
     const amount = h('span', { class: 'gen-amount num' });
     const rate = h('span', { class: 'gen-rate' });
     const bar = progressBar();
-    const barText = h('small', { class: 'gen-bar-text' });
+    const barText = h('small', { class: 'gen-bar-text', title: 'Käufe bis zum nächsten Bündelbonus' });
     const buyTop = h('span', { class: 'buy-top' });
     const buyCost = h('span', { class: 'buy-cost num' });
     const btn = h('button', { class: 'btn btn-buy', type: 'button' }, buyTop, buyCost);
-    const info = h('div', { class: 'gen-info' },
-      h('div', { class: 'gen-head' }, name, mult),
-      h('div', { class: 'gen-line' }, amount, rate),
+    const info = h('div', { class: 'gen-info', role: 'button', tabindex: 0, 'aria-label': tier.name + ': Details' },
+      h('div', { class: 'gen-head' }, name, amount),
+      h('div', { class: 'gen-rate-line' }, mult, rate),
       h('div', { class: 'gen-bundle' }, bar.el, barText),
     );
     const row = h('div', { class: 'gen card', hidden: true }, info, btn);
+    row.addEventListener('animationend', () => row.classList.remove('flash'));
     holdRepeat(btn, () => {
-      const n = g.genBuy(chainId, i, g.state.settings.buyMode);
-      if (n) row.classList.remove('flash'), void row.offsetWidth, row.classList.add('flash');
+      if (g.genBuy(chainId, i, g.state.settings.buyMode)) row.classList.add('flash');
     });
+    // long press (touch) or tap/Enter on the info area opens the details
     longPress(info, () => onDetails && onDetails(chainId, i));
-    info.addEventListener('click', () => {
-      /* tap on the info area: nothing, long-press shows details */
-    });
+    info.addEventListener('click', () => onDetails && onDetails(chainId, i));
+    info.addEventListener('keydown', (e) => e.key === 'Enter' && onDetails && onDetails(chainId, i));
     root.append(row);
     return { row, mult, amount, rate, bar, barText, buyTop, buyCost, btn };
   });
@@ -86,24 +86,21 @@ export function generatorList(g, chainId, { onDetails } = {}) {
     update() {
       const gs = g.state.gens[chainId];
       const mode = g.state.settings.buyMode;
-      let lockedShown = false;
       rows.forEach((r, i) => {
         const vis = g.genVisible(chain, i);
         setHidden(r.row, !vis);
         if (!vis) return;
         txt(r.mult, '×' + fmt(g.cache.own[chainId][i]));
         txt(r.amount, formatInt(gs[i].amount));
-        const rate = g.genRate(chainId, i);
-        txt(r.rate, '  +' + fmt(rate) + '/s ' + (i === 0 ? curName : chain.tiers[i - 1].name));
+        txt(r.rate, '+' + fmt(g.genRate(chainId, i)) + '/s ' + (i === 0 ? curName : chain.tiers[i - 1].name));
         const inBundle = gs[i].bought % chain.bundle;
         r.bar.set(inBundle / chain.bundle);
-        txt(r.barText, `${inBundle}/${chain.bundle} bis nächster Bonus`);
+        txt(r.barText, `${inBundle}/${chain.bundle}`);
         const info = g.genBuyInfo(chain, i, mode);
         txt(r.buyTop, 'Kaufen ×' + formatInt(info.count));
-        txt(r.buyCost, fmt(info.cost) + ' ' + curName);
+        txt(r.buyCost, fmt(info.cost));
         setDisabled(r.btn, !info.affordable);
       });
-      return lockedShown;
     },
   };
 }
@@ -126,6 +123,25 @@ export function upgradeCard(g, id, { showReqNames = true } = {}) {
   else btn.addEventListener('click', buy);
 
   const reqNames = () => [...(u.requires || []), ...(u.requiresAny || [])].map((r) => g.upgById[r].name);
+
+  // tap on the card body (not the buy button) shows the details
+  const details = () => {
+    const level = g.upgLevel(id);
+    const max = g.upgMax(u);
+    const rows = [['Stufe', max > 1 ? `${level}/${max}` : level ? 'Gekauft' : 'Nicht gekauft']];
+    if (u.fmt && (level > 0 || max > 1)) rows.push(['Aktuell', u.fmt(g.upgEffect(id), level, g)]);
+    if (level < max) rows.push(['Nächster Kauf', fmt(g.upgCost(id)) + ' ' + cname(g, u.currency)]);
+    const reqs = reqNames();
+    if (reqs.length) rows.push(['Benötigt', (u.requiresAny && !u.requires ? reqs.join(' oder ') : reqs.join(', '))]);
+    openModal({
+      title: u.name,
+      body: h('div', {}, h('p', { class: 'muted', text: u.desc }), h('ul', { class: 'mult-list' }, ...rows.map(([a, b]) => h('li', {}, h('span', { text: a }), h('b', { class: 'num', text: b }))))),
+      actions: [{ label: 'Schließen', kind: 'primary' }],
+    });
+  };
+  el.addEventListener('click', (e) => {
+    if (!btn.contains(e.target)) details();
+  });
 
   return {
     el,
@@ -340,12 +356,13 @@ export function challengeList(g, ctx) {
     const bar = progressBar();
     const prog = h('small', { class: 'muted' });
     const btn = h('button', { class: 'btn', type: 'button' });
+    const lock = h('p', { class: 'upg-note' });
     const el = h('div', { class: 'card chal' },
       h('div', { class: 'upg-head' }, h('b', { text: c.name }), status),
       h('p', { class: 'upg-desc', text: c.desc }),
       h('p', { class: 'chal-goal', text: `Ziel: ${fmt(c.goal.amount)} ${cname(g, c.goal.currency)} in einem Durchlauf` }),
       h('p', { class: 'chal-reward', text: 'Belohnung: ' + c.reward }),
-      bar.el, prog, btn,
+      bar.el, prog, lock, btn,
     );
     btn.addEventListener('click', async () => {
       if (g.chActive() && g.chActive().id === c.id) {
@@ -355,7 +372,7 @@ export function challengeList(g, ctx) {
       }
     });
     root.append(el);
-    return { c, el, status, bar, prog, btn };
+    return { c, el, status, bar, prog, btn, lock };
   });
   return {
     el: root,
@@ -363,7 +380,7 @@ export function challengeList(g, ctx) {
       const unlocked = g.chUnlocked();
       setHidden(locked, unlocked);
       const active = g.chActive();
-      cards.forEach(({ c, el, status, bar, prog, btn }) => {
+      cards.forEach(({ c, el, status, bar, prog, btn, lock }) => {
         setHidden(el, !unlocked);
         if (!unlocked) return;
         const done = g.chDone(c.id);
@@ -378,8 +395,12 @@ export function challengeList(g, ctx) {
           txt(prog, `${fmt(g.state.cur[c.goal.currency].run)} / ${fmt(c.goal.amount)}`);
         } else bar.set(0);
         setHidden(btn, done);
+        const locked = !done && !isActive && !g.chAvailable(c.id);
+        txt(lock, locked && c.lockText ? 'Gesperrt: ' + c.lockText : '');
+        setHidden(lock, !(locked && c.lockText));
+        setCls(el, 'locked', locked);
         txt(btn, isActive ? 'Aufgeben' : 'Starten');
-        setDisabled(btn, !isActive && !!active && false);
+        setDisabled(btn, locked);
       });
     },
   };
@@ -431,7 +452,7 @@ export function respecDialog(g) {
 /* ------------------------------------------------------------------ */
 
 export function autoPanel(g) {
-  const autos = g.def.autos.filter((a) => a.kind === 'gen' || a.kind === 'upg');
+  const autos = g.def.autos.filter((a) => a.kind !== 'prestige'); // prestige autos have their own config rows
   const list = h('div', { class: 'stack' });
   const rows = autos.map((a) => {
     const input = h('input', { type: 'checkbox', class: 'switch-input' });
@@ -506,7 +527,7 @@ export function offlineSummaryNode(g, s) {
   }
   for (const l of g.def.layers || []) {
     const d = s.after.layers[l.id] - s.before.layers[l.id];
-    if (d > 0) list.append(h('li', {}, h('b', { text: '+' + d }), ` ${l.name}${d > 1 ? 'en' : ''}`));
+    if (d > 0) list.append(h('li', {}, h('b', { text: '+' + d }), ' ' + (d > 1 ? l.plural || l.name : l.name)));
   }
   const ach = s.after.ach - s.before.ach;
   if (ach > 0) list.append(h('li', {}, h('b', { text: '+' + ach }), ` Erfolg${ach > 1 ? 'e' : ''}`));
