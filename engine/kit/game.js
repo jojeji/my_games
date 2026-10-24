@@ -12,6 +12,7 @@ import { producerMethods } from './producers.js';
 import { spellMethods } from './spells.js';
 import { tapMethods } from './tap.js';
 import { storyMethods } from './story.js';
+import { playlogMethods } from './playlog.js';
 
 const byId = (arr = []) => Object.fromEntries(arr.map((x) => [x.id, x]));
 
@@ -35,7 +36,7 @@ export class Game {
     this.autoById = byId(def.autos);
     this.cache = { mult: {}, own: {}, rate: {}, maxTier: {}, global: {}, prod: {} };
     this.slow = 0;
-    this.emit = () => {}; // replaced by the runtime (engine/core.js)
+    this.out = () => {}; // event sink, replaced by the runtime (engine/core.js)
     this.state = createState(def);
     this.refresh();
   }
@@ -44,6 +45,7 @@ export class Game {
 
   newGame() {
     this.state = createState(this.def);
+    this._lastInput = 0;
     this.hook('onNewGame');
     this.refresh();
   }
@@ -65,8 +67,15 @@ export class Game {
       s.prod[p.id] = p.slots.map((_, i) => mergeDefaults({ n: 0 }, saved[i]));
     }
     this.state = s;
+    this._lastInput = s.time.played;
     this.hook('onLoad');
     this.refresh();
+  }
+
+  /** Game event: goes into the playtest log, then out to the runtime's bus. */
+  emit(type, payload) {
+    this.plogEvent(type, payload);
+    this.out(type, payload);
   }
 
   hook(name, ...args) {
@@ -383,6 +392,6 @@ export function prestigeAuto({ id, layer, name, desc, unlock, interval, group, o
   };
 }
 
-Object.assign(Game.prototype, generatorMethods, upgradeMethods, challengeMethods, producerMethods, spellMethods, tapMethods, storyMethods);
+Object.assign(Game.prototype, generatorMethods, upgradeMethods, challengeMethods, producerMethods, spellMethods, tapMethods, storyMethods, playlogMethods);
 
 export { Decimal };

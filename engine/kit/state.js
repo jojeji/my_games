@@ -1,5 +1,6 @@
 // Default state factory for the generic game kit.
 import { D, ZERO } from '../decimal.js';
+import { createPlog } from './playlog.js';
 
 /**
  * Build a fresh state from a game definition.
@@ -58,6 +59,7 @@ export function createState(def, now = Date.now()) {
     auto,
     challenge: { active: null, done: {}, entered: {}, t0: 0 },
     stats: {},
+    plog: createPlog(),
     settings: {
       notation: 'standard',
       autosave: 10,

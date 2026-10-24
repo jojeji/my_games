@@ -53,7 +53,9 @@ export function createRuntime(logic, opts = {}) {
     now,
   });
   const bus = createBus();
-  logic.emit = (type, payload) => bus.emit(type, payload);
+  const toBus = (type, payload) => bus.emit(type, payload);
+  if ('out' in logic) logic.out = toBus; // kit Game: emit() logs first, then forwards
+  else logic.emit = toBus;
   const offlineMinShow = opts.offlineMinShow ?? 60;
   const maxLiveDelta = opts.maxLiveDelta ?? 3; // gaps longer than this are treated as "away"
 
@@ -68,6 +70,7 @@ export function createRuntime(logic, opts = {}) {
     const used = Math.min(seconds, capSec);
     const before = logic.snapshot();
     const events = [];
+    if (logic.plogOffline) logic.plogOffline(used);
     bus.muted = events;
     try {
       advance(logic, used);
@@ -133,6 +136,7 @@ export function createRuntime(logic, opts = {}) {
         else frame(); // catch up immediately when returning
       });
       addEventListener('pagehide', save);
+      if (logic.plogInput) addEventListener('pointerdown', () => logic.plogInput(), { capture: true, passive: true });
     }
   }
 
