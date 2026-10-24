@@ -1,7 +1,5 @@
 // Merlin: the "Epochen" tab - era card with goal + jump button, Anachronismen (planting ideas), Splitter-Laden, Zyklus.
 import { h, txt, setHidden, setDisabled, setCls } from '../../engine/ui/dom.js';
-import { holdRepeat } from '../../engine/ui/hold.js';
-import { openModal } from '../../engine/ui/modal.js';
 import { upgradeList, milestoneList, section, sectionTitle, progressBar, autoConfigRow } from '../../engine/ui/kit-views.js';
 import { formatNumber as fmt } from '../../engine/format.js';
 import { ERAS, IDEAS } from './eras.js';
@@ -9,7 +7,7 @@ import { jumpThreshold, ideasOwned } from './def.js';
 
 const FINAL = ERAS.length - 1;
 
-function ideaCard(g, idea, askPrestige) {
+function ideaCard(g, idea) {
   const u = g.upgById[idea.id];
   const curName = g.currencyById[u.currency].name;
   const other = idea.excl ? IDEAS.find((i) => i.id === idea.excl) : null;
@@ -64,8 +62,8 @@ export function buildEraTab(ctx) {
   const perk = h('p', { class: 'era-perk muted small' });
   const goalText = h('p', { class: 'p-next' });
   const bar = progressBar();
-  const jumpBtn = h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => askPrestige('jump') });
-  const cycleBtn = h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => askPrestige('cycle') });
+  const jumpBtn = h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => ctx.askPrestige('jump') });
+  const cycleBtn = h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => ctx.askPrestige('cycle') });
   const ideaHint = h('p', { class: 'upg-note' });
   const autoJump = autoConfigRow(g, 'auto_jump');
   const eraCard = h('div', { class: 'card prestige era-card' }, eyebrow, title, blurb, rule, perk, goalText, bar.el, jumpBtn, cycleBtn, ideaHint);
@@ -76,7 +74,7 @@ export function buildEraTab(ctx) {
       txt(eyebrow, `Epoche ${e + 1} von ${ERAS.length} · ${E.year}${g.state.layers.cycle.count ? ` · Zyklus ${g.state.layers.cycle.count + 1}` : ''}`);
       txt(title, E.name);
       txt(blurb, E.blurb);
-      txt(rule, 'Besonderheit: ' + E.ruleText);
+      txt(rule, '✦ ' + E.ruleText);
       txt(perk, e < FINAL ? `Erbe beim Verlassen: Produktion ×1,5${E.perkText ? ' · ' + E.perkText : ''}` : 'Hier endet die Reise – und beginnt sie.');
       const thr = jumpThreshold(g);
       const have = g.state.cur.mem.run;
@@ -107,7 +105,7 @@ export function buildEraTab(ctx) {
   /* ---- ideas ---- */
   const ideaBox = h('div', { class: 'stack' });
   const ideaTitle = sectionTitle('Anachronismen', 'Ideen, die zu früh kommen');
-  const ideaCards = IDEAS.map((i) => ({ i, c: ideaCard(g, i, null) }));
+  const ideaCards = IDEAS.map((i) => ({ i, c: ideaCard(g, i) }));
   ideaBox.append(h('p', { class: 'muted small', text: 'Pflanze Ideen in den Menschen dieser Epoche. Sie bleiben dauerhaft (in diesem Zyklus). Zwei Ideen schließen sich je gegenseitig aus – beide Wege sind gut.' }));
   for (const { c } of ideaCards) ideaBox.append(c.el);
   stack.append(ideaTitle, ideaBox);
@@ -115,8 +113,8 @@ export function buildEraTab(ctx) {
     update() {
       const e = g.state.mer.era;
       for (const { i, c } of ideaCards) {
-        // current era always; earlier eras only when something was planted there
-        const show = i.era === e || (i.era < e && g.upgLevel(i.id) > 0);
+        // only the current era (earlier choices are listed under "Die Reise bisher")
+        const show = i.era === e;
         setHidden(c.el, !show);
         if (show) c.update();
       }

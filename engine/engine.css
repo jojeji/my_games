@@ -285,7 +285,80 @@ details.section > summary .badge { margin-left: auto; margin-right: 8px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+@media (max-width: 380px) { .spell-name { font-size: 9.5px; letter-spacing: -0.03em; } }
 @media (max-width: 360px) {
   .hdr-val { font-size: 24px; }
   .gen { grid-template-columns: minmax(0, 1fr) 104px; }
 }
+
+/* ---------- generic components used by several games: tap target, spells, producers, story, avatar ---------- */
+.tap { display: grid; grid-template-columns: auto 1fr; grid-template-areas: 'btn info' 'btn pips'; gap: 4px 14px; align-items: center; position: relative; padding: 10px 14px; overflow: hidden; }
+.tap-btn {
+  grid-area: btn; position: relative; width: 132px; min-height: 150px; padding: 0; background: transparent; border: 0; cursor: pointer; color: inherit;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  --fill: 1;
+}
+.tap-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 16px; }
+.tap-art { display: block; width: 92px; height: 124px; transition: filter 0.2s; }
+.tap-art svg { width: 100%; height: 100%; overflow: visible; }
+.tap-btn.ready .tap-art { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 55%, transparent)); }
+.tap-btn.empty { animation: tap-shake 0.18s; }
+.tap-label { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--accent); text-transform: uppercase; }
+.tap-gain { font-size: 12px; color: var(--muted); }
+.tap-btn.flip .tap-art { animation: tap-flip 0.5s ease-in-out; }
+.tap-btn.pulse .tap-art { animation: tap-pulse 0.25s ease-out; }
+.tap-btn.flip.pulse .tap-art { animation: tap-flip 0.5s ease-in-out; }
+.tap-status { grid-area: info; align-self: end; line-height: 1.3; }
+.tap-pips { grid-area: pips; align-self: start; display: flex; flex-wrap: wrap; gap: 5px; }
+.tap-pips i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; transition: background 0.15s, border-color 0.15s; }
+.tap-pips i.on { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
+.tap-float { position: absolute; z-index: 5; pointer-events: none; font-weight: 800; font-size: 17px; color: var(--accent); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); transform: translate(-50%, -50%); animation: tap-float 0.9s ease-out forwards; white-space: nowrap; }
+@keyframes tap-float { 0% { opacity: 0; margin-top: 0; } 15% { opacity: 1; } 100% { opacity: 0; margin-top: -64px; } }
+@keyframes tap-flip { 0% { transform: rotate(0); } 100% { transform: rotate(180deg); } }
+@keyframes tap-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@keyframes tap-shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+.spell-bar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.spell-btn {
+  position: relative; overflow: hidden; min-height: 64px; padding: 6px 4px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; cursor: pointer; user-select: none; -webkit-user-select: none;
+}
+.spell-btn .icon { width: 22px; height: 22px; position: relative; }
+.spell-name { position: relative; font-size: 10.5px; font-weight: 700; line-height: 1.1; text-align: center; letter-spacing: -0.02em; max-width: 100%; }
+.spell-btn small { position: relative; font-size: 10px; color: var(--muted); }
+.spell-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; transform-origin: bottom; background: color-mix(in srgb, var(--accent2) 28%, transparent); transform: scaleY(0); transition: transform 0.2s linear; }
+.spell-btn.ready { border-color: color-mix(in srgb, var(--accent) 70%, var(--border)); }
+.spell-btn.ready .spell-fill { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.spell-btn.active { border-color: var(--accent2); box-shadow: 0 0 12px color-mix(in srgb, var(--accent2) 45%, transparent); }
+.spell-btn.active .spell-fill { background: color-mix(in srgb, var(--accent2) 40%, transparent); }
+.spell-btn:disabled { opacity: 0.85; cursor: default; }
+.spell-btn:active:not(:disabled) { transform: scale(0.96); }
+.spell-card .bar { height: 5px; margin: 4px 0; }
+.spell-title { display: inline-flex; align-items: center; gap: 8px; }
+.spell-card .spell-fill { display: none; }
+.spell-card .btn-row .btn { flex: 1 1 100px; }
+
+.gen-syn { font-size: 12px; color: var(--accent2); line-height: 1.25; margin-top: 1px; }
+.gen.lit { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+
+.avatar { display: inline-flex; flex: none; border-radius: 50%; overflow: hidden; background: #151d36; box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); align-items: center; justify-content: center; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-initial { font-size: 1.1em; color: var(--accent); }
+.story-line { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; }
+.story-line .avatar { margin-top: 3px; box-shadow: 0 0 0 1.5px var(--accent); }
+.story-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.story-who { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.story-text p { font-size: 15px; line-height: 1.45; }
+.story-line.fresh { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.chronik-head { display: flex; justify-content: space-between; align-items: baseline; }
+.story-modal { display: flex; flex-direction: column; gap: 10px; }
+.story-page { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.story-page .avatar { box-shadow: 0 0 0 3px var(--accent), 0 0 24px color-mix(in srgb, var(--accent) 35%, transparent); }
+.story-name { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.story-body { font-size: 17px; line-height: 1.5; text-align: left; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tap-float { animation: tap-float-rm 0.9s linear forwards; }
+  .tap-btn.flip .tap-art, .tap-btn.pulse .tap-art, .tap-btn.empty { animation: none; }
+}
+@keyframes tap-float-rm { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }

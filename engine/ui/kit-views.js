@@ -243,7 +243,7 @@ export function autoConfigRow(g, autoId) {
   const st = () => g.state.auto[autoId];
   const toggle = h('input', { type: 'checkbox', class: 'switch-input' });
   toggle.addEventListener('change', () => (st().on = toggle.checked));
-  const modeLabels = { amount: 'Gewinn ≥ Zahl', mult: 'Gewinn ≥ Faktor × bisherige Summe', time: 'Laufzeit ≥ Sekunden' };
+  const modeLabels = { amount: 'Gewinn ≥ Zahl', mult: 'Gewinn ≥ Faktor × bisherige Summe', time: 'Laufzeit (s)' };
   const mode = h('select', { class: 'select', 'aria-label': 'Modus' }, ...(a.modes || ['amount', 'mult']).map((m) => h('option', { value: m, text: modeLabels[m] })));
   mode.addEventListener('change', () => (st().mode = mode.value));
   const input = h('input', { class: 'input', type: 'text', inputMode: 'decimal', 'aria-label': 'Schwellwert', autocomplete: 'off' });

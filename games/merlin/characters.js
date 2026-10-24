@@ -8,8 +8,8 @@ export const CAST = {
     // age stage per era (0 = Ende der Zeit ... 7 = Anbeginn): he gets younger monotonically
     stages: [stage(75), stage(75), stage(55), stage(55), stage(40), stage(40), stage(25), stage(25)],
   },
-  chronist: { id: 'chronist', name: 'Jonas', role: 'der Chronist', img: 'img/chronist.webp', sm: 'img/chronist-sm.webp' },
-  waechter: { id: 'waechter', name: 'Leo', role: 'der Zeitwächter', img: 'img/waechter.webp', sm: 'img/waechter-sm.webp' },
+  chronist: { id: 'chronist', name: 'Joey', role: 'der Chronist', img: 'img/chronist.webp', sm: 'img/chronist-sm.webp' },
+  waechter: { id: 'waechter', name: 'Rick', role: 'der Zeitwächter', img: 'img/waechter.webp', sm: 'img/waechter-sm.webp' },
 };
 export const J = CAST.chronist.name;
 export const L = CAST.waechter.name;

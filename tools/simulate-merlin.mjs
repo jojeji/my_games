@@ -94,7 +94,7 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
     g.prodBuyAll('quellen');
     // layers
     if (g.canPrestige('cycle')) {
-      if (g.state.layers.cycle.count + 1 <= cycles) g.prestige('cycle');
+      if (S.autoCycle !== false && g.state.layers.cycle.count + 1 <= cycles) g.prestige('cycle');
     } else {
       const here = IDEAS.filter((i) => i.era === g.state.mer.era && i.excl);
       const planted = here.some((i) => g.upgLevel(i.id) > 0);

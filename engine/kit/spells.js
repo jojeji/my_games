@@ -51,7 +51,7 @@ export const spellMethods = {
     return dt > 0 ? Math.min(t, dt) / dt : 1;
   },
 
-  spellCast(id) {
+  spellCast(id, auto = false) {
     if (!this.spellReady(id)) return false;
     const def = this.spellById[id];
     const st = this.state.spells[id];
@@ -60,7 +60,7 @@ export const spellMethods = {
     st.n += 1;
     if (def.cast) def.cast(this);
     this.refresh();
-    this.emit('spell', { id });
+    this.emit('spell', { id, auto });
     return true;
   },
 
@@ -68,7 +68,7 @@ export const spellMethods = {
   spellAutoRun() {
     let n = 0;
     for (const sp of this.def.spells) {
-      if (this.state.spells[sp.id].auto && this.spellCast(sp.id)) n++;
+      if (this.state.spells[sp.id].auto && this.spellCast(sp.id, true)) n++;
     }
     return n;
   },

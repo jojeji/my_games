@@ -23,7 +23,7 @@ test('every registered game has manifest, icons and entry page', () => {
 });
 
 test('no root-absolute paths in html/css/js sources', () => {
-  const files = ['index.html', 'hub.js', 'hub.css', 'games/replikator/index.html', 'games/replikator/main.js', 'games/replikator/style.css', 'games/replikator/manifest.webmanifest'];
+  const files = ['index.html', 'hub.js', 'hub.css', 'games/replikator/index.html', 'games/replikator/main.js', 'games/replikator/style.css', 'games/replikator/manifest.webmanifest', 'games/merlin/index.html', 'games/merlin/main.js', 'games/merlin/style.css', 'games/merlin/manifest.webmanifest'];
   for (const f of files) {
     const t = readFileSync(join(ROOT, f), 'utf8');
     assert.ok(!/(?:href|src|start_url|scope)=?"?\s*:?\s*"\//.test(t), f);

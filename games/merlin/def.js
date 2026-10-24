@@ -1,6 +1,7 @@
 // Merlin - Rückwärts durch die Zeit: game definition (data + hooks). Pure and DOM-free (runs in Node for tests/sim).
 import { D, Decimal, ONE } from '../../engine/decimal.js';
 import { prestigeAuto } from '../../engine/kit/game.js';
+import { formatNumber } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import { ERAS, IDEAS } from './eras.js';
 import { STORY, ideaStories, CHAPTERS } from './story.js';
@@ -202,7 +203,7 @@ const milestones = [
   rm(4, 'Sanduhr-Automat', 'Die Sanduhr wird automatisch gewendet (auch offline).'),
   rm(6, 'Sandsturm', 'Zauber freigeschaltet.'),
   rm(8, 'Zauberlehrling', 'Zauber können automatisch gewirkt werden.'),
-  rm(10, 'Prophezeiung', 'Zauber freigeschaltet (sonst ab der Gegenwart).'),
+  rm(10, 'Weissagung', 'Zauber freigeschaltet (sonst ab der Gegenwart).'),
   rm(12, 'Gedächtnishelfer', 'Erinnerungen-Upgrades werden automatisch gekauft.'),
   rm(15, 'Kreislauf', 'Verjüngung kann automatisch ausgelöst werden.'),
   { id: 'j2', layer: 'jump', at: 2, name: '2 Epochensprünge', desc: 'Sanduhr: +1 Ladung.' },
@@ -214,6 +215,7 @@ const milestones = [
 const S = T.spells;
 const spells = [
   {
+    lockText: '300 Zeitsand gesammelt',
     id: 'zeit', name: 'Zeitraffer', icon: 'zeit', desc: 'Die Zeit läuft schneller: alle Quellen produzieren mehr.',
     unlock: (g) => g.state.cur.sand.total.gte(300),
     duration: (g) => S.zeit.dur * durMult(g),
@@ -221,6 +223,7 @@ const spells = [
     info: (g) => `Produktion ×${zeitMult(g)}`,
   },
   {
+    lockText: '1. Verjüngung',
     id: 'rueck', name: 'Rückblick', icon: 'rueck', desc: 'Du holst dir sofort einen Teil der Produktion der nächsten Sekunden.',
     unlock: (g) => g.hasMs('v1'),
     duration: () => 0,
@@ -229,6 +232,7 @@ const spells = [
     info: (g) => `+${rueckSecs(g)} s Produktion sofort`,
   },
   {
+    lockText: '3. Verjüngung',
     id: 'still', name: 'Stillstand', icon: 'still', autoDefault: false, desc: 'Die Zeit hält den Atem an: Quellen werden billiger.',
     unlock: (g) => g.hasMs('v3'),
     duration: (g) => S.still.dur * durMult(g),
@@ -236,6 +240,7 @@ const spells = [
     info: () => `Quellen kosten ÷${S.still.div}`,
   },
   {
+    lockText: '6. Verjüngung',
     id: 'sturm', name: 'Sandsturm', icon: 'sturm', desc: 'Die Sanduhr füllt sich sofort und zahlt mehr.',
     unlock: (g) => g.hasMs('v6'),
     duration: (g) => S.sturm.dur * durMult(g),
@@ -244,7 +249,8 @@ const spells = [
     info: () => `Sanduhr-Ertrag ×${S.sturm.tapMult}, alle Ladungen voll`,
   },
   {
-    id: 'prophe', name: 'Prophezeiung', icon: 'prophe', desc: 'Die Quellen sehen einander in die Zukunft: Synergien wirken stärker.',
+    lockText: '10. Verjüngung oder die Gegenwart erreichen',
+    id: 'prophe', name: 'Weissagung', icon: 'prophe', desc: 'Die Quellen sehen einander in die Zukunft: Synergien wirken stärker.',
     unlock: (g) => g.hasMs('v10') || era(g) >= 2,
     duration: (g) => S.prophe.dur * durMult(g),
     cooldown: (g) => S.prophe.cd * cdMult(g),
@@ -275,7 +281,7 @@ function buildAchievements() {
   add('q250', 'Sammelwut', 'Besitze 250 Stück derselben Quelle.', anyQ(250));
   add('qall', 'Vollständiger Haushalt', 'Besitze von jeder Quelle mindestens eine.', (g) => g.state.prod.quellen.every((p) => p.n >= 1));
   for (const [e, name] of [[3, 'Kleine Stunde'], [6, 'Sandburg'], [9, 'Sandstrand'], [12, 'Wüste'], [18, 'Dünenmeer'], [30, 'Sandsturm im All']]) {
-    add('s' + e, name, `Besitze 1e${e} Zeitsand auf einmal.`, (g) => g.state.cur.sand.best.gte(Decimal.pow(10, e)));
+    add('s' + e, name, `Besitze ${formatNumber(Decimal.pow(10, e))} Zeitsand auf einmal.`, (g) => g.state.cur.sand.best.gte(Decimal.pow(10, e)));
   }
   for (const [n, name] of [[1, 'Jünger!'], [10, 'Jungbrunnen'], [50, 'Ewig frisch']]) {
     add('r' + n, name, `Verjünge dich ${n}×.`, (g) => g.state.layers.rejuv.count >= n);
