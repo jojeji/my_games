@@ -363,3 +363,4 @@ details.section > summary .badge { margin-left: auto; margin-right: 8px; }
 }
 @keyframes tap-float-rm { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
 @media (max-width: 380px) { .spell-name { font-size: 9.5px; letter-spacing: -0.03em; } .spell-btn small { font-size: 9px; } }
+@media (max-width: 420px) { .section-title small { display: block; margin: 2px 0 0; } }
