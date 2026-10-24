@@ -83,7 +83,8 @@ export function tapView(g, { art, title = 'Antippen', hint, floatText = (gain) =
         pips.replaceChildren();
       }
       const next = g.tapNextIn();
-      txt(status, `Ladungen ${g.tapCharges()}/${max}` + (next > 0 ? ` · nächste in ${formatDuration(next)}` : ' · voll') + (hint ? ' · ' + hint(g) : ''));
+      const nb = (t) => t.replace(/ /g, '\u00a0');
+      txt(status, `Ladungen ${g.tapCharges()}/${max}\n` + (next > 0 ? nb(`nächste in ${formatDuration(next)}`) : 'voll') + (hint ? '\n' + nb(hint(g)) : ''));
       txt(gainText, '+' + fmt(g.tapGain()));
       setDisabled(btn, false);
     },

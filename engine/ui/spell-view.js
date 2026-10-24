@@ -42,7 +42,7 @@ export function spellBar(g, { icons = {} } = {}) {
         if (!un) continue;
         any = true;
         const s = statusOf(g, sp.id);
-        txt(stat, s.text);
+        txt(stat, s.text.replace(/ /g, '\u00a0'));
         setStyle(fill, 'transform', `scaleY(${Math.max(0, Math.min(1, s.ratio)).toFixed(3)})`);
         setCls(btn, 'active', s.kind === 'active');
         setCls(btn, 'ready', s.kind === 'ready');
