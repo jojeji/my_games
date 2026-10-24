@@ -24,10 +24,10 @@ const hms = (s) => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 };
 
-export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cycles = 1, quiet = true, verbose = false, strategy = {} } = {}) {
+export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cycles = 1, quiet = true, verbose = false, strategy = {}, game = null, t0 = 0, until = null } = {}) {
   const S = { ...STRATEGY, ...strategy };
-  const g = createMerlin();
-  let t = 0;
+  const g = game || createMerlin();
+  let t = t0;
   const events = []; // meaningful decisions for gap analysis
   const out = { eras: [], finished: [], rejuvFirst: null, cycleStart: [0], log: [] };
   const note = (m) => {
@@ -103,7 +103,7 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
   };
 
   let sinceAct = 0;
-  const maxT = hours * 3600;
+  const maxT = t0 + hours * 3600;
   while (t < maxT) {
     g.tick(dt);
     t += dt;
@@ -114,6 +114,7 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
       sinceAct = 0;
       player();
     }
+    if (until && until(g, t)) break;
     if (out.finished.length >= cycles && g.state.layers.cycle.count >= cycles) break;
   }
   out.t = t;
