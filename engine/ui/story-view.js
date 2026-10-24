@@ -2,11 +2,13 @@
 // The game supplies `speaker(who)` -> { name, avatar(size) }, so portraits stay game-specific and swappable.
 import { h, txt, setHidden } from './dom.js';
 import { openModal } from './modal.js';
+import { isDiaryLine } from '../kit/story-bubbles.js';
 
 /**
- * Chronik: chapters (def.chapters) as collapsible sections, newest chapter first; entries chronological inside.
+ * Chronik as a chat log: chapters (def.chapters) are collapsible sections, newest chapter first; inside a chapter the
+ * entries are conversations in chronological order (newest at the bottom, like a messenger). Per speaker a side and a colour.
  * @param {object} g
- * @param {{speaker:(who:string)=>{name:string, avatar:(size:number, entry?:object)=>Node}, tabActive?:()=>boolean}} opts
+ * @param {{speaker:(who:string)=>{name:string, avatar:(size:number, entry?:object, idx?:number)=>Node, color?:string, side?:'left'|'right'}, onReplay?:(entry:object)=>void}} opts
  */
 export function chronicleView(g, { speaker, onReplay }) {
   const root = h('div', { class: 'stack chronik' });
@@ -30,30 +32,42 @@ export function chronicleView(g, { speaker, onReplay }) {
     order.sort((a, b) => byChapter.get(b.id).at(-1).t - byChapter.get(a.id).at(-1).t);
     const nodes = order.map((c, idx) => {
       const entries = byChapter.get(c.id);
+      const newCount = entries.filter((e) => fresh.has(e.def.id)).length;
       const d = h('details', { class: 'section chapter', open: open.has(c.id) ? open.get(c.id) : idx === 0 });
       d.addEventListener('toggle', () => open.set(c.id, d.open));
-      d.append(h('summary', {}, h('span', { text: c.title }), h('small', { class: 'badge', text: String(entries.length) })));
-      const ul = h('div', { class: 'stack' });
+      d.append(h('summary', {}, h('span', { text: c.title }), newCount ? h('small', { class: 'badge badge-new', text: `${newCount} neu` }) : null, h('small', { class: 'badge', text: String(entries.length) })));
+      const chat = h('div', { class: 'chat' });
       for (const { def } of entries) {
-        for (const line of def.lines) {
-          const who = speaker(line.who || 'merlin');
-          ul.append(h('div', { class: 'story-line card' + (fresh.has(def.id) ? ' fresh' : '') + ' who-' + (line.who || 'merlin') },
-            who.avatar(40, def, def.lines.indexOf(line)),
-            h('div', { class: 'story-text' }, h('small', { class: 'story-who', text: who.name }), h('p', { text: typeof line.t === 'function' ? line.t(g) : line.t })),
+        const conv = h('div', { class: 'chat-entry' + (fresh.has(def.id) ? ' fresh' : ''), 'data-entry': def.id });
+        let prev = null;
+        def.lines.forEach((line, idx) => {
+          const key = line.who || 'merlin';
+          const sp = speaker(key);
+          const side = sp.side === 'right' ? 'right' : 'left';
+          const body = typeof line.t === 'function' ? line.t(g) : line.t;
+          const cont = prev === key;
+          prev = key;
+          conv.append(h('div', { class: `msg side-${side} who-${key}` + (cont ? ' cont' : ''), style: sp.color ? { '--c': sp.color } : null },
+            cont ? h('span', { class: 'msg-gap' }) : sp.avatar(34, def, idx),
+            h('div', { class: 'msg-bubble' + (isDiaryLine(def, line, body) ? ' diary' : '') },
+              cont ? null : h('small', { class: 'msg-who', text: sp.name }),
+              h('p', { text: body }),
+            ),
           ));
-        }
+        });
+        chat.append(conv);
       }
       for (const { def } of entries) {
-        if (def.replay && onReplay) ul.append(h('button', { class: 'btn btn-block', type: 'button', text: 'Szene erneut ansehen', onClick: () => onReplay(def) }));
+        if (def.replay && onReplay) chat.append(h('button', { class: 'btn btn-block', type: 'button', text: 'Szene erneut ansehen', onClick: () => onReplay(def) }));
       }
-      d.append(ul);
+      d.append(chat);
       return d;
     });
     body.replaceChildren(...nodes);
     if (!nodes.length) body.append(h('p', { class: 'muted center', text: 'Noch nichts erlebt.' }));
   };
 
-  return {
+  const view = {
     el: root,
     /** call while the tab is visible: marks entries as read */
     update() {
@@ -69,7 +83,22 @@ export function chronicleView(g, { speaker, onReplay }) {
       txt(head.lastChild, `${list.length} Einträge`);
       setHidden(head, false);
     },
+    /** open the chapter of an entry, scroll it into view and flash it (call after the tab is shown) */
+    reveal(id) {
+      view.update();
+      const el = id && body.querySelector(`[data-entry="${CSS.escape(id)}"]`);
+      if (!el) return;
+      const d = el.closest('details');
+      if (d) d.open = true;
+      requestAnimationFrame(() => {
+        const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 2200);
+      });
+    },
   };
+  return view;
 }
 
 /**

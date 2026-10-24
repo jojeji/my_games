@@ -137,6 +137,16 @@ export function buildSettingsPanel(ctx) {
     ),
   );
 
+  if (g.def.chronicle) {
+    el.append(
+      toggleRow('Story-Blasen anzeigen', () => s().storyBubbles !== false, (v) => {
+        s().storyBubbles = v;
+        if (!v && ctx.storyBubbles) ctx.storyBubbles.clear();
+      }, 'Neue Chronik-Einträge erscheinen als Chat-Blasen über der Leiste.'),
+      selectRow('Tempo der Story-Blasen', [['normal', 'Normal'], ['fast', 'Schnell']], () => s().storyTempo || 'normal', (v) => (s().storyTempo = v), 'Wie schnell die Zeilen erscheinen und wieder verschwinden.'),
+    );
+  }
+
   const confirms = h('div', { class: 'stack' }, h('h3', { class: 'section-title', text: 'Sicherheitsabfragen' }));
   for (const l of g.def.layers || []) {
     confirms.append(toggleRow(`${l.name}: vorher fragen`, () => s().confirm[l.id], (v) => (s().confirm[l.id] = v)));

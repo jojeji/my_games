@@ -38,4 +38,16 @@ export const storyMethods = {
   storyModalShown(id) {
     if (this.state.chronicle) this.state.chronicle.shown[id] = true;
   },
+
+  /** Non-modal entries that happened but were never announced as a bubble and are still unread (chronological). */
+  storyBubbleBacklog() {
+    const c = this.state.chronicle;
+    if (!c) return [];
+    return this.storyList().filter(({ def }) => !def.modal && !c.shown[def.id] && !c.read[def.id]).map((x) => x.def);
+  },
+
+  /** Marks an entry as announced (bubble started). Shares `chronicle.shown` with the modal entries. */
+  storyBubbleShown(id) {
+    if (this.state.chronicle) this.state.chronicle.shown[id] = true;
+  },
 };

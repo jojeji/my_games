@@ -13,6 +13,7 @@ import { tapView } from '../../engine/ui/tap-view.js';
 import { spellBar, spellCards } from '../../engine/ui/spell-view.js';
 import { producerList } from '../../engine/ui/producer-view.js';
 import { chronicleView, createStoryController } from '../../engine/ui/story-view.js';
+import { createStoryBubbles } from '../../engine/ui/story-bubbles.js';
 import { avatar } from '../../engine/ui/avatar.js';
 import { formatNumber as fmt, formatPercent, setNotation } from '../../engine/format.js';
 import { hourglassSvg, SPELL_ICONS } from './art.js';
@@ -48,6 +49,8 @@ export function mountMerlin({ root, runtime, offline }) {
   const era = () => g.state.mer.era;
   const speaker = (who) => ({
     name: (CAST[who] || CAST.merlin).name,
+    color: (CAST[who] || CAST.merlin).color,
+    side: (CAST[who] || CAST.merlin).side,
     avatar: (size, entry, idx = 0) => {
       const p = portrait(who, entry ? entryEra(entry) : era(), entry, idx);
       return avatar({ src: size > 80 ? p.img : p.sm, name: p.name, size, cls: 'avatar-' + who });
@@ -134,6 +137,7 @@ export function mountMerlin({ root, runtime, offline }) {
 
   /* ---------------- tabs ---------------- */
   const tabs = [];
+  let chronikView = null;
 
   tabs.push({
     id: 'zeit', label: 'Zeit', icon: 'hourglass',
@@ -203,6 +207,7 @@ export function mountMerlin({ root, runtime, offline }) {
     dot: () => g.storyUnread() > 0,
     build() {
       const view = chronicleView(g, { speaker, onReplay: (entry) => story.replay(entry) });
+      chronikView = view;
       return { el: view.el, update: () => view.update() };
     },
   });
@@ -244,9 +249,26 @@ export function mountMerlin({ root, runtime, offline }) {
     const idea = IDEAS.find((i) => i.id === id);
     if (idea) toast(idea.desc, { kind: 'good', title: 'Gepflanzt: ' + idea.name });
   });
-  runtime.on('story', ({ def }) => {
-    if (!def.modal) toast(lineText(g, def.lines[0]), { kind: 'story', ms: 7000, title: speaker(def.lines[0].who || 'merlin').name });
+  // story bubbles: new non-modal entries play as a chat above the tab bar (falls back to a toast when switched off)
+  const bubbles = createStoryBubbles(g, {
+    mount: root,
+    speaker,
+    lineText: (line) => lineText(g, line),
+    blocked: () => !!document.querySelector('.modal-overlay'),
+    suppress: () => { const p = document.getElementById('page-chronik'); return !!p && !p.hidden; },
+    openChronik: (id) => {
+      ctx.select('chronik');
+      if (chronikView) chronikView.reveal(id);
+    },
   });
+  ctx.storyBubbles = bubbles;
+  runtime.on('story', ({ def }) => {
+    if (def.modal) return;
+    if (!bubbles.push(def)) toast(lineText(g, def.lines[0]), { kind: 'story', ms: 7000, title: speaker(def.lines[0].who || 'merlin').name });
+  });
+  // entries that fired while the app was closed or in the background are muted by the runtime: announce them once
+  runtime.on('offline', () => setTimeout(() => { story.next(); bubbles.syncBacklog(); }, 500));
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && setTimeout(() => { story.next(); bubbles.syncBacklog(); }, 600));
   runtime.on('spell', ({ id, auto }) => !auto && toast(g.spellById[id].info ? g.spellById[id].info(g) : '', { kind: 'info', title: g.spellById[id].name, ms: 1800 }));
   runtime.on('offline', (s) => showOfflineSummary(g, s));
   if (offline && offline.seconds >= 60) showOfflineSummary(g, offline);
@@ -272,5 +294,6 @@ export function mountMerlin({ root, runtime, offline }) {
     },
   });
   setTimeout(() => story.next(), 700);
+  setTimeout(() => bubbles.syncBacklog(), 1000);
   return { app, ctx, story };
 }

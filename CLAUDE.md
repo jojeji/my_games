@@ -15,6 +15,7 @@ native ES modules, ALL paths relative (site is served from `/<repo>/`).
     (state factory) and the optional subsystems `producers.js` (parallel producers with synergies), `spells.js` (active abilities), `tap.js`
     (clicker with charges), `story.js` (Chronik helpers). A subsystem's state only exists when the def uses it (old saves/games unchanged).
   - `ui/` - DOM helpers (`dom.js`: `h`, cached setters), `hold.js` (hold-to-repeat, long-press), `modal.js`, `toast.js`, `tabs.js`, `app.js` (shell + ~15 fps render loop),
+    `story-view.js` (Chronik as chat log + modal controller), `story-bubbles.js` (messenger-style bubbles for non-modal story entries; logic in `kit/story-bubbles.js`; settings `storyBubbles`/`storyTempo`, only when `def.chronicle`),
     `kit-views.js` (generator list, upgrade cards, prestige panel, challenges, research tree, achievements), `settings.js`, `stats.js`,
     `tap-view.js`, `spell-view.js` (bar + cards), `producer-view.js`, `story-view.js` (Chronik + modal controller), `avatar.js` (round portrait with image/fallback),
     `standard-app.js` (assembles a complete mobile UI from a `Game`), `engine.css` (variables; games theme via `:root` overrides)

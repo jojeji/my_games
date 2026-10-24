@@ -66,6 +66,7 @@ export function createState(def, now = Date.now()) {
       offlineCapHours: 24,
       buyMode: '1', // '1' | '10' | 'max'
       confirm,
+      ...(def.chronicle ? { storyBubbles: true, storyTempo: 'normal' } : {}), // story bubbles (engine/ui/story-bubbles.js)
       ...(def.settingsDefaults || {}),
     },
   };

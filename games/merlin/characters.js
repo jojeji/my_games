@@ -4,12 +4,14 @@ const stage = (n) => ({ img: `img/merlin-${n}.webp`, sm: `img/merlin-${n}-sm.web
 
 export const CAST = {
   merlin: {
-    id: 'merlin', name: 'Merlin', role: 'Zeitreisender',
+    id: 'merlin', name: 'Merlin', role: 'Zeitreisender', color: '#f5c542', side: 'left', // gold / amber
     // age stage per era (0 = Ende der Zeit ... 7 = Anbeginn): he gets younger monotonically
     stages: [stage(75), stage(75), stage(55), stage(55), stage(40), stage(40), stage(25), stage(25)],
   },
-  chronist: { id: 'chronist', name: 'Joey', role: 'der Chronist', img: 'img/chronist.webp', sm: 'img/chronist-sm.webp' },
-  waechter: { id: 'waechter', name: 'Rick', role: 'der Zeitwächter', img: 'img/waechter.webp', sm: 'img/waechter-sm.webp' },
+  chronist: { id: 'chronist', name: 'Joey', role: 'der Chronist', color: '#6d9bff', side: 'right', // cool ink blue
+    img: 'img/chronist.webp', sm: 'img/chronist-sm.webp' },
+  waechter: { id: 'waechter', name: 'Rick', role: 'der Zeitwächter', color: '#d4683a', side: 'right', // warm bronze / brass
+    img: 'img/waechter.webp', sm: 'img/waechter-sm.webp' },
 };
 /** Widmung (Mehr-Tab). Hier bearbeiten. */
 export const DEDICATION = 'Für Merlin – zum 31. Geburtstag.';
