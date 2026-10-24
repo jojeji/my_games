@@ -258,7 +258,7 @@ const autos = [
   { id: 'auto_tap', name: 'Sanduhr automatisch wenden', desc: 'Wendet die Sanduhr regelmäßig – auch in deiner Abwesenheit.', kind: 'misc', group: 'tap', unlock: (g) => g.hasMs('v4'), interval: () => T.autoTapInterval, run: (g) => g.tapDo(true) },
   { id: 'auto_spells', name: 'Zauber automatisch wirken', desc: 'Wirkt bereite Zauber (pro Zauber einstellbar im Zauber-Tab).', kind: 'misc', group: 'spells', unlock: (g) => g.hasMs('v8'), interval: () => 0.5, run: (g) => g.spellAutoRun() },
   { id: 'auto_mem', name: 'Erinnerungen-Upgrades automatisch kaufen', desc: 'Kauft das jeweils günstigste Upgrade.', kind: 'upg', group: 'mem', unlock: (g) => g.hasMs('v12'), interval: () => 2, run: (g) => g.upgBuyAll('mem') },
-  prestigeAuto({ id: 'auto_rejuv', layer: 'rejuv', name: 'Automatisch verjüngen', desc: 'Verjüngt, sobald der Gewinn die Bedingung erfüllt.', unlock: (g) => g.hasMs('v15'), interval: () => 1, mode: 'mult', value: 1, minGain: 1 }),
+  prestigeAuto({ id: 'auto_rejuv', layer: 'rejuv', name: 'Automatisch verjüngen', desc: 'Verjüngt, sobald der Gewinn die Bedingung erfüllt.', unlock: (g) => g.hasMs('v15'), interval: () => 1, mode: 'time', value: 120, minGain: 1, modes: ['time', 'amount', 'mult'] }),
   prestigeAuto({ id: 'auto_jump', layer: 'jump', name: 'Automatisch zurückreisen', desc: 'Springt in die nächste Epoche, sobald der Gewinn die Bedingung erfüllt.', unlock: (g) => has(g, 's_auto'), interval: () => 1, mode: 'amount', value: 3, minGain: 1 }),
 ];
 

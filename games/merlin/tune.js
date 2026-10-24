@@ -31,7 +31,7 @@ const base = {
   eternityBoostExp: 0.9,
   cycleThreshold: 3, // Epochensplitter of the cycle
   cycleExp: 1.0,
-  cycleBase: 5,
+  cycleBase: 2,
   // ---- ideas / costs ----
   ideaFrac: 0.12, // Erinnerungen cost of an idea as a fraction of the era threshold
   memCostGrowth: 1.0, // Erinnerungen-upgrade cost growth per era
