@@ -125,7 +125,13 @@ export function createStoryBubbles(g, { mount, speaker, openChronik, lineText, b
       n.classList.toggle('gone', st[i] === 'gone');
       n.classList.toggle('old', st[i] === 'old');
     });
-    c.stack.classList.toggle('clipped', c.stack.scrollHeight > c.stack.clientHeight + 1);
+    // never show a bubble cut off by the height limit: drop the oldest ones instead
+    const limit = parseFloat(getComputedStyle(c.el).maxHeight) - c.el.firstChild.offsetHeight; // offsets, not scrollHeight: entry animations would count
+    const used = () => { const v = nodes.filter((n) => !n.classList.contains('gone')); return v.reduce((a, n) => a + n.offsetHeight, 0) + 6 * (v.length - 1); };
+    let i = nodes.findIndex((n) => !n.classList.contains('gone'));
+    while (i >= 0 && i < nodes.length - 1 && used() > limit) nodes[i++].classList.add('gone');
+    const vis = nodes.filter((n) => !n.classList.contains('gone'));
+    nodes.forEach((n) => n.classList.toggle('old', vis.length >= MAX_VISIBLE && n === vis[0]));
   }
 
   function armLinger(c) {

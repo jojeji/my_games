@@ -11,7 +11,12 @@ export function h(tag, props, ...children) {
       if (v == null || v === false) continue;
       if (k === 'class') el.className = v;
       else if (k === 'text') el.textContent = v;
-      else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+      else if (k === 'style' && typeof v === 'object') {
+        for (const [sk, sv] of Object.entries(v)) {
+          if (sk.startsWith('--')) el.style.setProperty(sk, sv); // custom properties need setProperty
+          else el.style[sk] = sv;
+        }
+      }
       else if (k.length > 2 && k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
       else if (k in el && !k.includes('-')) el[k] = v;
       else el.setAttribute(k, v === true ? '' : v);
