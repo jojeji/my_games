@@ -25,7 +25,7 @@ const base = {
   memBoostExp: 0.5, // production boost = (1 + Erinnerungen this era) ^ exp
   memBoostCap: 3000,
   shardBoostExp: 0.4,
-  eraThr: [17414, 59620, 92640, 157017, 278813, 433230, 922240, 1500000], // Erinnerungen (this era) to leave the era / speak the word (last)
+  eraThr: [4552, 22128, 30969, 43518, 84215, 131577, 292898, 500000], // Erinnerungen (this era) to leave the era / speak the word (last)
   shardBase: 2.2, // Epochensplitter at exactly the threshold
   eraReward: 1.5, // production per cleared era
   eternityBoostExp: 0.9,
