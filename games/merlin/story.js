@@ -60,7 +60,9 @@ add('e2_jonas', 'e2', frac(2, 0.15), [
 ], true);
 add('e2_mid', 'e2', frac(2, 0.5), [m('Alle haben Uhren und keine Zeit. Im hohen Norden habe ich ein Land gefunden, in dem die Pause Pflicht ist. Sie heißt „Fika“, es gibt Zimtschnecken, und niemand entschuldigt sich dafür. Endlich ein Land, das Zeit verschenkt.')]);
 add('e2_runde', 'e2', frac(2, 0.7), [
-  m('Spät am Abend, zwei Freunde vor einem Bildschirm: Autos mit Raketenantrieb jagen einen riesigen Ball. Einer heißt Rafi, der andere sieht mir verdächtig ähnlich, nur jünger. Nach jedem verlorenen Spiel sagen sie dasselbe: „Noch eine Runde.“ Seit Jahren hängen sie knapp unter „Champ“.'),
+  m('Spät am Abend, drei Freunde vor einem Bildschirm: Autos mit Raketenantrieb jagen einen riesigen Ball. Einer heißt Rafi. Einer sieht mir verdächtig ähnlich, nur jünger. Und der dritte schreibt nebenbei mit.'),
+  m(`${J}? Was machst du denn hier?`),
+  jo('Noch eine Runde. Seit Jahren knapp unter „Champ“. Ich führe darüber genau Buch.'),
   le('Champ ist auch nur eine Frage der Zeit. Leider einer sehr langen.'),
   m('Ich weiß, wie es ausgeht. Ich verrate es nicht. Das Wort „Noch“ hat selten so gut geklungen.'),
 ]);
@@ -120,7 +122,9 @@ add('e7_both', 'e7', frac(7, 0.1), [
   le(`Eine Minute vor dem Anfang – und da ist er auch schon! Sie müssen Merlin sein. Sehr erfreut. ${L}, Zeitwächter.`),
   jo(`${J}, Chronist. Ich notiere: erste Begegnung. Das wird eine kurze Seite.`),
   m('Für mich seid ihr die ältesten Freunde, die ich habe. Für euch bin ich ein Fremder mit Sanduhr.'),
-  le('Dann stellen wir uns eben so oft vor, wie Sie wollen. Das Tor hinter Ihnen führt nur in eine Richtung. Aber das kennen Sie ja.'),
+  le('Wollen wir Freunde sein? So fängt man das doch an, ganz am Anfang. Wie im Kindergarten.'),
+  jo('Ich notiere: Freunde seit dem Anfang. Den Rest der Seite lasse ich frei, da kommt noch einiges.'),
+  le('Das Tor hinter Ihnen führt übrigens nur in eine Richtung. Aber das kennen Sie ja.'),
   jo('Sprechen Sie es aus. Ich schreibe mit.'),
 ], true);
 
