@@ -31,21 +31,22 @@ add('e0_start', 'e0', () => true, [
 add('e0_sand', 'e0', (g) => g.state.cur.sand.total.gte(15), [m('Mein Zeitsand rieselt aufwärts. Es sieht falsch aus und fühlt sich richtig an.')]);
 add('e0_zeit', 'e0', (g) => g.spellUnlocked('zeit'), [m('Ein Zauber fällt mir wieder ein: der Zeitraffer. Offenbar erinnert sich meine Zukunft daran. Praktisch.')]);
 add('e0_v1', 'e0', (g) => g.state.layers.rejuv.count >= 1, [m('Verjüngt! Ein bisschen weniger Buckel und ein Gedanke mehr. Ich nenne sie Erinnerungen an morgen: Dinge, die ich weiß, weil sie noch nicht passiert sind.')]);
+add('e0_ahnung', 'e0', frac(0, 0.25), [m('Seltsam: Mit jeder Verjüngung weiß ich mehr über das, was vor mir liegt – also über alles, was ihr Vergangenheit nennt. Ich habe schon eine Ahnung von Zimtschnecken. Ich freue mich darauf.')]);
 add('e0_whisper', 'e0', frac(0, 0.5), [m('Am Rand des Hörbaren flüstert etwas. Ein einzelner Laut, ein „N“. Nichts, was nach „Genug“ klingt – eher das Gegenteil davon.')]);
 add('e0_fund', 'e0', frac(0, 0.8), [m(`Fundstück im Staub: ein Zettel in zwei Handschriften. Oben: „Bis zum nächsten Mal. – ${J[0]}.“ Darunter: „Es war uns eine Ehre. – ${L[0]}.“ Ich verstehe kein Wort. Es fühlt sich an wie ein Abschied, den jemand für mich aufgehoben hat.`)]);
 
 /* ---------------- Ferne Zukunft ---------------- */
 add('e1_arrive', 'e1', (g) => era(g) >= 1, [
-  m('Gläserne Städte schweben über dem Meer. Sanfte Maschinen kümmern sich um alles – nur nicht ums Erinnern. Hier ist noch Licht. Hinter dem Rauschen der Lüftung flüstert es: „N …“'),
+  m('Gläserne Städte schweben über dem Meer. Sanfte Maschinen kümmern sich um alles – nur nicht ums Erinnern. Hier ist noch Licht. Hinter dem Rauschen der Lüftung flüstert es: „N … o?“ Oder bilde ich mir das ein?'),
 ], true);
 add('e1_leo', 'e1', frac(1, 0.15), [
   le(`Merlin! Welch ein Auftritt – und willkommen im Jahr 9.001. Ja, über neuntausend. Wir haben lange auf den Witz gewartet.`),
   m('Wir kennen uns?'),
-  le(`Aus Ihrer Sicht noch nicht. Aus meiner schon mehrfach. ${L}, Zeitwächter. Die Tore hier quietschen übrigens nur, wenn jemand pünktlich ist.`),
+  le(`Aus Ihrer Sicht noch nicht. Aus meiner schon mehrfach. ${L}, Zeitwächter. Den Zettel am Ende der Zeit haben Sie gefunden? Das zweite Kürzel war ich.`),
   m('Dann quietscht es heute nicht.'),
   le('Es quietscht seit Ihrer Ankunft. Das ist ein Kompliment.'),
 ], true);
-add('e1_mid', 'e1', frac(1, 0.5), [m('Die Maschinen hier verwalten alles und vergessen trotzdem. Man kann Erinnerung nicht automatisieren, nur verschenken.')]);
+add('e1_mid', 'e1', frac(1, 0.5), [m('Man kann Erinnerung nicht automatisieren, nur verschenken. Ich fange bei den Maschinen an. Sie bedanken sich mit einem Update.')]);
 
 /* ---------------- Gegenwart ---------------- */
 add('e2_arrive', 'e2', (g) => era(g) >= 2, [
@@ -58,11 +59,12 @@ add('e2_jonas', 'e2', frac(2, 0.15), [
   m('Welches Buch?'),
   jo('Das, das Sie gerade lesen. Chronik-Tab, unten. Ich führe es mit Hingabe und mäßiger Handschrift.'),
 ], true);
-add('e2_mid', 'e2', frac(2, 0.5), [m('Alle haben Uhren und keine Zeit. Im hohen Norden habe ich ein Land gefunden, in dem die Pause Pflicht ist. Sie heißt „Fika“, es gibt Zimtschnecken, und niemand entschuldigt sich dafür. Endlich ein Land, das Zeit verschenkt.')]);
+add('e2_mid', 'e2', frac(2, 0.5), [m('Im hohen Norden habe ich ein Land gefunden, in dem die Pause Pflicht ist. Sie heißt „Fika“, es gibt Zimtschnecken, und niemand entschuldigt sich dafür. Endlich ein Land, das Zeit verschenkt.')]);
 add('e2_runde', 'e2', frac(2, 0.7), [
   m('Spät am Abend, drei Freunde vor einem Bildschirm: Autos mit Raketenantrieb jagen einen riesigen Ball. Einer heißt Rafi. Einer sieht mir verdächtig ähnlich, nur jünger. Und der dritte schreibt nebenbei mit.'),
   m(`${J}? Was machst du denn hier?`),
   jo('Noch eine Runde. Seit Jahren knapp unter „Champ“. Ich führe darüber genau Buch.'),
+  m(`Hinter mir räuspert sich jemand mit Fliege: ${L}, natürlich.`),
   le('Champ ist auch nur eine Frage der Zeit. Leider einer sehr langen.'),
   m('Ich weiß, wie es ausgeht. Ich verrate es nicht. Das Wort „Noch“ hat selten so gut geklungen.'),
 ]);
@@ -125,8 +127,11 @@ add('e7_both', 'e7', frac(7, 0.1), [
   le('Wollen wir Freunde sein? So fängt man das doch an, ganz am Anfang. Wie im Kindergarten.'),
   jo('Ich notiere: Freunde seit dem Anfang. Den Rest der Seite lasse ich frei, da kommt noch einiges.'),
   le('Das Tor hinter Ihnen führt übrigens nur in eine Richtung. Aber das kennen Sie ja.'),
-  jo('Sprechen Sie es aus. Ich schreibe mit.'),
+  jo('Wenn Sie so weit sind: Sprechen Sie es aus. Ich schreibe mit.'),
 ], true);
+add('e7_mid', 'e7', frac(7, 0.5), [
+  m(`${J} hat den Stift gezückt und wartet. ${L} poliert seine Taschenuhr, obwohl es noch keine Zeit gibt, die sie anzeigen könnte. Ich sammle Mut. Ein Wort ist schnell gesagt. Dieses nicht.`),
+]);
 
 /* ---------------- Finale ---------------- */
 add('finale', 'ende', (g) => g.state.mer.finished, [
@@ -158,6 +163,8 @@ add('z_intro', 'zyklus', (g) => g.state.layers.cycle.count >= 1, [
   le('Willkommen zurück! Oder bereits? Ich verwechsle die Richtung ständig.'),
   m('Dieses Mal geht es schneller. Und vielleicht pflanze ich ein paar Ideen anders.'),
 ], true);
+add('c2_0', 'zyklus', (g) => g.state.layers.cycle.count >= 1 && g.state.layers.rejuv.count >= 1, [m(`Der Zettel liegt wieder im Staub: „Bis zum nächsten Mal. – ${J[0]}.“ Diesmal verstehe ich ihn. Er war nie ein Abschied.`)]);
+add('c2_1', 'zyklus', (g) => g.state.layers.cycle.count >= 1 && era(g) >= 1, [le('Willkommen im Jahr 9.001. Über neuntausend. Beim zweiten Mal lacht man trotzdem – das ist das Geheimnis guter Witze.')]);
 add('c2_a', 'zyklus', (g) => g.state.layers.cycle.count >= 1 && era(g) >= 2, [jo('Seite eins steht schon im Buch. Ich schreibe sie trotzdem noch einmal. Aus Gewohnheit, und weil „Noch.“ so schön aussieht.')]);
 add('c2_b', 'zyklus', (g) => g.state.layers.cycle.count >= 1 && era(g) >= 5, [le('Es geht schneller, wenn man den Weg kennt. Leider kenne ich ihn nur vorwärts.')]);
 add('c2_c', 'zyklus', (g) => g.state.layers.cycle.count >= 1 && era(g) >= 7, [m('Beim zweiten Mal höre ich das Wort schon von Weitem. Es ist nicht mehr leise. Nur geduldig.')]);
