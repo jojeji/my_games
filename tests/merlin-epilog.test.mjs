@@ -57,7 +57,7 @@ test('story coherence: whisper progression, Joey meets an older Merlin, dynamic 
   assert.match(T('e2_arrive'), /„No“/);
   assert.match(T('e5_arrive'), /„Noc …“/);
   assert.match(T('e6_arrive'), /„Noch … noch/);
-  assert.match(T('e7_both'), /Sie müssen Merlin sein/);
+  assert.match(T('e7_both'), /Du musst Merlin sein/);
   assert.match(T('finale'), /Verfrühungen\. Jede war/); // nothing planted: no list
   g.state.upg.i0a = 1; g.state.upg.i3a = 1; g.state.upg.i6a = 1;
   assert.match(T('finale'), /„Sparbuch der Zeit“, „Das Fließband“ und „Das Rad“\. Jede war/);
