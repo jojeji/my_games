@@ -8,6 +8,10 @@ import { createState } from './state.js';
 import { generatorMethods } from './generators.js';
 import { upgradeMethods } from './upgrades.js';
 import { challengeMethods } from './challenges.js';
+import { producerMethods } from './producers.js';
+import { spellMethods } from './spells.js';
+import { tapMethods } from './tap.js';
+import { storyMethods } from './story.js';
 
 const byId = (arr = []) => Object.fromEntries(arr.map((x) => [x.id, x]));
 
@@ -21,13 +25,15 @@ export class Game {
     this.hooks = def.hooks || {};
     this.currencyById = byId(def.currencies);
     this.chainById = byId(def.chains);
+    this.producerById = byId(def.producers);
+    this.spellById = byId(def.spells);
     this.layerById = byId(def.layers);
     this.upgById = byId(def.upgrades);
     this.chalById = byId(def.challenges);
     this.achById = byId(def.achievements);
     this.msById = byId(def.milestones);
     this.autoById = byId(def.autos);
-    this.cache = { mult: {}, own: {}, rate: {}, maxTier: {}, global: {} };
+    this.cache = { mult: {}, own: {}, rate: {}, maxTier: {}, global: {}, prod: {} };
     this.slow = 0;
     this.emit = () => {}; // replaced by the runtime (engine/core.js)
     this.state = createState(def);
@@ -53,6 +59,10 @@ export class Game {
     for (const chain of this.def.chains || []) {
       const saved = Array.isArray(obj?.gens?.[chain.id]) ? obj.gens[chain.id] : [];
       s.gens[chain.id] = chain.tiers.map((_, i) => mergeDefaults({ bought: 0, amount: ZERO }, saved[i]));
+    }
+    for (const p of this.def.producers || []) {
+      const saved = Array.isArray(obj?.prod?.[p.id]) ? obj.prod[p.id] : [];
+      s.prod[p.id] = p.slots.map((_, i) => mergeDefaults({ n: 0 }, saved[i]));
     }
     this.state = s;
     this.hook('onLoad');
@@ -121,6 +131,7 @@ export class Game {
 
   refresh() {
     this.refreshGenerators();
+    if (this.def.producers) this.refreshProducers();
   }
 
   /** Advance the simulation by dt seconds (real delta time). */
@@ -130,8 +141,11 @@ export class Game {
     for (const l of this.def.layers || []) s.layers[l.id].runTime += dt;
     this.refresh();
     this.produce(dt);
+    if (this.def.producers) this.produceProducers(dt);
+    if (this.def.tap) this.tapTick(dt);
     this.hook('onTick', dt);
     this.runAutos(dt);
+    if (this.def.spells) this.spellsTick(dt);
     this.slow += dt;
     if (this.slow >= 0.25) {
       this.slow = 0;
@@ -202,10 +216,17 @@ export class Game {
     const b = this.prestigeBasis(id);
     const f = l.formula;
     const exp = typeof f.exp === 'function' ? f.exp(this) : f.exp;
-    if (b.lt(f.threshold)) return ZERO;
-    let raw = b.div(f.threshold).pow(exp).mul(this.prestigeMult(id));
+    const th = this.prestigeThreshold(id);
+    if (b.lt(th)) return ZERO;
+    let raw = b.div(th).pow(exp).mul(this.prestigeMult(id));
     if (f.softcap && raw.gt(f.softcap.at)) raw = D(f.softcap.at).mul(raw.div(f.softcap.at).pow(f.softcap.pow));
     return raw.lt(1) ? ZERO : raw.floor();
+  }
+
+  /** formula.threshold may be a number or a function of the game (e.g. depends on the current era). */
+  prestigeThreshold(id) {
+    const t = this.layerById[id].formula.threshold;
+    return D(typeof t === 'function' ? t(this) : t);
   }
 
   /** Basis value at which the gain would reach `gain` (inverse of the formula). */
@@ -215,7 +236,7 @@ export class Game {
     const exp = typeof f.exp === 'function' ? f.exp(this) : f.exp;
     let want = D(gain);
     if (f.softcap && want.gt(f.softcap.at)) want = D(f.softcap.at).mul(want.div(f.softcap.at).pow(1 / f.softcap.pow));
-    return D(f.threshold).mul(want.div(this.prestigeMult(id)).pow(1 / exp));
+    return this.prestigeThreshold(id).mul(want.div(this.prestigeMult(id)).pow(1 / exp));
   }
 
   /** Challenge restrictions: layers at or above the challenge's reset layer are locked. */
@@ -225,7 +246,8 @@ export class Game {
   }
 
   canPrestige(id) {
-    return this.layerUnlocked(id) && !this.prestigeBlocked(id) && this.prestigeGain(id).gte(1);
+    const l = this.layerById[id];
+    return this.layerUnlocked(id) && !this.prestigeBlocked(id) && (!l.available || !!l.available(this)) && this.prestigeGain(id).gte(1);
   }
 
   /**
@@ -243,6 +265,9 @@ export class Game {
     }
     for (const chain of this.def.chains || []) {
       if ((chain.layer ?? 0) < layerIdx) s.gens[chain.id] = chain.tiers.map(() => ({ bought: 0, amount: ZERO }));
+    }
+    for (const p of this.def.producers || []) {
+      if ((p.layer ?? 0) < layerIdx) s.prod[p.id] = p.slots.map(() => ({ n: 0 }));
     }
     for (const u of this.def.upgrades) {
       if (u.layer < layerIdx && this.upgLevel(u.id) > 0) {
@@ -343,6 +368,6 @@ export function prestigeAuto({ id, layer, name, desc, unlock, interval, group, o
   };
 }
 
-Object.assign(Game.prototype, generatorMethods, upgradeMethods, challengeMethods);
+Object.assign(Game.prototype, generatorMethods, upgradeMethods, challengeMethods, producerMethods, spellMethods, tapMethods, storyMethods);
 
 export { Decimal };

@@ -147,6 +147,6 @@ export const generatorMethods = {
     for (const chain of this.def.chains || []) {
       if (chain.currency === currencyId) return this.cache.rate[chain.id];
     }
-    return ZERO;
+    return this.prodIncome ? this.prodIncome(currencyId) : ZERO;
   },
 };

@@ -30,7 +30,22 @@ export function createState(def, now = Date.now()) {
     auto[a.id] = { on: true, t: 0, ...(d || {}) };
   }
 
+  // optional subsystems: state exists only when the def uses them (keeps older games' saves unchanged)
+  const extra = {};
+  if (def.producers) {
+    extra.prod = {};
+    for (const p of def.producers) extra.prod[p.id] = p.slots.map(() => ({ n: 0 }));
+  }
+  if (def.spells) {
+    extra.spells = {};
+    for (const sp of def.spells) extra.spells[sp.id] = { t: 0, cd: 0, n: 0, auto: sp.autoDefault ?? true };
+  }
+  if (def.tap) extra.tap = { charges: def.tap.start ?? 0, n: 0 };
+  if (def.chronicle) extra.chronicle = { read: {}, shown: {} };
+  if (def.extraState) Object.assign(extra, def.extraState(def));
+
   return {
+    ...extra,
     v: def.version,
     time: { played: 0, offline: 0, created: now },
     cur,
