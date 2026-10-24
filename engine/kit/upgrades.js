@@ -32,7 +32,8 @@ export const upgradeMethods = {
 
   /** Blocked by an owned mutually-exclusive node? */
   upgExcluded(u) {
-    return !!u.excl && u.excl.some((r) => this.upgLevel(r) > 0);
+    if (!u.excl || (this.hooks.upgradeExclusionOff && this.hooks.upgradeExclusionOff(this, u))) return false;
+    return u.excl.some((r) => this.upgLevel(r) > 0);
   },
 
   /** Should the card be shown at all? */
