@@ -11,6 +11,8 @@ export const CAST = {
   chronist: { id: 'chronist', name: 'Joey', role: 'der Chronist', img: 'img/chronist.webp', sm: 'img/chronist-sm.webp' },
   waechter: { id: 'waechter', name: 'Rick', role: 'der Zeitwächter', img: 'img/waechter.webp', sm: 'img/waechter-sm.webp' },
 };
+/** Widmung (Mehr-Tab). Hier bearbeiten. */
+export const DEDICATION = 'Für Merlin – zum 31. Geburtstag.';
 export const J = CAST.chronist.name;
 export const L = CAST.waechter.name;
 
@@ -29,7 +31,7 @@ export function portrait(who, era = 0, entry = null, lineIndex = 0) {
   if (who === 'merlin' || !CAST[who]) {
     let e = era;
     // the very last line of the ending: his hands turn old again
-    if (entry && entry.chapter === 'ende' && lineIndex >= entry.lines.length - 1) e = 0;
+    if (entry && entry.chapter === 'ende' && (entry.old || lineIndex >= entry.lines.length - 1)) e = 0;
     const s = c.stages[Math.max(0, Math.min(c.stages.length - 1, e))];
     return { name: c.name, img: s.img, sm: s.sm };
   }

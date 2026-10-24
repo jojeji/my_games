@@ -17,9 +17,9 @@ import { avatar } from '../../engine/ui/avatar.js';
 import { formatNumber as fmt, formatPercent, setNotation } from '../../engine/format.js';
 import { hourglassSvg, SPELL_ICONS } from './art.js';
 import { buildEraTab } from './era-view.js';
-import { CAST, portrait, entryEra } from './characters.js';
+import { CAST, portrait, entryEra, DEDICATION } from './characters.js';
 import { ERAS, IDEAS } from './eras.js';
-import { globalParts, jumpThreshold, zeitMult, ideasOwned } from './def.js';
+import { globalParts, jumpThreshold, zeitMult, ideasOwned, bonusAch } from './def.js';
 import { TUNE as T } from './tune.js';
 
 const FINAL = ERAS.length - 1;
@@ -202,7 +202,7 @@ export function mountMerlin({ root, runtime, offline }) {
     id: 'chronik', label: 'Chronik', icon: 'book',
     dot: () => g.storyUnread() > 0,
     build() {
-      const view = chronicleView(g, { speaker });
+      const view = chronicleView(g, { speaker, onReplay: (entry) => story.replay(entry) });
       return { el: view.el, update: () => view.update() };
     },
   });
@@ -210,7 +210,7 @@ export function mountMerlin({ root, runtime, offline }) {
   tabs.push({
     id: 'more', label: 'Mehr', icon: 'more',
     build() {
-      const grid = achievementGrid(g, { bonusText: () => `Erfolgs-Bonus: +${formatPercent(0.02 * g.achCount(), 0)} auf alle Produktion` });
+      const grid = achievementGrid(g, { bonusText: () => `Erfolgs-Bonus: +${formatPercent(0.02 * bonusAch(g), 0)} auf alle Produktion` });
       const rows = defaultStatRows(g);
       rows.splice(2, 0,
         ['Epoche', () => `${era() + 1} / ${ERAS.length} (${ERAS[era()].name})`],
@@ -221,8 +221,15 @@ export function mountMerlin({ root, runtime, offline }) {
       );
       const stats = buildStatsPanel(g, rows);
       const settings = buildSettingsPanel(ctx);
-      const el = h('div', { class: 'stack' }, sectionTitle('Erfolge'), grid.el, sectionTitle('Statistik'), stats.el, sectionTitle('Einstellungen'), settings.el);
-      return { el, update() { grid.update(); stats.update(); } };
+      // keepsake from the epilogue: golden hourglass with 31 grains (cosmetic only)
+      const goldInput = h('input', { type: 'checkbox', id: 'gold-hg' });
+      goldInput.addEventListener('change', () => { g.state.settings.goldHourglass = goldInput.checked; applyGold(); });
+      const gold = h('label', { class: 'card row setting gold-hg-row' },
+        h('span', { class: 'row-main' }, h('b', { text: 'Sanduhr mit 31 Körnern' }), h('small', { text: 'Das Geschenk vom Ende der Reise – nur zur Zierde.' })),
+        h('span', { class: 'switch' }, goldInput, h('i', { class: 'switch-track' })));
+      const dedication = h('p', { class: 'dedication', text: DEDICATION });
+      const el = h('div', { class: 'stack' }, sectionTitle('Erfolge'), grid.el, gold, sectionTitle('Statistik'), stats.el, sectionTitle('Einstellungen'), settings.el, dedication);
+      return { el, update() { grid.update(); stats.update(); setHidden(gold, !g.hasAch('x31')); if (goldInput.checked !== !!g.state.settings.goldHourglass) goldInput.checked = !!g.state.settings.goldHourglass; } };
     },
   });
 
@@ -243,6 +250,13 @@ export function mountMerlin({ root, runtime, offline }) {
   runtime.on('spell', ({ id, auto }) => !auto && toast(g.spellById[id].info ? g.spellById[id].info(g) : '', { kind: 'info', title: g.spellById[id].name, ms: 1800 }));
   runtime.on('offline', (s) => showOfflineSummary(g, s));
   if (offline && offline.seconds >= 60) showOfflineSummary(g, offline);
+
+  /* ---------------- golden hourglass keepsake ---------------- */
+  function applyGold() {
+    document.documentElement.dataset.hg = g.hasAch('x31') && g.state.settings.goldHourglass ? 'gold' : '';
+  }
+  applyGold();
+  runtime.on('saved', applyGold);
 
   /* ---------------- story modals ---------------- */
   const story = createStoryController(g, {

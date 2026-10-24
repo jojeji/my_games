@@ -21,6 +21,9 @@ const spellOn = (g, id) => g.spellActive(id);
 /* ------------------------------------------------------------------ */
 
 /** Product (mode 'mul') or sum (mode 'add') of one effect key over all planted ideas. */
+/** Achievements that count for the production bonus (the 'Einunddreißig' keepsake does not). */
+export const bonusAch = (g) => g.achCount() - (g.hasAch('x31') ? 1 : 0);
+
 export function ideaFx(g, key, mode = 'mul') {
   let v = mode === 'mul' ? 1 : 0;
   for (const i of IDEAS) {
@@ -59,7 +62,7 @@ export function globalParts(g) {
   const nc = clearedCount(g);
   if (nc) parts.push(['Epochen-Erbe', pow(T.eraReward, nc)]);
   if (s.cur.eternity.total.gt(0)) parts.push(['Ewigkeit', s.cur.eternity.total.add(1).pow(T.eternityBoostExp)]);
-  parts.push(['Erfolge', D(1 + 0.02 * g.achCount())]);
+  parts.push(['Erfolge', D(1 + 0.02 * bonusAch(g))]);
   if (has(g, 'fruehauf')) parts.push(['Frühaufsteher', D(2)]);
   if (lv(g, 'magnet')) parts.push(['Sandmagnet', pow(1.25, lv(g, 'magnet'))]);
   const ip = ideaFx(g, 'prod');
@@ -295,6 +298,7 @@ function buildAchievements() {
   for (const [n, name] of [[1, 'Zu früh gedacht'], [5, 'Ideenstifter'], [12, 'Anachronist']]) {
     add('i' + n, name, `Pflanze ${n} Anachronismen${n > 1 ? '' : ''}.`.replace('Anachronismen', n === 1 ? 'Anachronismus' : 'Anachronismen'), (g) => ideasOwned(g) >= n);
   }
+  add('x31', 'Einunddreißig', 'Einunddreißig Körner, nachgezählt.', (g) => g.state.story.epilog !== undefined); // keepsake: not counted for the bonus
   add('end', 'Das Erste Wort', 'Sprich das erste Wort.', (g) => g.state.mer.finished || g.state.layers.cycle.count >= 1);
   add('cyc1', 'Der Kreis schließt sich', 'Beginne einen zweiten Zyklus.', (g) => g.state.layers.cycle.count >= 1);
   add('t1', 'Dranbleiber', 'Spiele insgesamt 1 Stunde.', (g) => g.state.time.played >= 3600);
@@ -372,7 +376,7 @@ export const def = {
   chronicle: true,
   story: [...STORY, ...ideaStories()],
   extraState: () => ({ mer: { era: 0, eraDone: {}, finished: false } }),
-  settingsDefaults: { confirm: { rejuv: false, jump: true, cycle: true } },
+  settingsDefaults: { confirm: { rejuv: false, jump: true, cycle: true }, goldHourglass: false },
   hooks: {
     prodGlobalMult: (g) => globalParts(g).reduce((a, [, v]) => a.mul(v), ONE),
     prodLiveMult: (g, dt) => {

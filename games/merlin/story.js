@@ -118,6 +118,18 @@ add('finale', 'ende', (g) => g.state.mer.finished, [
   m('Und dann merke ich, wie meine Hände faltig werden. Natürlich. Zeit ist ein Kreis. Am Ende wartet ein alter Mann auf einen Anfang. Fertig? Nein. Noch.'),
 ], true);
 
+/* ---------------- Nachspiel ---------------- */
+S.push({
+  id: 'epilog', chapter: 'ende', modal: true, replay: true, title: 'Einunddreißig',
+  cond: (g) => g.state.story.finale !== undefined,
+  lines: [
+    le('Halt, Merlin! Wer am Anfang ankommt, hat Geburtstag – das ist Protokoll. Ich habe es gerade erfunden, es gilt trotzdem.'),
+    jo('Wer rückwärts lebt, endet bei der Geburt. Wir leben vorwärts, deshalb merken wir uns die Daten. Hier, eine Sanduhr: einunddreißig Körner. Wir haben nachgezählt.'),
+    m('Einunddreißig Körner. Ich habe Äonen gesehen, aber noch nie ein Jahr, das in die Hand passt. Danke.'),
+    jo('Jede Drehung ist ein Jahr. Dreh sie ruhig – noch einmal. Alles Gute zum 31., Merlin.'),
+  ],
+});
+
 /* ---------------- Zweiter Kreis (NG+) ---------------- */
 add('z_intro', 'zyklus', (g) => g.state.layers.cycle.count >= 1, [
   m('Wieder das Ende der Zeit, wieder still. Aber diesmal erinnere ich mich: an den Weg, an das Wort, an jeden Gedanken, den ich gepflanzt habe. Die Ewigkeit hat mir etwas mitgegeben.'),

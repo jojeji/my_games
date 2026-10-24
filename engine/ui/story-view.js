@@ -8,7 +8,7 @@ import { openModal } from './modal.js';
  * @param {object} g
  * @param {{speaker:(who:string)=>{name:string, avatar:(size:number, entry?:object)=>Node}, tabActive?:()=>boolean}} opts
  */
-export function chronicleView(g, { speaker }) {
+export function chronicleView(g, { speaker, onReplay }) {
   const root = h('div', { class: 'stack chronik' });
   const head = h('div', { class: 'card chronik-head' }, h('b', { text: 'Chronik' }), h('small', { class: 'muted' }));
   const body = h('div', { class: 'stack' });
@@ -42,6 +42,9 @@ export function chronicleView(g, { speaker }) {
             h('div', { class: 'story-text' }, h('small', { class: 'story-who', text: who.name }), h('p', { text: line.t })),
           ));
         }
+      }
+      for (const { def } of entries) {
+        if (def.replay && onReplay) ul.append(h('button', { class: 'btn btn-block', type: 'button', text: 'Szene erneut ansehen', onClick: () => onReplay(def) }));
       }
       d.append(ul);
       return d;
@@ -83,6 +86,11 @@ export function createStoryController(g, { runtime, renderPage, title }) {
     queue.push(...pending);
     const entry = queue.shift();
     if (!entry) return;
+    run(entry);
+  }
+
+  /** Show one entry as a dialog (also for replays from the Chronik). */
+  function run(entry) {
     busy = true;
     g.storyModalShown(entry.id);
     let i = 0;
@@ -108,5 +116,5 @@ export function createStoryController(g, { runtime, renderPage, title }) {
   }
 
   if (runtime) runtime.on('story', () => setTimeout(next, 600));
-  return { next };
+  return { next, replay: (entry) => { if (!busy) run(entry); } };
 }

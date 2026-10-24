@@ -30,7 +30,8 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
   const g = game || createMerlin();
   let t = t0;
   const events = []; // meaningful decisions for gap analysis
-  const out = { eras: [], finished: [], rejuvFirst: null, cycleStart: [0], log: [] };
+  const out = { eras: [], finished: [], rejuvFirst: null, cycleStart: [0], log: [], rejuv: { manual: [0], auto: [0] } };
+  let inPlayer = false;
   const note = (m) => {
     const line = `${hms(t)}  ${m}`;
     out.log.push(line);
@@ -41,6 +42,9 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
       events.push(t);
       const n = g.state.layers[p.id].count;
       if (p.id === 'rejuv') {
+        const c = g.state.layers.cycle.count;
+        const k = inPlayer ? 'manual' : 'auto';
+        out.rejuv[k][c] = (out.rejuv[k][c] || 0) + 1;
         if (out.rejuvFirst === null) {
           out.rejuvFirst = t;
           note(`ERSTE VERJÜNGUNG +${f(p.gain)}`);
@@ -83,6 +87,12 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
   };
 
   const player = () => {
+    inPlayer = true;
+    try { playerInner(); } finally { inPlayer = false; }
+  };
+  const playerInner = () => {
+    // the player switches on auto-Verjüngung (default: off, mode 'time' 120 s) as soon as it unlocks
+    if (S.useAutoRejuv !== false && g.hasMs('v5')) g.state.auto.auto_rejuv.on = true;
     // spells first (sturm only when the hourglass is empty)
     for (const sp of g.def.spells) {
       if (sp.id === 'sturm' && g.tapCharges() >= 2) continue;
@@ -152,6 +162,7 @@ export function summarize(r, label = '') {
   const jumps = r.eras.map((e) => e.t);
   const lines = [];
   lines.push(`${label} Erste Verjüngung ${r.rejuvFirst ? hms(r.rejuvFirst) : '-'} | Epochen: ${jumps.map(hms).join(' ')} | Ende: ${r.finished.map(hms).join(' / ') || 'nicht erreicht'}`);
+  lines.push(`   Verjüngungen je Zyklus: manuell ${r.rejuv.manual.map((x) => x || 0).join('/')} | auto ${r.rejuv.auto.map((x) => x || 0).join('/')}`);
   return lines.join('\n');
 }
 
