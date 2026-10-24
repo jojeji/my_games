@@ -30,10 +30,13 @@ export function portrait(who, era = 0, entry = null, lineIndex = 0) {
   const c = CAST[who] || CAST.merlin;
   if (who === 'merlin' || !CAST[who]) {
     let e = era;
-    // the very last line of the ending: his hands turn old again
-    if (entry && entry.chapter === 'ende' && (entry.old || lineIndex >= entry.lines.length - 1)) e = 0;
+    // a line can show him old again (the very last page of the ending: his hands turn old)
+    if (entry && entry.lines && entry.lines[lineIndex] && entry.lines[lineIndex].old) e = 0;
     const s = c.stages[Math.max(0, Math.min(c.stages.length - 1, e))];
     return { name: c.name, img: s.img, sm: s.sm };
   }
   return { name: c.name, img: c.img, sm: c.sm };
 }
+
+/** Line text; may be a function of the game (e.g. the finale lists the ideas the player actually planted). */
+export const lineText = (g, line) => (typeof line.t === 'function' ? line.t(g) : line.t);

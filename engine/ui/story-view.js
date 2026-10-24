@@ -38,8 +38,8 @@ export function chronicleView(g, { speaker, onReplay }) {
         for (const line of def.lines) {
           const who = speaker(line.who || 'merlin');
           ul.append(h('div', { class: 'story-line card' + (fresh.has(def.id) ? ' fresh' : '') + ' who-' + (line.who || 'merlin') },
-            who.avatar(40, def),
-            h('div', { class: 'story-text' }, h('small', { class: 'story-who', text: who.name }), h('p', { text: line.t })),
+            who.avatar(40, def, def.lines.indexOf(line)),
+            h('div', { class: 'story-text' }, h('small', { class: 'story-who', text: who.name }), h('p', { text: typeof line.t === 'function' ? line.t(g) : line.t })),
           ));
         }
       }

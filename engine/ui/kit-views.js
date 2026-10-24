@@ -494,9 +494,11 @@ export function achievementGrid(g, { bonusText } = {}) {
   const head = h('div', { class: 'card ach-head' }, h('b', { class: 'ach-count' }), h('small', { class: 'ach-bonus' }));
   const grid = h('div', { class: 'ach-grid' });
   const tiles = g.def.achievements.map((a) => {
-    const el = h('div', { class: 'ach' }, h('b', { text: a.name }), h('small', { text: a.desc }));
+    const name = h('b', { text: a.name });
+    const desc = h('small', { text: a.desc });
+    const el = h('div', { class: 'ach' }, name, desc);
     grid.append(el);
-    return { a, el };
+    return { a, el, name, desc };
   });
   const [count, bonus] = [head.children[0], head.children[1]];
   return {
@@ -504,7 +506,14 @@ export function achievementGrid(g, { bonusText } = {}) {
     update() {
       txt(count, `${g.achCount()} / ${g.def.achievements.length} Erfolge`);
       txt(bonus, bonusText ? bonusText(g) : '');
-      for (const { a, el } of tiles) setCls(el, 'done', g.hasAch(a.id));
+      for (const { a, el, name, desc } of tiles) {
+        const done = g.state.ach[a.id] !== undefined;
+        setCls(el, 'done', g.hasAch(a.id));
+        if (a.hidden) { // secret achievement: stays a riddle until earned
+          txt(name, done ? a.name : '???');
+          txt(desc, done ? a.desc : 'Geheim');
+        }
+      }
     },
   };
 }

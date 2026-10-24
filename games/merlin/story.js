@@ -12,25 +12,34 @@ const memRun = (g) => g.state.cur.mem.run;
 const frac = (k, f) => (g) => era(g) >= k && memRun(g).gte(T.eraThr[k] * f);
 
 const S = [];
+/** ": „A“, „B“ und „C“." for up to four planted ideas (era order, evenly picked); empty if none. */
+function plantedList(g) {
+  const own = IDEAS.filter((i) => g.upgLevel(i.id) > 0);
+  if (!own.length) return '.';
+  const n = Math.min(4, own.length);
+  const pick = n === own.length ? own : Array.from({ length: n }, (_, k) => own[Math.round((k * (own.length - 1)) / (n - 1))]);
+  const names = pick.map((i) => `„${i.name}“`);
+  return ': ' + (names.length > 1 ? names.slice(0, -1).join(', ') + ' und ' + names.at(-1) : names[0]) + '.';
+}
 const add = (id, chapter, cond, lines, modal = false) => S.push({ id, chapter, cond, lines, modal });
 
 /* ---------------- Ende der Zeit ---------------- */
 add('e0_start', 'e0', () => true, [
   m('Man sagt, ich lebe rückwärts. Das stimmt nicht ganz: Ich erinnere mich an Morgen und vergesse Gestern. Beim Frühstück fällt der Unterschied am meisten auf.'),
-  m('Heute ist das Ende aller Tage. Die Sterne sind verstummt, die Uhren stehen still. Irgendwo ganz am Anfang liegt das erste Wort, mit dem die Welt zu sprechen begann. Ich will es dort noch einmal sagen. Dreh die Sanduhr – ab jetzt geht es rückwärts.'),
+  m('Heute ist das Ende aller Tage. Die Sterne sind verstummt, die Uhren stehen still. Das letzte Wort der Welt war „Genug.“ – seitdem schweigt alles. Irgendwo ganz am Anfang liegt das erste Wort, mit dem die Welt zu sprechen begann. Ich will es dort noch einmal sagen. Dreh die Sanduhr – ab jetzt geht es rückwärts.'),
 ], true);
 add('e0_sand', 'e0', (g) => g.state.cur.sand.total.gte(15), [m('Mein Zeitsand rieselt aufwärts. Es sieht falsch aus und fühlt sich richtig an.')]);
 add('e0_zeit', 'e0', (g) => g.spellUnlocked('zeit'), [m('Ein Zauber fällt mir wieder ein: der Zeitraffer. Offenbar erinnert sich meine Zukunft daran. Praktisch.')]);
-add('e0_v1', 'e0', (g) => g.state.layers.rejuv.count >= 1, [m('Verjüngt! Ein Jahr weniger auf dem Buckel und ein Gedanke mehr. Ich nenne sie Erinnerungen an morgen: Dinge, die ich weiß, weil sie noch nicht passiert sind.')]);
-add('e0_whisper', 'e0', frac(0, 0.5), [m('Am Rand des Hörbaren flüstert etwas. Ein einzelner Laut, ein „N“, glaube ich. Ich verstehe ihn noch nicht.')]);
-add('e0_fund', 'e0', frac(0, 0.8), [m(`Fundstück im Staub: ein Zettel in zwei Handschriften. Oben: „Wir sehen uns! – ${J[0]}.“ Darunter: „Wir haben uns gesehen! – ${L[0]}.“ Ich verstehe kein Wort. Das fühlt sich nach Zukunft an.`)]);
+add('e0_v1', 'e0', (g) => g.state.layers.rejuv.count >= 1, [m('Verjüngt! Ein bisschen weniger Buckel und ein Gedanke mehr. Ich nenne sie Erinnerungen an morgen: Dinge, die ich weiß, weil sie noch nicht passiert sind.')]);
+add('e0_whisper', 'e0', frac(0, 0.5), [m('Am Rand des Hörbaren flüstert etwas. Ein einzelner Laut, ein „N“. Nichts, was nach „Genug“ klingt – eher das Gegenteil davon.')]);
+add('e0_fund', 'e0', frac(0, 0.8), [m(`Fundstück im Staub: ein Zettel in zwei Handschriften. Oben: „Bis zum nächsten Mal. – ${J[0]}.“ Darunter: „Es war uns eine Ehre. – ${L[0]}.“ Ich verstehe kein Wort. Es fühlt sich an wie ein Abschied, den jemand für mich aufgehoben hat.`)]);
 
 /* ---------------- Ferne Zukunft ---------------- */
 add('e1_arrive', 'e1', (g) => era(g) >= 1, [
-  m('Gläserne Städte schweben über dem Meer. Sanfte Maschinen kümmern sich um alles – nur nicht ums Erinnern. Hier ist noch Licht. Hinter dem Rauschen der Lüftung flüstert es: „N … n“.'),
+  m('Gläserne Städte schweben über dem Meer. Sanfte Maschinen kümmern sich um alles – nur nicht ums Erinnern. Hier ist noch Licht. Hinter dem Rauschen der Lüftung flüstert es: „N …“'),
 ], true);
 add('e1_leo', 'e1', frac(1, 0.15), [
-  le(`Merlin! Welch ein Auftritt – und das sage ich als Fachmann.`),
+  le(`Merlin! Welch ein Auftritt – und willkommen im Jahr 9.001. Ja, über neuntausend. Wir haben lange auf den Witz gewartet.`),
   m('Wir kennen uns?'),
   le(`Aus Ihrer Sicht noch nicht. Aus meiner schon mehrfach. ${L}, Zeitwächter. Die Tore hier quietschen übrigens nur, wenn jemand pünktlich ist.`),
   m('Dann quietscht es heute nicht.'),
@@ -40,16 +49,21 @@ add('e1_mid', 'e1', frac(1, 0.5), [m('Die Maschinen hier verwalten alles und ver
 
 /* ---------------- Gegenwart ---------------- */
 add('e2_arrive', 'e2', (g) => era(g) >= 2, [
-  m('Jahr 2026. Überall Uhren, überall Eile, nirgends Zeit. Die Menschen starren in kleine leuchtende Fenster und lächeln dabei. Ich mag sie sofort. Das Flüstern ist jetzt fast ein „No“.'),
+  m('Jahr 2026. Überall Uhren, überall Eile, nirgends Zeit. Die Menschen starren in kleine leuchtende Fenster und lächeln dabei. Ich mag sie sofort. Das Flüstern ist jetzt ein „No“.'),
 ], true);
 add('e2_jonas', 'e2', frac(2, 0.15), [
-  jo('Sie sind Merlin? Ich habe Sie schon dreimal getroffen. Jedes Mal etwas jünger.'),
-  m('Für mich ist das die erste Begegnung.'),
+  jo('Sie sind Merlin? Ich habe Sie schon ein paarmal getroffen. Jedes Mal etwas älter.'),
+  m('Älter? Bei mir geht es in die andere Richtung. Für mich ist das die erste Begegnung.'),
   jo(`Dann gleiche ich aus: Ich schreibe für Sie mit. ${J}, Chronist. Alles, was Sie mir erzählen, steht danach im Buch.`),
   m('Welches Buch?'),
-  jo('Das, das Sie gerade lesen. Chronik-Tab, unten rechts. Ich führe es mit Hingabe und mäßiger Handschrift.'),
+  jo('Das, das Sie gerade lesen. Chronik-Tab, unten. Ich führe es mit Hingabe und mäßiger Handschrift.'),
 ], true);
-add('e2_mid', 'e2', frac(2, 0.5), [m('Alle haben Uhren und keine Zeit. Ich verschenke Pausen, so gut es geht. Man nennt das hier „Achtsamkeit“ und verkauft es in Kursen.')]);
+add('e2_mid', 'e2', frac(2, 0.5), [m('Alle haben Uhren und keine Zeit. Im hohen Norden habe ich ein Land gefunden, in dem die Pause Pflicht ist. Sie heißt „Fika“, es gibt Zimtschnecken, und niemand entschuldigt sich dafür. Endlich ein Land, das Zeit verschenkt.')]);
+add('e2_runde', 'e2', frac(2, 0.7), [
+  m('Spät am Abend, zwei Freunde vor einem Bildschirm: Autos mit Raketenantrieb jagen einen riesigen Ball. Einer heißt Rafi, der andere sieht mir verdächtig ähnlich, nur jünger. Nach jedem verlorenen Spiel sagen sie dasselbe: „Noch eine Runde.“ Seit Jahren hängen sie knapp unter „Champ“.'),
+  le('Champ ist auch nur eine Frage der Zeit. Leider einer sehr langen.'),
+  m('Ich weiß, wie es ausgeht. Ich verrate es nicht. Das Wort „Noch“ hat selten so gut geklungen.'),
+]);
 
 /* ---------------- Industriezeitalter ---------------- */
 add('e3_arrive', 'e3', (g) => era(g) >= 3, [
@@ -59,8 +73,10 @@ add('e3_leo', 'e3', frac(3, 0.15), [
   le('Pünktlichkeit ist die Höflichkeit der Könige. Und der Eisenbahn. Kommen Sie, Merlin, der Zug ins Gestern fährt in einer Minute.'),
   m('Rückwärts?'),
   le('Rückwärts, mit Fliege. Das sind Sie ja gewöhnt, nur die Fliege ist neu.'),
+  m('Und wie lange fahren wir?'),
+  le('Eine Minute oder ein Jahr, je nach Waggon. Es gibt da eine Kammer, in der ein Tag ein Jahr dauert. Großartig zum Trainieren, furchtbar für den Haarschnitt.'),
 ]);
-add('e3_mid', 'e3', frac(3, 0.5), [m('Das Flüstern hat ein „o“ bekommen: „No …“. Es klingt nach einem Menschen, der etwas nicht aufgeben will.')]);
+add('e3_mid', 'e3', frac(3, 0.5), [m('Zwischen Dampf und Pfeifen ist es wieder da: „No …“, mit mehr Atem dahinter. Es klingt nach jemandem, der etwas nicht aufgeben will.')]);
 
 /* ---------------- Mittelalter ---------------- */
 add('e4_arrive', 'e4', (g) => era(g) >= 4, [
@@ -87,12 +103,12 @@ add('e5_mid', 'e5', frac(5, 0.5), [m('Die Philosophen hier fragen „Warum?“, 
 
 /* ---------------- Steinzeit ---------------- */
 add('e6_arrive', 'e6', (g) => era(g) >= 6, [
-  m('Eiszeit. Ein Feuer, ein Kreis aus Gesichtern, der erste Erzähler. Er murmelt etwas Kurzes in die Flammen, immer wieder: „Noch … noch.“ Ich ahne, was das Verstummen war.'),
+  m('Eiszeit. Ein Feuer, ein Kreis aus Gesichtern, der erste Erzähler. Er murmelt etwas Kurzes in die Flammen, immer wieder: „Noch … noch.“ Das Flüstern hat ein Wort bekommen. Was es mir sagen will, verstehe ich noch nicht.'),
 ], true);
 add('e6_jonas', 'e6', frac(6, 0.15), [
-  jo('Ich habe eine Chronik begonnen. Auf Stein. Die Auflage ist begrenzt.'),
+  jo('Neuer Band. Auf Stein. Die Auflage ist begrenzt.'),
   m('Und die Rechtschreibung?'),
-  jo('Gibt es hier noch nicht. Wunderbar. Ich habe sie sofort abgeschafft.'),
+  jo('Gibt es hier noch nicht. Wunderbar. Ich habe sie sofort abgeschafft. Erster Eintrag: „TODO: Rad erfinden.“'),
 ]);
 add('e6_mid', 'e6', frac(6, 0.5), [m('Der Erzähler erzählt von einem Wort, das alle Dinge am Leben hält. Er kennt es nicht, aber er weiß, dass es existiert. Das ist mehr, als die meisten späteren Jahrhunderte von sich sagen können.')]);
 
@@ -101,9 +117,10 @@ add('e7_arrive', 'e7', (g) => era(g) >= 7, [
   m('Vor allem. Kein Oben, kein Unten, nur ein Wartezimmer aus Dunkel. Mein Sand fließt hier in beide Richtungen. Und da ist es: das Erste Wort. Nicht gesprochen, nur bereit.'),
 ], true);
 add('e7_both', 'e7', frac(7, 0.1), [
-  le('Eine Minute vor dem Anfang. Wir sind pünktlich!'),
-  jo('Ich notiere: Nichts. Das wird eine kurze Seite.'),
-  le('Merlin, das Tor hinter Ihnen führt nur in eine Richtung. Aber das kennen Sie ja.'),
+  le(`Eine Minute vor dem Anfang – und da ist er auch schon! Sie müssen Merlin sein. Sehr erfreut. ${L}, Zeitwächter.`),
+  jo(`${J}, Chronist. Ich notiere: erste Begegnung. Das wird eine kurze Seite.`),
+  m('Für mich seid ihr die ältesten Freunde, die ich habe. Für euch bin ich ein Fremder mit Sanduhr.'),
+  le('Dann stellen wir uns eben so oft vor, wie Sie wollen. Das Tor hinter Ihnen führt nur in eine Richtung. Aber das kennen Sie ja.'),
   jo('Sprechen Sie es aus. Ich schreibe mit.'),
 ], true);
 
@@ -114,8 +131,8 @@ add('finale', 'ende', (g) => g.state.mer.finished, [
   m('„Noch.“ Mehr hat es nie gesagt. Ich spreche es aus – und der Raum antwortet mit Licht.'),
   jo('Seite eins, erste Zeile: „Noch.“ Ich glaube, das hat gerade den Rest der Geschichte ausgelöst.'),
   le('Und die Tore quietschen. Alle gleichzeitig. Was für ein Applaus.'),
-  m('Alle Ideen, die ich unterwegs gepflanzt habe, greifen ineinander: die Münze, das Lied, der Buchdruck, das Feuer. Die Welt, aus der ich kam, gibt es nur wegen dieser kleinen Verfrühungen. Ich habe nicht die Vergangenheit repariert. Ich war ihre Zukunft.'),
-  m('Und dann merke ich, wie meine Hände faltig werden. Natürlich. Zeit ist ein Kreis. Am Ende wartet ein alter Mann auf einen Anfang. Fertig? Nein. Noch.'),
+  m((g) => `Das erste Wort war „Noch“. Das letzte war „Genug“. Dazwischen liegen meine kleinen Verfrühungen${plantedList(g)} Jede war ein Grund, „noch einmal“ zu sagen.`),
+  m('Die Welt, aus der ich kam, gibt es nur wegen ihnen. Ich habe nicht die Vergangenheit repariert. Ich war ihre Zukunft.'),
 ], true);
 
 /* ---------------- Nachspiel ---------------- */
@@ -127,6 +144,7 @@ S.push({
     jo('Wer rückwärts lebt, endet bei der Geburt. Wir leben vorwärts, deshalb merken wir uns die Daten. Hier, eine Sanduhr: einunddreißig Körner. Wir haben nachgezählt.'),
     m('Einunddreißig Körner. Ich habe Äonen gesehen, aber noch nie ein Jahr, das in die Hand passt. Danke.'),
     jo('Jede Drehung ist ein Jahr. Dreh sie ruhig – noch einmal. Alles Gute zum 31., Merlin.'),
+    { ...m('Und dann merke ich, wie meine Hände faltig werden. Natürlich. Zeit ist ein Kreis. Am Ende wartet ein alter Mann auf einen Anfang. Fertig? Nein. Noch.'), old: true },
   ],
 });
 

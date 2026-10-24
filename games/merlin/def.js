@@ -22,7 +22,8 @@ const spellOn = (g, id) => g.spellActive(id);
 
 /** Product (mode 'mul') or sum (mode 'add') of one effect key over all planted ideas. */
 /** Achievements that count for the production bonus (the 'Einunddreißig' keepsake does not). */
-export const bonusAch = (g) => g.achCount() - (g.hasAch('x31') ? 1 : 0);
+export const BONUSLESS_ACH = ['x31', 'knapp']; // keepsake / joke achievements: no production bonus
+export const bonusAch = (g) => g.achCount() - BONUSLESS_ACH.filter((id) => g.state.ach[id] !== undefined).length;
 
 export function ideaFx(g, key, mode = 'mul') {
   let v = mode === 'mul' ? 1 : 0;
@@ -274,7 +275,7 @@ const autos = [
 /* ----------------------------- achievements ----------------------------- */
 function buildAchievements() {
   const A = [];
-  const add = (id, name, desc, cond) => A.push({ id, name, desc, cond });
+  const add = (id, name, desc, cond, extra = {}) => A.push({ id, name, desc, cond, ...extra });
   add('tap1', 'Erste Drehung', 'Wende die Sanduhr zum ersten Mal.', (g) => g.state.tap.n >= 1);
   add('tap100', 'Sanduhr-Fan', 'Wende die Sanduhr 100-mal.', (g) => g.state.tap.n >= 100);
   add('tap1000', 'Sandmeister', 'Wende die Sanduhr 1.000-mal.', (g) => g.state.tap.n >= 1000);
@@ -299,6 +300,7 @@ function buildAchievements() {
     add('i' + n, name, `Pflanze ${n} Anachronismen${n > 1 ? '' : ''}.`.replace('Anachronismen', n === 1 ? 'Anachronismus' : 'Anachronismen'), (g) => ideasOwned(g) >= n);
   }
   add('x31', 'Einunddreißig', 'Einunddreißig Körner, nachgezählt.', (g) => g.state.story.epilog !== undefined); // keepsake: not counted for the bonus
+  add('knapp', 'Knapp unter Champ', 'Verjünge dich 99-mal. Noch eine Runde, dann ist es rund.', (g) => g.state.layers.rejuv.count >= 99, { hidden: true });
   add('end', 'Das Erste Wort', 'Sprich das erste Wort.', (g) => g.state.mer.finished || g.state.layers.cycle.count >= 1);
   add('cyc1', 'Der Kreis schließt sich', 'Beginne einen zweiten Zyklus.', (g) => g.state.layers.cycle.count >= 1);
   add('t1', 'Dranbleiber', 'Spiele insgesamt 1 Stunde.', (g) => g.state.time.played >= 3600);

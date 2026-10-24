@@ -17,7 +17,7 @@ import { avatar } from '../../engine/ui/avatar.js';
 import { formatNumber as fmt, formatPercent, setNotation } from '../../engine/format.js';
 import { hourglassSvg, SPELL_ICONS } from './art.js';
 import { buildEraTab } from './era-view.js';
-import { CAST, portrait, entryEra, DEDICATION } from './characters.js';
+import { CAST, portrait, entryEra, DEDICATION, lineText } from './characters.js';
 import { ERAS, IDEAS } from './eras.js';
 import { globalParts, jumpThreshold, zeitMult, ideasOwned, bonusAch } from './def.js';
 import { TUNE as T } from './tune.js';
@@ -245,7 +245,7 @@ export function mountMerlin({ root, runtime, offline }) {
     if (idea) toast(idea.desc, { kind: 'good', title: 'Gepflanzt: ' + idea.name });
   });
   runtime.on('story', ({ def }) => {
-    if (!def.modal) toast(def.lines[0].t, { kind: 'story', ms: 7000, title: speaker(def.lines[0].who || 'merlin').name });
+    if (!def.modal) toast(lineText(g, def.lines[0]), { kind: 'story', ms: 7000, title: speaker(def.lines[0].who || 'merlin').name });
   });
   runtime.on('spell', ({ id, auto }) => !auto && toast(g.spellById[id].info ? g.spellById[id].info(g) : '', { kind: 'info', title: g.spellById[id].name, ms: 1800 }));
   runtime.on('offline', (s) => showOfflineSummary(g, s));
@@ -268,7 +268,7 @@ export function mountMerlin({ root, runtime, offline }) {
     },
     renderPage: (entry, line, i) => {
       const who = speaker(line.who || 'merlin');
-      return h('div', { class: 'story-page' }, who.avatar(128, entry, i), h('b', { class: 'story-name', text: who.name }), h('p', { class: 'story-body', text: line.t }));
+      return h('div', { class: 'story-page' }, who.avatar(128, entry, i), h('b', { class: 'story-name', text: who.name }), h('p', { class: 'story-body', text: lineText(g, line) }));
     },
   });
   setTimeout(() => story.next(), 700);
