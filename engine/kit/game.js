@@ -219,8 +219,16 @@ export class Game {
     const th = this.prestigeThreshold(id);
     if (b.lt(th)) return ZERO;
     let raw = b.div(th).pow(exp).mul(this.prestigeMult(id));
-    if (f.softcap && raw.gt(f.softcap.at)) raw = D(f.softcap.at).mul(raw.div(f.softcap.at).pow(f.softcap.pow));
+    const sc = this.prestigeSoftcap(id);
+    if (sc && raw.gt(sc.at)) raw = D(sc.at).mul(raw.div(sc.at).pow(sc.pow));
     return raw.lt(1) ? ZERO : raw.floor();
+  }
+
+  /** formula.softcap = { at, pow } (each may be a function of the game). */
+  prestigeSoftcap(id) {
+    const sc = this.layerById[id].formula.softcap;
+    if (!sc) return null;
+    return { at: typeof sc.at === 'function' ? sc.at(this) : sc.at, pow: typeof sc.pow === 'function' ? sc.pow(this) : sc.pow };
   }
 
   /** formula.threshold may be a number or a function of the game (e.g. depends on the current era). */
@@ -235,7 +243,8 @@ export class Game {
     const f = l.formula;
     const exp = typeof f.exp === 'function' ? f.exp(this) : f.exp;
     let want = D(gain);
-    if (f.softcap && want.gt(f.softcap.at)) want = D(f.softcap.at).mul(want.div(f.softcap.at).pow(1 / f.softcap.pow));
+    const sc = this.prestigeSoftcap(id);
+    if (sc && want.gt(sc.at)) want = D(sc.at).mul(want.div(sc.at).pow(1 / sc.pow));
     return this.prestigeThreshold(id).mul(want.div(this.prestigeMult(id)).pow(1 / exp));
   }
 

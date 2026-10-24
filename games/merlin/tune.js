@@ -16,20 +16,22 @@ const base = {
   tapCharges: 5,
   tapRegen: 4, // seconds per charge
   // ---- layers ----
-  rejuvThreshold: 4000, // Zeitsand (this run) for the first Erinnerung
+  rejuvThreshold: 300000, // Zeitsand (this run) for the first Erinnerung
   rejuvExp: 0.5,
-  ripeTau: 90, // 'Reifung': production x (1 + seconds since the last Verjuengung / ripeTau) ^ ripeExp
-  ripeExp: 1.2,
+  softAt: 25, // Erinnerungen per Verjuengung above this grow only with ^softPow (keeps the cadence of runs stable)
+  softPow: 0.3,
+  ripeTau: 120, // 'Reifung': production x (1 + seconds since the last Verjuengung / ripeTau) ^ ripeExp
+  ripeExp: 1.0,
   memBoostExp: 0.5, // production boost = (1 + Erinnerungen this era) ^ exp
   memBoostCap: 3000,
   shardBoostExp: 0.4,
-  eraThr: [300, 800, 2200, 6000, 16000, 44000, 120000, 330000], // Erinnerungen (this era) to leave the era / speak the word (last)
+  eraThr: [17414, 59620, 92640, 157017, 278813, 433230, 922240, 1500000], // Erinnerungen (this era) to leave the era / speak the word (last)
   shardBase: 2.2, // Epochensplitter at exactly the threshold
   eraReward: 1.5, // production per cleared era
   eternityBoostExp: 0.9,
   cycleThreshold: 3, // Epochensplitter of the cycle
   cycleExp: 1.0,
-  cycleBase: 1,
+  cycleBase: 5,
   // ---- ideas / costs ----
   ideaFrac: 0.12, // Erinnerungen cost of an idea as a fraction of the era threshold
   memCostGrowth: 1.0, // Erinnerungen-upgrade cost growth per era

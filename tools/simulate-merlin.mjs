@@ -13,6 +13,7 @@ export const STRATEGY = {
   rejuvFactor: 1.0, // verjuengen when gain >= factor * memories earned this era
   rejuvMinGain: 1,
   rejuvMinTime: 25,
+  rejuvEvery: 120, // after this many seconds of run time rejuvenate whenever gain >= 1 (the human rhythm)
   rejuvStall: 600,
   ideaPick: 'a', // 'a' | 'b' (first / second option of an era)
   jumpMinGain: 1,
@@ -78,7 +79,7 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
     const held = g.state.cur.mem.run;
     if (ls.runTime < S.rejuvMinTime && ls.count > 0) return false;
     if (gain.gte(held.mul(S.rejuvFactor).max(S.rejuvMinGain))) return true;
-    return ls.runTime > S.rejuvStall;
+    return ls.runTime > S.rejuvEvery;
   };
 
   const player = () => {
