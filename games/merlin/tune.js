@@ -17,7 +17,9 @@ const base = {
   tapRegen: 4, // seconds per charge
   // ---- layers ----
   rejuvThreshold: 4000, // Zeitsand (this run) for the first Erinnerung
-  rejuvExp: 0.3,
+  rejuvExp: 0.5,
+  ripeTau: 90, // 'Reifung': production x (1 + seconds since the last Verjuengung / ripeTau) ^ ripeExp
+  ripeExp: 1.2,
   memBoostExp: 0.5, // production boost = (1 + Erinnerungen this era) ^ exp
   memBoostCap: 3000,
   shardBoostExp: 0.4,

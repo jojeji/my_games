@@ -53,6 +53,8 @@ export function globalParts(g) {
   const parts = [];
   parts.push(['Erinnerungen', boost(s.cur.mem.run, T.memBoostExp + 0.05 * lv(g, 'weitblick'), T.memBoostCap)]);
   if (s.cur.shards.run.gt(0)) parts.push(['Epochensplitter', s.cur.shards.run.add(1).pow(T.shardBoostExp)]);
+  const rt = s.layers.rejuv.runTime;
+  if (rt > 0) parts.push(['Reifung (Zeit seit Verjüngung)', pow(1 + rt / T.ripeTau, T.ripeExp)]);
   const nc = clearedCount(g);
   if (nc) parts.push(['Epochen-Erbe', pow(T.eraReward, nc)]);
   if (s.cur.eternity.total.gt(0)) parts.push(['Ewigkeit', s.cur.eternity.total.add(1).pow(T.eternityBoostExp)]);
@@ -88,7 +90,7 @@ function costDiv(g) {
 
 export function startSand(g) {
   const g0 = g.cache.prod?.quellen?.global || ONE;
-  return D(T.startSand * Math.pow(6, lv(g, 'gepaeck')) * Math.pow(10, lv(g, 's_start'))).mul(g0.pow(0.5));
+  return D(T.startSand * Math.pow(4, lv(g, 'gepaeck')) * Math.pow(10, lv(g, 's_start'))).mul(g0.pow(0.3));
 }
 
 export function tapMax(g) {
@@ -130,23 +132,23 @@ const pct = (v) => Math.round(v * 100) + ' %';
 
 const memUpgrades = [
   mem({ id: 'fruehauf', name: 'Frühaufsteher', desc: 'Produktion ×2.', cost: 1, effect: (l) => (l ? 2 : 1), fmt: () => '×2' }),
-  mem({ id: 'gestern', name: 'Erinnerung an Gestern', desc: 'Die Sanduhr zahlt 0,75 s mehr Produktion pro Stufe.', max: 4, cost: memCost(2, 2), fmt: (e, l) => `+${(T.tapPerLevel * l).toFixed(2).replace('.', ',')} s` }),
-  mem({ id: 'zeitgefuehl', name: 'Zeitgefühl', desc: 'Zauber laden 12 % schneller pro Stufe.', max: 4, cost: memCost(4, 3), fmt: (e, l) => `×${Math.pow(0.88, l).toFixed(2).replace('.', ',')} Abklingzeit` }),
-  mem({ id: 'palast', name: 'Gedächtnispalast', desc: 'Die Sanduhr fasst +2 Ladungen pro Stufe.', max: 4, cost: memCost(3, 2.5), fmt: (e, l) => `+${2 * l} Ladungen` }),
-  mem({ id: 'gepaeck', name: 'Reisegepäck', desc: 'Startsand nach jeder Verjüngung ×6 pro Stufe.', max: 4, cost: memCost(4, 3), fmt: (e, l) => `×${Math.pow(6, l)}` }),
-  mem({ id: 'rabatt', name: 'Mengenrabatt', desc: 'Quellen kosten 20 % weniger pro Stufe.', max: 5, cost: memCost(6, 3), fmt: (e, l) => `÷${Math.pow(1.25, l).toFixed(2).replace('.', ',')}` }),
-  mem({ id: 'synstudium', name: 'Synergie-Studium', desc: 'Synergien wirken 40 % stärker pro Stufe.', max: 4, cost: memCost(10, 3), fmt: (e, l) => `+${pct(0.4 * l)}` }),
-  mem({ id: 'rueckwaerts', name: 'Rückwärts-Rechnen', desc: 'Erinnerungen-Gewinn ×1,2 pro Stufe.', max: 5, cost: memCost(15, 3.5), fmt: (e, l) => '×' + Math.pow(1.2, l).toFixed(2).replace('.', ',') }),
-  mem({ id: 'lange', name: 'Lange Nächte', desc: 'Zauber wirken 20 % länger pro Stufe.', max: 4, cost: memCost(8, 3), fmt: (e, l) => `+${pct(0.2 * l)}` }),
-  mem({ id: 'eulenpost', name: 'Eulenpost', desc: 'Quellen-Meilensteine kommen 20 % früher pro Stufe.', max: 2, cost: memCost(25, 4), fmt: (e, l) => `−${pct(1 - Math.pow(0.8, l))}` }),
+  mem({ id: 'gestern', name: 'Erinnerung an Gestern', desc: 'Die Sanduhr zahlt 0,75 s mehr Produktion pro Stufe.', max: 4, cost: memCost(3, 3.5), fmt: (e, l) => `+${(T.tapPerLevel * l).toFixed(2).replace('.', ',')} s` }),
+  mem({ id: 'zeitgefuehl', name: 'Zeitgefühl', desc: 'Zauber laden 12 % schneller pro Stufe.', max: 4, cost: memCost(25, 4), fmt: (e, l) => `×${Math.pow(0.88, l).toFixed(2).replace('.', ',')} Abklingzeit` }),
+  mem({ id: 'palast', name: 'Gedächtnispalast', desc: 'Die Sanduhr fasst +2 Ladungen pro Stufe.', max: 4, cost: memCost(15, 3.5), fmt: (e, l) => `+${2 * l} Ladungen` }),
+  mem({ id: 'gepaeck', name: 'Reisegepäck', desc: 'Startsand nach jeder Verjüngung ×4 pro Stufe.', max: 4, cost: memCost(30, 4), fmt: (e, l) => `×${Math.pow(4, l)}` }),
+  mem({ id: 'rabatt', name: 'Mengenrabatt', desc: 'Quellen kosten 20 % weniger pro Stufe.', max: 5, cost: memCost(60, 4), fmt: (e, l) => `÷${Math.pow(1.25, l).toFixed(2).replace('.', ',')}` }),
+  mem({ id: 'synstudium', name: 'Synergie-Studium', desc: 'Synergien wirken 40 % stärker pro Stufe.', max: 4, cost: memCost(120, 4), fmt: (e, l) => `+${pct(0.4 * l)}` }),
+  mem({ id: 'rueckwaerts', name: 'Rückwärts-Rechnen', desc: 'Erinnerungen-Gewinn ×1,2 pro Stufe.', max: 5, cost: memCost(300, 4.5), fmt: (e, l) => '×' + Math.pow(1.2, l).toFixed(2).replace('.', ',') }),
+  mem({ id: 'lange', name: 'Lange Nächte', desc: 'Zauber wirken 20 % länger pro Stufe.', max: 4, cost: memCost(40, 4), fmt: (e, l) => `+${pct(0.2 * l)}` }),
+  mem({ id: 'eulenpost', name: 'Eulenpost', desc: 'Quellen-Meilensteine kommen 20 % früher pro Stufe.', max: 2, cost: memCost(500, 8), fmt: (e, l) => `−${pct(1 - Math.pow(0.8, l))}` }),
   sandMagnet(),
-  mem({ id: 'sanduhr', name: 'Sanduhr-Meisterin', desc: 'Die Sanduhr lädt 12 % schneller pro Stufe.', max: 4, cost: memCost(4, 3), fmt: (e, l) => `×${Math.pow(0.88, l).toFixed(2).replace('.', ',')} Ladezeit` }),
-  mem({ id: 'zr_meister', name: 'Zeitraffer-Meisterschaft', desc: 'Zeitraffer wirkt +2 stärker pro Stufe.', max: 4, cost: memCost(12, 3), show: (g) => g.spellUnlocked('zeit'), fmt: (e, l) => `×${T.spells.zeit.mult + 2 * l}` }),
-  mem({ id: 'rb_meister', name: 'Rückblick-Meisterschaft', desc: 'Rückblick holt 30 s mehr Produktion pro Stufe.', max: 3, cost: memCost(15, 3), show: (g) => g.spellUnlocked('rueck'), fmt: (e, l) => `+${30 * l} s` }),
-  mem({ id: 'weitblick', name: 'Weitblick', desc: 'Erinnerungen verstärken die Produktion stärker (+0,05 im Exponenten).', max: 3, cost: memCost(40, 4), fmt: (e, l) => `+${(0.05 * l).toFixed(2).replace('.', ',')}` }),
+  mem({ id: 'sanduhr', name: 'Sanduhr-Meisterin', desc: 'Die Sanduhr lädt 12 % schneller pro Stufe.', max: 4, cost: memCost(20, 3.5), fmt: (e, l) => `×${Math.pow(0.88, l).toFixed(2).replace('.', ',')} Ladezeit` }),
+  mem({ id: 'zr_meister', name: 'Zeitraffer-Meisterschaft', desc: 'Zeitraffer wirkt +2 stärker pro Stufe.', max: 4, cost: memCost(80, 4), show: (g) => g.spellUnlocked('zeit'), fmt: (e, l) => `×${T.spells.zeit.mult + 2 * l}` }),
+  mem({ id: 'rb_meister', name: 'Rückblick-Meisterschaft', desc: 'Rückblick holt 30 s mehr Produktion pro Stufe.', max: 3, cost: memCost(100, 4), show: (g) => g.spellUnlocked('rueck'), fmt: (e, l) => `+${30 * l} s` }),
+  mem({ id: 'weitblick', name: 'Weitblick', desc: 'Erinnerungen verstärken die Produktion stärker (+0,05 im Exponenten).', max: 3, cost: memCost(800, 6), fmt: (e, l) => `+${(0.05 * l).toFixed(2).replace('.', ',')}` }),
 ];
 function sandMagnet() {
-  return mem({ id: 'magnet', name: 'Sandmagnet', desc: 'Produktion ×1,25 pro Stufe.', max: 6, cost: memCost(6, 2.8), fmt: (e, l) => '×' + Math.pow(1.25, l).toFixed(2).replace('.', ',') });
+  return mem({ id: 'magnet', name: 'Sandmagnet', desc: 'Produktion ×1,25 pro Stufe.', max: 6, cost: memCost(40, 3.2), fmt: (e, l) => '×' + Math.pow(1.25, l).toFixed(2).replace('.', ',') });
 }
 
 const shopUpgrades = [
