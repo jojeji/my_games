@@ -43,8 +43,6 @@ add('e1_leo', 'e1', frac(1, 0.15), [
   le(`Merlin! Welch ein Auftritt – und willkommen im Jahr 9.001. Ja, über neuntausend. Wir haben lange auf den Witz gewartet.`),
   m('Wir kennen uns?'),
   le(`Aus Ihrer Sicht noch nicht. Aus meiner schon mehrfach. ${L}, Zeitwächter. Den Zettel am Ende der Zeit haben Sie gefunden? Das zweite Kürzel war ich.`),
-  m('Dann quietscht es heute nicht.'),
-  le('Es quietscht seit Ihrer Ankunft. Das ist ein Kompliment.'),
 ], true);
 add('e1_mid', 'e1', frac(1, 0.5), [m('Man kann Erinnerung nicht automatisieren, nur verschenken. Ich fange bei den Maschinen an. Sie bedanken sich mit einem Update.')]);
 
