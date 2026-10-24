@@ -95,8 +95,8 @@ export function tapMax(g) {
   const base = T.tapCharges + 2 * lv(g, 'palast') + ideaFx(g, 'charges', 'add') + (cleared(g, 0) ? 1 : 0) + 5 * lv(g, 'e_tap') + (has(g, 's_tap2') ? 3 : 0) + (g.hasMs('j2') ? 1 : 0);
   return Math.floor(base * rule(g, 'charges'));
 }
-export const tapRegen = (g) => T.tapRegen * Math.pow(0.85, lv(g, 'sanduhr')) * ideaFx(g, 'regen') * Math.pow(0.7, lv(g, 'e_tap'));
-export const tapSeconds = (g) => T.tapSeconds + 3 * lv(g, 'gestern') + ideaFx(g, 'tapSec', 'add') + (cleared(g, 6) ? 3 : 0);
+export const tapRegen = (g) => Math.max(T.tapRegenMin, T.tapRegen * Math.pow(0.88, lv(g, 'sanduhr')) * ideaFx(g, 'regen') * Math.pow(0.8, lv(g, 'e_tap')));
+export const tapSeconds = (g) => T.tapSeconds + T.tapPerLevel * lv(g, 'gestern') + ideaFx(g, 'tapSec', 'add') + (cleared(g, 6) ? 1 : 0);
 export function tapMult(g) {
   return rule(g, 'tap') * (spellOn(g, 'sturm') ? T.spells.sturm.tapMult : 1) * (has(g, 's_tap') ? 2 : 1);
 }
@@ -130,7 +130,7 @@ const pct = (v) => Math.round(v * 100) + ' %';
 
 const memUpgrades = [
   mem({ id: 'fruehauf', name: 'Frühaufsteher', desc: 'Produktion ×2.', cost: 1, effect: (l) => (l ? 2 : 1), fmt: () => '×2' }),
-  mem({ id: 'gestern', name: 'Erinnerung an Gestern', desc: 'Die Sanduhr zahlt 3 s mehr Produktion pro Stufe.', max: 4, cost: memCost(2, 2), fmt: (e, l) => `+${3 * l} s` }),
+  mem({ id: 'gestern', name: 'Erinnerung an Gestern', desc: 'Die Sanduhr zahlt 0,75 s mehr Produktion pro Stufe.', max: 4, cost: memCost(2, 2), fmt: (e, l) => `+${(T.tapPerLevel * l).toFixed(2).replace('.', ',')} s` }),
   mem({ id: 'zeitgefuehl', name: 'Zeitgefühl', desc: 'Zauber laden 12 % schneller pro Stufe.', max: 4, cost: memCost(4, 3), fmt: (e, l) => `×${Math.pow(0.88, l).toFixed(2).replace('.', ',')} Abklingzeit` }),
   mem({ id: 'palast', name: 'Gedächtnispalast', desc: 'Die Sanduhr fasst +2 Ladungen pro Stufe.', max: 4, cost: memCost(3, 2.5), fmt: (e, l) => `+${2 * l} Ladungen` }),
   mem({ id: 'gepaeck', name: 'Reisegepäck', desc: 'Startsand nach jeder Verjüngung ×6 pro Stufe.', max: 4, cost: memCost(4, 3), fmt: (e, l) => `×${Math.pow(6, l)}` }),
@@ -140,7 +140,7 @@ const memUpgrades = [
   mem({ id: 'lange', name: 'Lange Nächte', desc: 'Zauber wirken 20 % länger pro Stufe.', max: 4, cost: memCost(8, 3), fmt: (e, l) => `+${pct(0.2 * l)}` }),
   mem({ id: 'eulenpost', name: 'Eulenpost', desc: 'Quellen-Meilensteine kommen 20 % früher pro Stufe.', max: 2, cost: memCost(25, 4), fmt: (e, l) => `−${pct(1 - Math.pow(0.8, l))}` }),
   sandMagnet(),
-  mem({ id: 'sanduhr', name: 'Sanduhr-Meisterin', desc: 'Die Sanduhr lädt 15 % schneller pro Stufe.', max: 4, cost: memCost(4, 3), fmt: (e, l) => `×${Math.pow(0.85, l).toFixed(2).replace('.', ',')} Ladezeit` }),
+  mem({ id: 'sanduhr', name: 'Sanduhr-Meisterin', desc: 'Die Sanduhr lädt 12 % schneller pro Stufe.', max: 4, cost: memCost(4, 3), fmt: (e, l) => `×${Math.pow(0.88, l).toFixed(2).replace('.', ',')} Ladezeit` }),
   mem({ id: 'zr_meister', name: 'Zeitraffer-Meisterschaft', desc: 'Zeitraffer wirkt +2 stärker pro Stufe.', max: 4, cost: memCost(12, 3), show: (g) => g.spellUnlocked('zeit'), fmt: (e, l) => `×${T.spells.zeit.mult + 2 * l}` }),
   mem({ id: 'rb_meister', name: 'Rückblick-Meisterschaft', desc: 'Rückblick holt 30 s mehr Produktion pro Stufe.', max: 3, cost: memCost(15, 3), show: (g) => g.spellUnlocked('rueck'), fmt: (e, l) => `+${30 * l} s` }),
   mem({ id: 'weitblick', name: 'Weitblick', desc: 'Erinnerungen verstärken die Produktion stärker (+0,05 im Exponenten).', max: 3, cost: memCost(40, 4), fmt: (e, l) => `+${(0.05 * l).toFixed(2).replace('.', ',')}` }),
@@ -172,7 +172,7 @@ const eternityUpgrades = [
   eter({ id: 'e_erbe', name: 'Epochen-Gedächtnis', desc: 'Das Epochen-Erbe (abgeschlossene Epochen) bleibt über Zyklen erhalten.', cost: 5 }),
   eter({ id: 'e_ideen', name: 'Gesammelte Ideen', desc: 'Gepflanzte Anachronismen bleiben über Zyklen erhalten.', cost: 9 }),
   eter({ id: 'e_zwei', name: 'Zweiter Gedanke', desc: 'Anachronismen, die sich sonst ausschließen, dürfen beide gepflanzt werden.', cost: 12 }),
-  eter({ id: 'e_tap', name: 'Ewiger Sand', desc: 'Sanduhr: +5 Ladungen und 30 % schnellere Ladung pro Stufe.', max: 2, cost: (l) => 4 + l * 5, fmt: (e, l) => `+${5 * l} Ladungen` }),
+  eter({ id: 'e_tap', name: 'Ewiger Sand', desc: 'Sanduhr: +5 Ladungen und 20 % schnellere Ladung pro Stufe.', max: 2, cost: (l) => 4 + l * 5, fmt: (e, l) => `+${5 * l} Ladungen` }),
 ];
 
 const ideaUpgrades = IDEAS.map((i) => {

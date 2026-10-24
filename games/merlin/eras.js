@@ -111,7 +111,7 @@ export const ERAS = [
     blurb: 'Eiszeit, ein Feuer, ein Kreis aus Gesichtern – und der allererste Erzähler.',
     ruleText: 'Feuerschein: Sanduhr-Sand ×3, Quellen nur halb so stark.',
     rules: { tap: 3, prod: 0.5 },
-    perkText: 'Sanduhr: 3 s mehr Ertrag',
+    perkText: 'Sanduhr: +1 s Ertrag',
     slots: [
       ['Glut', 'Ein Funke, gut gehütet.'],
       ['Sammlerin', 'Findet Beeren und Sandkörner.'],
@@ -163,7 +163,7 @@ export const IDEAS = [
     text: 'Fünf Minuten noch. Ich flüstere einem Ingenieur diese schlichte Erfindung ins Ohr. Die Menschheit dankt mir seither jeden Morgen – leise und fluchend.' },
   { id: 'i2b', era: 2, name: 'Die Suchmaschine', excl: 'i2a', fx: { prod: 3 }, desc: 'Produktion ×3',
     text: 'Ich lasse eine Studentin träumen, man könnte alles Wissen auf einmal fragen. Sie wacht auf und beginnt zu tippen.' },
-  { id: 'i2c', era: 2, name: 'Der Kalender, der nie voll wird', fx: { tapSec: 4 }, desc: 'Sanduhr: +4 s Ertrag',
+  { id: 'i2c', era: 2, name: 'Der Kalender, der nie voll wird', fx: { tapSec: 1 }, desc: 'Sanduhr: +1 s Ertrag',
     text: 'Ein leerer Kalender in der Schublade eines Chefs. Ich lege einen Stift daneben und gehe. Mal sehen, was passiert.' },
 
   { id: 'i3a', era: 3, name: 'Das Fließband', excl: 'i3b', fx: { prod: 3 }, desc: 'Produktion ×3',
@@ -177,7 +177,7 @@ export const IDEAS = [
     text: 'Ein Schmied in Camelot gießt kleine Buchstaben aus Blei – knapp 900 Jahre zu früh. Artus nennt es Hexerei, die Schreiber nennen es Frechheit. Ich nenne es Auflage.' },
   { id: 'i4b', era: 4, name: 'Der Runde Tisch, Version 2', excl: 'i4a', fx: { prod: 1.5, syn: 0.75 }, desc: 'Produktion ×1,5, Synergien +75 %',
     text: 'Ich schlage Artus vor, dass alle am Tisch gleich nah sitzen. Das Holz dafür gab es schon. Die Idee brauchte nur jemanden, der sie zu früh sagt.' },
-  { id: 'i4c', era: 4, name: 'Das Schwert im Stein', fx: { tapSec: 6 }, desc: 'Sanduhr: +6 s Ertrag',
+  { id: 'i4c', era: 4, name: 'Das Schwert im Stein', fx: { tapSec: 1.5 }, desc: 'Sanduhr: +1,5 s Ertrag',
     text: 'Ich stecke ein Schwert in einen Stein und flüstere: „Wer es zieht, ist bereit.“ Es ging nie um den Stein. Es ging darum, dass jemand es versucht.' },
 
   { id: 'i5a', era: 5, name: 'Die Null', excl: 'i5b', fx: { prod: 4 }, desc: 'Produktion ×4',

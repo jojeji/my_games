@@ -2,20 +2,22 @@
 // Quick experiments:  TUNE_OVERRIDE='{"rejuvThreshold":3e4}' node tools/simulate-merlin.mjs --hours 14
 const base = {
   // ---- Quellen (parallel producers) ----
-  slotCost: [10, 90, 1000, 12000, 150000, 2.0e6, 3.0e7, 5.0e8],
-  slotRatio: [1.12, 1.125, 1.13, 1.135, 1.14, 1.145, 1.15, 1.155],
-  slotRate: [0.25, 1.8, 11, 66, 400, 2400, 15000, 95000],
-  rateScale: 0.2, // multiplies all slot rates (balance knob)
-  bundleAt: [10, 25, 50, 100, 150, 200, 250, 300, 400, 500],
+  slotCost: [10, 150, 2500, 4e4, 7e5, 1.2e7, 2e8, 3.5e9],
+  slotRatio: [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
+  slotRate: [0.2, 2.4, 36, 540, 8000, 1.2e5, 1.8e6, 2.7e7],
+  rateScale: 1, // multiplies all slot rates (balance knob)
+  bundleAt: [5, 10, 15, 20, 30, 40, 60, 80],
   bundleMult: 2,
   // ---- Sanduhr (tap) ----
   tapBase: 8, // sand per tap at multiplier 1 (scales with the global multiplier)
-  tapSeconds: 4, // a tap is worth this many seconds of production
+  tapSeconds: 1.5, // a tap is worth this many seconds of production
+  tapPerLevel: 0.75,
+  tapRegenMin: 1.5,
   tapCharges: 5,
-  tapRegen: 3, // seconds per charge
+  tapRegen: 4, // seconds per charge
   // ---- layers ----
-  rejuvThreshold: 12000, // Zeitsand (this run) for the first Erinnerung
-  rejuvExp: 0.5,
+  rejuvThreshold: 4000, // Zeitsand (this run) for the first Erinnerung
+  rejuvExp: 0.3,
   memBoostExp: 0.5, // production boost = (1 + Erinnerungen this era) ^ exp
   memBoostCap: 3000,
   shardBoostExp: 0.4,
