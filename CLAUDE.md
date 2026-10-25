@@ -3,6 +3,9 @@
 Static GitHub Pages site hosting several incremental games on one shared engine. German UI. No build step, no runtime deps,
 native ES modules, ALL paths relative (site is served from `/<repo>/`).
 
+**Read `docs/LESSONS.md` before designing or changing a game** (balancing, autobuyers, mobile UI, PWA/deploy, story, portraits,
+workflow). Add new findings there when you learn something from sims, saves or player feedback.
+
 ## Layout
 - `index.html`, `hub.js`, `games.json` - launcher; cards are generated from `games.json` (`id,title,description,path,icon,status`).
 - `sw.js` - one root service worker (network-first with cache fallback + precache). `VERSION`/`PRECACHE` blocks are GENERATED:
