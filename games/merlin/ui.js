@@ -160,12 +160,11 @@ export function mountMerlin({ root, runtime, offline }) {
       const modeBar = buyModeBar(g, { onBuyAll: () => g.prodBuyAll('quellen'), buyAllLabel: 'Alles kaufen' });
       const list = producerList(g, 'quellen');
       const swTap = autoSwitch(g, 'auto_tap', { label: 'Sanduhr automatisch wenden' });
-      tap.el.append(swTap.el);
       const swBuy = autoSwitch(g, 'auto_buy', { label: 'Automatisch kaufen' });
       const autos = autoPanel(g);
       const autoSection = section('Automatisierung', autos.el, { open: false });
       const hint = h('p', { class: 'muted small center', text: 'Tipp: Kaufen-Taste gedrückt halten für Schnellkauf, Zeile antippen für Details.' });
-      const el = h('div', { class: 'stack' }, tap.el, spells.el, modeBar.el, swBuy.el, list.el, autoSection, hint);
+      const el = h('div', { class: 'stack' }, tap.el, swTap.el, spells.el, modeBar.el, swBuy.el, list.el, autoSection, hint);
       return {
         el,
         update() {
