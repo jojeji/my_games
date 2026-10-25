@@ -17,6 +17,8 @@ export const STRATEGY = {
   rejuvStall: 600,
   ideaPick: 'a', // 'a' | 'b' (first / second option of an era)
   jumpMinGain: 1,
+  fixedRun: 0, // >0: rejuvenate exactly when the run is this many seconds old (measurement mode, see tools/runlength-merlin.mjs)
+  noJump: false, // never jump/close the cycle (measurement mode)
 };
 
 const hms = (s) => {
@@ -79,6 +81,7 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
   const wantRejuv = () => {
     if (!g.canPrestige('rejuv')) return false;
     const ls = g.state.layers.rejuv;
+    if (S.fixedRun) return ls.runTime >= S.fixedRun;
     const gain = g.prestigeGain('rejuv');
     const held = g.state.cur.mem.run;
     if (ls.runTime < S.rejuvMinTime && ls.count > 0) return false;
@@ -92,7 +95,8 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
   };
   const playerInner = () => {
     // the player switches on auto-Verjüngung (default: off, mode 'time' 120 s) as soon as it unlocks
-    if (S.useAutoRejuv !== false && g.hasMs('v5')) g.state.auto.auto_rejuv.on = true;
+    if (S.fixedRun) g.state.auto.auto_rejuv.on = false;
+    else if (S.useAutoRejuv !== false && g.hasMs('v5')) g.state.auto.auto_rejuv.on = true;
     // autos start off: the player switches the simple ones on as soon as they unlock (toast + switch where they act)
     for (const a of g.def.autos) if (a.kind !== 'prestige' && g.autoUnlocked(a.id)) g.state.auto[a.id].on = true;
     // spells first (sturm only when the hourglass is empty)
@@ -105,7 +109,9 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
     buyUpgrades();
     g.prodBuyAll('quellen');
     // layers
-    if (g.canPrestige('cycle')) {
+    if (S.noJump) {
+      if (wantRejuv()) g.prestige('rejuv');
+    } else if (g.canPrestige('cycle')) {
       if (S.autoCycle !== false && g.state.layers.cycle.count + 1 <= cycles) g.prestige('cycle');
     } else {
       const here = IDEAS.filter((i) => i.era === g.state.mer.era && i.excl);
