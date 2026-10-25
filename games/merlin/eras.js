@@ -148,9 +148,9 @@ export const IDEAS = [
   { id: 'i0a', era: 0, name: 'Sparbuch der Zeit', excl: 'i0b', fx: { prod: 2 }, desc: 'Produktion ×2',
     text: 'Der letzten Händlerin drücke ich eine Münze in die Hand. Darauf steht: „Man kann Zeit zurücklegen.“ Sie lacht und fängt an zu sparen.' },
   { id: 'i0b', era: 0, name: 'Das Lied der Stille', excl: 'i0a', fx: { mem: 1.6 }, desc: 'Erinnerungen-Gewinn ×1,6',
-    text: 'Dem letzten Kind summe ich eine Melodie vor, an die ich mich erst morgen erinnere. Es summt mit. Falsch, aber glücklich.' },
+    text: 'Dem letzten Kind summe ich ein Lied vor. Es summt mit. Falsch, aber glücklich.' },
   { id: 'i0c', era: 0, name: 'Der Wecker unter dem Kissen', fx: { charges: 2 }, desc: 'Sanduhr: +2 Ladungen',
-    text: 'Unter ein Kissen lege ich einen Wecker, den es noch nicht gibt. Wer ihn findet, wird das Klingeln hassen und pünktlich sein.' },
+    text: 'Unter ein Kissen lege ich einen alten Wecker. Wer ihn findet, wird das Klingeln hassen und pünktlich sein.' },
 
   { id: 'i1a', era: 1, name: 'Märchen für Maschinen', excl: 'i1b', fx: { syn: 0.6 }, desc: 'Synergien +60 %',
     text: 'Ich lese einem Staubbot Märchen vor. Er beschließt, dass Dinge einander helfen sollten, und erzählt es dem ganzen Netz.' },

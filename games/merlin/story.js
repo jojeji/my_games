@@ -25,18 +25,18 @@ const add = (id, chapter, cond, lines, modal = false) => S.push({ id, chapter, c
 
 /* ---------------- Ende der Zeit ---------------- */
 add('e0_start', 'e0', () => true, [
-  m('Man sagt, ich lebe rückwärts. Stimmt fast. Ich erinnere mich an morgen und vergesse gestern. Beim Frühstück merkt man das am meisten.'),
+  m('Man sagt, ich lebe rückwärts. Stimmt fast. Ich erinnere mich an morgen. Gestern kenne ich noch nicht. Beim Frühstück merkt man das am meisten.'),
   m('Heute ist das Ende aller Tage. Die Sterne sind aus, die Uhren stehen. Das letzte Wort der Welt war „Genug.“ Danach kam nichts mehr.'),
-  m('Ganz am Anfang liegt das erste Wort, mit dem die Welt zu reden begann. Ich will es dort noch mal sagen.'),
+  m('Ganz am Anfang liegt das erste Wort, mit dem die Welt zu reden begann. Wenn ich es dort noch mal sage, fängt vielleicht alles noch mal an.'),
   m('Dreh die Sanduhr. Ab jetzt geht es rückwärts.'),
 ], true);
 add('e0_sand', 'e0', (g) => g.state.cur.sand.total.gte(15), [m('Mein Zeitsand rieselt nach oben. Sieht falsch aus, fühlt sich aber richtig an.')]);
-add('e0_zeit', 'e0', (g) => g.spellUnlocked('zeit'), [m('Mir fällt ein Zauber wieder ein: der Zeitraffer. Meine Zukunft erinnert sich offenbar daran. Praktisch.')]);
+add('e0_zeit', 'e0', (g) => g.spellUnlocked('zeit'), [m('Mir fällt ein Zauber ein: der Zeitraffer. Keine Ahnung, woher ich den kann. Vermutlich von später.')]);
 add('e0_v1', 'e0', (g) => g.state.layers.rejuv.count >= 1, [m('Verjüngt. Etwas weniger Buckel, ein paar Gedanken mehr. Ich nenne sie Erinnerungen an morgen. Ich kenne sie, weil sie noch nicht passiert sind.')]);
-add('e0_ahnung', 'e0', frac(0, 0.25), [m('Komisch. Mit jeder Verjüngung weiß ich mehr über das, was vor mir liegt, also über alles, was ihr Vergangenheit nennt. Von Zimtschnecken habe ich schon eine Ahnung. Ich freue mich.')]);
+add('e0_ahnung', 'e0', frac(0, 0.25), [m('Komisch. Mit jeder Verjüngung werde ich jünger und die Welt um mich älter. Ich glaube, ich bin der Einzige, der das seltsam findet.')]);
 add('e0_whisper', 'e0', frac(0, 0.5), [m('Am Rand des Hörbaren flüstert etwas. Ein einzelner Laut, ein „N“. Das klingt nicht nach „Genug“. Eher nach dem Gegenteil.')]);
 add('e0_fund', 'e0', frac(0, 0.8), [
-  m(`Im Staub liegt ein Zettel in zwei Handschriften. Oben: „Bis zum nächsten Mal.“ Unterschrieben mit ${J[0]}. Darunter: „Es war uns eine Ehre.“ Unterschrieben mit ${L[0]}.`),
+  m(`Im Staub liegt ein Zettel in zwei Handschriften. Oben: „Bis zum nächsten Mal.“ Unterschrieben mit ${J[0]}. Darunter: „Es war uns eine Ehre.“ Unterschrieben mit ${L[0]}. Daneben ein Krümel. Er riecht nach Zimt.`),
   m('Ich verstehe kein Wort. Aber irgendwer hat mir einen Abschied aufgehoben.'),
 ]);
 
@@ -55,7 +55,7 @@ add('e1_leo', 'e1', frac(1, 0.15), [
   m('Das mit der Ehre?'),
   le('Genau das. Ich habe es ernst gemeint.'),
 ], true);
-add('e1_mid', 'e1', frac(1, 0.5), [m('Ich fange bei den Maschinen an und bringe ihnen das Erinnern bei. Zum Dank installieren sie ein Update.')]);
+add('e1_mid', 'e1', frac(1, 0.5), [m('Mir kommt ein Plan. Die Welt hat am Ende „Genug“ gesagt. Also braucht sie unterwegs mehr Gründe für „Noch einmal“. Ich fange an, Ideen zu verteilen.')]);
 
 /* ---------------- Gegenwart ---------------- */
 add('e2_arrive', 'e2', (g) => era(g) >= 2, [
@@ -67,21 +67,20 @@ add('e2_jonas', 'e2', frac(2, 0.15), [
   jo('Du bist Merlin? Wir haben uns schon ein paarmal getroffen. Du warst jedes Mal etwas älter.'),
   m('Älter? Bei mir geht es andersrum. Für mich ist das das erste Mal.'),
   jo(`Dann gleiche ich aus. ${J}, Chronist. Ich schreibe mit, was du erlebst.`),
-  m('Wohin?'),
-  jo('Ins Buch. Chronik-Tab, unten. Handschrift mäßig, Vollständigkeit hoch.'),
+  m('Worein?'),
+  jo('Hier rein. Chronik-Tab, unten. Handschrift mäßig, Vollständigkeit hoch.'),
 ], true);
 add('e2_mid', 'e2', frac(2, 0.5), [
   m('In Schweden ist die Pause Pflicht. Sie heißt „Fika“, es gibt Zimtschnecken, und niemand entschuldigt sich dafür.'),
-  m('Ich hatte recht mit den Zimtschnecken.'),
+  m('Jetzt weiß ich, woher der Krümel kam.'),
 ]);
 add('e2_runde', 'e2', frac(2, 0.7), [
   m('Spät abends, drei Leute vor einem Bildschirm. Autos mit Raketenantrieb jagen einen riesigen Ball.'),
   m('Einer heißt Rafi. Der Zweite sieht mir ähnlich, nur jünger. Der Dritte schreibt nebenbei mit.'),
   m(`${J}? Was machst du denn hier?`),
   jo('Noch eine Runde. Stand: 4.212 Spiele. Seit Jahren knapp unter „Champ“.'),
-  m('Rafi sieht nicht mal hoch. „Noch eine.“'),
   m('Ich weiß, wie es ausgeht. Ich verrate es nicht.'),
-  m('Das Wort „Noch“ hat selten so gut geklungen.'),
+  m('Rafi sieht nicht mal hoch. „Noch eine.“ Irgendwas an dem Wort lässt mich nicht los.'),
 ]);
 
 /* ---------------- Industriezeitalter ---------------- */
@@ -165,7 +164,7 @@ add('e7_mid', 'e7', frac(7, 0.5), [
 add('finale', 'ende', (g) => g.state.mer.finished, [
   m('Ich stehe am Anfang, und er ist leiser als gedacht. Kein Knall. Nur ein Atemholen, das sich nicht traut.'),
   m('Jetzt verstehe ich das Flüstern. Das erste Wort war ein Wunsch.'),
-  m('Das Universum, kaum geboren, wollte, dass es noch nicht aufhört.'),
+  m('Noch ein bisschen. Noch nicht aufhören.'),
   m('„Noch.“ Mehr hat es nie gesagt. Ich spreche es aus. Der Raum antwortet mit Licht.'),
   jo('Seite eins, erste Zeile: „Noch.“ Notiert. Ich glaube, damit geht der Rest der Geschichte los.'),
   le('Und die Tore quietschen! Alle gleichzeitig! Was für ein Applaus!'),
@@ -190,7 +189,7 @@ S.push({
 add('z_intro', 'zyklus', (g) => g.state.layers.cycle.count >= 1, [
   m('Wieder das Ende der Zeit, wieder still. Diesmal erinnere ich mich an den Weg und an das Wort.'),
   m('Die Ewigkeit hat mir etwas mitgegeben.'),
-  le('Willkommen zurück! Oder schon? Ich verwechsle die Richtung ständig.'),
+  le('Willkommen zurück! Oder vorwärts? Ich komm da jedes Mal durcheinander.'),
   m('Diesmal geht es schneller. Und ein paar Ideen pflanze ich vielleicht anders.'),
 ], true);
 add('c2_0', 'zyklus', (g) => g.state.layers.cycle.count >= 1 && g.state.layers.rejuv.count >= 1, [m(`Der Zettel liegt wieder im Staub. „Bis zum nächsten Mal“, steht da, unterschrieben mit ${J[0]}. Diesmal verstehe ich ihn: Das war nie ein Abschied.`)]);
