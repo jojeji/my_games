@@ -89,10 +89,12 @@ export function tapView(g, { art, title = 'Antippen', hint, floatText = (gain) =
       const ch = g.state.tap.charges;
       setStyle(btn, '--fill', String(Math.min(1, ch / max).toFixed(3)));
       setCls(btn, 'ready', g.tapCan());
-      if (max <= 14) {
+      // pips wrap into rows; above 14 they shrink, above 40 only the text remains
+      if (max <= 40) {
         if (pipN !== max) {
           pipN = max;
           pips.replaceChildren(...Array.from({ length: max }, () => h('i')));
+          setCls(pips, 'many', max > 14);
         }
         for (let i = 0; i < max; i++) setCls(pips.children[i], 'on', i < Math.floor(ch + 1e-9));
         setCls(pips, 'hidden-pips', false);
