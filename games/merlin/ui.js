@@ -15,10 +15,11 @@ import { producerList } from '../../engine/ui/producer-view.js';
 import { chronicleView, createStoryController } from '../../engine/ui/story-view.js';
 import { createStoryBubbles } from '../../engine/ui/story-bubbles.js';
 import { avatar } from '../../engine/ui/avatar.js';
+import { openCharacterCard } from '../../engine/ui/character-card.js';
 import { formatNumber as fmt, formatPercent, setNotation } from '../../engine/format.js';
 import { hourglassSvg, SPELL_ICONS } from './art.js';
 import { buildEraTab } from './era-view.js';
-import { CAST, portrait, entryEra, DEDICATION, lineText } from './characters.js';
+import { CAST, portrait, entryEra, DEDICATION, lineText, metCast, merlinStageList } from './characters.js';
 import { ERAS, IDEAS } from './eras.js';
 import { globalParts, jumpThreshold, zeitMult, ideasOwned, bonusAch } from './def.js';
 import { TUNE as T } from './tune.js';
@@ -47,13 +48,21 @@ export function mountMerlin({ root, runtime, offline }) {
 
   /* ---------------- speakers (portraits) ---------------- */
   const era = () => g.state.mer.era;
+  const showCard = (who, from) => {
+    const c = CAST[who] || CAST.merlin;
+    const p = portrait(who, era());
+    openCharacterCard({
+      name: c.name, color: c.color, role: c.role, bio: c.bio, img: p.img,
+      stages: who === 'merlin' ? merlinStageList(era()) : null,
+    }, { returnFocus: from });
+  };
   const speaker = (who) => ({
     name: (CAST[who] || CAST.merlin).name,
     color: (CAST[who] || CAST.merlin).color,
     side: (CAST[who] || CAST.merlin).side,
     avatar: (size, entry, idx = 0) => {
       const p = portrait(who, entry ? entryEra(entry) : era(), entry, idx);
-      return avatar({ src: size > 80 ? p.img : p.sm, name: p.name, size, cls: 'avatar-' + who });
+      return avatar({ src: size > 80 ? p.img : p.sm, name: p.name, size, cls: 'avatar-' + who, onTap: (el) => showCard(who, el) });
     },
   });
 
@@ -206,7 +215,7 @@ export function mountMerlin({ root, runtime, offline }) {
     id: 'chronik', label: 'Chronik', icon: 'book',
     dot: () => g.storyUnread() > 0,
     build() {
-      const view = chronicleView(g, { speaker, onReplay: (entry) => story.replay(entry) });
+      const view = chronicleView(g, { speaker, onReplay: (entry) => story.replay(entry), figures: () => metCast(g) });
       chronikView = view;
       return { el: view.el, update: () => view.update() };
     },

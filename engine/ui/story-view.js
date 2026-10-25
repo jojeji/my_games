@@ -8,13 +8,27 @@ import { isDiaryLine } from '../kit/story-bubbles.js';
  * Chronik as a chat log: chapters (def.chapters) are collapsible sections, newest chapter first; inside a chapter the
  * entries are conversations in chronological order (newest at the bottom, like a messenger). Per speaker a side and a colour.
  * @param {object} g
- * @param {{speaker:(who:string)=>{name:string, avatar:(size:number, entry?:object, idx?:number)=>Node, color?:string, side?:'left'|'right'}, onReplay?:(entry:object)=>void}} opts
+ * @param {{speaker:(who:string)=>{name:string, avatar:(size:number, entry?:object, idx?:number)=>Node, color?:string, side?:'left'|'right'}, onReplay?:(entry:object)=>void, figures?:()=>string[]}} opts
  */
-export function chronicleView(g, { speaker, onReplay }) {
+export function chronicleView(g, { speaker, onReplay, figures }) {
   const root = h('div', { class: 'stack chronik' });
   const head = h('div', { class: 'card chronik-head' }, h('b', { text: 'Chronik' }), h('small', { class: 'muted' }));
   const body = h('div', { class: 'stack' });
-  root.append(head, body);
+  // "Figuren": compact row of the characters met so far (ids from opts.figures); the avatars open the character card
+  const figRow = h('div', { class: 'card fig-row', hidden: true, 'aria-label': 'Figuren' });
+  let figKey = '';
+  const syncFigures = () => {
+    const ids = figures ? figures() : [];
+    const key = ids.join(',');
+    if (key === figKey) return;
+    figKey = key;
+    figRow.hidden = !ids.length;
+    figRow.replaceChildren(h('small', { class: 'fig-title', text: 'Figuren' }), ...ids.map((id) => {
+      const sp = speaker(id);
+      return h('div', { class: 'fig', style: sp.color ? { '--c': sp.color } : null }, sp.avatar(44), h('small', { text: sp.name }));
+    }));
+  };
+  root.append(head, figRow, body);
   const open = new Map();
   const fresh = new Set();
   let shown = -1;
@@ -80,6 +94,7 @@ export function chronicleView(g, { speaker, onReplay }) {
         shown = n;
         rebuild(list);
       }
+      syncFigures();
       txt(head.lastChild, `${list.length} Einträge`);
       setHidden(head, false);
     },

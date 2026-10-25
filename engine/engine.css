@@ -419,3 +419,38 @@ details.section > summary .badge { margin-left: auto; margin-right: 8px; }
 .plog-list li { display: grid; grid-template-columns: 56px 1fr; gap: 8px; }
 .plog-list time { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
 .plog .btn { min-height: 44px; }
+
+/* ---------- tappable avatars + character card + Figuren row ---------- */
+button.avatar-tap { padding: 0; border: 0; color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.12s, filter 0.12s; position: relative; }
+button.avatar-tap::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; } /* larger hit area without changing the look */
+button.avatar-tap:active { transform: scale(0.93); filter: brightness(1.15); }
+button.avatar-tap:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.sb-msg .avatar-tap, .msg .avatar-tap { align-self: flex-end; }
+.cc { --c: var(--accent); display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.cc-big { padding: 6px 0 4px; }
+.cc .avatar-xl { box-shadow: 0 0 0 3px var(--c), 0 0 28px color-mix(in srgb, var(--c) 35%, transparent); border-radius: 22%; max-width: 70vw; max-height: 70vw; }
+.cc-name { font-size: 22px; color: var(--c); }
+.cc-role { font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted, var(--text)); }
+.cc-caption { font-size: 12px; min-height: 1em; }
+.cc-bio { font-size: 15px; line-height: 1.5; text-align: left; margin: 4px 0 0; }
+.cc-stages { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.cc-stage { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 52px; min-height: 44px; padding: 4px 4px 2px; border: 1px solid var(--border); border-radius: 12px; background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.cc-stage .avatar { box-shadow: 0 0 0 1px var(--border); }
+.cc-stage small { font-size: 11px; opacity: 0.8; }
+.cc-stage.cur { border-color: color-mix(in srgb, var(--c) 70%, var(--border)); }
+.cc-stage.cur small { color: var(--c); opacity: 1; font-weight: 700; }
+.cc-stage.sel { background: color-mix(in srgb, var(--c) 18%, transparent); border-color: var(--c); }
+.cc-stage:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.cc-modal { animation: cc-in 0.18s ease-out; }
+@keyframes cc-in { from { opacity: 0; transform: scale(0.96); } }
+.fig-row { display: flex; align-items: center; gap: 14px; padding: 8px 12px; }
+.fig-row[hidden] { display: none; }
+.fig-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.7; margin-right: 2px; }
+.fig { --c: var(--accent); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.fig small { font-size: 11px; color: var(--c); font-weight: 700; }
+.fig .avatar { box-shadow: 0 0 0 2px var(--c); }
+@media (prefers-reduced-motion: reduce) {
+  .cc-modal { animation: none; }
+  button.avatar-tap { transition: none; }
+  button.avatar-tap:active { transform: none; }
+}

@@ -4,10 +4,10 @@ import { h } from './dom.js';
 let openCount = 0;
 
 /**
- * @param {{title?:string, body?:Node|string, actions?:Array<{label:string, kind?:string, onClick?:()=>(boolean|void)}>, dismissible?:boolean}} opts
+ * @param {{title?:string, body?:Node|string, actions?:Array<{label:string, kind?:string, onClick?:()=>(boolean|void)}>, dismissible?:boolean, onClose?:()=>void}} opts
  * An action's onClick may return false to keep the dialog open.
  */
-export function openModal({ title = '', body = '', actions = [], dismissible = true } = {}) {
+export function openModal({ title = '', body = '', actions = [], dismissible = true, onClose = null } = {}) {
   const overlay = h('div', { class: 'modal-overlay' });
   const box = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title || 'Dialog' });
   const bodyEl = h('div', { class: 'modal-body' }, typeof body === 'string' ? h('p', { text: body }) : body);
@@ -23,9 +23,19 @@ export function openModal({ title = '', body = '', actions = [], dismissible = t
     document.removeEventListener('keydown', onKey);
     openCount = Math.max(0, openCount - 1);
     if (!openCount) document.body.classList.remove('modal-open');
+    if (onClose) onClose();
   };
   const onKey = (e) => {
-    if (e.key === 'Escape' && dismissible) close();
+    if (e.key === 'Escape' && dismissible && overlay.nextElementSibling === null) close(); // only the topmost modal
+    else if (e.key === 'Tab' && overlay.nextElementSibling === null) {
+      // keep keyboard focus inside the topmost dialog
+      const f = [...box.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.disabled);
+      if (!f.length) return;
+      const a = document.activeElement;
+      if (!box.contains(a)) { e.preventDefault(); f[0].focus(); }
+      else if (e.shiftKey && a === f[0]) { e.preventDefault(); f.at(-1).focus(); }
+      else if (!e.shiftKey && a === f.at(-1)) { e.preventDefault(); f[0].focus(); }
+    }
   };
 
   for (const a of actions) {
