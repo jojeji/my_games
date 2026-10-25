@@ -30,8 +30,10 @@ export function chronicleView(g, { speaker, onReplay, figures }) {
   };
   root.append(head, figRow, body);
   const open = new Map();
+  // entries that were unread when the tab was opened; highlighted for this visit only
   const fresh = new Set();
   let shown = -1;
+  let lastUpdate = 0;
 
   const rebuild = (list) => {
     const chapters = g.def.chapters || [{ id: undefined, title: 'Chronik' }];
@@ -86,7 +88,11 @@ export function chronicleView(g, { speaker, onReplay, figures }) {
     /** call while the tab is visible: marks entries as read */
     update() {
       const list = g.storyList();
-      const unread = g.def.story.filter((s) => g.state.story[s.id] !== undefined && !g.state.chronicle.read[s.id]);
+      // update() only runs while the tab is visible: a gap means the tab was left, so the last visit's highlights are read now
+      const now = Date.now();
+      if (now - lastUpdate > 1500) fresh.clear();
+      lastUpdate = now;
+      const unread =g.def.story.filter((s) => g.state.story[s.id] !== undefined && !g.state.chronicle.read[s.id]);
       for (const s of unread) fresh.add(s.id);
       if (unread.length) g.storyMarkRead();
       const n = list.length + fresh.size * 1000;
