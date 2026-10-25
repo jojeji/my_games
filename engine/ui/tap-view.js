@@ -41,13 +41,10 @@ export function tapView(g, { art, title = 'Antippen', hint, floatText = (gain) =
     while (live.length > 6) live.shift().remove();
   };
 
-  const doTap = () => {
-    const gain = g.tapDo(false);
-    if (!gain) {
-      btn.classList.add('empty');
-      setTimeout(() => btn.classList.remove('empty'), 180);
-      return;
-    }
+  // taps counted so far; a jump in state.tap.n that the view didn't cause is an auto tap
+  let seenN = g.state.tap.n;
+
+  const animate = (gain) => {
     spawn(gain);
     if (!reduced()) {
       btn.classList.remove('flip');
@@ -58,6 +55,17 @@ export function tapView(g, { art, title = 'Antippen', hint, floatText = (gain) =
     void btn.offsetWidth;
     btn.classList.add('pulse');
   };
+
+  const doTap = () => {
+    const gain = g.tapDo(false);
+    if (!gain) {
+      btn.classList.add('empty');
+      setTimeout(() => btn.classList.remove('empty'), 180);
+      return;
+    }
+    seenN = g.state.tap.n;
+    animate(gain);
+  };
   btn.addEventListener('animationend', (e) => {
     if (e.animationName === 'tap-flip') btn.classList.remove('flip');
     if (e.animationName === 'tap-pulse') btn.classList.remove('pulse');
@@ -67,6 +75,16 @@ export function tapView(g, { art, title = 'Antippen', hint, floatText = (gain) =
   return {
     el: wrap,
     update() {
+      const n = g.state.tap.n;
+      if (n !== seenN) {
+        // auto taps since the last frame; skip big jumps (offline catch-up, load)
+        const diff = n - seenN;
+        seenN = n;
+        if (diff > 0 && diff <= 3 && !document.hidden) {
+          last = { x: 0, y: 0 };
+          animate(g.tapGain().mul(diff));
+        }
+      }
       const max = g.tapMax();
       const ch = g.state.tap.charges;
       setStyle(btn, '--fill', String(Math.min(1, ch / max).toFixed(3)));
