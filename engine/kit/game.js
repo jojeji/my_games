@@ -241,6 +241,7 @@ export class Game {
   /**
    * Power-law gain: floor(mult * (basis / threshold) ^ exp), 0 below the threshold.
    * Optional formula.softcap = { at, pow }: above `at` the gain only grows with exponent `pow`.
+   * Optional layer.postMult(g) -> number|Decimal: a factor applied AFTER the softcap (so the softcap cannot flatten it).
    */
   prestigeGain(id) {
     const l = this.layerById[id];
@@ -252,6 +253,7 @@ export class Game {
     let raw = b.div(th).pow(exp).mul(this.prestigeMult(id));
     const sc = this.prestigeSoftcap(id);
     if (sc && raw.gt(sc.at)) raw = D(sc.at).mul(raw.div(sc.at).pow(sc.pow));
+    if (l.postMult) raw = raw.mul(l.postMult(this));
     return raw.lt(1) ? ZERO : raw.floor();
   }
 
@@ -274,6 +276,7 @@ export class Game {
     const f = l.formula;
     const exp = typeof f.exp === 'function' ? f.exp(this) : f.exp;
     let want = D(gain);
+    if (l.postMult) want = want.div(l.postMult(this));
     const sc = this.prestigeSoftcap(id);
     if (sc && want.gt(sc.at)) want = D(sc.at).mul(want.div(sc.at).pow(1 / sc.pow));
     return this.prestigeThreshold(id).mul(want.div(this.prestigeMult(id)).pow(1 / exp));

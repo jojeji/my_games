@@ -75,6 +75,13 @@ export function globalParts(g) {
   return parts;
 }
 
+/**
+ * 'Reife' of the Erinnerungen: the longer the run, the more of its Erinnerungen have matured (linear-ish up to ripeGainSecs, then full).
+ * This is what makes runs of a few minutes the sweet spot (gain per second peaks around ripeGainSecs); without it the cheapest
+ * way to farm Erinnerungen is to rejuvenate every few seconds.
+ */
+export const gainRipeness = (g) => Math.max(0.01, Math.pow(Math.min(1, g.state.layers.rejuv.runTime / T.ripeGainSecs), T.ripeGainExp));
+
 const memGainMult = (g) =>
   Math.pow(1.2, lv(g, 'rueckwaerts')) * ideaFx(g, 'mem') * Math.pow(1.5, lv(g, 's_ernte')) * Math.pow(2, lv(g, 'e_ernte')) * rule(g, 'mem') * (cleared(g, 5) ? 1.2 : 1);
 
@@ -107,6 +114,26 @@ export const tapSeconds = (g) => T.tapSeconds + T.tapPerLevel * lv(g, 'gestern')
 export function tapMult(g) {
   return rule(g, 'tap') * (spellOn(g, 'sturm') ? T.spells.sturm.tapMult : 1) * (has(g, 's_tap') ? 2 : 1);
 }
+
+/**
+ * How good is the current state for farming Erinnerungen? ln of (gain multiplier x production ^ rejuvExp), the production including the
+ * average uptime of Zeitraffer, Rückblick and the sustained Sanduhr income. Used by the value-based autobuyer for the Erinnerungen
+ * upgrades (and by the sim, which uses the same function): the benefit of an upgrade is the increase of this value.
+ */
+export function memObjective(g) {
+  const P = g.cache.prod.quellen.total;
+  let eff = P;
+  if (g.spellUnlocked('zeit')) {
+    const d = g.spellDuration('zeit');
+    eff = eff.mul(1 + (zeitMult(g) - 1) * Math.min(1, d / Math.max(d, g.spellCooldown('zeit'), 1)));
+  }
+  if (g.spellUnlocked('rueck')) eff = eff.add(P.mul(rueckSecs(g) / Math.max(1, g.spellCooldown('rueck'))));
+  eff = eff.add(g.tapGain().div(g.tapRegenSec()));
+  return Math.log(memGainMult(g)) + T.rejuvExp * (eff.m > 0 ? eff.ln() : -700);
+}
+
+/** The Erinnerungen-upgrade autobuyer (also used by the sims): best benefit per cost, saving for expensive good upgrades. */
+export const buyMemUpgrades = (g) => g.upgBuyBest('mem', memObjective);
 
 /* ------------------------------------------------------------------ */
 /* definition                                                          */
@@ -267,8 +294,8 @@ const autos = [
   { id: 'auto_buy', name: 'Quellen automatisch kaufen', desc: 'Kauft Quellen mit dem besten Verhältnis von Preis und Ertrag.', kind: 'gen', group: 'gen', where: 'Zeit-Tab', unlock: (g) => g.hasMs('v2'), interval: () => 1.5, run: (g) => g.prodBuyAll('quellen') },
   { id: 'auto_tap', name: 'Sanduhr automatisch wenden', desc: 'Wendet die Sanduhr regelmäßig – auch in deiner Abwesenheit.', kind: 'misc', group: 'tap', where: 'Zeit-Tab', unlock: (g) => g.hasMs('v4'), interval: () => T.autoTapInterval, run: (g) => g.tapDo(true) },
   { id: 'auto_spells', name: 'Zauber automatisch wirken', desc: 'Wirkt bereite Zauber (pro Zauber einstellbar im Zauber-Tab).', kind: 'misc', group: 'spells', where: 'Zauber-Tab', unlock: (g) => g.hasMs('v8'), interval: () => 0.5, run: (g) => g.spellAutoRun() },
-  { id: 'auto_mem', name: 'Erinnerungen-Upgrades automatisch kaufen', desc: 'Kauft das jeweils günstigste Upgrade.', kind: 'upg', group: 'mem', where: 'Verjüngungs-Tab', unlock: (g) => g.hasMs('v12'), interval: () => 2, run: (g) => g.upgBuyAll('mem') },
-  prestigeAuto({ id: 'auto_rejuv', layer: 'rejuv', name: 'Automatisch verjüngen', desc: 'Verjüngt, sobald der Gewinn die Bedingung erfüllt.', where: 'Verjüngungs-Tab', unlock: (g) => g.hasMs('v5'), interval: () => 1, mode: 'time', value: 120, minGain: 1, modes: ['time', 'amount', 'mult'] }),
+  { id: 'auto_mem', name: 'Erinnerungen-Upgrades automatisch kaufen', desc: 'Kauft das Upgrade mit dem besten Nutzen.', kind: 'upg', group: 'mem', where: 'Verjüngungs-Tab', unlock: (g) => g.hasMs('v12'), interval: () => 2, run: (g) => buyMemUpgrades(g) },
+  prestigeAuto({ id: 'auto_rejuv', layer: 'rejuv', name: 'Automatisch verjüngen', desc: 'Verjüngt, sobald der Gewinn die Bedingung erfüllt.', where: 'Verjüngungs-Tab', unlock: (g) => g.hasMs('v5'), interval: () => 1, mode: 'time', value: T.autoRejuvTime, minGain: 1, modes: ['time', 'amount', 'mult'] }),
   prestigeAuto({ id: 'auto_jump', layer: 'jump', name: 'Automatisch zurückreisen', desc: 'Springt in die nächste Epoche, sobald der Gewinn die Bedingung erfüllt.', where: 'Epochen-Tab', unlock: (g) => has(g, 's_auto'), interval: () => 1, mode: 'amount', value: 3, minGain: 1 }),
 ];
 
@@ -353,8 +380,8 @@ export const def = {
   layers: [
     {
       id: 'rejuv', name: 'Verjüngung', plural: 'Verjüngungen', verb: 'Verjüngen', layer: 1, currency: 'mem', basis: 'sand',
-      formula: { threshold: T.rejuvThreshold, exp: T.rejuvExp, softcap: { at: T.softAt, pow: T.softPow } }, mult: memGainMult,
-      blurb: 'Setzt Zeitsand und Quellen zurück. Du erhältst Erinnerungen an morgen.',
+      formula: { threshold: T.rejuvThreshold, exp: T.rejuvExp, softcap: T.softAt > 0 ? { at: T.softAt, pow: T.softPow } : undefined }, mult: memGainMult, postMult: gainRipeness,
+      blurb: `Setzt Zeitsand und Quellen zurück. Du erhältst Erinnerungen an morgen. Sie reifen: nach ${Math.round(T.ripeGainSecs / 60)} Minuten Laufzeit ist der volle Gewinn erreicht, kürzere Durchläufe zahlen deutlich weniger.`,
     },
     {
       id: 'jump', name: 'Epochensprung', plural: 'Epochensprünge', verb: 'Eine Epoche zurückreisen', layer: 2, currency: 'shards', basis: 'mem',
@@ -381,7 +408,17 @@ export const def = {
   extraState: () => ({ mer: { era: 0, eraDone: {}, finished: false } }),
   settingsDefaults: { confirm: { rejuv: false, jump: true, cycle: true }, goldHourglass: false },
   hooks: {
-    prodGlobalMult: (g) => globalParts(g).reduce((a, [, v]) => a.mul(v), ONE),
+    // run-length rebalance: very short auto-Verjuengung times from older saves earn almost nothing now -> move them to the new default once
+    onLoad: (g) => {
+      const a = g.state.auto.auto_rejuv;
+      if (g.state.mer.rebal1) return;
+      g.state.mer.rebal1 = true;
+      if (a && a.mode === 'time' && D(a.value).lt(60)) {
+        a.value = D(T.autoRejuvTime);
+        g.state.mer.rebalNotice = true;
+      }
+    },
+    prodGlobalMult:(g) => globalParts(g).reduce((a, [, v]) => a.mul(v), ONE),
     prodLiveMult: (g, dt) => {
       const f = g.spellFrac('zeit', dt);
       return f ? D(1 + (zeitMult(g) - 1) * f) : ONE;

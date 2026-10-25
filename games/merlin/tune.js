@@ -16,16 +16,19 @@ const base = {
   tapCharges: 5,
   tapRegen: 4, // seconds per charge
   // ---- layers ----
-  rejuvThreshold: 300000, // Zeitsand (this run) for the first Erinnerung
+  rejuvThreshold: 100000, // Zeitsand (this run) for the first Erinnerung
   rejuvExp: 0.5,
-  softAt: 25, // Erinnerungen per Verjuengung above this grow only with ^softPow (keeps the cadence of runs stable)
+  softAt: 25, // Erinnerungen per Verjuengung above this grow only with ^softPow
   softPow: 0.3,
-  ripeTau: 120, // 'Reifung': production x (1 + seconds since the last Verjuengung / ripeTau) ^ ripeExp
-  ripeExp: 1.0,
+  ripeGainSecs: 180, // 'Reife': Erinnerungen gain x min(1, run seconds / ripeGainSecs) ^ ripeGainExp -> Erinnerungen per second peak at about this run length
+  ripeGainExp: 1.5,
+  autoRejuvTime: 180, // default of the auto-Verjuengung ('time' mode, seconds): the measured optimum run length
+  ripeTau: 240, // 'Reifung': production x (1 + seconds since the last Verjuengung / ripeTau) ^ ripeExp
+  ripeExp: 0.5,
   memBoostExp: 0.5, // production boost = (1 + Erinnerungen this era) ^ exp
   memBoostCap: 3000,
   shardBoostExp: 0.4,
-  eraThr: [4552, 22128, 30969, 43518, 84215, 131577, 292898, 500000], // Erinnerungen (this era) to leave the era / speak the word (last)
+  eraThr: [3997, 16486, 23826, 34292, 70053, 102782, 218635, 380208], // Erinnerungen (this era) to leave the era / speak the word (last)
   shardBase: 2.2, // Epochensplitter at exactly the threshold
   eraReward: 1.5, // production per cleared era
   eternityBoostExp: 0.9,

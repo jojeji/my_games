@@ -91,6 +91,8 @@ test('story: triggers once, chronological, modal queue and unread badge', () => 
 test('layer flow: Verjüngung -> Epochensprung (ideas persist) -> ending -> Zyklus', () => {
   const g = createMerlin();
   g.add('sand', D(1e9));
+  assert.equal(g.prestigeGain('rejuv').toNumber(), 0); // the Erinnerungen have not matured yet (run time 0)
+  g.state.layers.rejuv.runTime = 200; // ... after ripeGainSecs they have
   g.slowChecks();
   assert.ok(g.prestige('rejuv'));
   assert.ok(g.get('mem').gte(1));

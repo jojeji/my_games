@@ -100,28 +100,107 @@ export const producerMethods = {
     return n;
   },
 
-  /** Spend everything sensibly: repeatedly buy the slot with the best payback (cost per unit output). Returns purchases. */
+  /**
+   * Income per second gained (Decimal, global multiplier included) if `k` more units of slot i were owned: the slot's own units,
+   * the bundle multiplier(s) reached on the way (they double ALL owned units) and the synergy bonus on the slots that draw from it.
+   */
+  prodIncomeGain(p, i, k, synScale = 1) {
+    const st = this.state.prod[p.id];
+    const c = this.cache.prod[p.id];
+    const n = st[i].n;
+    const stepsNew = this.prodBundleSteps(p, n + k);
+    let unit = c.unit[i];
+    if (stepsNew !== c.steps[i]) unit = unit.mul(Decimal.pow(c.bundleMult, stepsNew - c.steps[i]));
+    let d = unit.mul(n + k).sub(c.unit[i].mul(n));
+    for (let j = 0; j < p.slots.length; j++) {
+      if (j === i || !st[j].n) continue;
+      let per = 0;
+      for (const s of p.slots[j].synergies || []) if (s.from === i) per += s.per;
+      if (per) d = d.add(c.unit[j].mul(st[j].n).mul(per * k * synScale).div(c.syn[j]));
+    }
+    return d.mul(c.global);
+  },
+
+  /**
+   * Which purchase to aim for next. Every visible slot is judged by payback time (cost / income gained) PLUS the time it takes
+   * to save up for it at the current income. Each slot is looked at for one unit and for "up to the next bundle threshold"
+   * (the threshold multiplies everything owned, so a unit that looks poor on its own can be the best buy).
+   * Returns { i, k, score, cost, payback, affordable, runnerUp } for the best plan (k = units of the plan, affordable = all k
+   * affordable now, runnerUp = best score of any other slot, Infinity if none) or null when nothing is visible.
+   * A plan that is not affordable means: save up for it.
+   */
+  prodChoose(pid, starts = null) {
+    const p = this.producerById[pid];
+    const st = this.state.prod[pid];
+    const c = this.cache.prod[pid];
+    const money = this.state.cur[p.currency].amount;
+    const scale = this.hooks.prodSynergyScale ? this.hooks.prodSynergyScale(this) : 1;
+    const P = c.total;
+    const plans = [];
+    for (let i = 0; i < p.slots.length; i++) {
+      if (!this.prodVisible(p, i)) continue;
+      const nb = this.prodNextBundle(p, st[i].n);
+      const ks = nb !== null && nb - st[i].n > 1 ? [1, nb - st[i].n] : [1];
+      let best = null;
+      const start = starts ? starts[i] : this.prodCostStart(p, i);
+      for (const k of ks) {
+        const cost = Decimal.sumGeometricSeries(k, start, this.prodRatio(p, i), st[i].n);
+        const delta = this.prodIncomeGain(p, i, k, scale);
+        const affordable = cost.lte(money);
+        const payback = delta.m === 0 ? Infinity : cost.div(delta).toNumber();
+        const wait = affordable ? 0 : P.m === 0 ? Infinity : cost.sub(money).div(P).toNumber();
+        const score = wait + payback;
+        // ties (e.g. everything Infinity): the cheaper plan
+        if (!best || score < best.score || (score === best.score && cost.lt(best.cost))) best = { i, k, score, cost, affordable, payback };
+      }
+      plans.push(best);
+    }
+    if (!plans.length) return null;
+    let best = plans[0];
+    for (const pl of plans) if (pl.score < best.score || (pl.score === best.score && pl.cost.lt(best.cost))) best = pl;
+    let runnerUp = Infinity;
+    for (const pl of plans) if (pl !== best && pl.score < runnerUp) runnerUp = pl.score;
+    return { ...best, runnerUp };
+  },
+
+  /**
+   * Spend sensibly (the in-game autobuyer and the sims use this): follow prodChoose. If the best plan is out of reach it is
+   * saved up for instead of wasting the money on poorer slots (only single units of the planned slot are bought on the way).
+   * Several units are bought in one go while the slot stays better than the runner-up. Returns units bought.
+   */
   prodBuyAll(pid) {
     const p = this.producerById[pid];
+    const money = () => this.state.cur[p.currency].amount;
+    const st = this.state.prod[pid];
     let total = 0;
-    for (let iter = 0; iter < 80; iter++) {
-      let best = -1;
-      let bestScore = null;
-      for (let i = 0; i < p.slots.length; i++) {
-        if (!this.prodVisible(p, i)) continue;
-        const unit = this.cache.prod[pid].unit[i];
-        const price = this.prodBulkCost(p, i, 1);
-        if (price.gt(this.state.cur[p.currency].amount)) continue;
-        const score = unit.m === 0 ? Infinity : price.div(unit).log10();
-        if (bestScore === null || score < bestScore) {
-          best = i;
-          bestScore = score;
-        }
+    for (let iter = 0; iter < 120; iter++) {
+      // nothing affordable at all -> nothing to decide
+      const starts = p.slots.map((_, i) => this.prodCostStart(p, i));
+      let any = false;
+      for (let i = 0; i < p.slots.length && !any; i++) {
+        if (this.prodVisible(p, i) && starts[i].mul(this.prodRatio(p, i).pow(st[i].n)).lte(money())) any = true;
       }
-      if (best < 0) break;
-      const owned = this.state.prod[pid][best].n;
-      const k = Math.max(1, Math.min(this.prodMaxAffordable(p, best), Math.ceil(owned * 0.2)));
-      total += this.prodBuy(pid, best, k);
+      if (!any) break;
+      const plan = this.prodChoose(pid, starts);
+      if (!plan) break;
+      const owned = this.state.prod[pid][plan.i].n;
+      let k = 1;
+      if (plan.affordable) {
+        k = plan.k;
+        if (plan.k === 1) {
+          // buy on while this slot's payback stays below the runner-up's score (cost grows by `ratio` per unit)
+          const r = this.prodRatio(p, plan.i).toNumber();
+          let more = Infinity;
+          if (Number.isFinite(plan.runnerUp) && plan.payback > 0 && r > 1) more = Math.floor(1 + Math.log(plan.runnerUp / plan.payback) / Math.log(r));
+          else if (!Number.isFinite(plan.runnerUp)) more = Math.max(1, Math.ceil(owned * 0.2));
+          k = Math.max(1, Math.min(more, this.prodMaxAffordable(p, plan.i)));
+        }
+      } else if (starts[plan.i].mul(this.prodRatio(p, plan.i).pow(st[plan.i].n)).gt(money())) {
+        break; // save up
+      }
+      const bought = this.prodBuy(pid, plan.i, k);
+      if (!bought) break;
+      total += bought;
     }
     return total;
   },

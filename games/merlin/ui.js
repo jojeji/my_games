@@ -290,6 +290,10 @@ export function mountMerlin({ root, runtime, offline }) {
   runtime.on('offline', () => setTimeout(() => { story.next(); bubbles.syncBacklog(); }, 500));
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && setTimeout(() => { story.next(); bubbles.syncBacklog(); }, 600));
   runtime.on('spell', ({ id, auto }) => !auto && toast(g.spellById[id].info ? g.spellById[id].info(g) : '', { kind: 'info', title: g.spellById[id].name, ms: 1800 }));
+  if (g.state.mer.rebalNotice) {
+    g.state.mer.rebalNotice = false;
+    setTimeout(() => toast('Längere Läufe lohnen sich jetzt: Die automatische Verjüngung steht auf 3 Minuten. Einstellbar im Verjüngungs-Tab.', { kind: 'info', title: 'Neu abgestimmt', ms: 9000 }), 1500);
+  }
   runtime.on('offline', (s) => showOfflineSummary(g, s));
   if (offline && offline.seconds >= 60) showOfflineSummary(g, offline);
 

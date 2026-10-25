@@ -100,6 +100,78 @@ export const upgradeMethods = {
     }
   },
 
+  /** Upgrades of a group that could be bought if only the currency were there (requirements, exclusions, max level). */
+  upgCandidates(group) {
+    return this.def.upgrades.filter((u) => {
+      if (u.group !== group || this.upgMaxed(u.id) || this.upgDisabled(u) || this.upgExcluded(u) || !this.upgRequirementsMet(u)) return false;
+      return u.show ? !!u.show(this) : true;
+    });
+  },
+
+  /**
+   * Benefit of the next level of an upgrade: objective(g) is a game-supplied estimate on a log scale ("ln of how good the
+   * state is": e.g. ln of the Erinnerungen gain per run). The level is applied temporarily, so every effect the game
+   * implements is seen without extra code. Returns the increase of the objective (>= 0).
+   */
+  upgBenefit(id, objective, before = objective(this)) {
+    const prev = this.state.upg[id];
+    this.state.upg[id] = (prev || 0) + 1;
+    this.refresh();
+    let after;
+    try {
+      after = objective(this);
+    } finally {
+      if (prev === undefined) delete this.state.upg[id];
+      else this.state.upg[id] = prev;
+      this.refresh();
+    }
+    return Number.isFinite(after) && after > before ? after - before : 0;
+  },
+
+  /**
+   * Value-based autobuyer for a group: buys what gives the most benefit per cost instead of the cheapest.
+   *  - The best upgrade (by benefit / cost) among ALL candidates is the goal. If it is affordable it is bought.
+   *  - If the goal is out of reach, cheaper upgrades are only bought as "side purchases" when they do not starve it:
+   *    they must have a benefit, cost at most `sideFrac` of the goal's cost, and we must be far from the goal
+   *    (currency below `reserveFrac` of its cost). Otherwise the currency is saved.
+   * Deterministic. Returns the number of levels bought.
+   */
+  upgBuyBest(group, objective, { sideFrac = 0.15, reserveFrac = 0.5 } = {}) {
+    let bought = 0;
+    for (let guard = 0; guard < 200; guard++) {
+      const cands = this.upgCandidates(group);
+      if (!cands.some((u) => this.upgCanBuy(u.id))) return bought; // nothing affordable: no need to evaluate anything
+      const before = objective(this);
+      // Judging every candidate is expensive (one refresh each). When the last judgement ended with "buy nothing" and neither the
+      // currency, an owned level nor the objective (rounded: it moves while production builds up) changed since, skip.
+      const key = cands.map((u) => u.id + this.upgLevel(u.id)).join() + '|' + this.get(cands[0].currency).toString() + '|' + Math.round(before * 4);
+      if (bought === 0 && this._upgIdle?.[group] === key) return 0;
+      const rows = cands.map((u) => {
+        const cost = this.upgCost(u.id);
+        const c = Math.max(cost.toNumber(), 1e-9);
+        return { u, cost, benefit: this.upgBenefit(u.id, objective, before), score: 0, afford: this.canAfford(u.currency, cost), c };
+      });
+      for (const r of rows) r.score = r.benefit / r.c;
+      const better = (a, b) => (a.score !== b.score ? a.score > b.score : a.c < b.c);
+      let goal = rows[0];
+      for (const r of rows) if (better(r, goal)) goal = r;
+      let pick = null;
+      if (goal.afford) pick = goal;
+      else {
+        const money = this.get(goal.u.currency).toNumber();
+        if (money < reserveFrac * goal.c) {
+          for (const r of rows) if (r.afford && r.benefit > 0 && r.c <= sideFrac * goal.c && (!pick || better(r, pick))) pick = r;
+        }
+      }
+      if (!pick || !this.upgBuy(pick.u.id)) {
+        (this._upgIdle || (this._upgIdle = {}))[group] = key;
+        return bought;
+      }
+      bought++;
+    }
+    return bought;
+  },
+
   /**
    * Refund all upgrades of a group (research respec) and reset the lower layers
    * without awarding anything (prevents free re-allocation exploits).

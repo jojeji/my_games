@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runSim } from '../tools/simulate-merlin.mjs';
+import { createMerlin } from '../games/merlin/logic.js';
 
 const h = (s) => s / 3600;
 
@@ -22,4 +23,8 @@ test('pacing (active): Verjüngung 3-6 min, Epochensprung 25-45 min, eras 30-110
   const cycle2 = r.finished[1] - r.cycleStart[1];
   assert.ok(cycle2 <= 0.4 * end1, 'cycle 2 took ' + ((cycle2 / end1) * 100).toFixed(0) + ' % of cycle 1');
   assert.ok(r.gaps[0].len <= 600, 'longest pause without a decision: ' + r.gaps[0].len);
+  // the policy of the sim is the default of the in-game auto-Verjüngung: runs of 2-4 minutes (see sim-merlin-runlength.test.mjs)
+  const auto = createMerlin().state.auto.auto_rejuv;
+  assert.equal(auto.mode, 'time');
+  assert.ok(auto.value.toNumber() >= 120 && auto.value.toNumber() <= 240, 'default auto-Verjüngung time ' + auto.value);
 });

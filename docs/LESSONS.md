@@ -79,3 +79,9 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - **Orchestrierung:** Ein Orchestrator plant und prüft, Sonnet-Agenten implementieren. Kleine Fixes (wenige Zeilen) direkt.
 - Jeden Agenten-Bericht gegen Code, Tests und Screenshots prüfen. Agenten übersehen Dinge oder melden Ungetestetes als erledigt.
 - Vor dem Livegang: `npm test`, `node tools/update-precache.mjs`, Smoke-Test der Live-Seite.
+
+## Nachtrag: Laufdauer-Rebalance Merlin (gemessen mit `tools/runlength-merlin.mjs`)
+- Reiner Zahlen-Tausch in `tune.js` (Softcap weg, Reifung stärker, Exponent höher) hat **nicht** gereicht: Die Kurve „Gewinn/s über Laufdauer“ blieb fallend.
+  Gelöst mit einem **Reife-Faktor auf den Prestige-Gewinn nach dem Softcap**: `min(1, Laufzeit/180 s)^1.5` (`layer.postMult`). Damit ist das Optimum 2–4 min, 12-s-Läufe bringen ~10–20 %.
+- Bei Balancing-Änderungen an bestehende Spielstände denken: Einstellungen der Spieler, die nach der Änderung schädlich sind (hier Auto-Verjüngung 12 s), einmalig per `onLoad`-Hook anpassen und mit Hinweis melden.
+- Autokäufer-Bug in der Praxis: Der „schnellste Amortisation“-Käufer hat nie für Quelle 5+ gespart, der Upgrade-Käufer „günstigstes zuerst“ hat nutzlose Upgrades gekauft. Neue Logik: Nutzen pro Kosten inkl. Bündel-Boni und Synergien, mit Sparen (`prodChoose`, `upgBuyBest`).

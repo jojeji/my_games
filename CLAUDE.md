@@ -48,12 +48,16 @@ IMPORTANT: the global multiplier is applied only to tier 0 (final output). Multi
 - `def.tap = {currency,start,max(g),regen(g),gain(g)}` -> `tapDo(auto)`, `tapRefill()`, `tapCharges()`; charges regenerate in `tick` (also offline), manual taps never run offline, autos do.
 - `def.story[{id,chapter,lines:[{who,t}],modal?,cond(g)}]` + `def.chapters` + `def.chronicle:true` (read/shown flags in the save) -> `storyList/storyUnread/storyMarkRead/storyPendingModals`.
   Modal entries are shown once by `createStoryController` (also those that happened while the app was closed). Replikator's old `{id,text,cond}` entries still work.
-- Layers: `formula.threshold` and `formula.softcap.{at,pow}` may be functions of the game; `layer.available(g)` gates `canPrestige`; `prestigeAuto` supports `modes:['time',...]` ('time' = run time >= value s).
+- Autobuyers (engine, used by the in-game autos AND the sims): `prodBuyAll` = `prodChoose` (payback = cost / income gained incl. bundle thresholds + synergies, PLUS time to save up; plans "up to the next bundle", saves instead of feeding poor slots);
+  `upgBuyBest(group, objective)` (value = benefit of the next level / cost, benefit = rise of a game-supplied log objective, e.g. Merlin `memObjective`; saves for the best upgrade, side purchases only if cheap and far from the goal).
+- Layers: `layer.postMult(g)` = factor applied AFTER the softcap (Merlin: Reife of the Erinnerungen). `formula.threshold` and `formula.softcap.{at,pow}` may be functions of the game; `layer.available(g)` gates `canPrestige`; `prestigeAuto` supports `modes:['time',...]` ('time' = run time >= value s).
 - `def.extraState(def)` adds game specific save keys; `hooks.upgradeExclusionOff(g,u)` lifts `excl`.
 
 ## Merlin specifics
 - Era counter `state.mer.era` (0 Ende der Zeit ... 7 Anbeginn), `eraDone`, `finished`. Epochensprung = layer 2 (resets Zeitsand, Quellen, Erinnerungen + upgrades), Zyklus = layer 3 (new game plus, Ewigkeit).
   Ideas (Anachronismen) are layer-2 upgrades (survive jumps, wiped by the Zyklus unless Ewigkeit upgrade keeps them), `excl` pairs; the story text of each idea lives in `eras.js`.
+- Run length: Erinnerungen gain x `gainRipeness` = (run time / `ripeGainSecs`)^`ripeGainExp` (capped at 1, floor 0.01) -> Erinnerungen per second peak at ~`ripeGainSecs` (3 min); default auto-Verjüngung = 'time' `autoRejuvTime`.
+  Never add a softcap/exponent that makes short runs optimal again: `node tools/runlength-merlin.mjs [--verbose]` prints the Erinnerungen/s per fixed run length (12 s ... 16 min) from snapshots in the middle of every era (asserted in `tests/sim-merlin-runlength.test.mjs`).
 - Balance: `games/merlin/tune.js`. `eraThr[]` (Erinnerungen needed per era) was calibrated with the sim (bisection per era); after changing the economy re-run the sim and adjust `eraThr`.
   `node tools/simulate-merlin.mjs --both --cycles 2` (active vs idle, cycle 2), `--verbose`, `--pick b` (other idea branch), `TUNE_OVERRIDE='{"rateScale":0.3}'`. Pacing is asserted in `tests/sim-merlin*.test.mjs`.
 - Offline: production, tap-charge regeneration, auto-tap and auto-cast (both unlocked by milestones) run; manual taps/casts never do.

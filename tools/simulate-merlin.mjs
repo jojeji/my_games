@@ -6,15 +6,13 @@
 // Env: TUNE_OVERRIDE='{"eraThr":[...]}' overrides games/merlin/tune.js.
 import { pathToFileURL } from 'node:url';
 import { createMerlin } from '../games/merlin/logic.js';
+import { buyMemUpgrades } from '../games/merlin/def.js';
 import { ERAS, IDEAS } from '../games/merlin/eras.js';
+import { TUNE } from '../games/merlin/tune.js';
 import { formatNumber as f, formatDuration } from '../engine/format.js';
 
 export const STRATEGY = {
-  rejuvFactor: 1.0, // verjuengen when gain >= factor * memories earned this era
-  rejuvMinGain: 1,
-  rejuvMinTime: 25,
-  rejuvEvery: 120, // after this many seconds of run time rejuvenate whenever gain >= 1 (the human rhythm)
-  rejuvStall: 600,
+  rejuvEvery: TUNE.autoRejuvTime, // rejuvenate whenever the run is this old (and gain >= 1): the measured optimum run length, the same as the default of auto-Verjüngung
   ideaPick: 'a', // 'a' | 'b' (first / second option of an era)
   jumpMinGain: 1,
   fixedRun: 0, // >0: rejuvenate exactly when the run is this many seconds old (measurement mode, see tools/runlength-merlin.mjs)
@@ -75,18 +73,13 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
     if (pick && g.upgCanBuy(pick.id)) g.upgBuy(pick.id);
     for (const i of here) if (!i.excl && g.upgCanBuy(i.id)) g.upgBuy(i.id);
     g.upgBuyAll('shards');
-    g.upgBuyAll('mem');
+    buyMemUpgrades(g); // the same function as the in-game autobuyer
   };
 
   const wantRejuv = () => {
     if (!g.canPrestige('rejuv')) return false;
     const ls = g.state.layers.rejuv;
-    if (S.fixedRun) return ls.runTime >= S.fixedRun;
-    const gain = g.prestigeGain('rejuv');
-    const held = g.state.cur.mem.run;
-    if (ls.runTime < S.rejuvMinTime && ls.count > 0) return false;
-    if (gain.gte(held.mul(S.rejuvFactor).max(S.rejuvMinGain))) return true;
-    return ls.runTime > S.rejuvEvery;
+    return ls.runTime >= (S.fixedRun || S.rejuvEvery);
   };
 
   const player = () => {
