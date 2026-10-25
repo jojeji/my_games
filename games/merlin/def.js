@@ -264,12 +264,12 @@ const spells = [
 
 /* ----------------------------- autos ----------------------------- */
 const autos = [
-  { id: 'auto_buy', name: 'Quellen automatisch kaufen', desc: 'Kauft Quellen mit dem besten Verhältnis von Preis und Ertrag.', kind: 'gen', group: 'gen', unlock: (g) => g.hasMs('v2'), interval: () => 1.5, run: (g) => g.prodBuyAll('quellen') },
-  { id: 'auto_tap', name: 'Sanduhr automatisch wenden', desc: 'Wendet die Sanduhr regelmäßig – auch in deiner Abwesenheit.', kind: 'misc', group: 'tap', unlock: (g) => g.hasMs('v4'), interval: () => T.autoTapInterval, run: (g) => g.tapDo(true) },
-  { id: 'auto_spells', name: 'Zauber automatisch wirken', desc: 'Wirkt bereite Zauber (pro Zauber einstellbar im Zauber-Tab).', kind: 'misc', group: 'spells', unlock: (g) => g.hasMs('v8'), interval: () => 0.5, run: (g) => g.spellAutoRun() },
-  { id: 'auto_mem', name: 'Erinnerungen-Upgrades automatisch kaufen', desc: 'Kauft das jeweils günstigste Upgrade.', kind: 'upg', group: 'mem', unlock: (g) => g.hasMs('v12'), interval: () => 2, run: (g) => g.upgBuyAll('mem') },
-  prestigeAuto({ id: 'auto_rejuv', layer: 'rejuv', name: 'Automatisch verjüngen', desc: 'Verjüngt, sobald der Gewinn die Bedingung erfüllt.', unlock: (g) => g.hasMs('v5'), interval: () => 1, mode: 'time', value: 120, minGain: 1, modes: ['time', 'amount', 'mult'] }),
-  prestigeAuto({ id: 'auto_jump', layer: 'jump', name: 'Automatisch zurückreisen', desc: 'Springt in die nächste Epoche, sobald der Gewinn die Bedingung erfüllt.', unlock: (g) => has(g, 's_auto'), interval: () => 1, mode: 'amount', value: 3, minGain: 1 }),
+  { id: 'auto_buy', name: 'Quellen automatisch kaufen', desc: 'Kauft Quellen mit dem besten Verhältnis von Preis und Ertrag.', kind: 'gen', group: 'gen', where: 'Zeit-Tab', unlock: (g) => g.hasMs('v2'), interval: () => 1.5, run: (g) => g.prodBuyAll('quellen') },
+  { id: 'auto_tap', name: 'Sanduhr automatisch wenden', desc: 'Wendet die Sanduhr regelmäßig – auch in deiner Abwesenheit.', kind: 'misc', group: 'tap', where: 'Zeit-Tab', unlock: (g) => g.hasMs('v4'), interval: () => T.autoTapInterval, run: (g) => g.tapDo(true) },
+  { id: 'auto_spells', name: 'Zauber automatisch wirken', desc: 'Wirkt bereite Zauber (pro Zauber einstellbar im Zauber-Tab).', kind: 'misc', group: 'spells', where: 'Zauber-Tab', unlock: (g) => g.hasMs('v8'), interval: () => 0.5, run: (g) => g.spellAutoRun() },
+  { id: 'auto_mem', name: 'Erinnerungen-Upgrades automatisch kaufen', desc: 'Kauft das jeweils günstigste Upgrade.', kind: 'upg', group: 'mem', where: 'Verjüngungs-Tab', unlock: (g) => g.hasMs('v12'), interval: () => 2, run: (g) => g.upgBuyAll('mem') },
+  prestigeAuto({ id: 'auto_rejuv', layer: 'rejuv', name: 'Automatisch verjüngen', desc: 'Verjüngt, sobald der Gewinn die Bedingung erfüllt.', where: 'Verjüngungs-Tab', unlock: (g) => g.hasMs('v5'), interval: () => 1, mode: 'time', value: 120, minGain: 1, modes: ['time', 'amount', 'mult'] }),
+  prestigeAuto({ id: 'auto_jump', layer: 'jump', name: 'Automatisch zurückreisen', desc: 'Springt in die nächste Epoche, sobald der Gewinn die Bedingung erfüllt.', where: 'Epochen-Tab', unlock: (g) => has(g, 's_auto'), interval: () => 1, mode: 'amount', value: 3, minGain: 1 }),
 ];
 
 /* ----------------------------- achievements ----------------------------- */
@@ -315,6 +315,7 @@ export const def = {
   id: 'merlin',
   title: 'Merlin – Rückwärts durch die Zeit',
   version: 1,
+  autosStartOff: true, // autos stay off until the player switches them on (toast + switch where they act)
   currencies: [
     { id: 'sand', name: 'Zeitsand', short: 'Sand', layer: 0, start: 0 },
     { id: 'mem', name: 'Erinnerungen', short: 'Erinn.', layer: 1, start: 0 },

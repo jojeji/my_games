@@ -93,6 +93,8 @@ export function runSim({ hours = 14, dt = 1, act: actEvery = 1, session = 0, cyc
   const playerInner = () => {
     // the player switches on auto-Verjüngung (default: off, mode 'time' 120 s) as soon as it unlocks
     if (S.useAutoRejuv !== false && g.hasMs('v5')) g.state.auto.auto_rejuv.on = true;
+    // autos start off: the player switches the simple ones on as soon as they unlock (toast + switch where they act)
+    for (const a of g.def.autos) if (a.kind !== 'prestige' && g.autoUnlocked(a.id)) g.state.auto[a.id].on = true;
     // spells first (sturm only when the hourglass is empty)
     for (const sp of g.def.spells) {
       if (sp.id === 'sturm' && g.tapCharges() >= 2) continue;

@@ -238,6 +238,27 @@ export async function doPrestige(ctx, layerId) {
   return g.prestige(layerId);
 }
 
+/**
+ * Compact on/off row for one auto, to be placed where the auto acts. Hidden until the auto is unlocked;
+ * the switch mirrors state.auto[id].on in both directions (also when changed from the central panel).
+ */
+export function autoSwitch(g, autoId, { label = 'Automatisch kaufen', hint } = {}) {
+  const st = () => g.state.auto[autoId];
+  const input = h('input', { type: 'checkbox', class: 'switch-input', 'aria-label': label });
+  input.addEventListener('change', () => (st().on = input.checked));
+  const el = h('label', { class: 'card row setting auto-sw', hidden: true },
+    h('span', { class: 'row-main' }, h('b', { text: label }), hint ? h('small', { text: hint }) : null),
+    h('span', { class: 'switch' }, input, h('i', { class: 'switch-track' })));
+  return {
+    el,
+    update() {
+      const un = g.autoUnlocked(autoId);
+      setHidden(el, !un);
+      if (un && input.checked !== st().on) input.checked = st().on;
+    },
+  };
+}
+
 export function autoConfigRow(g, autoId) {
   const a = g.autoById[autoId];
   const st = () => g.state.auto[autoId];

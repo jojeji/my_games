@@ -52,6 +52,7 @@ export const playlogMethods = {
         break;
       }
       case 'layer-unlocked': this.plog('unlock', `Freigeschaltet: ${this.layerById[p.id].name}`); break;
+      case 'auto-unlocked': this.plog('unlock', `Automatik freigeschaltet: ${nameOf(p.def, p.id)}`); break;
       case 'milestone': this.plog('milestone', `Meilenstein: ${nameOf(p.def, p.id)}`); break;
       case 'story': this.plog('story', `Geschichte: ${p.def.name || p.def.title || (p.def.text ? p.def.text.slice(0, 48) + '…' : (p.def.chapter ? p.def.chapter + ' / ' : '') + p.id)}`); break;
       case 'achievement': this.plog('achievement', `Erfolg: ${nameOf(p.def, p.id)}`); break;

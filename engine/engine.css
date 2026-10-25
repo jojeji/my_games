@@ -235,6 +235,7 @@ details.section > summary .badge { margin-left: auto; margin-right: 8px; }
 }
 .select { max-width: 55%; }
 .textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; resize: vertical; word-break: break-all; }
+.auto-sw { padding: 4px 12px; min-height: 48px; }
 .switch { position: relative; width: 52px; height: 30px; flex: none; }
 .switch-input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .switch-track { position: absolute; inset: 0; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border); transition: background 0.15s; pointer-events: none; }

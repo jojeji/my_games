@@ -67,9 +67,24 @@ export class Game {
       s.prod[p.id] = p.slots.map((_, i) => mergeDefaults({ n: 0 }, saved[i]));
     }
     this.state = s;
+    this.legacyAutos(obj);
     this._lastInput = s.time.played;
     this.hook('onLoad');
     this.refresh();
+  }
+
+  /**
+   * Saves from before the `seen` flag: autos that are already unlocked keep their on/off state and count as announced;
+   * with def.autosStartOff the not-yet-unlocked ones are switched off (they would otherwise start running unannounced).
+   */
+  legacyAutos(obj) {
+    for (const a of this.def.autos || []) {
+      const old = obj?.auto?.[a.id];
+      if (!old || 'seen' in old) continue;
+      const st = this.state.auto[a.id];
+      if (this.autoUnlocked(a.id)) st.seen = true;
+      else if (this.def.autosStartOff) st.on = false;
+    }
   }
 
   /** Game event: goes into the playtest log, then out to the runtime's bus. */
@@ -194,6 +209,13 @@ export class Game {
       if (st.cond(this)) {
         this.state.story[st.id] = this.state.time.played;
         this.emit('story', { id: st.id, def: st });
+      }
+    }
+    for (const a of this.def.autos || []) {
+      const st = this.state.auto[a.id];
+      if (!st.seen && this.autoUnlocked(a.id)) {
+        st.seen = true;
+        this.emit('auto-unlocked', { id: a.id, def: a });
       }
     }
     this.chCheckGoal();
@@ -366,11 +388,12 @@ export class Game {
  * | 'time' (run time of the layer >= value seconds; enable via `modes: ['time', ...]`).
  * `on`/`mode`/`value` are the defaults a fresh save gets.
  */
-export function prestigeAuto({ id, layer, name, desc, unlock, interval, group, on = false, mode = 'amount', value = 1, minGain = 1, modes }) {
+export function prestigeAuto({ id, layer, name, desc, unlock, interval, group, where, on = false, mode = 'amount', value = 1, minGain = 1, modes }) {
   return {
     id,
     name,
     desc,
+    where,
     group: group || layer,
     layer,
     kind: 'prestige',

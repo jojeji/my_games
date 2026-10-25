@@ -28,7 +28,8 @@ export function createState(def, now = Date.now()) {
   const auto = {};
   for (const a of def.autos || []) {
     const d = typeof a.defaults === 'function' ? a.defaults() : a.defaults; // function = fresh mutable defaults per state
-    auto[a.id] = { on: true, t: 0, ...(d || {}) };
+    // seen = the unlock was announced to the player (see Game.slowChecks); def.autosStartOff: new autos wait for the player's switch
+    auto[a.id] = { on: !def.autosStartOff, t: 0, seen: false, ...(d || {}) };
   }
 
   // optional subsystems: state exists only when the def uses them (keeps older games' saves unchanged)

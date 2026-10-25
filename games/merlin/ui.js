@@ -6,7 +6,7 @@ import { openModal, confirmDialog } from '../../engine/ui/modal.js';
 import { buildSettingsPanel } from '../../engine/ui/settings.js';
 import { buildStatsPanel, defaultStatRows } from '../../engine/ui/stats.js';
 import {
-  buyModeBar, upgradeList, prestigePanel, milestoneList, autoPanel, achievementGrid, showOfflineSummary,
+  buyModeBar, upgradeList, prestigePanel, milestoneList, autoPanel, autoSwitch, achievementGrid, showOfflineSummary,
   section, sectionTitle, progressBar,
 } from '../../engine/ui/kit-views.js';
 import { tapView } from '../../engine/ui/tap-view.js';
@@ -159,14 +159,19 @@ export function mountMerlin({ root, runtime, offline }) {
       const spells = spellBar(g, { icons: SPELL_ICONS });
       const modeBar = buyModeBar(g, { onBuyAll: () => g.prodBuyAll('quellen'), buyAllLabel: 'Alles kaufen' });
       const list = producerList(g, 'quellen');
+      const swTap = autoSwitch(g, 'auto_tap', { label: 'Sanduhr automatisch wenden' });
+      tap.el.append(swTap.el);
+      const swBuy = autoSwitch(g, 'auto_buy', { label: 'Automatisch kaufen' });
       const autos = autoPanel(g);
       const autoSection = section('Automatisierung', autos.el, { open: false });
       const hint = h('p', { class: 'muted small center', text: 'Tipp: Kaufen-Taste gedrückt halten für Schnellkauf, Zeile antippen für Details.' });
-      const el = h('div', { class: 'stack' }, tap.el, spells.el, modeBar.el, list.el, autoSection, hint);
+      const el = h('div', { class: 'stack' }, tap.el, spells.el, modeBar.el, swBuy.el, list.el, autoSection, hint);
       return {
         el,
         update() {
           tap.update();
+          swTap.update();
+          swBuy.update();
           spells.update();
           modeBar.update();
           list.update();
@@ -183,7 +188,8 @@ export function mountMerlin({ root, runtime, offline }) {
     build() {
       const cards = spellCards(g, { icons: SPELL_ICONS, autoId: 'auto_spells' });
       const note = h('p', { class: 'muted small', text: 'Zauber wirken nur, solange du spielst – außer sie werden automatisch gewirkt (ab der 8. Verjüngung), das gilt auch offline.' });
-      return { el: h('div', { class: 'stack' }, note, cards.el), update: () => cards.update() };
+      const sw = autoSwitch(g, 'auto_spells', { label: 'Automatisch wirken', hint: 'Pro Zauber einstellbar (unten)' });
+      return { el: h('div', { class: 'stack' }, note, sw.el, cards.el), update() { sw.update(); cards.update(); } };
     },
   });
 
@@ -203,6 +209,8 @@ export function mountMerlin({ root, runtime, offline }) {
       parts.push(ms);
       stack.append(section('Meilensteine', ms.el, { open: false }));
       stack.append(sectionTitle('Erinnerungen-Upgrades', 'Epochensprung setzt sie zurück'));
+      const swMem = autoSwitch(g, 'auto_mem', { label: 'Automatisch kaufen', hint: 'Kauft das jeweils günstigste Upgrade' });
+      add(swMem);
       add(upgradeList(g, 'mem'));
       return { el: stack, update: () => parts.forEach((p) => p.update()) };
     },
@@ -253,6 +261,10 @@ export function mountMerlin({ root, runtime, offline }) {
 
   runtime.on('achievement', ({ def }) => toast(def.desc, { kind: 'good', title: 'Erfolg: ' + def.name }));
   runtime.on('milestone', ({ def }) => toast(def.desc, { kind: 'good', title: 'Meilenstein: ' + def.name }));
+  // new automation: say where its switch lives (unlocks that happened offline arrive with the offline summary)
+  const announceAuto = ({ def }) => toast(`Neu: ${def.name}${def.where ? ' – Schalter im ' + def.where : ''}`, { kind: 'good', ms: 7000 });
+  runtime.on('auto-unlocked', announceAuto);
+  runtime.on('offline', (s) => (s.events || []).filter((e) => e.type === 'auto-unlocked').forEach((e) => announceAuto(e.payload)));
   runtime.on('prestige', ({ id, gain }) => toast(`+${fmt(gain)} ${g.currencyById[g.layerById[id].currency].name}`, { kind: 'good', title: g.layerById[id].name }));
   runtime.on('upgrade', ({ id }) => {
     const idea = IDEAS.find((i) => i.id === id);

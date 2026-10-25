@@ -144,6 +144,7 @@ test('save roundtrip with new subsystems, export/import and offline progress (au
   g.prodBuyAll('quellen');
   g.state.mer.era = 3;
   g.state.ms.v4 = g.state.ms.v8 = true; // auto-tap + auto-cast unlocked
+  g.state.auto.auto_tap.on = g.state.auto.auto_spells.on = true; // autos start off in Merlin: the player switches them on
   g.state.cur.sand.total = D(1e4);
   rt.save();
   const g2 = createMerlin();
@@ -207,4 +208,52 @@ test('manifest: unique explicit id, start_url/scope of its own folder, maskable 
   assert.equal(m.scope, './');
   assert.ok(m.icons.some((i) => i.purpose === 'maskable'));
   for (const i of m.icons) assert.ok(existsSync(new URL('../games/merlin/' + i.src, import.meta.url)), i.src);
+});
+
+test('autos: Merlin starts them off, announces the unlock once (event, seen flag, playlog)', () => {
+  const g = createMerlin();
+  assert.ok(Object.values(g.state.auto).every((a) => a.on === false && a.seen === false));
+  const seen = [];
+  g.out = (type, p) => type === 'auto-unlocked' && seen.push(p.id);
+  g.slowChecks();
+  assert.deepEqual(seen, []);
+  g.state.ms.v12 = true;
+  g.slowChecks();
+  g.slowChecks();
+  assert.deepEqual(seen, ['auto_mem']);
+  assert.equal(g.state.auto.auto_mem.seen, true);
+  assert.equal(g.state.auto.auto_mem.on, false);
+  g.grant('mem', 1e9);
+  g.upgBuyAll('mem'); // manual buying still works; the auto does not run while off
+  g.runAutos(100);
+  assert.equal(g.autoActive('auto_mem'), false);
+  assert.ok(g.state.plog.head.some((e) => e[1] === 'unlock' && /Automatik/.test(e[2])));
+  assert.ok(Object.values(g.def.autos).every((a) => a.where), 'every auto names the tab of its switch');
+});
+
+test('autos: old Merlin save keeps unlocked autos as they were (no re-announce), locks the rest off', () => {
+  const g0 = createMerlin();
+  const old = JSON.parse(JSON.stringify(g0.state));
+  for (const k of Object.keys(old.auto)) { old.auto[k].on = true; delete old.auto[k].seen; } // pre-update: everything on, no seen flag
+  old.ms = { v12: true }; // auto_mem unlocked
+  old.auto.auto_buy.on = false; // locked, so it must end up off anyway
+  const g = createMerlin();
+  g.load(old);
+  assert.equal(g.state.auto.auto_mem.on, true);
+  assert.equal(g.state.auto.auto_mem.seen, true);
+  for (const id of ['auto_buy', 'auto_tap', 'auto_spells']) {
+    assert.equal(g.state.auto[id].on, false, id);
+    assert.equal(g.state.auto[id].seen, false, id);
+  }
+  const ev = [];
+  g.out = (t) => ev.push(t);
+  g.slowChecks();
+  assert.ok(!ev.includes('auto-unlocked'));
+});
+
+test('autos: Replikator keeps its defaults (on, no flag change)', async () => {
+  const { createReplikator } = await import('../games/replikator/logic.js');
+  const g = createReplikator();
+  assert.ok(!g.def.autosStartOff);
+  assert.ok(g.def.autos.filter((a) => a.kind !== 'prestige').every((a) => g.state.auto[a.id].on === true));
 });
