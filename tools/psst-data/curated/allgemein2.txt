@@ -1,8 +1,8 @@
 # Weitere Karten (Auswahl aus der Leipzig-Häufigkeitsliste, Tabuwörter von Hand; teils mit automatischen Vorschlägen)
-Winter | A+ Schnee, kalt | 1 |  | S
-Sommer | A+ Sonne, heiß | 1 |  | S
-Herbst | A+ Blätter, Laub | 1 |  | 
-Frühling | A+ Blüten, Ostern | 1 |  | 
+Winter | Schnee, kalt, Jahreszeit, Dezember, Eis | 1 |  | S
+Sommer | Sonne, heiß, Jahreszeit, Ferien, Hitze | 1 |  | S
+Herbst | Blätter, Laub, Jahreszeit, Pilze, Wind | 1 |  | 
+Frühling | Blüten, Ostern, Jahreszeit, März, Knospen | 1 |  | 
 Regen | Wolken, nass, Tropfen, Schirm, Pfütze | 1 |  | 
 Wind | Sturm, Luft, wehen, Drachen, Brise | 1 |  | 
 Mutter | Mama, Kind, Familie, gebären, Eltern | 1 |  | S
