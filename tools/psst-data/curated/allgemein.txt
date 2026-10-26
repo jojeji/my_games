@@ -1,0 +1,180 @@
+# Allgemeine Alltagsbegriffe ohne eigenes Thema (landen nur in den Schwierigkeits-Paketen)
+Schatz | Piraten, Truhe, Gold, vergraben, Karte | 1 |  | S
+Geist | Gespenst, Spuk, Laken, durchsichtig, Halloween | 1 |  | S
+Schloss | König, Burg, Turm, Prinzessin, Graben | 1 |  | S
+Burg | Ritter, Mauer, Turm, Mittelalter, Graben | 1 |  | S
+Höhle | Fledermaus, dunkel, Berg, Tropfstein, Steinzeit | 1 |  | S
+Leuchtturm | Küste, Licht, Meer, Schiffe, Nordsee | 1 |  | S
+Piratenschiff | Totenkopf, Flagge, Segel, Kanonen, Kapitän | 1 |  | S
+Flaschenpost | Nachricht, Meer, Korken, Brief, Strand | 2 |  | 
+Wolke | Himmel, weiß, Regen, fliegen, grau | 1 |  | S
+Mond | Nacht, Sterne, Erde, Krater, Neil Armstrong | 1 |  | S
+Stern | Himmel, Nacht, funkeln, Weihnachten, Galaxie | 1 |  | S
+Sonne | Himmel, heiß, gelb, Tag, Licht | 1 |  | S
+Planet | Weltall, Erde, Umlaufbahn, Mars, Sonnensystem | 1 |  | 
+Raumstation | Weltall, Astronaut, Schwerelosigkeit, ISS, Labor | 2 |  | 
+Komet | Schweif, Weltall, Eis, Himmel, Halley | 2 |  | 
+Sternschnuppe | Wunsch, Nacht, Himmel, Sommer, verglühen | 1 |  | S
+Wald | Bäume, Pilze, Förster, Tiere, grün | 1 |  | S
+Baum | Blätter, Wurzeln, Stamm, Äste, Wald | 1 |  | S
+Blume | Blüte, Duft, Vase, Wiese, Strauß | 1 |  | S
+Rose | Dornen, rot, Liebe, Valentinstag, Duft | 1 |  | S
+Sonnenblume | gelb, Kerne, hoch, Feld, van Gogh | 1 |  | 
+Wiese | Gras, Blumen, grün, Kühe, Picknick | 1 |  | 
+Berg | Gipfel, Tal, klettern, Schnee, hoch | 1 |  | S
+Fluss | Wasser, Brücke, Ufer, fließen, Fische | 1 |  | 
+See | Wasser, Boot, Ufer, baden, Schwan | 1 |  | 
+Meer | Wellen, Salz, Strand, Wasser, Schiff | 1 |  | S
+Welle | Meer, Wasser, Surfer, Strand, Schaum | 1 |  | 
+Feuer | heiß, Flamme, Rauch, brennen, Löschen | 1 |  | S
+Rauch | Feuer, Qualm, Schornstein, grau, Zigarette | 2 |  | 
+Schnee | weiß, Winter, kalt, Flocken, Schlitten | 1 |  | S
+Schneeball | Winter, werfen, kalt, Schlacht, Kugel | 1 |  | 
+Eiszapfen | Winter, Dach, tropfen, kalt, spitz | 2 |  | 
+Blitz | Gewitter, Donner, Licht, Himmel, einschlagen | 1 |  | 
+Sturm | Wind, Orkan, Unwetter, Bäume, heulen | 1 |  | 
+Erdbeben | Erde, Richterskala, zittern, Katastrophe, Japan | 2 |  | 
+Tornado | Wirbelsturm, Amerika, Zerstörung, Trichter, Wind | 2 |  | 
+Überschwemmung | Hochwasser, Wasser, Fluss, Keller, Katastrophe | 2 |  | 
+Sand | Strand, Wüste, Körner, Burg, Eimer | 1 |  | 
+Stein | hart, Kiesel, Fels, werfen, grau | 1 |  | 
+Gold | Schatz, gelb, Ring, wertvoll, Medaille | 1 |  | 
+Diamant | Ring, Edelstein, funkeln, Schmuck, hart | 1 |  | 
+Ring | Finger, Hochzeit, Schmuck, Gold, rund | 1 |  | 
+Krone | König, Kopf, Gold, Prinzessin, Edelsteine | 1 |  | S
+König | Krone, Thron, Reich, Schloss, Majestät | 1 |  | S
+Thron | König, Sessel, Krone, Königin, Schloss | 2 |  | 
+Schwert | Ritter, Klinge, Kampf, Scheide, Mittelalter | 1 |  | 
+Pfeil | Bogen, Spitze, Zielscheibe, Robin Hood, Richtung | 1 |  | 
+Zauberstab | Magie, Harry Potter, Hexe, Spruch, Holz | 1 |  | 
+Zaubertrank | Kessel, Hexe, Asterix, Magie, brauen | 2 |  | 
+Hexenbesen | fliegen, Halloween, Stiel, Zauber, Märchen | 2 |  | 
+Märchen | Prinzessin, Grimm, Hexe, Wolf, Erzählung | 1 |  | 
+Abenteuer | Reise, Gefahr, spannend, Held, Entdeckung | 2 |  | 
+Held | Retter, Mut, Kämpfer, Sieger, Ritter | 2 |  | 
+Detektivin | Lupe, Ermittlerin, Fall, Spur, Sherlock | 3 |  | 
+Dieb | Stehlen, Polizei, Beute, Einbruch, Gefängnis | 1 |  | S
+Gefängnis | Zelle, Gitter, Häftling, Strafe, Ausbruch | 1 |  | 
+Handschellen | Polizei, Verhaftung, Metall, Verbrecher, Schlüssel | 1 |  | 
+Polizei | Streife, Notruf, Uniform, Blaulicht, 110 | 1 |  | 
+Feuerwehrauto | rot, Sirene, Leiter, Schlauch, Einsatz | 1 |  | 
+Gefahr | Warnung, Risiko, Vorsicht, Bedrohung, riskant | 2 |  | 
+Rettungsring | Schwimmen, Wasser, Schiff, rund, Notfall | 2 |  | 
+Anker | Schiff, Meer, schwer, Kette, Hafen | 2 |  | 
+Kapitän | Schiff, Uniform, Mütze, Brücke, Steuermann | 1 |  | 
+Matrose | Schiff, Seemann, Uniform, Meer, Hafen | 2 |  | 
+Hafen | Schiffe, Kräne, Container, Wasser, Hamburg | 1 |  | 
+Brücke | Fluss, Autos, Überqueren, Stahl, Pfeiler | 1 |  | 
+Tunnel | Berg, Dunkel, Eisenbahn, Durchfahrt, Licht | 1 |  | 
+Turm | hoch, Treppe, Burg, Glocken, Schloss | 1 |  | 
+Mauer | Stein, Wand, Berlin, Ziegel, Grenze | 1 |  | 
+Zaun | Garten, Holz, Grenze, Gitter, Nachbar | 1 |  | 
+Haus | Dach, Wohnen, Tür, Fenster, Wände | 1 |  | S
+Baumhaus | Kinder, Ast, Leiter, Versteck, Garten | 1 |  | S
+Iglu | Eis, Eskimo, Schnee, Arktis, Kälte | 1 |  | 
+Hütte | Berge, Holz, klein, Wanderer, Alm | 1 |  | 
+Wolkenkratzer | Hochhaus, Stadt, New York, Stockwerke, hoch | 1 |  | 
+Kirche | Glocken, Pfarrer, Turm, Sonntag, Altar | 1 |  | 
+Glocke | läuten, Kirche, Klang, Klöppel, Turm | 1 |  | 
+Friedhof | Gräber, Grabstein, Trauer, still, Blumen | 2 |  | 
+Museum | Ausstellung, Kunst, Eintritt, Führung, Exponate | 1 |  | 
+Theater | Bühne, Schauspieler, Vorhang, Publikum, Stück | 1 |  | 
+Zirkusclown | rote Nase, Manege, lustig, Schminke, Späße | 2 |  | 
+Clown | rote Nase, Zirkus, lustig, Schminke, Perücke | 1 |  | S
+Zauberkünstler | Trick, Hase, Zylinder, Bühne, Magie | 2 |  | 
+Jongleur | Bälle, Zirkus, werfen, Geschick, Keulen | 3 |  | 
+Artist | Zirkus, Seil, Akrobat, Trapez, Zelt | 3 |  | 
+Karussell | Kirmes, Pferde, drehen, Kinder, Musik | 1 |  | 
+Puppe | Spielzeug, Mädchen, Kleidchen, Barbie, spielen | 1 |  | 
+Teddybär | Kuscheltier, Plüsch, Kinder, Bett, Fell | 1 |  | S
+Lego | Steine, bauen, bunt, Kinder, stecken | 1 |  | S
+Puzzle | Teile, zusammensetzen, Bild, Karton, Rand | 1 |  | S
+Würfel | Augen, Spiel, sechs, werfen, Zahl | 1 |  | 
+Spielkarten | Skat, Poker, Mischen, Herz, Pik | 1 |  | 
+Monopoly | Brettspiel, Straßen, Hotel, Los, Bank | 1 |  | S
+Mensch ärgere dich nicht | Brettspiel, Würfel, Figuren, rauswerfen, Sechs | 2 |  | 
+Verstecken | Kinder, suchen, zählen, Spiel, Kindergeburtstag | 1 |  | S
+Fangen | Kinder, rennen, Spiel, berühren, Hof | 1 |  | 
+Seilspringen | Hüpfen, Kinder, Hof, zählen, Schnur | 2 |  | 
+Seifenblase | Pusten, Wasser, platzen, Kinder, bunt | 1 |  | S
+Drachen | Wind, Schnur, Herbst, Himmel, steigen lassen | 1 |  | 
+Kreide | Tafel, Bürgersteig, malen, weiß, Schule | 2 |  | 
+Wasserpistole | Sommer, spritzen, nass, Spielzeug, Kinder | 1 |  | 
+Trampolin | springen, Garten, hoch, Netz, Kinder | 1 |  | 
+Wasserrutsche | Schwimmbad, nass, Sommer, Spaß, hinunter | 2 |  | 
+Pool | Schwimmen, Wasser, Garten, Sommer, Becken | 1 |  | 
+Sonnenschirm | Strand, Schatten, Sommer, Garten, Stoff | 2 |  | 
+Liegestuhl | Strand, Sonnen, Garten, klappbar, entspannen | 2 |  | 
+Hängematte | Schaukeln, Bäume, Entspannung, Urlaub, Netz | 2 |  | 
+Fernrohr | Pirat, Sehen, Linse, Kapitän, ausziehen | 3 |  | 
+Schatzkarte | Pirat, Kreuz, Insel, Papier, vergraben | 2 |  | 
+Marshmallow | Lagerfeuer, weich, süß, rosa, Stock | 2 |  | 
+Honigbiene | Summen, Imker, Wabe, Stachel, Blüte | 3 |  | 
+Kaktus | Stacheln, Wüste, Mexiko, Topf, grün | 1 |  | S
+Palme | Strand, Kokosnuss, tropisch, Insel, Urlaub | 1 |  | S
+Tannenbaum | Weihnachten, Nadeln, Schmuck, Kerzen, grün | 1 |  | 
+Christbaumkugel | Weihnachten, Schmuck, glänzend, rund, Tanne | 2 |  | 
+Adventskranz | Kerzen, Weihnachten, Dezember, Tannengrün, vier | 2 |  | 
+Adventskalender | Türchen, Dezember, Schokolade, Weihnachten, 24 | 1 |  | 
+Schneeflocke | Winter, Kristall, weiß, kalt, Eis | 2 |  | 
+Rentier | Weihnachtsmann, Geweih, Schlitten, Rudolph, Nordpol | 1 |  | 
+Osterei | bemalt, Nest, Hase, Farbe, Frühling | 1 |  | 
+Maibaum | Bayern, Mai, Tanz, Dorf, Kranz | 3 |  | 
+Lebkuchenherz | Kirmes, Zucker, Oktoberfest, Schrift, Verzierung | 3 |  | 
+Dirndl | Bayern, Oktoberfest, Schürze, Kleid, Tracht | 2 |  | 
+Lederhose | Bayern, Oktoberfest, Tracht, Träger, Kniebund | 2 |  | 
+Oktoberfest | München, Bier, Wiesn, Festzelt, Maß | 1 |  | S
+Weihnachtsmarkt | Glühwein, Buden, Advent, Lichter, Mandeln | 1 |  | S
+Stern des Südens | Bayern, Lied, Stadion, Fan, Hymne | 3 |  | 
+Schornsteinfeger | Glück, schwarz, Zylinder, Kamin, Ruß | 2 |  | 
+Kaminfeuer | Wohnzimmer, Holz, knistern, gemütlich, Wärme | 2 |  | 
+Heizung | warm, Winter, Thermostat, Raum, Kälte | 1 |  | 
+Schornstein | Rauch, Dach, Kamin, Feuer, Ruß | 2 |  | 
+Glühwürmchen | leuchten, Nacht, Käfer, Sommer, Licht | 3 |  | 
+Feuerzeug | Zigarette, Flamme, Gas, Funke, anzünden | 1 |  | 
+Streichholz | Flamme, Schachtel, anzünden, Kopf, Zündholz | 1 |  | 
+Zigarette | Rauch, Tabak, Filter, Aschenbecher, Qualm | 2 |  | 
+Aschenbecher | Zigarette, Raucher, Tisch, Glas, Kippe | 3 |  | 
+Spazierstock | Opa, Gehhilfe, Wandern, Griff, Holz | 3 |  | 
+Rollator | Oma, Gehhilfe, Räder, Senioren, Korb | 3 |  | 
+Rollstuhl | Räder, sitzen, Krankenhaus, schieben, Gehbehindert | 2 |  | 
+Gips | Bruch, Arm, Krankenhaus, Unterschriften, weiß | 1 |  | 
+Brustkorb | Rippen, Herz, Lunge, Körper, Atmen | 3 |  | 
+Herz | Liebe, schlagen, Blut, Organ, rot | 1 |  | S
+Gehirn | Denken, Kopf, Schädel, Organ, Intelligenz | 1 |  | 
+Knochen | Skelett, Hund, Bruch, weiß, Körper | 1 |  | 
+Skelett | Knochen, Halloween, Totenkopf, Rippen, Körper | 1 |  | 
+Muskel | Kraft, Sport, Bizeps, stark, Arm | 1 |  | 
+Fußabdruck | Spur, Sand, Schuh, Strand, Zehen | 2 |  | 
+Fingerabdruck | Polizei, Spur, Verbrecher, einzigartig, Tatort | 2 |  | 
+Zunge | Mund, Geschmack, lecken, rot, Sprache | 1 |  | 
+Daumen | Hand, Finger, lutschen, Like, dick | 1 |  | 
+Nase | Riechen, Gesicht, Pinocchio, Niesen, Schnupfen | 1 |  | S
+Ohr | Hören, Kopf, Läppchen, Gehör, Musik | 1 |  | 
+Auge | Sehen, Wimpern, Brille, Pupille, Blick | 1 |  | 
+Lippenstift | Schminke, Mund, rot, Frau, Kuss | 1 |  | 
+Parfüm | Duft, Flakon, riechen, Sprühen, Frau | 1 |  | 
+Haarbürste | Kämmen, Borsten, Frisur, Bad, Knoten | 2 |  | 
+Glatze | kahl, Kopf, Haare, Männer, glänzend | 1 |  | 
+Bart | Gesicht, Rasur, Haare, Männer, Weihnachtsmann | 1 |  | 
+Locken | Haare, Wellen, Frisur, kringeln, Pudel | 2 |  | 
+Zopf | Haare, Mädchen, flechten, Gummi, Pippi Langstrumpf | 1 |  | 
+Tattoo | Haut, Nadel, Tinte, Bild, Studio | 1 |  | 
+Ohrring | Schmuck, Ohr, Loch, Gold, Paar | 2 |  | 
+Halskette | Schmuck, Anhänger, Perlen, Gold, Nacken | 1 |  | 
+Armbanduhr | Handgelenk, Zeit, Zeiger, Ziffernblatt, Uhrzeit | 1 |  | 
+Taschenmesser | Schweiz, Klinge, Camping, Korkenzieher, rot | 2 |  | 
+Fotoalbum | Bilder, Erinnerung, Seiten, Familie, Urlaub | 2 |  | 
+Tagebuch | Geheimnis, schreiben, Schloss, Seiten, Mädchen | 1 |  | 
+Brief | Post, Umschlag, schreiben, Absender, Marke | 1 |  | 
+Paket | Post, Karton, Bote, Schleife, Inhalt | 1 |  | 
+Wunschzettel | Weihnachten, Geschenke, Kinder, Liste, Christkind | 2 |  | 
+Notizzettel | Schreibtisch, klebend, gelb, Merkzettel, Erinnerung | 3 |  | 
+Lesezeichen | Buch, Seite, Papier, merken, Ecke | 2 |  | 
+Comic | Heft, Sprechblase, Bilder, Superheld, Zeichnung | 1 |  | 
+Zauberwürfel | Rubik, Farben, drehen, Puzzle, Spielzeug | 2 |  | 
+Gameboy | Nintendo, Tetris, Handheld, Pokémon, Batterien | 3 |  | 
+Kaugummiautomat | Münze, Kugeln, Kinder, Kurbel, Glas | 3 |  | 
+Fotoautomat | Passbild, Vorhang, Streifen, Münze, Kabine | 3 |  | 
+Seilbahn | Berg, Gondel, Skifahrer, Kabine, Tal | 2 |  | 
+Schlittschuhbahn | Eis, Winter, Kufen, Runden, Eintritt | 3 |  | 

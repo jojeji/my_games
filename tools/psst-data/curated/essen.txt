@@ -1,0 +1,153 @@
+# Format: Suchbegriff | Tabuwort, Tabuwort, ... | Schwierigkeit 1-3 | Themen (kommagetrennt, leer = keins) | S = Startpaket
+# Praefix im Tabuwort-Feld: "K+" = erst die Kovah-Tabuwoerter, "A+" = erst die automatischen Vorschlaege (Leipzig/OpenThesaurus), dann die hier genannten.
+Pizza | Italien, Teig, Käse, Ofen, Tomate | 1 | essen | S
+Spaghetti | Nudeln, Italien, Tomatensoße, Gabel, lang | 1 | essen | S
+Hamburger | Brötchen, Fleisch, McDonald's, Pommes, Patty | 1 | essen | S
+Pommes | Kartoffel, Ketchup, Mayo, frittiert, Imbiss | 1 | essen | S
+Currywurst | Berlin, Imbiss, Pommes, Soße, Ketchup | 1 | essen | S
+Döner | Fleisch, Spieß, Türkei, Fladenbrot, Imbiss | 1 | essen | S
+Schokolade | Kakao, süß, Tafel, Milka, braun | 1 | essen | S
+Eis | Waffel, Kugel, Sommer, Vanille, kalt | 1 | essen | S
+Kuchen | Torte, backen, Geburtstag, Kaffee, Stück | 1 | essen | S
+Torte | Geburtstag, Sahne, Kerze, Kuchen, Hochzeit | 1 | essen
+Brot | Bäcker, Scheibe, Butter, Laib, Kruste | 1 | essen | S
+Brötchen | Bäcker, Frühstück, Semmel, Schrippe, Aufschnitt | 1 | essen
+Butter | Brot, Margarine, Kuh, streichen, gelb | 1 | essen
+Käse | Maus, Loch, Milch, Gouda, Scheibe | 1 | essen | S
+Ei | Huhn, Schale, Dotter, Ostern, kochen | 1 | essen
+Spiegelei | Pfanne, braten, Eigelb, Frühstück, Salz | 1 | essen
+Rührei | Pfanne, Frühstück, Speck, Eier, Gabel | 2 | essen
+Milch | Kuh, weiß, Kaffee, trinken, Müsli | 1 | essen
+Joghurt | Erdbeere, Becher, Milch, Löffel, Frühstück | 1 | essen
+Kartoffel | Knolle, Erde, Pommes, Püree, schälen | 1 | essen | S
+Nudeln | Spaghetti, Italien, kochen, Soße, Salzwasser | 1 | essen
+Reis | Asien, Korn, China, Sushi, Beilage | 1 | essen
+Suppe | Löffel, Teller, heiß, Brühe, Eintopf | 1 | essen
+Salat | grün, Dressing, Gurke, Vorspeise, Schüssel | 1 | essen
+Tomate | rot, Ketchup, Gemüse, Soße, Salat | 1 | essen
+Gurke | grün, Salat, eingelegt, Gemüse, lang | 1 | essen
+Karotte | orange, Hase, Gemüse, Möhre, roh | 1 | essen
+Zwiebel | weinen, schneiden, Schalen, scharf, Tränen | 1 | essen | S
+Knoblauch | Geruch, Zehe, Vampir, Mundgeruch, Gewürz | 1 | essen
+Paprika | rot, Gemüse, Gewürz, gefüllt, scharf | 2 | essen
+Pilz | Wald, Champignon, sammeln, giftig, Waldboden | 2 | essen
+Apfel | Baum, Obst, Eva, rund, Saft | 1 | essen | S
+Banane | gelb, Schale, Affe, krumm, Obst | 1 | essen | S
+Orange | Saft, Südfrüchte, Vitamin C, schälen, Obst | 1 | essen
+Zitrone | sauer, gelb, Saft, Limonade, auspressen | 1 | essen
+Erdbeere | rot, Sommer, Sahne, Marmelade, Obst | 1 | essen | S
+Kirsche | Stein, Baum, rot, Sommer, Obst | 1 | essen
+Traube | Wein, Weinstock, Rosine, grün, Obst | 1 | essen
+Wassermelone | Kerne, grün, Sommer, rot, Obst | 1 | essen
+Ananas | Hawaii, Südfrucht, stachelig, Pizza, gelb | 2 | essen
+Kiwi | grün, Neuseeland, Frucht, Vogel, behaart | 2 | essen
+Birne | Obst, Baum, Form, Saft, grün | 2 | essen
+Honig | Biene, süß, Bär, Glas, Imker | 1 | essen
+Marmelade | Brot, Frühstück, Glas, Erdbeere, Früchte | 1 | essen
+Nutella | Brotaufstrich, Haselnuss, Frühstück, Glas, Schokolade | 1 | essen
+Müsli | Frühstück, Milch, Haferflocken, Schüssel, Obst | 1 | essen
+Cornflakes | Frühstück, Milch, Schüssel, Mais, Müsli | 2 | essen
+Pfannkuchen | Teig, Mehl, Ei, Sirup, wenden | 1 | essen
+Waffel | Eisen, Teig, Herzform, Puderzucker, Eis | 2 | essen
+Popcorn | Kino, Mais, süß, Tüte, platzen | 1 | essen | S
+Chips | Tüte, knabbern, Kartoffel, salzig, Fernsehabend | 1 | essen
+Gummibärchen | Haribo, süß, bunt, Gelatine, Tüte | 1 | essen | S
+Lakritz | schwarz, Salmiak, süß, Katjes, Bonbon | 2 | essen
+Kaugummi | kauen, Blase, Minze, Schuhsohle, Streifen | 1 | essen
+Lutscher | Stiel, süß, Kind, Zucker, Bonbon | 2 | essen
+Zuckerwatte | Jahrmarkt, rosa, Stäbchen, klebrig, Kirmes | 1 | essen
+Lebkuchen | Weihnachten, Nürnberg, Gewürz, Herz, Gebäck | 2 | essen
+Plätzchen | Weihnachten, backen, Ausstecher, Ofen, Teig | 1 | essen
+Stollen | Weihnachten, Rosinen, Dresden, Zucker, Gebäck | 2 | essen
+Marzipan | Mandeln, Lübeck, süß, Weihnachten, Schwein | 3 | essen
+Fondue | Käse, Schweiz, Topf, Gabel, tauchen | 2 | essen
+Raclette | Käse, Schweiz, Pfännchen, Grill, Silvester | 2 | essen
+Sushi | Reis, Fisch, Japan, Stäbchen, roh | 1 | essen
+Lasagne | Nudelplatten, Hackfleisch, Italien, Ofen, Béchamel | 2 | essen
+Schnitzel | Panade, Wiener, Fleisch, Schwein, Zitrone | 1 | essen
+Bratwurst | Grill, Senf, Brötchen, Thüringen, Fleisch | 1 | essen
+Frikadelle | Hackfleisch, Brötchen, Bulette, Pfanne, rund | 2 | essen
+Sauerkraut | Weißkohl, deutsch, Eisbein, Dose, Essig | 2 | essen
+Knödel | Kloß, Kartoffeln, Soße, Bayern, rund | 2 | essen
+Spätzle | Schwaben, Käse, Nudeln, Teig, Linsen | 2 | essen
+Maultaschen | Schwaben, Teig, Brühe, gefüllt, Spinat | 3 | essen
+Brezel | Bayern, Laugen, Salz, Bäcker, Knoten | 2 | essen
+Weißwurst | Bayern, Senf, Frühstück, süß, Brezel | 2 | essen
+Leberkäse | Bayern, Semmel, Fleisch, Metzger, Scheibe | 3 | essen
+Bockwurst | Senf, Brötchen, heiß, Wasser, Würstchen | 2 | essen
+Salami | Pizza, Wurst, Scheibe, Italien, Aufschnitt | 2 | essen
+Schinken | Schwein, Brot, Scheibe, rosa, Aufschnitt | 1 | essen
+Speck | Frühstück, Schwein, knusprig, Fett, Scheibe | 2 | essen
+Hähnchen | Huhn, Grill, Keule, Flügel, Fleisch | 1 | essen
+Steak | Rind, Medium, Grill, Pfanne, Fleisch | 1 | essen
+Fischstäbchen | Kapitän, paniert, Ketchup, Kind, tiefgekühlt | 1 | essen
+Lachs | Fisch, rosa, Räucher, Norwegen, Bagel | 2 | essen
+Thunfisch | Dose, Pizza, Salat, Meer, Sandwich | 2 | essen
+Hering | Brötchen, Fisch, Matjes, Nordsee, Salz | 3 | essen
+Garnele | Krabbe, Meerestier, Scampi, rosa, Schale | 3 | essen
+Muschel | Meer, Strand, Schale, Perle, Auster | 2 | essen
+Tofu | vegan, Soja, weiß, Fleischersatz, Vegetarier | 2 | essen
+Burrito | Mexiko, Tortilla, gerollt, Bohnen, Fleisch | 3 | essen
+Taco | Mexiko, Tortilla, gefüllt, Hackfleisch, Salsa | 2 | essen
+Guacamole | Avocado, Mexiko, Dip, grün, Nachos | 3 | essen
+Avocado | grün, Kern, Guacamole, Toast, Frucht | 2 | essen
+Brokkoli | grün, Gemüse, Kohl, klein, Röschen | 2 | essen
+Spinat | Popeye, grün, Eisen, Blätter, Gemüse | 1 | essen
+Mais | Kolben, gelb, Popcorn, Feld, Dose | 2 | essen
+Erbse | grün, Schote, klein, Gemüse, Suppe | 2 | essen
+Linse | Hülsenfrucht, Eintopf, klein, Suppe, Spätzle | 3 | essen
+Kürbis | Halloween, Suppe, orange, Herbst, aushöhlen | 1 | essen
+Radieschen | rot, Gemüse, scharf, Salat, klein | 2 | essen
+Chili | scharf, Schote, rot, Mexiko, Gewürz | 2 | essen
+Ketchup | Tomate, Flasche, Pommes, rot, Soße | 1 | essen
+Senf | Wurst, gelb, scharf, Tube, Soße | 1 | essen
+Mayonnaise | Ei, Pommes, weiß, Soße, Tube | 2 | essen
+Essig | sauer, Salat, Flasche, Öl, Gurke | 2 | essen
+Salz | Streuer, Meer, Pfeffer, Suppe, Gewürz | 1 | essen
+Pfeffer | scharf, Mühle, Salz, Gewürz, niesen | 1 | essen
+Zucker | süß, Würfel, Kaffee, weiß, Kristalle | 1 | essen
+Mehl | Backen, Weizen, Kuchen, Müller, Pulver | 1 | essen
+Öl | Olive, Pfanne, braten, Flasche, Salat | 2 | essen
+Wasser | Durst, Flasche, nass, Hahn, Sprudel | 1 | essen
+Limonade | Zitrone, sprudeln, süß, Getränk, Flasche | 2 | essen
+Cola | Coca, braun, sprudeln, Zucker, Getränk | 1 | essen
+Orangensaft | Frühstück, Frucht, Glas, Vitamin C, gepresst | 1 | essen
+Kaffee | Bohne, Tasse, wach, Koffein, Barista | 1 | essen | S
+Tee | Beutel, Kanne, heiß, Kräuter, Tasse | 1 | essen
+Kakao | Schokolade, heiß, Milch, Winter, Tasse | 1 | essen
+Bier | Hopfen, Kneipe, Oktoberfest, Glas, Alkohol | 1 | essen | S
+Wein | Rebe, Traube, Flasche, rot, Korken | 1 | essen
+Sekt | Silvester, Prickeln, Flasche, Korken, anstoßen | 1 | essen
+Schnaps | klar, stark, Alkohol, Prost, Glas | 2 | essen
+Cocktail | Strohhalm, Bar, Schirmchen, mixen, Alkohol | 2 | essen
+Glühwein | Weihnachtsmarkt, heiß, Tasse, Zimt, Winter | 1 | essen
+Prosecco | Italien, Sekt, Perlen, Aperitif, Glas | 3 | essen
+Smoothie | Obst, Mixer, Becher, Vitamine, pürieren | 3 | essen
+Energydrink | Dose, Flügel, Koffein, Red Bull, wach | 2 | essen
+Frühstück | Morgen, Brötchen, Kaffee, Marmelade, Mahlzeit | 1 | essen
+Mittagessen | Kantine, Hunger, Mahlzeit, warm, zwölf Uhr | 1 | essen
+Abendbrot | Aufschnitt, Mahlzeit, kalt, Käse, Familie | 2 | essen
+Picknick | Wiese, Decke, Korb, Park, draußen | 1 | essen
+Grillen | Kohle, Würstchen, Sommer, Rost, Garten | 1 | essen
+Dessert | Nachtisch, süß, Eis, Pudding, Menü | 2 | essen
+Pudding | Vanille, Schokolade, wackeln, Schüssel, Dessert | 2 | essen
+Tiramisu | Italien, Mascarpone, Kaffee, Dessert, Löffelbiskuit | 3 | essen
+Croissant | Frankreich, Hörnchen, Blätterteig, Frühstück, Butter | 2 | essen
+Donut | Loch, Glasur, Simpsons, rund, süß | 2 | essen
+Muffin | Becher, Törtchen, Schokostückchen, backen, klein | 2 | essen
+Brownie | Schokolade, Kuchen, Viereck, feucht, Nuss | 3 | essen
+Apfelstrudel | Österreich, Vanillesoße, Teig, Zimt, Rosinen | 3 | essen
+Kaiserschmarrn | Österreich, zerrissen, Puderzucker, Pfanne, Rosinen | 3 | essen
+Erdnuss | Schale, Knabber, Butter, Hülsenfrucht, salzig | 2 | essen
+Walnuss | Schale, knacken, Baum, Gehirn, Nusskuchen | 3 | essen
+Haselnuss | Nutella, Strauch, braun, Eichhörnchen, knacken | 3 | essen
+Mandel | Marzipan, Nuss, süß, Kern, Blüte | 3 | essen
+Rosine | getrocknet, Traube, Kuchen, Müsli, Stollen | 3 | essen
+Gewürz | Dose, Streuer, Pfeffer, Zimt, Kräuter | 2 | essen
+Zimt | Weihnachten, Stange, Gewürz, braun, Plätzchen | 2 | essen
+Vanille | Eis, Schote, Pudding, Gewürz, gelb | 2 | essen
+Mozzarella | Pizza, Italien, Tomate, Büffel, Kugel | 3 | essen
+Parmesan | Hartkäse, Italien, Reibe, Nudeln, Streu | 3 | essen
+Feta | Griechenland, Schaf, Salat, Käse, Würfel | 3 | essen
+Oliven | Griechenland, schwarz, Öl, Kern, grün | 2 | essen
+Bulette | Berlin, Hackfleisch, Frikadelle, Senf, Brötchen | 3 | essen

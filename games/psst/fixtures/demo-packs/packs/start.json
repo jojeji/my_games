@@ -1,0 +1,119 @@
+[
+ {
+  "id": "pizza",
+  "w": "Pizza",
+  "t": [
+   "Italien",
+   "Teig",
+   "Käse",
+   "Ofen",
+   "Salami"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "hund",
+  "w": "Hund",
+  "t": [
+   "Bellen",
+   "Tier",
+   "Leine",
+   "Haustier",
+   "Katze"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "sonne",
+  "w": "Sonne",
+  "t": [
+   "Himmel",
+   "Hitze",
+   "Stern",
+   "Licht",
+   "Sommer"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "buch",
+  "w": "Buch",
+  "t": [
+   "Lesen",
+   "Seiten",
+   "Bibliothek",
+   "Autor",
+   "Roman"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "auto",
+  "w": "Auto",
+  "t": [
+   "Fahren",
+   "Räder",
+   "Motor",
+   "Straße",
+   "Lenkrad"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "regen",
+  "w": "Regen",
+  "t": [
+   "Wasser",
+   "Schirm",
+   "nass",
+   "Wolke",
+   "Tropfen"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "kaffee",
+  "w": "Kaffee",
+  "t": [
+   "Bohne",
+   "Tasse",
+   "Koffein",
+   "Morgen",
+   "Milch"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "nudeln",
+  "w": "Nudeln",
+  "t": [
+   "Spaghetti",
+   "Soße",
+   "kochen",
+   "Pasta",
+   "Wasser"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "apfel",
+  "w": "Apfel",
+  "t": [
+   "Obst",
+   "Baum",
+   "rot",
+   "Kuchen",
+   "Saft"
+  ],
+  "d": 1,
+  "src": "demo"
+ }
+]

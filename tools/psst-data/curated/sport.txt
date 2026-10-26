@@ -1,0 +1,97 @@
+Fußball | Tor, Elfmeter, Stadion, Mannschaft, Schiedsrichter | 1 | sport | S
+Basketball | Korb, Dunking, NBA, dribbeln, Halle | 1 | sport
+Handball | Wurf, Tor, Halle, Harz, Torwart | 2 | sport
+Volleyball | Netz, Strand, Schmettern, Aufschlag, Mannschaft | 1 | sport
+Tennis | Schläger, Netz, Wimbledon, Filzball, Aufschlag | 1 | sport | S
+Tischtennis | Platte, Schläger, Netz, Pingpong, Zelluloid | 1 | sport
+Badminton | Federball, Netz, Schläger, Halle, Smash | 2 | sport
+Golf | Loch, Abschlag, Rasen, Schläger, Caddy | 1 | sport
+Eishockey | Puck, Schläger, Eis, Kufen, Kanada | 1 | sport
+Boxen | Handschuhe, Ring, K.o., Kampf, Muhammad Ali | 1 | sport
+Ringen | Matte, Griff, Kampf, Schultern, Olympia | 2 | sport
+Judo | Kampfsport, Japan, Gürtel, Matte, Wurf | 2 | sport
+Karate | Kampfsport, Japan, Schwarzgurt, Schlag, Tritt | 2 | sport
+Schwimmen | Becken, Wasser, Kraulen, Bahn, Badehose | 1 | sport
+Tauchen | Flasche, Meer, Unterwasser, Flossen, Maske | 1 | sport
+Surfen | Welle, Brett, Meer, Hawaii, Neoprenanzug | 1 | sport
+Segeln | Boot, Wind, Mast, Regatta, Yacht | 1 | sport
+Rudern | Boot, Fluss, Achter, Wasser, Paddel | 2 | sport
+Skifahren | Piste, Schnee, Lift, Berg, Stöcke | 1 | sport | S
+Snowboard | Schnee, Brett, Piste, Berg, Halfpipe | 1 | sport
+Eislaufen | Kufen, Eis, Schlittschuhe, Pirouette, Bahn | 1 | sport
+Skispringen | Schanze, Weite, Telemark, Flug, Vierschanzentournee | 2 | sport
+Biathlon | Schießen, Langlauf, Gewehr, Schnee, Loipe | 2 | sport
+Rodeln | Schlitten, Schnee, Bahn, Hang, Winter | 2 | sport
+Curling | Eis, Stein, Besen, wischen, Kanada | 3 | sport
+Laufen | Joggen, Beine, Marathon, Turnschuhe, Rennen | 1 | sport
+Marathon | laufen, lang, Kilometer, Ziel, Griechenland | 1 | sport
+Sprint | schnell, Läufer, kurz, Bahn, Startblock | 2 | sport
+Weitsprung | Sand, Grube, Anlauf, Leichtathletik, Balken | 2 | sport
+Hochsprung | Latte, Matte, Leichtathletik, Flop, Höhe | 2 | sport
+Stabhochsprung | Latte, Matte, Leichtathletik, Höhe, Anlauf | 3 | sport
+Speerwurf | Leichtathletik, Spitze, Weite, Stab, Olympia | 3 | sport
+Kugelstoßen | Leichtathletik, Ring, schwer, Wurf, Olympia | 3 | sport
+Hürdenlauf | Hindernis, springen, Bahn, Leichtathletik, Sprint | 3 | sport
+Staffel | Stab, Läufer, Übergabe, Team, Bahn | 3 | sport
+Radfahren | Fahrrad, Tour de France, Helm, Pedale, Strampeln | 1 | sport
+Mountainbike | Gelände, Fahrrad, Berg, Wald, Federung | 2 | sport
+Reiten | Pferd, Sattel, Springen, Zügel, Dressur | 1 | sport
+Turnen | Reck, Barren, Halle, Ringe, Sprung | 2 | sport
+Gymnastik | Band, Ball, Turnen, Musik, Bodenübung | 3 | sport
+Yoga | Matte, Entspannung, Indien, Atmung, Dehnen | 1 | sport
+Fitnessstudio | Hanteln, Training, Muskeln, Laufband, Mitgliedschaft | 1 | sport
+Klettern | Seil, Wand, Berg, Griffe, Gipfel | 1 | sport
+Wandern | Berge, Rucksack, Weg, Natur, Wald | 1 | sport
+Bogenschießen | Pfeil, Zielscheibe, Sehne, Robin Hood, Köcher | 2 | sport
+Angeln | Rute, Fisch, Köder, See, Geduld | 1 | sport
+Billard | Queue, Kugeln, Tisch, Loch, Kneipe | 2 | sport
+Darts | Pfeil, Scheibe, Kneipe, Bullseye, werfen | 2 | sport
+Bowling | Kugel, Kegel, Bahn, Strike, Schuhe | 1 | sport
+Kegeln | Kugel, Kneipe, Bahn, Alle Neune, Verein | 2 | sport
+Skateboard | Rollen, Brett, Rampe, Trick, Halfpipe | 1 | sport
+Rugby | Ei, eiförmig, England, Gedränge, Versuch | 2 | sport
+American Football | Touchdown, Super Bowl, Helm, NFL, Quarterback | 1 | sport
+Baseball | Schläger, Homerun, Handschuh, USA, Werfer | 1 | sport
+Cricket | Schläger, England, Wicket, Indien, Ball | 3 | sport
+Formel 1 | Rennwagen, Schumacher, Boxenstopp, Rennstrecke, Monaco | 1 | sport | S
+Olympia | Spiele, Ringe, Medaille, Fackel, Athleten | 1 | sport | S
+Weltmeisterschaft | WM, Titel, Fußball, Pokal, Turnier | 1 | sport
+Bundesliga | Fußball, Tabelle, Bayern, Meister, Deutschland | 1 | sport
+Champions League | Fußball, Europa, Pokal, Hymne, Finale | 2 | sport
+Stadion | Zuschauer, Rasen, Tribüne, Fans, Spiel | 1 | sport | S
+Schiedsrichter | Pfeife, Karte, Spiel, Foul, Regeln | 1 | sport
+Torwart | Handschuhe, Tor, halten, Fußball, Parade | 1 | sport
+Elfmeter | Punkt, Tor, Schütze, Foul, Torwart | 1 | sport
+Abseits | Fußball, Linie, Schiedsrichter, Fahne, Regel | 2 | sport
+Eckball | Fußball, Fahne, Flanke, Ecke, Standard | 3 | sport
+Freistoß | Mauer, Fußball, Foul, Schuss, Ball | 2 | sport
+Trainer | Mannschaft, Taktik, Bank, Coach, Übungen | 1 | sport
+Medaille | Gold, Sieger, Podium, Silber, Olympia | 1 | sport
+Pokal | Sieger, Trophäe, Finale, Gold, Becher | 1 | sport
+Trikot | Nummer, Fan, Mannschaft, Fußball, Verein | 1 | sport
+Fan | Verein, Stadion, Schal, Anhänger, jubeln | 1 | sport
+Sporthalle | Schule, Turnen, Hallenboden, Basketballkorb, Sportunterricht | 2 | sport
+Turnschuhe | Sport, Sohle, laufen, Schnürsenkel, Sneaker | 1 | sport
+Hantel | Gewicht, Fitnessstudio, Muskeln, Stange, Training | 2 | sport
+Muskelkater | Schmerzen, Training, Waden, Sport, Tag danach | 2 | sport
+Aufwärmen | Training, dehnen, vor dem Spiel, Muskeln, Beine | 2 | sport
+Dehnen | Muskeln, Beweglichkeit, Yoga, Aufwärmen, Zehen | 3 | sport
+Schach | Springer, Dame, Matt, Brett, Läufer | 1 | sport | S
+Fechten | Degen, Florett, Maske, Duell, Säbel | 3 | sport
+Triathlon | Schwimmen, Radfahren, laufen, Ironman, drei | 3 | sport
+Boxring | Seile, Kampf, Ecke, Gong, Schläge | 2 | sport
+Wettkampf | Gegner, Sieger, Turnier, Rennen, Konkurrenz | 2 | sport
+Meister | Titel, Sieger, Erster, Pokal, Tabelle | 2 | sport
+Fußballplatz | Rasen, Tor, Mittellinie, Eckfahne, Spielfeld | 1 | sport
+Ball | rund, rollen, Spiel, werfen, Luft | 1 | sport | S
+Schlittschuh | Eis, Kufe, Eislaufen, Winter, Schnürung | 3 | sport
+Gewichtheben | Hantel, Langhantel, stemmen, Stange, Scheiben | 3 | sport
+Kickboxen | Tritt, Kampfsport, Ring, Schlag, Handschuhe | 3 | sport
+Paragliding | Gleitschirm, Berg, fliegen, Wind, Absprung | 3 | sport
+Bungee | Seil, Sprung, Brücke, Gummi, Adrenalin | 2 | sport
+Fallschirm | Springen, Flugzeug, Landung, Absprung, Seide | 1 | sport
+Rennrad | schnell, Tour de France, Straße, Helm, dünne Reifen | 2 | sport
+Joggen | laufen, Park, Turnschuhe, Morgen, Atem | 1 | sport
+Liegestütze | Arme, Boden, Training, Brust, Hochdrücken | 2 | sport
+Sit-ups | Bauch, Training, Rücken, Matte, Wiederholungen | 3 | sport
+Freibad | Sommer, Becken, Pommes, Schwimmmeister, Rutsche | 1 | sport

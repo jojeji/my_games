@@ -1,0 +1,19 @@
+{
+  "id": "./?app=psst",
+  "name": "Psst! Das Partyspiel",
+  "short_name": "Psst!",
+  "description": "Begriffe umschreiben, ohne die Tabuwörter zu sagen. Partyspiel für Teams im selben Raum, ein Handy für alle.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff4e8",
+  "theme_color": "#ff6b4a",
+  "categories": ["games"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

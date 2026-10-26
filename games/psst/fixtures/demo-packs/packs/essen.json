@@ -1,0 +1,106 @@
+[
+ {
+  "id": "pizza",
+  "w": "Pizza",
+  "t": [
+   "Italien",
+   "Teig",
+   "Käse",
+   "Ofen",
+   "Salami"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "nudeln",
+  "w": "Nudeln",
+  "t": [
+   "Spaghetti",
+   "Soße",
+   "kochen",
+   "Pasta",
+   "Wasser"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "schokolade",
+  "w": "Schokolade",
+  "t": [
+   "süß",
+   "Kakao",
+   "Tafel",
+   "braun",
+   "Milka"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "apfel",
+  "w": "Apfel",
+  "t": [
+   "Obst",
+   "Baum",
+   "rot",
+   "Kuchen",
+   "Saft"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "brot",
+  "w": "Brot",
+  "t": [
+   "Bäcker",
+   "Scheibe",
+   "Mehl",
+   "Butter",
+   "backen"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "suppe",
+  "w": "Suppe",
+  "t": [
+   "Löffel",
+   "Teller",
+   "heiß",
+   "Brühe",
+   "Gemüse"
+  ],
+  "d": 2,
+  "src": "demo"
+ },
+ {
+  "id": "gulasch",
+  "w": "Gulasch",
+  "t": [
+   "Fleisch",
+   "Paprika",
+   "Ungarn",
+   "Eintopf",
+   "Soße"
+  ],
+  "d": 2,
+  "src": "demo"
+ },
+ {
+  "id": "kaffee",
+  "w": "Kaffee",
+  "t": [
+   "Bohne",
+   "Tasse",
+   "Koffein",
+   "Morgen",
+   "Milch"
+  ],
+  "d": 1,
+  "src": "demo"
+ }
+]

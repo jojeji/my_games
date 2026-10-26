@@ -1,0 +1,93 @@
+[
+ {
+  "id": "fussball",
+  "w": "Fußball",
+  "t": [
+   "Tor",
+   "Mannschaft",
+   "Ball",
+   "Schiedsrichter",
+   "Stadion"
+  ],
+  "d": 2,
+  "src": "demo"
+ },
+ {
+  "id": "schule",
+  "w": "Schule",
+  "t": [
+   "Lehrer",
+   "Klasse",
+   "Unterricht",
+   "Hausaufgaben",
+   "Tafel"
+  ],
+  "d": 2,
+  "src": "demo"
+ },
+ {
+  "id": "bruecke",
+  "w": "Brücke",
+  "t": [
+   "Fluss",
+   "Überqueren",
+   "Bogen",
+   "Stahl",
+   "Autobahn"
+  ],
+  "d": 2,
+  "src": "demo"
+ },
+ {
+  "id": "vulkan",
+  "w": "Vulkan",
+  "t": [
+   "Lava",
+   "Ausbruch",
+   "Berg",
+   "Asche",
+   "heiß"
+  ],
+  "d": 2,
+  "src": "demo"
+ },
+ {
+  "id": "suppe",
+  "w": "Suppe",
+  "t": [
+   "Löffel",
+   "Teller",
+   "heiß",
+   "Brühe",
+   "Gemüse"
+  ],
+  "d": 2,
+  "src": "demo"
+ },
+ {
+  "id": "pizza",
+  "w": "Pizza",
+  "t": [
+   "Italien",
+   "Teig",
+   "Käse",
+   "Ofen",
+   "Salami"
+  ],
+  "d": 1,
+  "src": "demo"
+ },
+ {
+  "id": "kaffee",
+  "w": "Kaffee",
+  "t": [
+   "Bohne",
+   "Tasse",
+   "Koffein",
+   "Morgen",
+   "Milch"
+  ],
+  "d": 1,
+  "src": "demo"
+ }
+]

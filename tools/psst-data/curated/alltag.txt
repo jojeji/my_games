@@ -1,0 +1,200 @@
+Arzt | Krankenhaus, Praxis, Doktor, Kittel, Stethoskop | 1 | alltag | S
+Zahnarzt | Bohrer, Loch, Spritze, Praxis, Karies | 1 | alltag
+Krankenschwester | Klinik, Patient, Spritze, Pflege, Kittel | 1 | alltag
+Lehrer | Schule, Unterricht, Klasse, Tafel, Noten | 1 | alltag | S
+Polizist | Uniform, Streife, Verbrecher, Pistole, Verhaftung | 1 | alltag
+Feuerwehrmann | Löschen, Schlauch, Helm, Brand, Leiter | 1 | alltag
+Bäcker | Brot, Brötchen, früh, Teig, Ofen | 1 | alltag
+Metzger | Fleisch, Wurst, Schürze, Messer, Theke | 2 | alltag
+Friseur | Haare, Schere, Kamm, Föhnen, Salon | 1 | alltag
+Koch | Küche, Topf, Mütze, Restaurant, Herd | 1 | alltag
+Kellner | Restaurant, Tablett, Bedienung, Trinkgeld, Speisekarte | 1 | alltag
+Taxifahrer | Auto, Fahrgast, Taxameter, gelb, Stadt | 1 | alltag
+Busfahrer | Haltestelle, Linie, Fahrgast, Lenkrad, Fahrkarte | 1 | alltag
+Pilot | Flugzeug, Cockpit, Uniform, Landung, Kapitän | 1 | alltag
+Astronaut | Weltall, Rakete, Raumanzug, Mond, Schwerelosigkeit | 1 | alltag
+Bauarbeiter | Baustelle, Helm, Kran, Ziegel, Schubkarre | 1 | alltag
+Maler | Pinsel, Farbe, Wand, Leiter, Eimer | 2 | alltag
+Elektriker | Kabel, Strom, Steckdose, Sicherung, Leitung | 2 | alltag
+Klempner | Wasserhahn, Rohr, Abfluss, Werkzeug, Sanitär | 3 | alltag
+Postbote | Brief, Paket, Briefkasten, Gelb, Klingeln | 1 | alltag
+Müllmann | Tonne, Abfall, Straße, orange, Müllwagen | 2 | alltag
+Bauer | Acker, Traktor, Feld, Kuh, Ernte | 1 | alltag
+Fischer | Netz, Boot, Meer, Angel, Fang | 2 | alltag
+Richter | Urteil, Hammer, Robe, Recht, Verhandlung | 2 | alltag
+Rechtsanwalt | Gericht, Mandant, Paragraf, Kanzlei, Prozess | 2 | alltag
+Chef | Büro, Boss, Mitarbeiter, Gehalt, Besprechung | 1 | alltag
+Büro | Schreibtisch, Arbeit, Computer, Kollegen, Chef | 1 | alltag
+Besprechung | Meeting, Büro, Termin, Kollegen, Tagesordnung | 2 | alltag
+Gehalt | Lohn, Monat, Konto, Arbeit, Geld | 1 | alltag
+Urlaub | Strand, Koffer, Reise, frei, Sommer | 1 | alltag | S
+Feierabend | Arbeit, Ende, Heimweg, frei, Büro | 1 | alltag
+Wochenende | Samstag, Sonntag, frei, Ausschlafen, Freizeit | 1 | alltag
+Montag | Wochenanfang, Arbeit, Woche, Blue, Anfang | 1 | alltag
+Geburtstag | Kuchen, Kerzen, Geschenk, Jahr, Party | 1 | alltag | S
+Hochzeit | Braut, Ring, Kirche, Kleid, Bräutigam | 1 | alltag | S
+Beerdigung | Friedhof, Trauer, Sarg, schwarz, Tod | 2 | alltag
+Weihnachten | Baum, Geschenke, Heiligabend, Dezember, Plätzchen | 1 | alltag | S
+Ostern | Eier, Hase, Frühling, Nest, Feiertag | 1 | alltag
+Silvester | Feuerwerk, Mitternacht, Sekt, Neujahr, Böller | 1 | alltag | S
+Karneval | Kostüm, Köln, Narren, Umzug, Fasching | 1 | alltag
+Halloween | Kürbis, Verkleidung, Gruseln, Süßes, Oktober | 1 | alltag
+Geschenk | Papier, Schleife, Geburtstag, Weihnachten, Überraschung | 1 | alltag
+Party | Feiern, Musik, Gäste, Tanzen, Getränke | 1 | alltag
+Einladung | Party, Karte, Gast, Geburtstag, Datum | 2 | alltag
+Luftballon | Geburtstag, platzen, Helium, Gummi, aufblasen | 1 | alltag | S
+Konfetti | Papier, Karneval, bunt, werfen, Party | 2 | alltag
+Feuerwerk | Silvester, Rakete, Knall, Himmel, Böller | 1 | alltag
+Kerze | Flamme, Wachs, Docht, Geburtstag, Licht | 1 | alltag
+Schule | Lehrer, Unterricht, Klasse, Hausaufgaben, Pause | 1 | alltag | S
+Hausaufgaben | Schule, Heft, Lehrer, Nachmittag, Mathe | 1 | alltag
+Zeugnis | Noten, Schule, Ferien, Eltern, Papier | 1 | alltag
+Pause | Schule, Ruhe, Unterbrechung, Hof, Klingel | 1 | alltag
+Tafel | Kreide, Schule, Lehrer, Schwamm, Klasse | 1 | alltag
+Kugelschreiber | Mine, Tinte, Papier, Klick, Stift | 1 | alltag
+Radiergummi | Bleistift, Fehler, Weg, Schule, Federmappe | 2 | alltag
+Schere | Papier, schneiden, Klinge, Basteln, spitz | 1 | alltag
+Kleber | Tube, Papier, Basteln, Uhu, Flasche | 1 | alltag
+Rucksack | Schule, Wandern, Gurte, tragen, Tasche | 1 | alltag
+Regenschirm | nass, aufspannen, Griff, Schutz, Wetter | 1 | alltag | S
+Sonnenbrille | Gläser, Sommer, Augen, Gestell, Urlaub | 1 | alltag
+Brille | Gläser, sehen, Nase, Gestell, Optiker | 1 | alltag
+Schlüssel | Schloss, Tür, aufschließen, Bund, Haustür | 1 | alltag | S
+Portemonnaie | Geld, Karten, Tasche, Münzen, Scheine | 1 | alltag
+Handtasche | Frau, Henkel, Reißverschluss, Schulter, Inhalt | 1 | alltag
+Koffer | Reise, Urlaub, packen, Flughafen, Rollen | 1 | alltag
+Hut | Kopf, Krempe, Sonne, Zylinder, Mütze | 1 | alltag
+Mütze | Kopf, Winter, Wolle, warm, Bommel | 1 | alltag
+Schal | Hals, Winter, Wolle, warm, Fan | 1 | alltag
+Handschuhe | Finger, Winter, warm, Paar, Wolle | 1 | alltag
+Socken | Füße, Paar, Strümpfe, Wäsche, Loch | 1 | alltag
+Stiefel | Schuhe, Gummi, Regen, Schaft, Pfütze | 1 | alltag
+Gummistiefel | Regen, Pfütze, Matsch, Schuhe, Kautschuk | 1 | alltag
+Krawatte | Hals, Anzug, Knoten, Büro, Binden | 1 | alltag
+Anzug | Hose, Jackett, Hochzeit, Krawatte, Business | 1 | alltag
+Jeans | Hose, blau, Denim, Nieten, Levi's | 1 | alltag
+Pyjama | Schlafanzug, Nacht, Bett, Schlafen, Streifen | 1 | alltag
+Bademantel | Bad, Sauna, Frottee, Nach dem Duschen, Gürtel | 2 | alltag
+Badeanzug | Schwimmen, Frau, Strand, Wasser, Schwimmbad | 2 | alltag
+Bett | Schlafen, Matratze, Kissen, Decke, Schlafzimmer | 1 | alltag | S
+Kissen | Kopf, Bett, Feder, Decke, Sofa | 1 | alltag
+Sofa | Wohnzimmer, Couch, sitzen, Kissen, Fernsehen | 1 | alltag
+Stuhl | sitzen, Lehne, vier Beine, Tisch, Sitzfläche | 1 | alltag
+Tisch | Platte, Beine, Essen, Stuhl, Möbel | 1 | alltag
+Schrank | Kleidung, Tür, Möbel, Regal, Kleiderbügel | 1 | alltag
+Spiegel | Gesicht, Glas, Bad, Reflexion, Schminken | 1 | alltag
+Teppich | Boden, Wohnzimmer, Staubsauger, Fußboden, weich | 1 | alltag
+Vorhang | Fenster, Gardine, Stoff, Bühne, Dunkel | 2 | alltag
+Fenster | Glas, öffnen, Scheibe, Rahmen, Aussicht | 1 | alltag
+Tür | Klinke, Schloss, Haus, Schlüssel, öffnen | 1 | alltag
+Treppe | Stufen, Geländer, Etage, Haus, steigen | 1 | alltag
+Dach | Haus, Ziegel, Regen, Schornstein, oben | 1 | alltag
+Keller | Untergeschoss, Dunkel, Treppe, Wein, Haus | 1 | alltag
+Garten | Rasen, Blumen, Beet, Zaun, Gemüse | 1 | alltag
+Gartenzwerg | Mütze, rot, Bart, Dekoration, Rasen | 1 | alltag
+Rasenmäher | Garten, Lärm, Gras, Messer, Benzin | 1 | alltag
+Wohnung | Miete, Zimmer, Vermieter, Haus, Küche | 1 | alltag
+Miete | Wohnung, Monat, bezahlen, Nebenkosten, Eigentümer | 1 | alltag
+Nachbar | nebenan, Zaun, Wohnung, Lärm, Haus | 1 | alltag
+Müll | Tonne, Abfall, Entsorgung, stinken, Eimer | 1 | alltag
+Einkaufswagen | Supermarkt, Münze, Rollen, Gitter, schieben | 1 | alltag
+Supermarkt | Regale, Einkaufswagen, Kasse, Lebensmittel, Edeka | 1 | alltag | S
+Kasse | bezahlen, Supermarkt, Bon, Schlange, Scanner | 1 | alltag
+Bank | Geld, Konto, Kredit, Filiale, Sparbuch | 2 | alltag
+Geldautomat | Karte, PIN, abheben, Bank, Scheine | 1 | alltag
+Münze | Geld, Kupfer, Kleingeld, rund, Cent | 1 | alltag
+Sparschwein | Geld, Münzen, Kind, rosa, Schlitz | 1 | alltag
+Auto | Räder, fahren, Motor, Lenkrad, Straße | 1 | alltag | S
+Fahrrad | Pedale, Räder, Lenker, Kette, Sattel | 1 | alltag | S
+Motorrad | zwei Räder, Helm, Lederkluft, Harley, knattern | 1 | alltag
+Bus | Haltestelle, Fahrgäste, Linie, öffentlich, Fahrer | 1 | alltag
+Zug | Bahnhof, Schiene, Gleis, Lokomotive, Fahrkarte | 1 | alltag
+Straßenbahn | Schienen, Haltestelle, Stadt, Oberleitung, Linie | 2 | alltag
+Flugzeug | fliegen, Flughafen, Pilot, Flügel, Passagiere | 1 | alltag | S
+Schiff | Meer, Kapitän, Anker, Hafen, Wasser | 1 | alltag
+Hubschrauber | Rotor, fliegen, Landeplatz, Rettung, Propeller | 1 | alltag
+Ampel | rot, grün, Kreuzung, Straße, Fußgänger | 1 | alltag
+Stau | Autobahn, Auto, Stillstand, Ferien, Verkehr | 1 | alltag
+Parkplatz | Auto, abstellen, Parkscheibe, Ticket, Lücke | 1 | alltag
+Tankstelle | Benzin, Zapfsäule, Auto, Diesel, Zapfhahn | 1 | alltag
+Führerschein | Auto, Prüfung, Fahrschule, Karte, fahren | 1 | alltag
+Fahrkarte | Zug, Bus, Ticket, Kontrolleur, Entwerten | 2 | alltag
+Bahnhof | Zug, Gleis, Fahrkarte, Reisende, Schienen | 1 | alltag
+Flughafen | Flugzeug, Check-in, Koffer, Gate, Landebahn | 1 | alltag
+Hotel | Zimmer, Übernachtung, Rezeption, Frühstück, Gäste | 1 | alltag
+Campingplatz | Zelt, Wohnwagen, Natur, Urlaub, Schlafsack | 2 | alltag
+Zelt | Camping, Schlafsack, Heringe, Stoff, Wald | 1 | alltag
+Schlafsack | Zelt, Camping, Reißverschluss, Nacht, warm | 1 | alltag
+Lagerfeuer | Flammen, Camping, Marshmallows, Holz, Abend | 1 | alltag
+Sonnencreme | Sonnenbrand, Strand, Schutz, Lichtschutzfaktor, eincremen | 1 | alltag
+Sonnenbrand | rot, Haut, Strand, Schmerzen, Creme | 1 | alltag
+Regenbogen | Farben, Himmel, bunt, Gold, Topf | 1 | alltag
+Schneemann | Winter, Karotte, Kugeln, kalt, Besen | 1 | alltag
+Schlitten | Schnee, Hang, Winter, Kufen, Rodeln | 1 | alltag
+Gewitter | Blitz, Donner, Regen, Sturm, Wolken | 1 | alltag
+Nebel | Sicht, Herbst, Dunst, Grau, Morgen | 2 | alltag
+Husten | Erkältung, Hals, Röcheln, krank, Saft | 1 | alltag
+Schnupfen | Nase, Taschentuch, Erkältung, Niesen, krank | 1 | alltag
+Fieber | Thermometer, Temperatur, krank, Grad, heiß | 1 | alltag
+Pflaster | Wunde, Verband, Knie, Kratzer, Apotheke | 1 | alltag
+Apotheke | Medikamente, Tabletten, Rezept, Grünes Kreuz, Salbe | 1 | alltag
+Spritze | Nadel, Arzt, Impfung, Piks, Angst | 1 | alltag
+Krankenwagen | Sirene, Notarzt, Blaulicht, Unfall, Rettung | 1 | alltag
+Friseursalon | Haare, Schneiden, Waschen, Spiegel, Termin | 2 | alltag
+Seife | Hände, Waschen, Schaum, Bad, Duft | 1 | alltag
+Duschgel | Schaum, Bad, Flasche, Duft, waschen | 2 | alltag
+Shampoo | Haare, Waschen, Schaum, Flasche, Dusche | 1 | alltag
+Zahnpasta | Tube, Minze, Zahnbürste, putzen, Fluorid | 1 | alltag
+Toilettenpapier | Rolle, Klo, hamstern, Bad, weich | 1 | alltag
+Taschentuch | Nase, Schnupfen, Papier, Niesen, Tempo | 1 | alltag
+Handtuch | Trocknen, Bad, Frottee, Strand, Dusche | 1 | alltag
+Wäscheklammer | Leine, Holz, Klemmen, Garten, aufhängen | 2 | alltag
+Bügeleisen | Hemden, Falten, heiß, glatt, Dampf | 2 | alltag
+Besen | kehren, Putzen, Borsten, Hexe, Stiel | 1 | alltag
+Eimer | Wasser, Henkel, Putzen, Plastik, Sand | 1 | alltag
+Hammer | Nagel, Werkzeug, Holz, Klopfen, Stiel | 1 | alltag
+Schraubenzieher | Werkzeug, drehen, Griff, Heimwerker, Kreuzschlitz | 2 | alltag
+Zange | Werkzeug, Draht, Kneifen, Metall, Griff | 2 | alltag
+Säge | Holz, Zähne, Werkzeug, Baum, schneiden | 1 | alltag
+Leiter | Sprossen, Hochsteigen, Dach, Klettern, Maler | 1 | alltag
+Nagel | Hammer, Holz, Metall, Finger, Spitze | 2 | alltag
+Kleiderbügel | Schrank, Haken, Aufhängen, Draht, Hemd | 2 | alltag
+Papierkorb | Büro, Müll, Abfall, Zettel, Schreibtisch | 2 | alltag
+Briefmarke | Post, kleben, Porto, sammeln, Umschlag | 1 | alltag
+Postkarte | Urlaub, Gruß, Briefmarke, Bild, Schreiben | 1 | alltag
+Zeitung | Nachrichten, Lesen, Papier, Artikel, Schlagzeile | 1 | alltag
+Buch | Lesen, Seiten, Bibliothek, Roman, Autor | 1 | alltag
+Bibliothek | Bücher, Ausleihen, Leise, Lesesaal, Regal | 1 | alltag
+Gutschein | Wert, Geschenk, Einlösen, Laden, Papier | 2 | alltag
+Schnarchen | Nacht, Schlafen, Nase, Laut, Bett | 1 | alltag
+Gähnen | müde, Mund, aufreißen, Langeweile, Schlafen | 2 | alltag
+Niesen | Nase, Schnupfen, Gesundheit, Taschentuch, Allergie | 2 | alltag
+Lachen | Witz, Spaß, Freude, Mund, kichern | 1 | alltag
+Weinen | Tränen, traurig, Taschentuch, Schluchzen, Augen | 1 | alltag
+Kuss | Lippen, Liebe, Mund, Paar, Schmatzer | 1 | alltag
+Umarmung | Arme, Liebe, drücken, Freund, Nähe | 1 | alltag
+Freundschaft | Kumpel, Vertrauen, mögen, Beste, Verbundenheit | 2 | alltag
+Streit | Zoff, Wut, Schreien, Versöhnung, Konflikt | 2 | alltag
+Langeweile | nichts tun, Gähnen, Uhr, warten, Öde | 2 | alltag
+Hunger | Magen, Essen, knurren, Mahlzeit, Appetit | 1 | alltag
+Durst | Trinken, Wasser, trocken, Mund, Getränk | 1 | alltag
+Traum | Schlaf, Nacht, Fantasie, Bett, Kopfkino | 1 | alltag
+Albtraum | Schlaf, Nacht, Angst, schlecht, Monster | 2 | alltag
+Geheimnis | verraten, Flüstern, Niemand, Wissen, verbergen | 2 | alltag
+Lüge | Wahrheit, Pinocchio, schwindeln, falsch, unehrlich | 2 | alltag
+Überraschung | Geschenk, Party, Schreck, unerwartet, Geburtstag | 1 | alltag
+Glückwunsch | Geburtstag, Karte, Gratulation, Prüfung, gratulieren | 2 | alltag
+Kater | Alkohol, Kopfschmerzen, Morgen danach, Party, Übelkeit | 2 | alltag
+Verspätung | Zug, Bahn, Minuten, warten, Ankunft | 2 | alltag
+Termin | Kalender, Arzt, Uhrzeit, Verabredung, Datum | 2 | alltag
+Kalender | Datum, Monate, Wand, Tage, Jahr | 1 | alltag
+Mülltrennung | Gelber Sack, Tonne, Papier, Glas, Recycling | 3 | alltag
+Pfand | Flasche, Automat, Cent, Dose, Rückgabe | 2 | alltag
+Flohmarkt | Trödel, Wochenende, gebraucht, Stand, Handeln | 2 | alltag
+Kirmes | Karussell, Riesenrad, Zuckerwatte, Jahrmarkt, Losbude | 2 | alltag
+Riesenrad | Kirmes, Gondel, Höhe, Aussicht, drehen | 1 | alltag
+Achterbahn | Looping, Freizeitpark, schnell, Schienen, Kreischen | 1 | alltag
+Spielplatz | Schaukel, Rutsche, Sandkasten, Kinder, Wippe | 1 | alltag
+Schaukel | Spielplatz, Schwung, Kinder, Seil, Hin und her | 1 | alltag
+Rutsche | Spielplatz, Kinder, hinunter, Schwimmbad, glatt | 1 | alltag
+Sandburg | Strand, Förmchen, Wasser, Turm, Eimer | 1 | alltag

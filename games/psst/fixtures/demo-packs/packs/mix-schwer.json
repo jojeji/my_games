@@ -1,0 +1,67 @@
+[
+ {
+  "id": "geduld",
+  "w": "Geduld",
+  "t": [
+   "Warten",
+   "ruhig",
+   "Tugend",
+   "Eile",
+   "Zeit"
+  ],
+  "d": 3,
+  "src": "demo"
+ },
+ {
+  "id": "ironie",
+  "w": "Ironie",
+  "t": [
+   "Sarkasmus",
+   "Gegenteil",
+   "Spott",
+   "witzig",
+   "meinen"
+  ],
+  "d": 3,
+  "src": "demo"
+ },
+ {
+  "id": "inflation",
+  "w": "Inflation",
+  "t": [
+   "Preise",
+   "Geld",
+   "steigen",
+   "Euro",
+   "Wert"
+  ],
+  "d": 3,
+  "src": "demo"
+ },
+ {
+  "id": "vulkan",
+  "w": "Vulkan",
+  "t": [
+   "Lava",
+   "Ausbruch",
+   "Berg",
+   "Asche",
+   "heiß"
+  ],
+  "d": 2,
+  "src": "demo"
+ },
+ {
+  "id": "gulasch",
+  "w": "Gulasch",
+  "t": [
+   "Fleisch",
+   "Paprika",
+   "Ungarn",
+   "Eintopf",
+   "Soße"
+  ],
+  "d": 2,
+  "src": "demo"
+ }
+]

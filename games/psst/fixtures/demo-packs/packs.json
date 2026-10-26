@@ -1,0 +1,41 @@
+{
+ "version": 1,
+ "packs": [
+  {
+   "id": "start",
+   "name": "Startpaket",
+   "kind": "difficulty",
+   "icon": "🚀",
+   "desc": "Leichte Karten zum Warmwerden",
+   "count": 9,
+   "file": "packs/start.json"
+  },
+  {
+   "id": "mix-mittel",
+   "name": "Mix mittel",
+   "kind": "difficulty",
+   "icon": "🎲",
+   "desc": "Gemischte Karten, mittlere Schwierigkeit",
+   "count": 7,
+   "file": "packs/mix-mittel.json"
+  },
+  {
+   "id": "mix-schwer",
+   "name": "Mix schwer",
+   "kind": "difficulty",
+   "icon": "🔥",
+   "desc": "Knifflige Begriffe",
+   "count": 5,
+   "file": "packs/mix-schwer.json"
+  },
+  {
+   "id": "essen",
+   "name": "Essen & Trinken",
+   "kind": "topic",
+   "icon": "🍕",
+   "desc": "Alles, was schmeckt",
+   "count": 8,
+   "file": "packs/essen.json"
+  }
+ ]
+}

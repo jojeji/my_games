@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "packs": [
+    {
+      "id": "start",
+      "name": "Startpaket",
+      "kind": "difficulty",
+      "icon": "🚀",
+      "desc": "Die besten Karten zum Einsteigen: bekannte, lustige, eindeutige Alltagsbegriffe.",
+      "count": 147,
+      "file": "packs/start.json"
+    },
+    {
+      "id": "mix1",
+      "name": "Mix leicht",
+      "kind": "difficulty",
+      "icon": "🟢",
+      "desc": "Bunte Mischung aus allen Themen, leicht zu erklären.",
+      "count": 744,
+      "file": "packs/mix1.json"
+    },
+    {
+      "id": "mix2",
+      "name": "Mix mittel",
+      "kind": "difficulty",
+      "icon": "🟡",
+      "desc": "Bunte Mischung aus allen Themen, mittlere Schwierigkeit.",
+      "count": 514,
+      "file": "packs/mix2.json"
+    },
+    {
+      "id": "mix3",
+      "name": "Mix schwer",
+      "kind": "difficulty",
+      "icon": "🔴",
+      "desc": "Bunte Mischung aus allen Themen, knifflige Begriffe.",
+      "count": 189,
+      "file": "packs/mix3.json"
+    },
+    {
+      "id": "essen",
+      "name": "Essen & Trinken",
+      "kind": "topic",
+      "icon": "🍕",
+      "desc": "Speisen, Getränke, Obst, Gemüse und alles rund ums Essen.",
+      "count": 151,
+      "file": "packs/essen.json"
+    },
+    {
+      "id": "tiere",
+      "name": "Tierwelt",
+      "kind": "topic",
+      "icon": "🦁",
+      "desc": "Haustiere, Wildtiere, Insekten und Fabelwesen.",
+      "count": 124,
+      "file": "packs/tiere.json"
+    },
+    {
+      "id": "geo",
+      "name": "Geografie",
+      "kind": "topic",
+      "icon": "🌍",
+      "desc": "Länder, Städte, Berge, Flüsse und Sehenswürdigkeiten.",
+      "count": 130,
+      "file": "packs/geo.json"
+    },
+    {
+      "id": "sport",
+      "name": "Sport",
+      "kind": "topic",
+      "icon": "⚽",
+      "desc": "Sportarten, Regeln, Begriffe und Ausrüstung.",
+      "count": 98,
+      "file": "packs/sport.json"
+    },
+    {
+      "id": "film",
+      "name": "Film & Serien",
+      "kind": "topic",
+      "icon": "🎬",
+      "desc": "Kino, Fernsehen, Serien, Märchen und Figuren.",
+      "count": 101,
+      "file": "packs/film.json"
+    },
+    {
+      "id": "personen",
+      "name": "Berühmte Personen",
+      "kind": "topic",
+      "icon": "⭐",
+      "desc": "Stars, Erfinder, Sportler, Politiker und Figuren der Geschichte.",
+      "count": 132,
+      "file": "packs/personen.json"
+    },
+    {
+      "id": "technik",
+      "name": "Technik & Internet",
+      "kind": "topic",
+      "icon": "💻",
+      "desc": "Geräte, Apps, Internet und Technik im Alltag.",
+      "count": 113,
+      "file": "packs/technik.json"
+    },
+    {
+      "id": "alltag",
+      "name": "Beruf & Alltag",
+      "kind": "topic",
+      "icon": "🏠",
+      "desc": "Berufe, Haushalt, Feste, Reisen und der ganz normale Alltag.",
+      "count": 244,
+      "file": "packs/alltag.json"
+    }
+  ]
+}
