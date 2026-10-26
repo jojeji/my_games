@@ -1,0 +1,87 @@
+# Karten, deren Tabuwörter zum Teil aus Kovah/Taboo-Data (GPL-3.0) stammen: eigene Wörter zuerst, "K+" füllt aus Kovah auf.
+George Clooney | K+ Schauspieler, Hollywood, Nespresso, Ocean's Eleven | 1 | personen
+Tom Hanks | K+ Forrest Gump, Schauspieler | 1 | personen | S
+Morgan Freeman | K+ Schauspieler, tiefe Stimme, Gott | 2 | personen | 
+Robert De Niro | K+ Taxi Driver, Schauspieler | 2 | personen | 
+Meryl Streep | K+ Schauspielerin, Oscar, Mamma Mia, Eiserne Lady | 2 | personen | 
+Rowan Atkinson | K+ Mr. Bean, Komiker | 1 | personen
+Jim Carrey | K+ Ace Ventura, Maske, Komiker | 1 | personen | S
+Sean Connery | K+ James Bond, Schotte, Schottland | 2 | personen | 
+Anthony Hopkins | K+ Hannibal Lecter, Schauspieler | 2 | personen | 
+Hugh Grant | K+ Notting Hill, Schauspieler, Love Actually | 2 | personen | 
+Jennifer Aniston | K+ Friends, Rachel | 2 | personen | 
+Scarlett Johansson | K+ Schauspielerin, Black Widow | 2 | personen | 
+Emma Watson | K+ Hermine, Harry Potter, Schauspielerin | 1 | personen | 
+Daniel Radcliffe | K+ Harry Potter, Schauspieler, Brille | 1 | personen | 
+Eddie Murphy | K+ Komiker, Esel, Schauspieler | 2 | personen | 
+Robin Williams | K+ Mrs. Doubtfire, Komiker | 2 | personen | 
+Eminem | K+ Rapper, Slim Shady, Hip-Hop | 2 | personen | 
+Bono | K+ U2, Sänger, Irland | 3 | personen | 
+Jimi Hendrix | K+ E-Gitarre, Woodstock, Gitarrist | 3 | personen | 
+Kurt Cobain | K+ Nirvana, Grunge, Seattle | 3 | personen | 
+Marlon Brando | K+ Der Pate, Schauspieler | 3 | personen | 
+Clint Eastwood | K+ Western, Schauspieler, Regisseur | 2 | personen | 
+Winston Churchill | K+ Premierminister, Zigarre, England | 2 | personen | 
+John F. Kennedy | K+ Präsident, USA, Dallas | 2 | personen | 
+Abraham Lincoln | K+ Präsident, USA, Zylinder, Bart | 2 | personen | 
+Che Guevara | K+ Revolution, Kuba, Barett, Argentinier | 2 | personen | 
+Fidel Castro | K+ Kuba, Revolution, Zigarre, Havanna | 2 | personen | 
+Karl Lagerfeld | K+ Modeschöpfer, Chanel, weißer Zopf | 2 | personen | 
+Andy Warhol | K+ Pop-Art, Campbell's Suppe, Künstler | 3 | personen | 
+Salvador Dalí | K+ Maler, Schnurrbart, zerfließende Uhren, Spanien, Surrealismus | 3 | personen | 
+Alfred Hitchcock | K+ Regisseur, Psycho, Thriller | 3 | personen | 
+David Hasselhoff | K+ Baywatch, Knight Rider, Sänger, Looking for Freedom, Rettungsschwimmer | 2 | personen | 
+Mark Twain | K+ Tom Sawyer, Schriftsteller | 3 | personen | 
+Galileo Galilei | K+ Astronom, Fernrohr, Kirche | 3 | personen | 
+Benjamin Franklin | K+ Erfinder, Blitzableiter, Drachen | 3 | personen | 
+Nikola Tesla | K+ Erfinder, Elektrizität, Spule, Wechselstrom, Blitz | 3 | personen | 
+Lance Armstrong | K+ Radfahrer, Tour de France, Doping | 3 | personen | 
+Louis Armstrong | K+ Jazz, Trompete, What a Wonderful World, New Orleans | 3 | personen | 
+Buzz Aldrin | K+ Astronaut, Mond, NASA, Apollo 11 | 3 | personen | 
+Michael J. Fox | K+ Marty McFly, Zurück in die Zukunft | 3 | personen | 
+Frank Sinatra | K+ My Way, Sänger, New York | 3 | personen | 
+Matt Damon | K+ Jason Bourne, Schauspieler, Mars | 3 | personen | 
+Mel Gibson | K+ Braveheart, Schauspieler | 3 | personen | 
+Elyas M'Barek | K+ Fack ju Göhte, Schauspieler, Deutschland, Komödie, Lehrer | 2 | personen | 
+Christoph Waltz | K+ Schauspieler, Österreich, Oscar | 3 | personen | 
+Matthias Schweighöfer | K+ Schauspieler, Deutschland, Regisseur, Comedy | 3 | personen | 
+Marie Antoinette | K+ Königin, Frankreich, Kuchen, Guillotine | 3 | personen | 
+Natalie Portman | K+ Black Swan, Schauspielerin | 3 | personen | 
+Kate Winslet | K+ Titanic, Schauspielerin, Rose | 3 | personen | 
+Trabant | K+ Trabbi, DDR, Pappe | 2 | alltag | 
+Ferrari | K+ rot, Italien, Sportwagen | 1 | technik
+Porsche | K+ 911, Stuttgart, Sportwagen | 2 | technik | 
+Volkswagen | K+ Golf, Wolfsburg, Käfer | 1 | technik | S
+Tesla | K+ Elektroauto, Elon Musk | 2 | technik | 
+Aston Martin | K+ James Bond, Sportwagen, England | 3 | technik | 
+McDonald's | K+ Burger, Pommes, Ronald, Big Mac, Clown | 1 | essen
+Starbucks | K+ Kaffee, Becher, grün | 1 | essen | S
+Wackelpudding | K+ Waldmeister, zittern, Nachtisch | 2 | essen | 
+Mascarpone | K+ Tiramisu, Italien, Käse | 3 | essen | 
+Hot Dog | K+ Würstchen, Brötchen, Senf, Ketchup, USA | 1 | essen
+Whiskey | K+ Schottland, Irland, Alkohol, Fass | 2 | essen | 
+Essstäbchen | K+ China, Reis, Holz, Japan, Sushi | 1 | essen | 
+Tinder | K+ Swipe, Dating, App | 2 | technik | 
+Wikipedia | K+ Wissen, Lexikon, online | 1 | technik | 
+Blog | K+ Artikel, schreiben, Internet | 2 | technik | 
+Newsletter | K+ E-Mail, Neuigkeiten, Abo | 3 | technik | 
+PayPal | K+ Geld, bezahlen, Konto, online | 2 | technik | 
+Webcam | K+ Kamera, Video, Skype, Videochat | 2 | technik | 
+DVD | K+ Film, Spieler, Fernseher, Scheibe | 2 | technik | 
+Snapchat | K+ Fotos, Bilder, Geist | 2 | technik | 
+Eieruhr | K+ kochen, Zeit, Küche, Frühstücksei | 2 | alltag | 
+Kreditkarte | K+ Bank, Plastik, bezahlen | 1 | alltag | 
+Bison | K+ Rind, Amerika, Prärie | 2 | tiere | 
+Erdmännchen | K+ Afrika, stehen, Timon | 2 | tiere | 
+Seehund | K+ Robbe, Meer, Kunststücke | 2 | tiere | 
+Walross | K+ Stoßzähne, Meer, Robbe, Hauer | 2 | tiere | 
+Orang-Utan | K+ Affe, Borneo, Dschungel | 2 | tiere | 
+Frettchen | K+ Marder, Haustier, Wiesel, Iltis, Raubtier | 3 | tiere | 
+Alpaka | K+ Wolle, Südamerika, Lama | 2 | tiere | 
+Chinchilla | K+ Nagetier, Fell, Südamerika | 3 | tiere | 
+Zitteraal | K+ Strom, Fisch, Südamerika | 3 | tiere | 
+Uhu | K+ Eule, Kleber, Nachtvogel | 3 | tiere | 
+Kaiserpinguin | K+ Antarktis, Brüten, Eis | 3 | tiere | 
+Chihuahua | K+ klein, Mexiko, Handtasche | 2 | tiere | 
+Schäferhund | K+ Polizei, Rex, Wachtier, bellen | 1 | tiere | 
+Avatar | K+ Pandora, blau, James Cameron, Film | 2 | film | 

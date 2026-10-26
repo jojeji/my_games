@@ -1,101 +1,101 @@
 Titanic | Schiff, Eisberg, Leonardo DiCaprio, Rose, Untergang | 1 | film | S
-Harry Potter | Zauberer, Hogwarts, Narbe, Brille, Besen | 1 | film | S
-Herr der Ringe | Frodo, Mittelerde, Gandalf, Hobbit, Gollum | 1 | film
-Star Wars | Laserschwert, Darth Vader, Weltall, Yoda, Jedi | 1 | film | S
-Star Trek | Raumschiff, Enterprise, Spock, Weltall, Kirk | 2 | film
-Matrix | Neo, rote Pille, Computer, Morpheus, Sonnenbrille | 2 | film
-Jurassic Park | Dinosaurier, Insel, Spielberg, DNA, Saurier | 1 | film
-Der Pate | Mafia, Italien, Marlon Brando, Don Corleone, Familie | 2 | film
+Harry Potter | Zauberer, Hogwarts, Narbe, Brille, Besen | 1 | film
+Herr der Ringe | Frodo, Mittelerde, Gandalf, Hobbit, Gollum | 1 | film | S
+Star Wars | Laserschwert, Darth Vader, Weltall, Yoda, Jedi | 1 | film
+Star Trek | Raumschiff, Enterprise, Spock, Weltall, Kirk | 2 | film | 
+Matrix | Neo, rote Pille, Computer, Morpheus, Sonnenbrille | 2 | film | 
+Jurassic Park | Dinosaurier, Insel, Spielberg, DNA, Saurier | 1 | film | S
+Der Pate | Mafia, Italien, Marlon Brando, Don Corleone, Familie | 2 | film | 
 Terminator | Roboter, Schwarzenegger, Zukunft, Cyborg, Hasta la vista | 1 | film
-Rocky | Boxer, Treppe, Stallone, Philadelphia, Training | 2 | film
-Indiana Jones | Hut, Peitsche, Abenteuer, Archäologe, Harrison Ford | 1 | film
-James Bond | Agent, Martini, Geheimdienst, Aston Martin, Doppelnull | 1 | film | S
-Batman | Fledermaus, Gotham, Joker, Superheld, Umhang | 1 | film
+Rocky | Boxer, Treppe, Stallone, Philadelphia, Training | 2 | film | 
+Indiana Jones | Hut, Peitsche, Abenteuer, Archäologe, Harrison Ford | 1 | film | S
+James Bond | Agent, Martini, Geheimdienst, Aston Martin, Doppelnull | 1 | film
+Batman | Fledermaus, Gotham, Joker, Superheld, Umhang | 1 | film | S
 Superman | Umhang, Superheld, Krypton, fliegen, Clark Kent | 1 | film
-Spider-Man | Netz, Superheld, Peter Parker, Spinne, New York | 1 | film
-Avengers | Marvel, Superhelden, Iron Man, Thor, Hulk | 1 | film
-Frozen | Eiskönigin, Elsa, Schneemann, Disney, Let it go | 1 | film
+Spider-Man | Netz, Superheld, Peter Parker, Spinne, New York | 1 | film | S
+Avengers | Marvel, Superhelden, Iron Man, Thor, Hulk | 1 | film | 
+Frozen | Eiskönigin, Elsa, Schneemann, Disney, Let it go | 1 | film | S
 Der König der Löwen | Simba, Disney, Afrika, Hakuna Matata, Mufasa | 1 | film
-Findet Nemo | Fisch, Clownfisch, Dorie, Pixar, Meer | 1 | film
+Findet Nemo | Fisch, Clownfisch, Dorie, Pixar, Meer | 1 | film | S
 Toy Story | Woody, Buzz Lightyear, Spielzeug, Pixar, Andy | 1 | film
 Shrek | Oger, Sumpf, grün, Esel, Fiona | 1 | film | S
-Mickey Maus | Disney, Minnie, Ohren, Zeichentrick, Nager | 1 | film | S
-Donald Duck | Ente, Disney, Entenhausen, Neffen, Daisy | 1 | film
-Simpsons | Springfield, Homer, gelb, Zeichentrick, Bart | 1 | film | S
-Biene Maja | Willi, Honig, Zeichentrick, Flip, Insekt | 2 | film
-Pumuckl | Meister Eder, Kobold, rothaarig, Werkstatt, Klabautermann | 2 | film
-Die Sendung mit der Maus | Elefant, Sachgeschichten, Sonntag, orange, Kinderfernsehen | 2 | film
-Sesamstraße | Krümelmonster, Bert, Ernie, Kinderfernsehen, Elmo | 2 | film
+Mickey Maus | Disney, Minnie, Ohren, Zeichentrick, Nager | 1 | film
+Donald Duck | Ente, Disney, Entenhausen, Neffen, Daisy | 1 | film | S
+Simpsons | Springfield, Homer, gelb, Zeichentrick, Bart | 1 | film
+Biene Maja | Willi, Honig, Zeichentrick, Flip, Insekt | 2 | film | 
+Pumuckl | Meister Eder, Kobold, rothaarig, Werkstatt, Klabautermann | 2 | film | 
+Die Sendung mit der Maus | Elefant, Sachgeschichten, Sonntag, orange, Kinderfernsehen | 2 | film | 
+Sesamstraße | Krümelmonster, Bert, Ernie, Kinderfernsehen, Elmo | 2 | film | 
 Tatort | Krimi, Sonntag, Kommissar, ARD, Leiche | 1 | film | S
-Tagesschau | Nachrichten, 20 Uhr, ARD, Sprecher, Gong | 1 | film
-Wetten, dass..? | Samstagabend, Gottschalk, Couch, Show, ZDF | 2 | film
+Tagesschau | Nachrichten, 20 Uhr, ARD, Sprecher, Gong | 1 | film | 
+Wetten, dass..? | Samstagabend, Gottschalk, Couch, Show, ZDF | 2 | film | 
 Dschungelcamp | Känguruhoden, Prüfung, Ekel, Promis, RTL | 1 | film
-Germany's Next Topmodel | Heidi Klum, Laufsteg, Foto, Mädchen, Casting | 2 | film
-Big Brother | Container, Kameras, Reality, Kandidaten, Zuschauer | 2 | film
-Game of Thrones | Drachen, Winter, Westeros, Serie, Königreich | 1 | film
-Breaking Bad | Walter White, Drogen, Chemie, Serie, Methamphetamin | 2 | film
+Germany's Next Topmodel | Heidi Klum, Laufsteg, Foto, Mädchen, Casting | 2 | film | 
+Big Brother | Container, Kameras, Reality, Kandidaten, Zuschauer | 2 | film | 
+Game of Thrones | Drachen, Winter, Westeros, Serie, Königreich | 1 | film | S
+Breaking Bad | Walter White, Drogen, Chemie, Serie, Methamphetamin | 2 | film | 
 Friends | Serie, Central Perk, New York, Ross, Sitcom | 1 | film
-Stranger Things | Netflix, Serie, Eleven, Demogorgon, Achtziger | 2 | film
-The Walking Dead | Zombies, Serie, Apokalypse, Rick, Untote | 2 | film
-Haus des Geldes | Serie, Raub, Masken, Professor, Netflix | 2 | film
-Lindenstraße | Serie, Sonntag, München, Beimer, Soap | 3 | film
-GZSZ | Soap, RTL, Berlin, Serie, täglich | 3 | film
+Stranger Things | Netflix, Serie, Eleven, Demogorgon, Achtziger | 2 | film | 
+The Walking Dead | Zombies, Serie, Apokalypse, Rick, Untote | 2 | film | 
+Haus des Geldes | Serie, Raub, Masken, Professor, Netflix | 2 | film | 
+Lindenstraße | Serie, Sonntag, München, Beimer, Soap | 3 | film | 
+GZSZ | Soap, RTL, Berlin, Serie, täglich | 3 | film | 
 Kino | Leinwand, Popcorn, Film, Sessel, Eintritt | 1 | film | S
-Oscar | Preis, Statue, Hollywood, Schauspieler, Gala | 1 | film
-Regisseur | Film, Klappe, Set, Anweisung, Dreh | 1 | film
-Schauspieler | Film, Rolle, Bühne, Darsteller, Kamera | 1 | film
-Drehbuch | Film, Dialoge, Autor, Szenen, Skript | 2 | film
-Komödie | lustig, Lachen, Film, Humor, Witz | 2 | film
+Oscar | Preis, Statue, Hollywood, Schauspieler, Gala | 1 | film | S
+Regisseur | Film, Klappe, Set, Anweisung, Dreh | 1 | film | 
+Schauspieler | Film, Rolle, Bühne, Darsteller, Kamera | 1 | film | 
+Drehbuch | Film, Dialoge, Autor, Szenen, Skript | 2 | film | 
+Komödie | lustig, Lachen, Film, Humor, Witz | 2 | film | 
 Horrorfilm | Angst, Gruseln, Monster, Gänsehaut, Kino | 1 | film
-Krimi | Mord, Kommissar, Spannung, Detektiv, Täter | 1 | film
+Krimi | Mord, Kommissar, Spannung, Detektiv, Täter | 1 | film | S
 Western | Cowboy, Pferd, Revolver, Duell, Sheriff | 1 | film
-Märchenfilm | Prinzessin, Schloss, Weihnachten, Hexe, Aschenputtel | 2 | film
-Zeichentrick | Cartoon, Figuren, gemalt, Disney, Kinder | 1 | film
-Trailer | Vorschau, Film, Kino, Ausschnitt, Werbung | 2 | film
-Fortsetzung | Teil zwei, Film, Sequel, Serie, nächste | 2 | film
-Synchronsprecher | Stimme, Film, Studio, Mikrofon, Übersetzung | 3 | film
-Statist | Nebenrolle, Menge, Film, Hintergrund, Komparse | 3 | film
+Märchenfilm | Prinzessin, Schloss, Weihnachten, Hexe, Aschenputtel | 2 | film | 
+Zeichentrick | Cartoon, Figuren, gemalt, Disney, Kinder | 1 | film | S
+Trailer | Vorschau, Film, Kino, Ausschnitt, Werbung | 2 | film | 
+Fortsetzung | Teil zwei, Film, Sequel, Serie, nächste | 2 | film | 
+Synchronsprecher | Stimme, Film, Studio, Mikrofon, Übersetzung | 3 | film | 
+Statist | Nebenrolle, Menge, Film, Hintergrund, Komparse | 3 | film | 
 Filmstar | Hollywood, berühmt, Teppich, Schauspieler, Fans | 1 | film
-Roter Teppich | Premiere, Stars, Gala, Fotografen, Kleid | 1 | film
-Videothek | leihen, DVD, Film, Laden, Kassette | 3 | film
-Fernbedienung | Tasten, Fernseher, Batterien, Sofa, Programm | 1 | film
-Werbung | Fernsehen, Pause, Spot, Produkt, Reklame | 1 | film
-Quizshow | Kandidat, Fragen, Moderator, Joker, Gewinn | 2 | film
+Roter Teppich | Premiere, Stars, Gala, Fotografen, Kleid | 1 | film | S
+Videothek | leihen, DVD, Film, Laden, Kassette | 3 | film | 
+Fernbedienung | Tasten, Fernseher, Batterien, Sofa, Programm | 1 | film | 
+Werbung | Fernsehen, Pause, Spot, Produkt, Reklame | 1 | film | 
+Quizshow | Kandidat, Fragen, Moderator, Joker, Gewinn | 2 | film | 
 Wer wird Millionär | Jauch, Quiz, Joker, Fragen, Gewinn | 1 | film
-Talkshow | Gäste, Moderator, Sofa, Diskussion, Studio | 2 | film
-Sitcom | Serie, Lacher, Humor, Sofa, Wohnung | 3 | film
-Cliffhanger | Spannung, Serie, offen, nächste Folge, Ende | 3 | film
-Minions | gelb, Brille, Gru, Bananen, Kinderfilm | 1 | film
+Talkshow | Gäste, Moderator, Sofa, Diskussion, Studio | 2 | film | 
+Sitcom | Serie, Lacher, Humor, Sofa, Wohnung | 3 | film | 
+Cliffhanger | Spannung, Serie, offen, nächste Folge, Ende | 3 | film | 
+Minions | gelb, Brille, Gru, Bananen, Kinderfilm | 1 | film | S
 Pokémon | Pikachu, Karten, Monster, Ash, Spiel | 1 | film
-Pikachu | Pokémon, gelb, Blitz, Maus, Ash | 2 | film
-Mario | Klempner, Nintendo, Luigi, Pilz, Schnurrbart | 1 | film
+Pikachu | Pokémon, gelb, Blitz, Maus, Ash | 2 | film | 
+Mario | Klempner, Nintendo, Luigi, Pilz, Schnurrbart | 1 | film | S
 Dracula | Vampir, Graf, Blut, Transsilvanien, Zähne | 1 | film
-Frankenstein | Monster, Labor, Doktor, Schrauben, grün | 2 | film
-Zombie | Untote, Gehirn, Apokalypse, Gruseln, Horror | 1 | film
-Vampir | Blut, Zähne, Knoblauch, Sarg, Fledermaus | 1 | film
+Frankenstein | Monster, Labor, Doktor, Schrauben, grün | 2 | film | 
+Zombie | Untote, Gehirn, Apokalypse, Gruseln, Horror | 1 | film | S
+Vampir | Blut, Zähne, Knoblauch, Sarg, Fledermaus | 1 | film | S
 Hexe | Besen, Zauber, Märchen, Kessel, Hut | 1 | film
-Zauberer | Hut, Magie, Merlin, Spruch, Hokuspokus | 1 | film
+Zauberer | Hut, Magie, Merlin, Spruch, Hokuspokus | 1 | film | S
 Superheld | Umhang, Maske, Kräfte, Comic, retten | 1 | film
-Prinzessin | Schloss, Krone, Märchen, Kleid, König | 1 | film
-Pirat | Schatz, Augenklappe, Schiff, Papagei, Holzbein | 1 | film | S
-Ritter | Rüstung, Schwert, Burg, Pferd, Mittelalter | 1 | film
+Prinzessin | Schloss, Krone, Märchen, Kleid, König | 1 | film | S
+Pirat | Schatz, Augenklappe, Schiff, Papagei, Holzbein | 1 | film
+Ritter | Rüstung, Schwert, Burg, Pferd, Mittelalter | 1 | film | S
 Cowboy | Pferd, Lasso, Wilder Westen, Hut, Revolver | 1 | film
-Detektiv | Lupe, Fall, Spuren, Sherlock Holmes, ermitteln | 1 | film
+Detektiv | Lupe, Fall, Spuren, Sherlock Holmes, ermitteln | 1 | film | S
 Sherlock Holmes | Detektiv, Pfeife, Watson, London, Baker Street | 1 | film
-Außerirdischer | Alien, Raumschiff, Weltall, E.T., grün | 1 | film
+Außerirdischer | Alien, Raumschiff, Weltall, E.T., grün | 1 | film | S
 Raumschiff | Weltall, Astronaut, Rakete, Star Trek, fliegen | 1 | film
-Karaoke | Singen, Mikrofon, Text, Bildschirm, Bar | 1 | film
+Karaoke | singen, Mikrofon, Text, Bildschirm, Bar | 1 | film | S
 Disney | Mickey Maus, Zeichentrick, Prinzessin, Freizeitpark, Schloss | 1 | film
-Pixar | Animation, Toy Story, Lampe, Computer, Studio | 3 | film
-Marvel | Comic, Superhelden, Stan Lee, Avengers, Kino | 2 | film
-Bollywood | Indien, Tanz, Film, Lieder, Mumbai | 2 | film
-Cartoon | Zeichentrick, Figuren, Comic, Trickfilm, Fernsehen | 2 | film
-Marionette | Fäden, Puppe, Theater, Holz, Pinocchio | 2 | film
-Pinocchio | Nase, Lüge, Holzpuppe, Märchen, Geppetto | 1 | film
-Aschenputtel | Schuh, Märchen, Prinz, Stiefmutter, Mitternacht | 2 | film
-Schneewittchen | Zwerge, Apfel, Märchen, Spiegel, Hexe | 1 | film
+Pixar | Animation, Toy Story, Lampe, Computer, Studio | 3 | film | 
+Marvel | Comic, Superhelden, Stan Lee, Avengers, Kino | 2 | film | 
+Bollywood | Indien, Tanz, Film, Lieder, Mumbai | 2 | film | 
+Cartoon | Zeichentrick, Figuren, Comic, Trickfilm, Fernsehen | 2 | film | 
+Marionette | Fäden, Puppe, Theater, Holz, Pinocchio | 2 | film | 
+Pinocchio | Nase, Lüge, Holzpuppe, Märchen, Geppetto | 1 | film | S
+Aschenputtel | Schuh, Märchen, Prinz, Stiefmutter, Mitternacht | 2 | film | 
+Schneewittchen | Zwerge, Apfel, Märchen, Spiegel, Hexe | 1 | film | S
 Rotkäppchen | Wolf, Großmutter, Märchen, Korb, rot | 1 | film
-Hänsel und Gretel | Hexe, Märchen, Lebkuchenhaus, Wald, Geschwister | 1 | film
-Dornröschen | Märchen, Spindel, Schlaf, Prinz, Hecke | 2 | film
-Rumpelstilzchen | Märchen, Stroh, Gold, Name, Männchen | 3 | film
-Pippi Langstrumpf | Zöpfe, Affe, Sommersprossen, Villa Kunterbunt, stark | 2 | film
+Hänsel und Gretel | Hexe, Märchen, Lebkuchenhaus, Wald, Geschwister | 1 | film | 
+Dornröschen | Märchen, Spindel, Schlaf, Prinz, Hecke | 2 | film | 
+Rumpelstilzchen | Märchen, Stroh, Gold, Name, Männchen | 3 | film | 
+Pippi Langstrumpf | Zöpfe, Affe, Sommersprossen, Villa Kunterbunt, stark | 2 | film | 

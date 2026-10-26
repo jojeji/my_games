@@ -1,47 +1,47 @@
 # Weitere Karten (Auswahl aus der Leipzig-Häufigkeitsliste, Tabuwörter von Hand; teils mit automatischen Vorschlägen)
 Winter | Schnee, kalt, Jahreszeit, Dezember, Eis | 1 |  | S
-Sommer | Sonne, heiß, Jahreszeit, Ferien, Hitze | 1 |  | S
-Herbst | Blätter, Laub, Jahreszeit, Pilze, Wind | 1 |  | 
-Frühling | Blüten, Ostern, Jahreszeit, März, Knospen | 1 |  | 
-Regen | Wolken, nass, Tropfen, Schirm, Pfütze | 1 |  | 
-Wind | Sturm, Luft, wehen, Drachen, Brise | 1 |  | 
+Sommer | Sonne, heiß, Jahreszeit, Ferien, Hitze | 1
+Herbst | Blätter, Laub, Jahreszeit, Pilze, Wind | 1
+Frühling | Blüten, Ostern, Jahreszeit, März, Knospen | 1
+Regen | Wolken, nass, Tropfen, Schirm, Pfütze | 1 |  | S
+Wind | Sturm, Luft, wehen, Drachen, Brise | 1
 Mutter | Mama, Kind, Familie, gebären, Eltern | 1 |  | S
-Vater | Papa, Kind, Familie, Erzeuger, Eltern | 1 |  | 
-Bruder | Geschwister, Schwester, Familie, Junge, Streit | 1 |  | 
-Oma | Großmutter, Kekse, Enkel, Stricken, alt | 1 |  | S
-Opa | Großvater, Enkel, alt, Geschichten, Garten | 1 |  | 
+Vater | Papa, Kind, Familie, Erzeuger, Eltern | 1
+Bruder | Geschwister, Schwester, Familie, Junge, Streit | 1
+Oma | Großmutter, Kekse, Enkel, stricken, alt | 1
+Opa | Großvater, Enkel, alt, Geschichten, Garten | 1
 Baby | Windel, Schnuller, klein, schreien, Fläschchen | 1 |  | S
-Schnuller | Baby, Nuckeln, Gummi, Kind, beruhigen | 1 |  | 
-Windel | Baby, Pipi, wickeln, Pampers, Kot | 1 |  | 
-Kinderwagen | Baby, schieben, Räder, Spaziergang, Mutter | 1 |  | 
-Zwilling | gleich, Geschwister, zwei, identisch, Doppelgänger | 2 |  | 
-Freund | Kumpel, Beste, Vertrauen, Mögen, Kamerad | 1 |  | 
-Kopf | Hals, Haare, Gehirn, Hut, Gesicht | 1 |  | 
-Finger | Hand, Daumen, fünf, Nagel, Ring | 1 |  | 
-Fuß | Zehen, Schuh, Ferse, Sohle, laufen | 1 |  | 
-Knie | Bein, Beuge, Gelenk, Scheibe, Schmerz | 2 |  | 
-Rücken | Wirbelsäule, Schmerzen, Bandscheibe, hinten, Kreuz | 2 |  | 
-Bauch | Nabel, Magen, dick, Hunger, Sixpack | 1 |  | 
-Mund | Lippen, Zunge, Zähne, sprechen, essen | 1 |  | 
-Zahn | Mund, beißen, kauen, Karies, Bohrer | 1 |  | 
-Haut | Körper, Poren, Sonne, Creme, Pickel | 2 |  | 
-Blut | rot, Ader, Vampir, Spende, fließen | 1 |  | 
-Schweiß | Sport, nass, Achsel, Geruch, Tropfen | 2 |  | 
-Träne | weinen, Auge, nass, Wange, Zwiebel | 1 |  | 
-Lächeln | Mund, freundlich, Zähne, Lippen, Gesicht | 2 |  | 
-Hand | Finger, Daumen, Arm, schütteln, Faust | 1 |  | 
-Geschwister | Bruder, Familie, Kinder, Eltern, Zwilling | 2 |  | 
-Nachbarschaft | Straße, Viertel, Zusammenleben, Wohngegend, Zaun | 3 |  | 
-Familie | Eltern, Kinder, Verwandte, Zuhause, Mutter | 1 |  | 
-Verwandte | Familie, Tante, Onkel, Besuch, Cousin | 2 |  | 
-Onkel | Tante, Familie, Bruder, Neffe, Verwandter | 2 |  | 
-Krankenhaus | Arzt, Patient, Bett, Operation, Station | 1 | alltag | S
+Schnuller | Baby, nuckeln, Gummi, Kind, beruhigen | 1
+Windel | Baby, Pipi, wickeln, Pampers, Kot | 1 |  | S
+Kinderwagen | Baby, schieben, Räder, Spaziergang, Mutter | 1
+Zwilling | gleich, Geschwister, zwei, identisch, Doppelgänger | 2
+Freund | Kumpel, Beste, Vertrauen, mögen, Kamerad | 1
+Kopf | Hals, Haare, Gehirn, Hut, Gesicht | 1 |  | S
+Finger | Hand, Daumen, fünf, Nagel, Ring | 1
+Fuß | Zehen, Schuh, Ferse, Sohle, laufen | 1 |  | S
+Knie | Bein, Beuge, Gelenk, Scheibe, Schmerz | 2
+Rücken | Wirbelsäule, Schmerzen, Bandscheibe, hinten, Kreuz | 2
+Bauch | Nabel, Magen, dick, Hunger, Sixpack | 1
+Mund | Lippen, Zunge, Zähne, sprechen, essen | 1
+Zahn | Mund, beißen, kauen, Karies, Bohrer | 1
+Haut | Körper, Poren, Sonne, Creme, Pickel | 2
+Blut | rot, Ader, Vampir, Spende, fließen | 1 |  | S
+Schweiß | Sport, nass, Achsel, Geruch, Tropfen | 2
+Träne | weinen, Auge, nass, Wange, Zwiebel | 1
+Lächeln | Mund, freundlich, Zähne, Lippen, Gesicht | 2
+Hand | Finger, Daumen, Arm, schütteln, Faust | 1
+Geschwister | Bruder, Familie, Kinder, Eltern, Zwilling | 2
+Nachbarschaft | Straße, Viertel, Zusammenleben, Wohngegend, Zaun | 3
+Familie | Eltern, Kinder, Verwandte, Zuhause, Mutter | 1 |  | S
+Verwandte | Familie, Tante, Onkel, Besuch, Cousin | 2
+Onkel | Tante, Familie, Bruder, Neffe, Verwandter | 2
+Krankenhaus | Arzt, Patient, Bett, Operation, Station | 1 | alltag
 Klinik | Krankenhaus, Patient, Arzt, Station, Behandlung | 2 | alltag | 
 Operation | Chirurg, Skalpell, Narkose, Krankenhaus, Eingriff | 2 | alltag | 
 Notarzt | Rettungswagen, Einsatz, Unfall, Hilfe, Koffer | 2 | alltag | 
 Impfung | Spritze, Arm, Schutz, Arzt, Piks | 1 | alltag | 
 Grippe | Fieber, Virus, Winter, Husten, Bett | 1 | alltag | 
-Tablette | Medikament, Schlucken, Apotheke, Schachtel, Wasser | 1 | alltag | 
+Tablette | Medikament, schlucken, Apotheke, Schachtel, Wasser | 1 | alltag | 
 Verband | Wunde, Mull, Arzt, Binde, Pflaster | 2 | alltag | 
 Rollschuh | Skaten, Halle, Disco, Räder, Bremse | 3 | sport | 
 Bürgermeister | Rathaus, Stadt, Gemeinde, Wahl, Kette | 2 | alltag | 
@@ -56,166 +56,166 @@ Verkäufer | Laden, Kunde, Ware, Kasse, Beratung | 1 | alltag |
 Fotograf | Kamera, Bilder, Blitz, Objektiv, Studio | 2 | alltag | 
 Journalist | Zeitung, Artikel, Reporter, Interview, Schreiben | 2 | alltag | 
 Moderator | Sendung, Mikrofon, Fernsehen, Gast, Showmaster | 2 | alltag | 
-Sänger | Stimme, Lied, Mikrofon, Bühne, Konzert | 1 |  | 
-Schauspielerin | Film, Rolle, Bühne, Oscar, Darstellerin | 1 |  | 
-Bildhauer | Statue, Stein, Meißel, Skulptur, Künstler | 3 |  | 
-Architekt | Haus, Plan, Bauen, Entwurf, Zeichnung | 2 | alltag | 
+Sänger | Stimme, Lied, Mikrofon, Bühne, Konzert | 1
+Schauspielerin | Film, Rolle, Bühne, Oscar, Darstellerin | 1
+Bildhauer | Statue, Stein, Meißel, Skulptur, Künstler | 3
+Architekt | Haus, Plan, bauen, Entwurf, Zeichnung | 2 | alltag | 
 Tischler | Holz, Möbel, Hobel, Werkstatt, Säge | 2 | alltag | 
 Gärtner | Beet, Pflanzen, Spaten, Blumen, Gewächshaus | 2 | alltag | 
 Förster | Wald, Bäume, Jäger, Grün, Revier | 2 | alltag | 
 Imker | Bienen, Honig, Schleier, Wabe, Stock | 3 | alltag | 
 Winzer | Wein, Trauben, Weinberg, Ernte, Keller | 3 | alltag | 
 Hausmeister | Schule, Schlüssel, Reparaturen, Keller, Werkzeug | 2 | alltag | 
-Putzfrau | Wischmopp, Reinigen, Eimer, Staub, sauber | 2 | alltag | 
+Putzfrau | Wischmopp, reinigen, Eimer, Staub, sauber | 2 | alltag | 
 Sekretärin | Büro, Telefon, Chef, Termine, Schreibtisch | 2 | alltag | 
 Bankräuber | Überfall, Maske, Tresor, Beute, Polizei | 2 | alltag | 
-Spion | Geheimagent, Mantel, Brille, Geheimnis, Agent | 1 |  | 
+Spion | Geheimagent, Mantel, Brille, Geheimnis, Agent | 1 |  | S
 Terminal | Flughafen, Gate, Abflug, Halle, Schalter | 3 | alltag | 
 Lastwagen | LKW, Fracht, Fahrer, Autobahn, Ladefläche | 2 | alltag | 
-Traktor | Bauer, Acker, Feld, Reifen, Anhänger | 1 | alltag | 
+Traktor | Bauer, Acker, Feld, Reifen, Anhänger | 1 | alltag
 Bagger | Baustelle, Schaufel, Erde, Radlader, gelb | 1 | alltag | 
 Kran | Baustelle, Last, heben, Hafen, hoch | 2 | alltag | 
-Baustelle | Bauarbeiter, Helm, Kran, Absperrung, Lärm | 1 | alltag | 
-Taxi | Fahrer, Fahrgast, gelb, Fahrt, Bestellung | 1 | alltag | 
+Baustelle | Bauarbeiter, Helm, Kran, Absperrung, Lärm | 1 | alltag | S
+Taxi | Fahrer, Fahrgast, gelb, Fahrt, Bestellung | 1 | alltag
 Fähre | Schiff, Insel, Auto, Meer, Hafen | 2 | alltag | 
 Autobahn | Raststätte, schnell, Stau, Spur, Leitplanke | 1 | alltag | 
 Kreuzung | Ampel, Straße, abbiegen, Vorfahrt, Auto | 1 | alltag | 
 Bürgersteig | Fußgänger, Gehweg, Straße, Bordstein, laufen | 2 | alltag | 
-Fußgängerzone | Einkaufen, Innenstadt, Läden, Bummeln, Bänke | 2 | alltag | 
-Spielhalle | Automaten, Münzen, Blinken, Glück, Zocken | 3 |  | 
+Fußgängerzone | einkaufen, Innenstadt, Läden, bummeln, Bänke | 2 | alltag | 
+Spielhalle | Automaten, Münzen, blinken, Glück, zocken | 3
 Rathaus | Bürgermeister, Stadt, Amt, Turm, Marktplatz | 2 | alltag | 
 Gefängniswärter | Zelle, Schlüssel, Häftling, Uniform, Aufseher | 3 | alltag | 
-Kloster | Mönche, Gebet, Nonnen, Mauer, Abtei | 2 |  | 
-Brunnen | Wasser, Münzen, Platz, Wunsch, Quelle | 2 |  | 
-Denkmal | Statue, Stein, Erinnerung, Platz, Sockel | 2 |  | 
-Kerzenständer | Leuchter, Tisch, Silber, Wachs, Flamme | 3 |  | 
-Kronleuchter | Decke, Kristall, Schloss, Licht, Glitzer | 3 |  | 
-Lampe | Licht, Glühbirne, Schirm, Schreibtisch, Schalter | 1 |  | 
-Vase | Blumen, Wasser, Glas, Tisch, Strauß | 1 |  | 
-Bilderrahmen | Foto, Wand, Glas, Holz, Aufhängen | 2 |  | 
-Teppichboden | Zimmer, weich, Fußboden, Staubsauger, auslegen | 3 |  | 
-Tapete | Wand, Rolle, Muster, kleben, Zimmer | 2 |  | 
-Kühlbox | Camping, Eis, Getränke, Strand, Picknick | 3 |  | 
-Thermoskanne | Kaffee, warm, Deckel, Tee, isolieren | 2 |  | 
-Flasche | Glas, Korken, Wein, Pfand, Getränk | 1 |  | 
-Glas | Trinken, Wasser, durchsichtig, Scherbe, Fenster | 1 |  | 
-Tasse | Kaffee, Henkel, Tee, trinken, Porzellan | 1 |  | 
-Teller | Essen, Geschirr, rund, Tisch, Besteck | 1 |  | 
-Gabel | Besteck, Zinken, essen, Messer, Löffel | 1 |  | 
-Löffel | Besteck, Suppe, essen, Gabel, Kaffee | 1 |  | 
-Messer | Klinge, schneiden, Besteck, Küche, scharf | 1 |  | 
-Topf | Herd, Deckel, Suppe, kochen, Küche | 1 |  | 
-Pfanne | Herd, braten, Stiel, Spiegelei, Küche | 1 |  | 
-Herd | Küche, Kochplatte, Backofen, heiß, Topf | 1 |  | 
-Backofen | Küche, heiß, Pizza, Temperatur, Blech | 1 |  | 
-Korkenzieher | Wein, Flasche, Spirale, Öffnen, Sommelier | 2 |  | 
-Dosenöffner | Konserve, Küche, Blech, Griff, Deckel | 2 |  | 
-Nudelholz | Teig, Küche, ausrollen, backen, rund | 2 |  | 
-Schneebesen | Schlagen, Sahne, Küche, Eischnee, rühren | 3 |  | 
-Reibe | Käse, Küche, Gemüse, raspeln, scharf | 3 |  | 
-Sieb | Nudeln, Löcher, abgießen, Küche, Wasser | 3 |  | 
-Mülleimer | Abfall, Deckel, Küche, Tonne, werfen | 1 |  | 
-Tablett | Kellner, tragen, Servieren, Getränke, Gläser | 2 |  | 
-Schürze | Küche, Kochen, binden, Kellner, Flecken | 2 |  | 
-Kochlöffel | Holz, Topf, rühren, Küche, Suppe | 2 |  | 
-Eierbecher | Frühstück, Ei, Küche, Löffel, Tisch | 2 |  | 
-Salzstreuer | Tisch, Pfeffer, Löcher, Würze, Glas | 2 |  | 
-Strohhalm | Getränk, trinken, Plastik, Röhrchen, Cocktail | 2 |  | 
-Besteck | Messer, Gabel, Löffel, essen, Schublade | 1 |  | 
-Serviette | Mund, Tisch, Papier, Abwischen, Restaurant | 1 |  | 
-Kerzenlicht | romantisch, Dinner, Flamme, Abend, Tisch | 2 |  | 
-Speisekarte | Restaurant, Gerichte, Kellner, Auswahl, Preise | 1 |  | 
-Trinkgeld | Kellner, Rechnung, Münzen, Bedienung, extra | 1 |  | 
-Rechnung | bezahlen, Restaurant, Summe, Kellner, Quittung | 1 |  | 
-Kantine | Mittagessen, Betrieb, Tablett, Schule, Essen | 2 |  | 
-Imbiss | Bude, Currywurst, Pommes, Straße, schnell | 1 |  | 
-Bäckerei | Brot, Brötchen, Kuchen, Theke, früh | 1 |  | 
-Metzgerei | Fleisch, Wurst, Theke, Schnitzel, Fachgeschäft | 2 |  | 
-Eisdiele | Kugeln, Sommer, Waffel, Sorten, Eis | 1 |  | 
-Café | Kaffee, Kuchen, Tasse, Stühle, Bedienung | 1 |  | 
-Kneipe | Bier, Theke, Tresen, Stammgast, Abend | 1 |  | 
-Disco | Tanzen, Musik, Lichter, Nacht, Clubbing | 1 |  | 
-Tanzfläche | Disco, Musik, Paar, Boden, Party | 2 |  | 
-Bühne | Schauspieler, Vorhang, Scheinwerfer, Konzert, Theater | 1 |  | 
-Publikum | Zuschauer, Applaus, Saal, Bühne, Gäste | 2 |  | 
-Applaus | Klatschen, Beifall, Hände, Publikum, Zugabe | 2 |  | 
-Zugabe | Konzert, Applaus, Band, nochmal, Ende | 3 |  | 
-Eintrittskarte | Ticket, Kino, Konzert, Kasse, Einlass | 2 |  | 
-Kleiderschrank | Bügel, Schlafzimmer, Türen, Hemden, Hosen | 1 |  | 
-Mantel | Jacke, Winter, Kleidung, Knöpfe, Garderobe | 1 |  | 
-Jacke | Kleidung, Reißverschluss, Ärmel, Regen, Kapuze | 1 |  | 
-Pullover | Wolle, Winter, Kleidung, Ärmel, kuschelig | 1 |  | 
-Hemd | Kragen, Knöpfe, Büro, Bügeln, Ärmel | 1 |  | 
-Rock | Kleid, Bein, Frau, kurz, Stoff | 1 |  | 
-Kleid | Frau, Hochzeit, Rock, Stoff, Abend | 1 |  | 
-Schuhe | Füße, Paar, Sohle, Schnürsenkel, Laufen | 1 |  | 
-Schnürsenkel | Schuh, binden, Schleife, Knoten, lang | 2 |  | 
-Hosenträger | Gummi, Opa, halten, Schultern, Clips | 3 |  | 
-Gürtel | Hose, Schnalle, Leder, halten, Taille | 2 |  | 
-Knopf | Hemd, Kleidung, Loch, drücken, Faden | 1 |  | 
-Reißverschluss | Jacke, Hose, auf und zu, Zähne, Schieber | 2 |  | 
-Nadel | Faden, Nähen, Öhr, spitz, Stich | 2 |  | 
-Faden | Nadel, Nähen, Wolle, Spule, reißen | 2 |  | 
-Nähmaschine | Stoff, Faden, Schneiderin, Nadel, Pedal | 2 |  | 
-Strickzeug | Wolle, Nadeln, Oma, Pullover, Maschen | 3 |  | 
-Kapuze | Jacke, Kopf, Regen, Pulli, Hoodie | 2 |  | 
-Sonnenhut | Krempe, Kopf, Sommer, Schutz, Strohhut | 3 |  | 
-Badehose | Schwimmen, Strand, Mann, Schwimmbad, Wasser | 1 |  | 
-Flip-Flops | Sommer, Strand, Zehen, Sandalen, Schuhe | 2 |  | 
-Schwimmflügel | Kinder, Arme, aufblasen, Pool, Wasser | 2 |  | 
-Taucherbrille | Wasser, Schnorchel, Meer, Augen, Flossen | 2 |  | 
-Geldbeutel | Münzen, Scheine, Tasche, Leder, bezahlen | 1 |  | 
-Schlüsselanhänger | Bund, Souvenir, Ring, klein, Haustür | 3 |  | 
-Ausweis | Foto, Name, Behörde, Kontrolle, Karte | 2 |  | 
-Reisepass | Grenze, Urlaub, Foto, Visum, Stempel | 2 |  | 
-Visum | Reise, Pass, Einreise, Konsulat, Stempel | 3 |  | 
-Zoll | Grenze, Kontrolle, Koffer, Beamte, Schmuggel | 2 |  | 
-Grenze | Zoll, Land, Zaun, Kontrolle, Schlagbaum | 2 |  | 
-Reisebüro | Urlaub, Katalog, buchen, Beratung, Flug | 2 |  | 
-Reiseführer | Buch, Sehenswürdigkeit, Touristen, Karte, Urlaub | 2 |  | 
-Tourist | Urlaub, Kamera, Sehenswürdigkeit, Fremder, Reise | 1 |  | 
-Souvenir | Mitbringsel, Urlaub, Andenken, Laden, Magnet | 2 |  | 
-Hotelzimmer | Bett, Minibar, Schlüsselkarte, Übernachtung, Gast | 2 |  | 
-Rezeption | Hotel, Schlüssel, Empfang, Anmeldung, Check-in | 2 |  | 
-Aufzug | Fahrstuhl, Knopf, Etage, Hochhaus, Tür | 2 |  | 
-Gepäck | Koffer, Flughafen, Reise, Band, Tasche | 1 |  | 
-Handgepäck | Flugzeug, Koffer, Kabine, klein, Reise | 2 |  | 
-Wartezimmer | Arzt, Zeitschriften, Stühle, Termin, Patienten | 2 |  | 
-Stempel | Papier, Abdruck, Tinte, Amt, Pass | 2 |  | 
-Formular | Ausfüllen, Papier, Behörde, Kästchen, Antrag | 3 |  | 
-Unterschrift | Name, Vertrag, Stift, Papier, Kritzeln | 2 |  | 
-Briefkasten | Post, Klappe, Haus, gelb, Zeitung | 1 |  | 
-Klingel | Tür, Besuch, Knopf, läuten, Haus | 1 |  | 
-Türschloss | Schlüssel, Tür, Riegel, einbrechen, zuschließen | 2 |  | 
-Hausschuhe | Wohnung, Pantoffeln, Füße, gemütlich, drinnen | 2 |  | 
-Pantoffeln | Hausschuhe, Opa, Füße, gemütlich, warm | 2 |  | 
-Bettdecke | Schlafen, Bezug, Federn, warm, Kissen | 1 |  | 
-Matratze | Bett, Schlafen, Lattenrost, weich, hart | 2 |  | 
-Gießkanne | Blumen, Wasser, Garten, Tülle, Pflanzen | 1 |  | 
-Spaten | Garten, graben, Erde, Stiel, Schaufel | 2 |  | 
-Schubkarre | Garten, Rad, schieben, Erde, Baustelle | 2 |  | 
-Gartenschlauch | Wasser, Rasen, Sprenger, gießen, Wasserhahn | 2 |  | 
-Grill | Kohle, Würstchen, Sommer, Rost, Fleisch | 1 |  | 
-Hängeschrank | Küche, Tür, Geschirr, Wand, hoch | 3 |  | 
-Wäscheleine | Klammern, Garten, aufhängen, trocknen, Socken | 2 |  | 
-Wäschekorb | Bad, Waschmaschine, Flechten, Henkel, Kleidung | 2 |  | 
-Badewanne | Wasser, Schaum, Bad, Entspannen, Stöpsel | 1 |  | 
-Dusche | Wasser, Seife, Bad, Brause, abbrausen | 1 |  | 
-Klo | Toilette, Spülung, Papier, Bad, Deckel | 1 |  | 
-Waschbecken | Hahn, Wasser, Bad, Zahnbürste, Spiegel | 2 |  | 
-Wasserhahn | Küche, tropfen, aufdrehen, Bad, Spüle | 1 |  | 
-Sicherung | Strom, Kasten, durchbrennen, Elektrik, Keller | 3 |  | 
-Stecker | Strom, Kabel, Zacken, Netz, Dose | 2 |  | 
-Schalter | Licht, Strom, an, aus, Wand | 2 |  | 
-Käfig | Gitter, Vogel, Zoo, Tür, Gefangener | 2 |  | 
-Leine | Hund, Spaziergang, Halsband, Gassi, Seil | 1 |  | 
-Halsband | Hund, Katze, Leine, Glöckchen, Tier | 2 |  | 
-Hundekuchen | Leckerli, Belohnung, Knochen, Fressen, Tier | 3 |  | 
-Vogelhaus | Futter, Winter, Garten, Meise, Dach | 2 |  | 
-Vogelscheuche | Feld, Stroh, Kleidung, Krähen, Bauer | 2 |  | 
-Stall | Pferde, Kühe, Stroh, Bauernhof, Tiere | 1 |  | 
-Scheune | Heu, Bauernhof, Stroh, Holz, Traktor | 2 |  | 
-Heu | Stroh, Pferde, Wiese, Kühe, trocken | 2 |  | 
-Heuhaufen | Nadel, Stroh, Bauernhof, suchen, Feld | 3 |  | 
-Mistgabel | Stroh, Bauernhof, Stall, Spitzen, Heu | 3 |  | 
-Strohhut | Sommer, Krempe, Kopf, Sonne, Vogelscheuche | 3 |  | 
+Kloster | Mönche, Gebet, Nonnen, Mauer, Abtei | 2
+Brunnen | Wasser, Münzen, Platz, Wunsch, Quelle | 2
+Denkmal | Statue, Stein, Erinnerung, Platz, Sockel | 2
+Kerzenständer | Leuchter, Tisch, Silber, Wachs, Flamme | 3
+Kronleuchter | Decke, Kristall, Schloss, Licht, Glitzer | 3
+Lampe | Licht, Glühbirne, Schirm, Schreibtisch, Schalter | 1
+Vase | Blumen, Wasser, Glas, Tisch, Strauß | 1
+Bilderrahmen | Foto, Wand, Glas, Holz, aufhängen | 2
+Teppichboden | Zimmer, weich, Fußboden, Staubsauger, auslegen | 3
+Tapete | Wand, Rolle, Muster, kleben, Zimmer | 2
+Kühlbox | Camping, Eis, Getränke, Strand, Picknick | 3
+Thermoskanne | Kaffee, warm, Deckel, Tee, isolieren | 2
+Flasche | Glas, Korken, Wein, Pfand, Getränk | 1 |  | S
+Glas | trinken, Wasser, durchsichtig, Scherbe, Fenster | 1
+Tasse | Kaffee, Henkel, Tee, trinken, Porzellan | 1 |  | S
+Teller | Essen, Geschirr, rund, Tisch, Besteck | 1
+Gabel | Besteck, Zinken, essen, Messer, Löffel | 1
+Löffel | Besteck, Suppe, essen, Gabel, Kaffee | 1
+Messer | Klinge, schneiden, Besteck, Küche, scharf | 1 |  | S
+Topf | Herd, Deckel, Suppe, kochen, Küche | 1
+Pfanne | Herd, braten, Stiel, Spiegelei, Küche | 1
+Herd | Küche, Kochplatte, Backofen, heiß, Topf | 1
+Backofen | Küche, heiß, Pizza, Temperatur, Blech | 1
+Korkenzieher | Wein, Flasche, Spirale, öffnen, Sommelier | 2
+Dosenöffner | Konserve, Küche, Blech, Griff, Deckel | 2
+Nudelholz | Teig, Küche, ausrollen, backen, rund | 2
+Schneebesen | schlagen, Sahne, Küche, Eischnee, rühren | 3
+Reibe | Käse, Küche, Gemüse, raspeln, scharf | 3
+Sieb | Nudeln, Löcher, abgießen, Küche, Wasser | 3
+Mülleimer | Abfall, Deckel, Küche, Tonne, werfen | 1
+Tablett | Kellner, tragen, servieren, Getränke, Gläser | 2
+Schürze | Küche, kochen, binden, Kellner, Flecken | 2
+Kochlöffel | Holz, Topf, rühren, Küche, Suppe | 2
+Eierbecher | Frühstück, Ei, Küche, Löffel, Tisch | 2
+Salzstreuer | Tisch, Pfeffer, Löcher, Würze, Glas | 2
+Strohhalm | Getränk, trinken, Plastik, Röhrchen, Cocktail | 2
+Besteck | Messer, Gabel, Löffel, essen, Schublade | 1
+Serviette | Mund, Tisch, Papier, abwischen, Restaurant | 1 |  | S
+Kerzenlicht | romantisch, Dinner, Flamme, Abend, Tisch | 2
+Speisekarte | Restaurant, Gerichte, Kellner, Auswahl, Preise | 1
+Trinkgeld | Kellner, Rechnung, Münzen, Bedienung, extra | 1 |  | S
+Rechnung | bezahlen, Restaurant, Summe, Kellner, Quittung | 1
+Kantine | Mittagessen, Betrieb, Tablett, Schule, Essen | 2
+Imbiss | Bude, Currywurst, Pommes, Straße, schnell | 1
+Bäckerei | Brot, Brötchen, Kuchen, Theke, früh | 1
+Metzgerei | Fleisch, Wurst, Theke, Schnitzel, Fachgeschäft | 2
+Eisdiele | Kugeln, Sommer, Waffel, Sorten, Eis | 1
+Café | Kaffee, Kuchen, Tasse, Stühle, Bedienung | 1
+Kneipe | Bier, Theke, Tresen, Stammgast, Abend | 1
+Disco | tanzen, Musik, Lichter, Nacht, Clubbing | 1 |  | S
+Tanzfläche | Disco, Musik, Paar, Boden, Party | 2
+Bühne | Schauspieler, Vorhang, Scheinwerfer, Konzert, Theater | 1
+Publikum | Zuschauer, Applaus, Saal, Bühne, Gäste | 2
+Applaus | Klatschen, Beifall, Hände, Publikum, Zugabe | 2
+Zugabe | Konzert, Applaus, Band, nochmal, Ende | 3
+Eintrittskarte | Ticket, Kino, Konzert, Kasse, Einlass | 2
+Kleiderschrank | Bügel, Schlafzimmer, Türen, Hemden, Hosen | 1
+Mantel | Jacke, Winter, Kleidung, Knöpfe, Garderobe | 1 |  | S
+Jacke | Kleidung, Reißverschluss, Ärmel, Regen, Kapuze | 1
+Pullover | Wolle, Winter, Kleidung, Ärmel, kuschelig | 1
+Hemd | Kragen, Knöpfe, Büro, bügeln, Ärmel | 1
+Rock | Kleid, Bein, Frau, kurz, Stoff | 1
+Kleid | Frau, Hochzeit, Rock, Stoff, Abend | 1 |  | S
+Schuhe | Füße, Paar, Sohle, Schnürsenkel, laufen | 1
+Schnürsenkel | Schuh, binden, Schleife, Knoten, lang | 2
+Hosenträger | Gummi, Opa, halten, Schultern, Clips | 3
+Gürtel | Hose, Schnalle, Leder, halten, Taille | 2
+Knopf | Hemd, Kleidung, Loch, drücken, Faden | 1
+Reißverschluss | Jacke, Hose, auf und zu, Zähne, Schieber | 2
+Nadel | Faden, nähen, Öhr, spitz, Stich | 2
+Faden | Nadel, nähen, Wolle, Spule, reißen | 2
+Nähmaschine | Stoff, Faden, Schneiderin, Nadel, Pedal | 2
+Strickzeug | Wolle, Nadeln, Oma, Pullover, Maschen | 3
+Kapuze | Jacke, Kopf, Regen, Pulli, Hoodie | 2
+Sonnenhut | Krempe, Kopf, Sommer, Schutz, Strohhut | 3
+Badehose | schwimmen, Strand, Mann, Schwimmbad, Wasser | 1
+Flip-Flops | Sommer, Strand, Zehen, Sandalen, Schuhe | 2
+Schwimmflügel | Kinder, Arme, aufblasen, Pool, Wasser | 2
+Taucherbrille | Wasser, Schnorchel, Meer, Augen, Flossen | 2
+Geldbeutel | Münzen, Scheine, Tasche, Leder, bezahlen | 1
+Schlüsselanhänger | Bund, Souvenir, Ring, klein, Haustür | 3
+Ausweis | Foto, Name, Behörde, Kontrolle, Karte | 2
+Reisepass | Grenze, Urlaub, Foto, Visum, Stempel | 2
+Visum | Reise, Pass, Einreise, Konsulat, Stempel | 3
+Zoll | Grenze, Kontrolle, Koffer, Beamte, Schmuggel | 2
+Grenze | Zoll, Land, Zaun, Kontrolle, Schlagbaum | 2
+Reisebüro | Urlaub, Katalog, buchen, Beratung, Flug | 2
+Reiseführer | Buch, Sehenswürdigkeit, Touristen, Karte, Urlaub | 2
+Tourist | Urlaub, Kamera, Sehenswürdigkeit, Fremder, Reise | 1 |  | S
+Souvenir | Mitbringsel, Urlaub, Andenken, Laden, Magnet | 2
+Hotelzimmer | Bett, Minibar, Schlüsselkarte, Übernachtung, Gast | 2
+Rezeption | Hotel, Schlüssel, Empfang, Anmeldung, Check-in | 2
+Aufzug | Fahrstuhl, Knopf, Etage, Hochhaus, Tür | 2
+Gepäck | Koffer, Flughafen, Reise, Band, Tasche | 1
+Handgepäck | Flugzeug, Koffer, Kabine, klein, Reise | 2
+Wartezimmer | Arzt, Zeitschriften, Stühle, Termin, Patienten | 2
+Stempel | Papier, Abdruck, Tinte, Amt, Pass | 2
+Formular | ausfüllen, Papier, Behörde, Kästchen, Antrag | 3
+Unterschrift | Name, Vertrag, Stift, Papier, kritzeln | 2
+Briefkasten | Post, Klappe, Haus, gelb, Zeitung | 1
+Klingel | Tür, Besuch, Knopf, läuten, Haus | 1
+Türschloss | Schlüssel, Tür, Riegel, einbrechen, zuschließen | 2
+Hausschuhe | Wohnung, Pantoffeln, Füße, gemütlich, drinnen | 2
+Pantoffeln | Hausschuhe, Opa, Füße, gemütlich, warm | 2
+Bettdecke | schlafen, Bezug, Federn, warm, Kissen | 1
+Matratze | Bett, schlafen, Lattenrost, weich, hart | 2
+Gießkanne | Blumen, Wasser, Garten, Tülle, Pflanzen | 1
+Spaten | Garten, graben, Erde, Stiel, Schaufel | 2
+Schubkarre | Garten, Rad, schieben, Erde, Baustelle | 2
+Gartenschlauch | Wasser, Rasen, Sprenger, gießen, Wasserhahn | 2
+Grill | Kohle, Würstchen, Sommer, Rost, Fleisch | 1
+Hängeschrank | Küche, Tür, Geschirr, Wand, hoch | 3
+Wäscheleine | Klammern, Garten, aufhängen, trocknen, Socken | 2
+Wäschekorb | Bad, Waschmaschine, flechten, Henkel, Kleidung | 2
+Badewanne | Wasser, Schaum, Bad, entspannen, Stöpsel | 1
+Dusche | Wasser, Seife, Bad, Brause, abbrausen | 1 |  | S
+Klo | Toilette, Spülung, Papier, Bad, Deckel | 1
+Waschbecken | Hahn, Wasser, Bad, Zahnbürste, Spiegel | 2
+Wasserhahn | Küche, tropfen, aufdrehen, Bad, Spüle | 1
+Sicherung | Strom, Kasten, durchbrennen, Elektrik, Keller | 3
+Stecker | Strom, Kabel, Zacken, Netz, Dose | 2
+Schalter | Licht, Strom, an, aus, Wand | 2
+Käfig | Gitter, Vogel, Zoo, Tür, Gefangener | 2
+Leine | Hund, Spaziergang, Halsband, Gassi, Seil | 1
+Halsband | Hund, Katze, Leine, Glöckchen, Tier | 2
+Hundekuchen | Leckerli, Belohnung, Knochen, Fressen, Tier | 3
+Vogelhaus | Futter, Winter, Garten, Meise, Dach | 2
+Vogelscheuche | Feld, Stroh, Kleidung, Krähen, Bauer | 2
+Stall | Pferde, Kühe, Stroh, Bauernhof, Tiere | 1
+Scheune | Heu, Bauernhof, Stroh, Holz, Traktor | 2
+Heu | Stroh, Pferde, Wiese, Kühe, trocken | 2
+Heuhaufen | Nadel, Stroh, Bauernhof, suchen, Feld | 3
+Mistgabel | Stroh, Bauernhof, Stall, Spitzen, Heu | 3
+Strohhut | Sommer, Krempe, Kopf, Sonne, Vogelscheuche | 3

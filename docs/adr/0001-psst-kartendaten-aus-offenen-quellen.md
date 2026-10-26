@@ -1,8 +1,14 @@
-# Psst!: Karten aus offenen Sprachdaten statt aus dem Original
+# Psst!: Karten selbst geschrieben, mit offenen Sprachdaten geprüft
 
-Eine frei nutzbare, geprüfte deutsche Tabu-Kartensammlung gibt es nicht: Die Originalkarten (Hasbro) sind geschützt, und die einzige freie Sammlung (Kovah/Taboo-Data, GPL-3.0) ist lückenhaft (rund ein Drittel der Karten hat keine oder nur ein verbotenes Wort). Wir bauen die Karten deshalb selbst. Die Suchbegriffe kommen aus der Häufigkeitsliste von Wortschatz Leipzig (CC BY), die Tabuwörter aus OpenThesaurus (CC BY-SA 4.0 / LGPL). Brauchbare Kovah-Karten mit mindestens 4 Tabuwörtern kommen dazu, eine KI ergänzt nur dort, wo die Quellen zu wenig liefern. Jede Karte durchläuft ein Prüfwerkzeug, bevor sie in ein Kartenpaket kommt.
+Eine frei nutzbare, geprüfte deutsche Tabu-Kartensammlung gibt es nicht. Die Originalkarten (Hasbro) sind geschützt, und die einzige freie Sammlung (Kovah/Taboo-Data, GPL-3.0) ist lückenhaft: Rund ein Drittel ihrer Karten hat kein oder nur ein verbotenes Wort. Ursprünglich wollten wir die Tabuwörter automatisch aus OpenThesaurus (CC BY-SA 4.0) und aus Wortpaaren der Korpora von Wortschatz Leipzig (CC BY) ableiten. Das war im Versuch unbrauchbar: Die Wortpaare kommen überwiegend aus Nachrichtentexten, daher etwa „Wetter → Klima, erwarten, rechnen“ und „Banane → Unsinn“, und für Alltagsdinge fehlen sie fast ganz. Deshalb sind die Karten KI-geschrieben (Sonnet) und werden mit offenen Quellen und von Menschen geprüft:
+
+- 99 % aller Suchbegriffe und Tabuwörter sind im Leipziger Wortschatz belegt. Das sichert Rechtschreibung und Existenz, nicht die Auswahl.
+- Regelprüfung im Build: genau 5 Tabuwörter, kein gemeinsamer Wortstamm, keine Dubletten, eine Sperrliste.
+- 78 Personen-Karten stammen aus Kovah, bereinigt und ergänzt.
+- Menschliche Prüfung: Das Startpaket wird vom Besitzer über `games/psst/review/` geprüft, alle Karten zusätzlich über „Karte melden“ im Spiel.
 
 ## Consequences
 
-- Lizenzen sind ansteckend: Kartendaten aus OpenThesaurus (CC BY-SA) und Kovah (GPL-3.0) brauchen Namensnennung, und die daraus abgeleiteten Kartendateien stehen unter derselben Lizenz. Die Quellen und Lizenzen stehen in `games/psst/data/QUELLEN.md`.
+- Die Karten sind eine eigene Leistung und keine geprüfte Fremdbibliothek. Ihre Qualität entsteht durch Prüfung und Rückmeldungen, nicht durch die Quelle.
+- Lizenzen: Die Personen-Karten aus Kovah stehen unter GPL-3.0. Quellen und Namensnennung stehen in `games/psst/data/QUELLEN.md`.
 - Der Name „Tabu“ ist eine Marke (Hasbro), deshalb heißt das Spiel „Psst!“.

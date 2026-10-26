@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "_doc": "drop: Suchbegriffe, die aus den curated/*.txt-Dateien nicht übernommen werden. fix: id -> { w?, t? (5 Tabuwörter), d? } überschreibt einzelne Felder einer Karte (src wird mixed).",
+  "drop": [],
+  "fix": {}
+}

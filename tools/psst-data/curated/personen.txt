@@ -1,132 +1,132 @@
 Albert Einstein | Physiker, Relativitätstheorie, Genie, Zunge, Haare | 1 | personen | S
-Angela Merkel | Kanzlerin, CDU, Raute, Deutschland, Kanzleramt | 1 | personen | S
-Olaf Scholz | Kanzler, SPD, Hamburg, Bundesregierung, Ampel | 2 | personen
-Donald Trump | Präsident, USA, Haare, Twitter, Mauer | 1 | personen
-Barack Obama | Präsident, USA, Yes we can, Michelle, Weißes Haus | 2 | personen
-Queen Elizabeth | Königin, England, Krone, Corgi, Buckingham Palace | 1 | personen
-Prinzessin Diana | Lady Di, England, Autounfall, Königshaus, Charles | 2 | personen
+Angela Merkel | Kanzlerin, CDU, Raute, Deutschland, Kanzleramt | 1 | personen
+Olaf Scholz | Kanzler, SPD, Hamburg, Bundesregierung, Ampel | 2 | personen | 
+Donald Trump | Präsident, USA, Haare, Twitter, Mauer | 1 | personen | S
+Barack Obama | Präsident, USA, Yes we can, Michelle, Weißes Haus | 2 | personen | 
+Queen Elizabeth | Königin, England, Krone, Corgi, Buckingham Palace | 1 | personen | S
+Prinzessin Diana | Lady Di, England, Autounfall, Königshaus, Charles | 2 | personen | 
 Napoleon | Frankreich, Kaiser, klein, Hut, Waterloo | 1 | personen
-Julius Caesar | Rom, Kaiser, Brutus, Veni vidi vici, Idus | 2 | personen
-Kleopatra | Ägypten, Königin, Nil, Schönheit, Cäsar | 2 | personen
-Karl der Große | Kaiser, Aachen, Franken, Mittelalter, Krone | 3 | personen
-Martin Luther | Reformation, Thesen, Bibel, Wittenberg, Protestant | 2 | personen
-Johann Wolfgang von Goethe | Dichter, Faust, Weimar, Schiller, Werther | 2 | personen
-Friedrich Schiller | Dichter, Räuber, Weimar, Goethe, Glocke | 3 | personen
-William Shakespeare | Hamlet, Dichter, Romeo, Theater, England | 2 | personen
+Julius Caesar | Rom, Kaiser, Brutus, Veni vidi vici, Idus | 2 | personen | 
+Kleopatra | Ägypten, Königin, Nil, Schönheit, Cäsar | 2 | personen | 
+Karl der Große | Kaiser, Aachen, Franken, Mittelalter, Krone | 3 | personen | 
+Martin Luther | Reformation, Thesen, Bibel, Wittenberg, Protestant | 2 | personen | 
+Johann Wolfgang von Goethe | Dichter, Faust, Weimar, Schiller, Werther | 2 | personen | 
+Friedrich Schiller | Dichter, Räuber, Weimar, Goethe, Glocke | 3 | personen | 
+William Shakespeare | Hamlet, Dichter, Romeo, Theater, England | 2 | personen | 
 Wolfgang Amadeus Mozart | Komponist, Wien, Salzburg, Zauberflöte, Perücke | 1 | personen | S
 Ludwig van Beethoven | Komponist, taub, Bonn, Schicksalssinfonie, Klavier | 1 | personen
-Johann Sebastian Bach | Komponist, Orgel, Barock, Leipzig, Fuge | 2 | personen
-Leonardo da Vinci | Mona Lisa, Maler, Erfinder, Renaissance, Italien | 1 | personen
-Pablo Picasso | Maler, Spanien, Kubismus, Gemälde, Guernica | 2 | personen
-Vincent van Gogh | Maler, Ohr, Sonnenblumen, Niederlande, Sternennacht | 2 | personen
-Michelangelo | Maler, Bildhauer, Sixtinische Kapelle, David, Renaissance | 3 | personen
+Johann Sebastian Bach | Komponist, Orgel, Barock, Leipzig, Fuge | 2 | personen | 
+Leonardo da Vinci | Mona Lisa, Maler, Erfinder, Renaissance, Italien | 1 | personen | S
+Pablo Picasso | Maler, Spanien, Kubismus, Gemälde, Guernica | 2 | personen | 
+Vincent van Gogh | Maler, Ohr, Sonnenblumen, Niederlande, Sternennacht | 2 | personen | 
+Michelangelo | Maler, Bildhauer, Sixtinische Kapelle, David, Renaissance | 3 | personen | 
 Christoph Kolumbus | Entdecker, Amerika, Schiff, Spanien, Santa Maria | 1 | personen
-Isaac Newton | Apfel, Schwerkraft, Physiker, England, Gravitation | 2 | personen
-Charles Darwin | Evolution, Affe, Galapagos, Theorie, Naturforscher | 2 | personen
-Marie Curie | Radioaktivität, Physikerin, Nobelpreis, Polen, Radium | 3 | personen
-Sigmund Freud | Psychologe, Couch, Traum, Wien, Psychoanalyse | 2 | personen
-Karl Marx | Kapital, Kommunismus, Bart, Philosoph, Manifest | 3 | personen
-Mahatma Gandhi | Indien, Frieden, Gewaltlosigkeit, Brille, Hungerstreik | 2 | personen
-Nelson Mandela | Südafrika, Gefängnis, Präsident, Apartheid, Friedensnobelpreis | 2 | personen
-Martin Luther King | Rede, Traum, Bürgerrechte, Amerika, Schwarze | 2 | personen
-Mutter Teresa | Nonne, Indien, Kalkutta, Armen, Nobelpreis | 3 | personen
-Papst Franziskus | Vatikan, Rom, Argentinien, Kirche, weiß | 2 | personen
-Neil Armstrong | Mond, Astronaut, NASA, Schritt, Apollo | 1 | personen
-Yuri Gagarin | Russland, Weltraum, erster, Kosmonaut, Rakete | 3 | personen
+Isaac Newton | Apfel, Schwerkraft, Physiker, England, Gravitation | 2 | personen | 
+Charles Darwin | Evolution, Affe, Galapagos, Theorie, Naturforscher | 2 | personen | 
+Marie Curie | Radioaktivität, Physikerin, Nobelpreis, Polen, Radium | 3 | personen | 
+Sigmund Freud | Psychologe, Couch, Traum, Wien, Psychoanalyse | 2 | personen | 
+Karl Marx | Kapital, Kommunismus, Bart, Philosoph, Manifest | 3 | personen | 
+Mahatma Gandhi | Indien, Frieden, Gewaltlosigkeit, Brille, Hungerstreik | 2 | personen | 
+Nelson Mandela | Südafrika, Gefängnis, Präsident, Apartheid, Friedensnobelpreis | 2 | personen | 
+Martin Luther King | Rede, Traum, Bürgerrechte, Amerika, Schwarze | 2 | personen | 
+Mutter Teresa | Nonne, Indien, Kalkutta, Armen, Nobelpreis | 3 | personen | 
+Papst Franziskus | Vatikan, Rom, Argentinien, Kirche, weiß | 2 | personen | 
+Neil Armstrong | Mond, Astronaut, NASA, Schritt, Apollo | 1 | personen | S
+Yuri Gagarin | Russland, Weltraum, erster, Kosmonaut, Rakete | 3 | personen | 
 Steve Jobs | Apple, iPhone, Rollkragen, Gründer, Silicon Valley | 1 | personen
-Bill Gates | Microsoft, Windows, Milliardär, Brille, Software | 1 | personen
+Bill Gates | Microsoft, Windows, Milliardär, Brille, Software | 1 | personen | S
 Elon Musk | Tesla, SpaceX, Mars, Milliardär, Twitter | 1 | personen
-Mark Zuckerberg | Facebook, Gründer, Meta, Milliardär, soziales Netzwerk | 2 | personen
-Walt Disney | Mickey Maus, Zeichentrick, Freizeitpark, Gründer, Film | 1 | personen
-Charlie Chaplin | Stummfilm, Schnurrbart, Hut, Stock, Komiker | 2 | personen
+Mark Zuckerberg | Facebook, Gründer, Meta, Milliardär, soziales Netzwerk | 2 | personen | 
+Walt Disney | Mickey Maus, Zeichentrick, Freizeitpark, Gründer, Film | 1 | personen | S
+Charlie Chaplin | Stummfilm, Schnurrbart, Hut, Stock, Komiker | 2 | personen | 
 Marilyn Monroe | Hollywood, Blondine, Kleid, Schauspielerin, Ikone | 1 | personen
-Audrey Hepburn | Frühstück bei Tiffany, Schauspielerin, Hollywood, Eleganz, Kleid | 3 | personen
+Audrey Hepburn | Frühstück bei Tiffany, Schauspielerin, Hollywood, Eleganz, Kleid | 3 | personen | 
 Elvis Presley | King, Rock'n'Roll, Hüfte, Memphis, Sänger | 1 | personen | S
-Michael Jackson | Moonwalk, Thriller, Handschuh, Popstar, King of Pop | 1 | personen | S
-Madonna | Popstar, Sängerin, Like a Virgin, Queen of Pop, USA | 2 | personen
-Freddie Mercury | Queen, Sänger, Schnurrbart, Bohemian Rhapsody, Band | 1 | personen
-John Lennon | Beatles, Imagine, Brille, Liverpool, Sänger | 2 | personen
-Paul McCartney | Beatles, Bassist, Yesterday, Liverpool, Sänger | 3 | personen
-Mick Jagger | Rolling Stones, Sänger, Lippen, Rock, Band | 3 | personen
-Bob Dylan | Sänger, Nobelpreis, Gitarre, Folk, Mundharmonika | 3 | personen
-Bob Marley | Reggae, Dreadlocks, Jamaika, Sänger, Marihuana | 2 | personen
-Elton John | Sänger, Klavier, Brille, Rocketman, Candle in the Wind | 3 | personen
-Taylor Swift | Sängerin, Country, Fans, Popstar, Gitarre | 1 | personen
-Beyoncé | Sängerin, Jay-Z, Destiny's Child, Popstar, Tänzerin | 2 | personen
-Rihanna | Sängerin, Barbados, Umbrella, Popstar, Make-up | 2 | personen
-Lady Gaga | Sängerin, Fleischkleid, Poker Face, Popstar, Exzentrik | 2 | personen
-Justin Bieber | Sänger, Teenie, Kanada, Popstar, Baby | 2 | personen
-Helene Fischer | Schlager, Sängerin, Atemlos, Show, Blond | 1 | personen | S
-Udo Lindenberg | Hut, Sonnenbrille, Panikorchester, Sänger, Nuscheln | 2 | personen
-Herbert Grönemeyer | Sänger, Bochum, Mensch, Musiker, Männer | 3 | personen
-Nena | 99 Luftballons, Sängerin, Neue Deutsche Welle, Haare, Band | 3 | personen
-Rammstein | Band, Feuer, Till Lindemann, Metal, Konzert | 2 | personen
-Die Ärzte | Band, Punk, Farin Urlaub, Berlin, Bela | 3 | personen
-Beatles | Band, Liverpool, Yesterday, vier, Pilzkopf | 1 | personen
-Queen | Band, Freddie Mercury, We Will Rock You, Rock, Bohemian Rhapsody | 2 | personen
+Michael Jackson | Moonwalk, Thriller, Handschuh, Popstar, King of Pop | 1 | personen
+Madonna | Popstar, Sängerin, Like a Virgin, Queen of Pop, USA | 2 | personen | 
+Freddie Mercury | Queen, Sänger, Schnurrbart, Bohemian Rhapsody, Band | 1 | personen | S
+John Lennon | Beatles, Imagine, Brille, Liverpool, Sänger | 2 | personen | 
+Paul McCartney | Beatles, Bassist, Yesterday, Liverpool, Sänger | 3 | personen | 
+Mick Jagger | Rolling Stones, Sänger, Lippen, Rock, Band | 3 | personen | 
+Bob Dylan | Sänger, Nobelpreis, Gitarre, Folk, Mundharmonika | 3 | personen | 
+Bob Marley | Reggae, Dreadlocks, Jamaika, Sänger, Marihuana | 2 | personen | 
+Elton John | Sänger, Klavier, Brille, Rocketman, Candle in the Wind | 3 | personen | 
+Taylor Swift | Sängerin, Country, Fans, Popstar, Gitarre | 1 | personen | S
+Beyoncé | Sängerin, Jay-Z, Destiny's Child, Popstar, Tänzerin | 2 | personen | 
+Rihanna | Sängerin, Barbados, Umbrella, Popstar, Make-up | 2 | personen | 
+Lady Gaga | Sängerin, Fleischkleid, Poker Face, Popstar, Exzentrik | 2 | personen | 
+Justin Bieber | Sänger, Teenie, Kanada, Popstar, Baby | 2 | personen | 
+Helene Fischer | Schlager, Sängerin, Atemlos, Show, blond | 1 | personen
+Udo Lindenberg | Hut, Sonnenbrille, Panikorchester, Sänger, nuscheln | 2 | personen | 
+Herbert Grönemeyer | Sänger, Bochum, Mensch, Musiker, Männer | 3 | personen | 
+Nena | 99 Luftballons, Sängerin, Neue Deutsche Welle, Haare, Band | 3 | personen | 
+Rammstein | Band, Feuer, Till Lindemann, Metal, Konzert | 2 | personen | 
+Die Ärzte | Band, Punk, Farin Urlaub, Berlin, Bela | 3 | personen | 
+Beatles | Band, Liverpool, Yesterday, vier, Pilzkopf | 1 | personen | S
+Queen | Band, Freddie Mercury, We Will Rock You, Brian May, Bohemian Rhapsody | 2 | personen | 
 Franz Beckenbauer | Kaiser, Fußball, Bayern, Libero, Weltmeister | 1 | personen
-Lothar Matthäus | Fußball, Weltmeister, Rekord, Bayern, Kapitän | 3 | personen
-Oliver Kahn | Torwart, Titan, Bayern, Fußball, Welttorhüter | 2 | personen
-Miroslav Klose | Fußball, Rekord, Torjäger, Weltmeister, Salto | 3 | personen
-Thomas Müller | Fußball, Bayern, Raumdeuter, Nationalspieler, Weltmeister | 2 | personen
-Manuel Neuer | Torwart, Bayern, Weltmeister, Nationalmannschaft, Handschuhe | 2 | personen
-Lionel Messi | Fußball, Argentinien, Barcelona, Weltmeister, Dribbling | 1 | personen
+Lothar Matthäus | Fußball, Weltmeister, Rekord, Bayern, Kapitän | 3 | personen | 
+Oliver Kahn | Torwart, Titan, Bayern, Fußball, Welttorhüter | 2 | personen | 
+Miroslav Klose | Fußball, Rekord, Torjäger, Weltmeister, Salto | 3 | personen | 
+Thomas Müller | Fußball, Bayern, Raumdeuter, Nationalspieler, Weltmeister | 2 | personen | 
+Manuel Neuer | Torwart, Bayern, Weltmeister, Nationalmannschaft, Handschuhe | 2 | personen | 
+Lionel Messi | Fußball, Argentinien, Barcelona, Weltmeister, Dribbling | 1 | personen | S
 Cristiano Ronaldo | Fußball, Portugal, Real Madrid, Sixpack, Tore | 1 | personen
-Pelé | Fußball, Brasilien, Legende, Weltmeister, Dribbler | 3 | personen
-Diego Maradona | Fußball, Argentinien, Hand Gottes, Neapel, Legende | 2 | personen
-Michael Schumacher | Formel 1, Ferrari, Rekord, Weltmeister, Rennfahrer | 1 | personen
-Sebastian Vettel | Formel 1, Red Bull, Weltmeister, Rennfahrer, Finger | 3 | personen
-Boris Becker | Tennis, Wimbledon, Bumm Bumm Bumm, Leimen, Ass | 2 | personen
-Steffi Graf | Tennis, Wimbledon, Golden Slam, Andre Agassi, Vorhand | 3 | personen
-Roger Federer | Tennis, Schweiz, Wimbledon, Rekord, Eleganz | 2 | personen
-Usain Bolt | Sprinter, Jamaika, schnell, Weltrekord, Blitz | 2 | personen
-Muhammad Ali | Boxer, Schwergewicht, Schmetterling, Biene, Champion | 2 | personen
-Michael Jordan | Basketball, Chicago Bulls, Air, NBA, Legende | 2 | personen
-Dirk Nowitzki | Basketball, Würzburg, NBA, Dallas, Würfel | 3 | personen
-J. K. Rowling | Autorin, Harry Potter, Schriftstellerin, England, Zauberer | 3 | personen
-Astrid Lindgren | Pippi Langstrumpf, Schweden, Autorin, Kinderbücher, Michel | 3 | personen
-Brüder Grimm | Märchen, Sammler, Kassel, Wörterbuch, Rapunzel | 2 | personen
-Loriot | Humor, Komiker, Mops, Nudel, Zeichner | 3 | personen
-Thomas Gottschalk | Moderator, Wetten dass, Locken, Showmaster, blond | 2 | personen
-Günther Jauch | Moderator, Millionär, Quiz, Talkshow, Fernsehen | 2 | personen
-Stefan Raab | Moderator, TV Total, Wok-WM, ProSieben, Musiker | 2 | personen
-Heidi Klum | Model, Topmodel, Moderatorin, Laufsteg, Fotos | 2 | personen
-Til Schweiger | Schauspieler, Tatort, Keinohrhasen, Regisseur, Barfuß | 3 | personen
-Otto Waalkes | Komiker, Ottifanten, Ostfriesland, Blödeleien, Haare | 2 | personen
-Hape Kerkeling | Komiker, Pilgern, Jakobsweg, Horst Schlämmer, Hurz | 3 | personen
-Jan Böhmermann | Satiriker, Moderator, Fernsehen, Neo Magazin, Ziegenpeter | 3 | personen
-Dieter Bohlen | Pop-Titan, Musiker, Bro'Mance, Modern Talking, Casting | 2 | personen
-Robbie Williams | Sänger, England, Angels, Take That, Entertainer | 3 | personen
+Pelé | Fußball, Brasilien, Legende, Weltmeister, Dribbler | 3 | personen | 
+Diego Maradona | Fußball, Argentinien, Hand Gottes, Neapel, Legende | 2 | personen | 
+Michael Schumacher | Formel 1, Ferrari, Rekord, Weltmeister, Rennfahrer | 1 | personen | S
+Sebastian Vettel | Formel 1, Red Bull, Weltmeister, Rennfahrer, Finger | 3 | personen | 
+Boris Becker | Tennis, Wimbledon, Bumm Bumm Bumm, leimen, Ass | 2 | personen | 
+Steffi Graf | Tennis, Wimbledon, Golden Slam, Andre Agassi, Vorhand | 3 | personen | 
+Roger Federer | Tennis, Schweiz, Wimbledon, Rekord, Eleganz | 2 | personen | 
+Usain Bolt | Sprinter, Jamaika, schnell, Weltrekord, Blitz | 2 | personen | 
+Muhammad Ali | Boxer, Schwergewicht, Schmetterling, Biene, Champion | 2 | personen | 
+Michael Jordan | Basketball, Chicago Bulls, Air, NBA, Legende | 2 | personen | 
+Dirk Nowitzki | Basketball, Würzburg, NBA, Dallas, Würfel | 3 | personen | 
+J. K. Rowling | Autorin, Harry Potter, Schriftstellerin, England, Zauberer | 3 | personen | 
+Astrid Lindgren | Pippi Langstrumpf, Schweden, Autorin, Kinderbücher, Michel | 3 | personen | 
+Brüder Grimm | Märchen, Sammler, Kassel, Wörterbuch, Rapunzel | 2 | personen | 
+Loriot | Humor, Komiker, Mops, Nudel, Zeichner | 3 | personen | 
+Thomas Gottschalk | Moderator, Wetten dass, Locken, Showmaster, blond | 2 | personen | 
+Günther Jauch | Moderator, Millionär, Quiz, Talkshow, Fernsehen | 2 | personen | 
+Stefan Raab | Moderator, TV Total, Wok-WM, ProSieben, Musiker | 2 | personen | 
+Heidi Klum | Model, Topmodel, Moderatorin, Laufsteg, Fotos | 2 | personen | 
+Til Schweiger | Schauspieler, Tatort, Keinohrhasen, Regisseur, barfuß | 3 | personen | 
+Otto Waalkes | Komiker, Ottifanten, Ostfriesland, Blödeleien, Haare | 2 | personen | 
+Hape Kerkeling | Komiker, pilgern, Jakobsweg, Horst Schlämmer, Hurz | 3 | personen | 
+Jan Böhmermann | Satiriker, Moderator, Fernsehen, Neo Magazin, Ziegenpeter | 3 | personen | 
+Dieter Bohlen | Pop-Titan, Musiker, Bro'Mance, Modern Talking, Casting | 2 | personen | 
+Robbie Williams | Sänger, England, Angels, Take That, Entertainer | 3 | personen | 
 Arnold Schwarzenegger | Terminator, Bodybuilder, Österreich, Gouverneur, Muskeln | 1 | personen
-Tom Cruise | Mission Impossible, Top Gun, Scientology, Schauspieler, Hollywood | 2 | personen
-Brad Pitt | Schauspieler, Angelina Jolie, Hollywood, Fight Club, Troja | 2 | personen
-Leonardo DiCaprio | Titanic, Schauspieler, Oscar, Hollywood, Revenant | 2 | personen
-Johnny Depp | Jack Sparrow, Pirat, Schauspieler, Tim Burton, Hollywood | 2 | personen
-Will Smith | Schauspieler, Men in Black, Fresh Prince, Hollywood, Rapper | 2 | personen
-Jackie Chan | Kampfsport, Schauspieler, Hongkong, Komödie, Stunts | 2 | personen
-Bruce Lee | Kung Fu, Kampfsport, Hongkong, Schauspieler, Drache | 2 | personen
-Harrison Ford | Indiana Jones, Han Solo, Schauspieler, Hollywood, Hut | 3 | personen
-Sylvester Stallone | Rocky, Rambo, Schauspieler, Muskeln, Hollywood | 2 | personen
-Chuck Norris | Kampfsport, Witze, Bart, Schauspieler, Texas Ranger | 2 | personen
-Sandmännchen | Abend, Kinder, Fernsehen, Osten, Traumsand | 2 | personen
+Tom Cruise | Mission Impossible, Top Gun, Scientology, Schauspieler, Hollywood | 2 | personen | 
+Brad Pitt | Schauspieler, Angelina Jolie, Hollywood, Fight Club, Troja | 2 | personen | 
+Leonardo DiCaprio | Titanic, Schauspieler, Oscar, Hollywood, Revenant | 2 | personen | 
+Johnny Depp | Jack Sparrow, Pirat, Schauspieler, Tim Burton, Hollywood | 2 | personen | 
+Will Smith | Schauspieler, Men in Black, Fresh Prince, Hollywood, Rapper | 2 | personen | 
+Jackie Chan | Kampfsport, Schauspieler, Hongkong, Komödie, Stunts | 2 | personen | 
+Bruce Lee | Kung Fu, Kampfsport, Hongkong, Schauspieler, Drache | 2 | personen | 
+Harrison Ford | Indiana Jones, Han Solo, Schauspieler, Hollywood, Hut | 3 | personen | 
+Sylvester Stallone | Rocky, Rambo, Schauspieler, Muskeln, Hollywood | 2 | personen | 
+Chuck Norris | Kampfsport, Witze, Bart, Schauspieler, Texas Ranger | 2 | personen | 
+Sandmännchen | Abend, Kinder, Fernsehen, Osten, Traumsand | 2 | personen | 
 Weihnachtsmann | Geschenke, Rentier, Bart, Nikolaus, Schlitten | 1 | personen | S
 Osterhase | Eier, Nest, Versteck, Frühling, Schokolade | 1 | personen
-Nikolaus | Stiefel, Dezember, Bischof, Mandarinen, Rute | 1 | personen
-Zahnfee | Kopfkissen, Münze, Nacht, Kinder, Milchzahn | 2 | personen
-Räuber Hotzenplotz | Kinderbuch, Pistole, Kasperl, Wurst, Großmutter | 3 | personen
-Greta Thunberg | Klima, Schweden, Fridays for Future, Zöpfe, Schulstreik | 2 | personen
-Albert Schweitzer | Arzt, Afrika, Urwald, Lambaréné, Nobelpreis | 3 | personen
-Wilhelm Tell | Armbrust, Apfel, Schweiz, Sohn, Held | 2 | personen
+Nikolaus | Stiefel, Dezember, Bischof, Mandarinen, Rute | 1 | personen | S
+Zahnfee | Kopfkissen, Münze, Nacht, Kinder, Milchzahn | 2 | personen | 
+Räuber Hotzenplotz | Kinderbuch, Pistole, Kasperl, Wurst, Großmutter | 3 | personen | 
+Greta Thunberg | Klima, Schweden, Fridays for Future, Zöpfe, Schulstreik | 2 | personen | 
+Albert Schweitzer | Arzt, Afrika, Urwald, Lambaréné, Nobelpreis | 3 | personen | 
+Wilhelm Tell | Armbrust, Apfel, Schweiz, Sohn, Held | 2 | personen | 
 Robin Hood | Bogen, Sherwood, Reiche, Arme, Wald | 1 | personen
-König Artus | Tafelrunde, Schwert, Excalibur, Camelot, Merlin | 2 | personen
-Sissi | Kaiserin, Österreich, Romy Schneider, Franz, Wien | 2 | personen
-Ludwig II. | Märchenkönig, Neuschwanstein, Bayern, Schloss, Schwan | 3 | personen
-Marlene Dietrich | Schauspielerin, Sängerin, Hosen, Blauer Engel, Berlin | 3 | personen
-Wilhelm Röntgen | Strahlen, Physiker, Knochen, Nobelpreis, Würzburg | 3 | personen
-Alexander von Humboldt | Forscher, Naturforscher, Südamerika, Entdecker, Kosmos | 3 | personen
-Johannes Gutenberg | Buchdruck, Mainz, Lettern, Bibel, Erfinder | 2 | personen
-Karl May | Winnetou, Old Shatterhand, Autor, Wilder Westen, Radebeul | 3 | personen
-Winnetou | Apache, Häuptling, Old Shatterhand, Indianer, Karl May | 2 | personen
-Kermit | Frosch, grün, Muppets, Miss Piggy, Puppe | 2 | personen
-Jesus | Christentum, Weihnachten, Kreuz, Bibel, Bethlehem | 1 | personen
-Buddha | Religion, Indien, Statue, Erleuchtung, Bauch | 3 | personen
+König Artus | Tafelrunde, Schwert, Excalibur, Camelot, Merlin | 2 | personen | 
+Sissi | Kaiserin, Österreich, Romy Schneider, Franz, Wien | 2 | personen | 
+Ludwig II. | Märchenkönig, Neuschwanstein, Bayern, Schloss, Schwan | 3 | personen | 
+Marlene Dietrich | Schauspielerin, Sängerin, Hosen, Blauer Engel, Berlin | 3 | personen | 
+Wilhelm Röntgen | strahlen, Physiker, Knochen, Nobelpreis, Würzburg | 3 | personen | 
+Alexander von Humboldt | Forscher, Naturforscher, Südamerika, Entdecker, Kosmos | 3 | personen | 
+Johannes Gutenberg | Buchdruck, Mainz, Lettern, Bibel, Erfinder | 2 | personen | 
+Karl May | Winnetou, Old Shatterhand, Autor, Wilder Westen, Radebeul | 3 | personen | 
+Winnetou | Apache, Häuptling, Old Shatterhand, Indianer, Karl May | 2 | personen | 
+Kermit | Frosch, grün, Muppets, Miss Piggy, Puppe | 2 | personen | 
+Jesus | Christentum, Weihnachten, Kreuz, Bibel, Bethlehem | 1 | personen | 
+Buddha | Religion, Indien, Statue, Erleuchtung, Bauch | 3 | personen | 

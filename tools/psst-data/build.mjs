@@ -8,7 +8,7 @@
 // Fails (exit 1) on any quality problem. Output is deterministic.
 import fs from 'node:fs';
 import path from 'node:path';
-import { HERE, DATA, RAW, readJson, slug, sharesStem, pluralKey, blocked } from './lib.mjs';
+import { HERE, DATA, RAW, readJson, slug, sharesStem, redundant, blocked } from './lib.mjs';
 import { checkCards } from './check.mjs';
 import { loadSources, suggestTabu } from './suggest.mjs';
 
@@ -52,11 +52,17 @@ function parseCurated() {
 let SRCS = null;
 const sources = () => SRCS || (SRCS = loadSources());
 
+// obvious typos / unwanted entries in the Kovah data
+const KOVAH_TYPOS = { Hodgwarts: 'Hogwarts', 'Östereich': 'Österreich', 'Big Bang Thory': 'The Big Bang Theory', 'Leathal Weapon': 'Lethal Weapon',
+  'Der talentierte Mr. Rippley': 'Der talentierte Mr. Ripley', 'Padme Amidalla': 'Padmé Amidala', 'Magarine': 'Margarine', Illtis: 'Iltis', Fesslungskünstler: 'Entfesselungskünstler' };
+const KOVAH_SKIP = new Set(['tot', 'Haare', 'Auto', 'Kabel', 'Pferd', 'zwei', 'Maus', 'Hund', 'Katze', 'Vogel', 'Fisch', 'Schwan', 'Fuchs', 'Eier', 'Huhn']);
 function kovahWords(W) {
   const k = sources().kovah;
   for (const file of Object.values(k)) {
     for (const key of Object.keys(file)) {
-      if (key === W || key.replace(/ \(.*\)$/, '') === W) return file[key].map(s => s.trim()).filter(Boolean);
+      if (key === W || key.replace(/ \(.*\)$/, '') === W) {
+        return file[key].map(s => s.trim()).map(s => KOVAH_TYPOS[s] || s).map(s => (['Steppen', 'Wolle'].includes(s) ? s : fixCase(s))).filter(s => s && !KOVAH_SKIP.has(s) && s.split(' ').length <= 3 && s.length <= 26);
+      }
     }
   }
   return [];
@@ -70,22 +76,26 @@ function resolve(c) {
   if (spec.startsWith('*')) { mode = 'auto'; list = spec.slice(1); }
   else if (spec.startsWith('A+')) { mode = 'autoFirst'; list = spec.slice(2); }
   else if (spec.startsWith('K+')) { mode = 'kovahFirst'; list = spec.slice(2); }
-  const mine = list.split(',').map(s => s.trim()).filter(Boolean);
+  // "a, b, c, d, e ; s1, s2": words after ";" are spares, only used when one of the first words is rejected
+  const [main, spareList = ''] = list.split(';');
+  const mine = main.split(',').map(s => s.trim()).filter(Boolean);
+  const spares = spareList.split(',').map(s => s.trim()).filter(Boolean);
   const t = [];
-  const ok = x => x && !sharesStem(c.w, x) && !t.some(y => pluralKey(y) === pluralKey(x) || y.toLowerCase() === x.toLowerCase()) && !blocked(x);
+  const ok = x => x && !sharesStem(c.w, x) && !t.some(y => redundant(y, x) || y.toLowerCase() === x.toLowerCase()) && !blocked(x);
   const issues = [], rejected = [];
-  const SPARE = new Set();
   const push = (x, kind) => {
     if (t.length >= 5) { if (kind === 'o') issues.push(`${c.w}: surplus Tabuwort "${x}"`); return; }
-    if (kind !== 'o' && SPARE.has(x)) return;
     if (ok(x)) { t.push(x); if (kind === 'a') auto++; if (kind === 'k') kov++; }
     else if (kind === 'o') rejected.push(x);
+    else if (kind === 's') issues.push(`${c.w}: spare Tabuwort "${x}" rejected`);
   };
-  // own words come first; "*", "A+" fill the remaining slots with automatic suggestions, "K+" with Kovah words
+  // own words come first; spares replace rejected ones; "*", "A+" fill the remaining slots with automatic suggestions, "K+" with Kovah words
   mine.forEach(x => push(x, 'o'));
+  if (rejected.length) spares.forEach(x => { if (t.length < 5) push(x, 's'); });
   if (mode === 'kovahFirst') kovahWords(c.w).forEach(x => push(x, 'k'));
   if (mode === 'auto' || mode === 'autoFirst') suggestTabu(sources(), c.w).forEach(s => push(s.t, 'a'));
-  if (rejected.length) issues.push(`${c.w}: rejected [${rejected.join(', ')}] (stem clash/duplicate/blocklist); valid: ${t.join(', ')}`);
+  if (rejected.length && t.length < 5) issues.push(`${c.w}: rejected [${rejected.join(', ')}] (stem clash/duplicate/blocklist); valid: ${t.join(', ')}`);
+  else if (rejected.length) log.push(`replaced rejected [${rejected.join(', ')}] on ${c.w}`);
   let src = 'ai';
   if (auto && !kov && t.length === auto) src = 'ot';
   else if (kov && t.length === kov) src = 'kovah';
@@ -101,6 +111,8 @@ function fixCase(word) {
   try { freq = sources().freq; } catch { return word; }
   const cnt = w => (freq[w] ? freq[w][1] + freq[w][2] : 0);
   const up = word[0].toUpperCase() + word.slice(1), lo = word[0].toLowerCase() + word.slice(1);
+  const ot = sources().ot;
+  if (word === up && ot[lo] && !ot[up] && /(en|ln|rn)$/.test(word) && cnt(lo) >= cnt(up)) return lo; // "Springen" is not a noun lemma, "springen" is a verb
   if (word === up && cnt(lo) >= 6 * Math.max(cnt(up), 1) && cnt(lo) > 50) return lo;
   if (word === lo && cnt(up) >= 6 * Math.max(cnt(lo), 1) && cnt(up) > 50) return up;
   return word;

@@ -1,0 +1,91 @@
+# Weitere Film-, Serien- und Fernsehkarten
+Dirty Dancing | Tanz, Hebefigur, Patrick Swayze, Sommer, Baby ; Film | 2 | film
+Pretty Woman | Julia Roberts, Richard Gere, Hure, Film, Rodeo Drive ; Liebesfilm | 3 | film
+Das Dschungelbuch | Mowgli, Balu, Disney, Tiere, Baghira ; Film | 1 | film
+Arielle | Meerjungfrau, Disney, Seehexe, Prinz, Krabbe ; Film | 2 | film
+Die Schöne und das Biest | Disney, Belle, Rose, Schloss, Märchen ; Film | 2 | film
+Aladdin | Wunderlampe, Dschinni, Teppich, Disney, Prinzessin ; Film | 2 | film
+Bambi | Reh, Disney, Wald, Klopfer, Kitz ; Film | 2 | film
+Cars | Pixar, Blitz McQueen, Rennwagen, Hook, Film ; Animation | 2 | film
+Ice Age | Mammut, Eiszeit, Faultier, Säbelzahntiger, Scrat ; Film | 2 | film
+Madagascar | Löwe, Pinguine, Zoo, Insel, Film ; Zebra | 3 | film
+Kung Fu Panda | Bär, Nudeln, Po, China, Film ; Animation | 3 | film
+Monster AG | Pixar, Sulley, Monster, Kinderzimmer, Türen ; Film | 3 | film
+Ratatouille | Ratte, Koch, Paris, Pixar, Suppe ; Film | 3 | film
+Die Eiskönigin | Elsa, Anna, Olaf, Disney, Schnee ; Film | 2 | film
+Der kleine Prinz | Rose, Fuchs, Planet, Buch, Pilot ; Wüste | 3 | film
+Alice im Wunderland | Hase, Grinsekatze, Hutmacher, Herzkönigin, Kaninchenbau ; Märchen | 2 | film
+Peter Pan | Nimmerland, Kapitän Hook, Tinkerbell, fliegen, Wendy ; Junge | 2 | film
+Der Zauberer von Oz | Dorothy, Vogelscheuche, gelbe Ziegel, Hexe, Blechmann ; Märchen | 3 | film
+Mary Poppins | Regenschirm, Kindermädchen, Zucker, fliegen, Musical ; Film | 3 | film
+Mamma Mia | ABBA, Musical, Griechenland, Meryl Streep, Hochzeit ; Film | 2 | film
+Grease | Musical, John Travolta, Sandy, Tanz, Highschool ; Film | 3 | film
+Forrest Gump | Tom Hanks, Pralinenschachtel, Laufen, Garnelen, Film ; Amerika | 2 | film
+Gladiator | Rom, Arena, Russell Crowe, Kolosseum, Kampf ; Film | 3 | film
+Pulp Fiction | Tarantino, Travolta, Gangster, Tanz, Film ; Koffer | 3 | film
+Fluch der Karibik | Jack Sparrow, Piraten, Johnny Depp, Schiff, Rum ; Film | 1 | film
+Zurück in die Zukunft | Zeitreise, DeLorean, Marty, Doc, Film ; Flux | 2 | film
+E.T. | Außerirdischer, Fahrrad, nach Hause telefonieren, Finger, Film ; Spielberg | 2 | film
+Der weiße Hai | Spielberg, Meer, Strand, Zähne, Film ; Boot | 2 | film
+King Kong | Gorilla, Empire State Building, Film, Riese, Blondine ; New York | 2 | film
+Godzilla | Monster, Japan, Echse, Film, Riese ; Tokio | 2 | film
+Ghostbusters | Geister, Slimer, Protonenstrahl, Film, Auto ; New York | 2 | film
+Men in Black | Außerirdische, Anzug, Sonnenbrille, Agenten, Film ; Will Smith | 2 | film
+Kevin allein zu Haus | Weihnachten, Einbrecher, Film, Chicago, Kind ; Fallen | 1 | film
+Dirty Harry | Pistole, Clint Eastwood, Polizist, Film, Magnum ; San Francisco | 3 | film
+Fast & Furious | Autos, Rennen, Vin Diesel, Film, Familie ; Tuning | 2 | film
+Mission Impossible | Tom Cruise, Agent, Film, Stunt, Musik ; Maske | 3 | film
+Fack ju Göhte | Lehrer, Schule, Film, Elyas M'Barek, Komödie ; Chaos | 2 | film
+Der Schuh des Manitu | Western, Bully Herbig, Komödie, Film, Indianer ; Abahachi | 3 | film
+Keinohrhasen | Til Schweiger, Komödie, Film, Nora Tschirner, Liebe ; Berlin | 3 | film
+Das Boot | Film, U-Boot, Krieg, Besatzung, Deutschland ; Tauchen | 3 | film
+Good Bye Lenin | Film, DDR, Mutter, Berlin, Wende ; Komödie | 3 | film
+Die Känguru-Chroniken | Känguru, Marc-Uwe Kling, Film, Berlin, Kommunist ; Komödie | 3 | film
+Dr. House | Serie, Arzt, Humpeln, Diagnose, Krankenhaus ; Stock | 2 | film
+Grey's Anatomy | Serie, Ärzte, Krankenhaus, Seattle, Drama ; Operation | 3 | film
+Tatortreiniger | Serie, Putzen, Schotty, Humor, Leiche ; Blut | 3 | film
+Alarm für Cobra 11 | Serie, Autobahn, Polizei, Explosionen, RTL ; Verfolgungsjagd | 3 | film
+Rosenheim-Cops | Serie, Bayern, Kommissar, Krimi, ZDF ; Rosenheim | 3 | film
+Der Bergdoktor | Serie, Tirol, Arzt, Berge, ZDF ; Fernsehen | 3 | film
+Sturm der Liebe | Telenovela, Fürstenhof, ARD, Liebe, Hotel ; Serie | 3 | film
+Wetterbericht | Wetter, Karte, Moderator, Sonne, Nachrichten ; Regen | 2 | film
+Nachrichtensprecher | Tagesschau, Anzug, Studio, Meldung, Fernsehen ; Teleprompter | 2 | film
+Fernsehkoch | Rezept, Studio, Kochshow, Zutaten, Küche ; Sendung | 3 | film
+Teleshopping | Verkaufen, Fernsehen, Produkt, Bestellen, Sender ; Telefon | 3 | film
+Telenovela | Fernsehen, Liebe, Drama, Serie, Südamerika ; Seifenoper | 3 | film
+Seifenoper | Fernsehen, Drama, Serie, täglich, Liebe ; Schauspieler | 3 | film
+Sendepause | Fernsehen, Programm, Testbild, Ruhe, Unterbrechung ; Bildschirm | 3 | film
+Einschaltquote | Fernsehen, Zuschauer, Sendung, Prozent, Messung ; Millionen | 3 | film
+Moderatorin | Sendung, Fernsehen, Studio, Gäste, Mikrofon ; Showmaster | 2 | film
+Kameramann | Film, Dreh, Linse, Set, Stativ ; Fernsehen | 2 | film
+Filmklappe | Dreh, Regisseur, Szene, Film, Schlagen ; Set | 2 | film
+Filmset | Dreh, Kamera, Regisseur, Kulisse, Statisten ; Studio | 3 | film
+Kulisse | Bühne, Theater, Film, Hintergrund, Kulissenschieber ; Set | 3 | film
+Maske | Schminke, Gesicht, Karneval, Verkleidung, Theater ; Film | 2 | film
+Zeichner | Stift, Papier, Comic, Künstler, Skizze ; Bleistift | 2 | film
+Marionettentheater | Fäden, Puppen, Bühne, Kasperl, Kinder ; Holz | 3 | film
+Kasperletheater | Puppe, Krokodil, Kinder, Seppel, Bühne ; Handpuppe | 2 | film
+Handpuppe | Kasper, Kinder, Hand, Theater, Stoff ; Spielzeug | 2 | film
+Bauchredner | Puppe, Stimme, Mund, Bühne, Trick ; Zuschauer | 3 | film
+Zauberlehrling | Besen, Goethe, Gedicht, Meister, Wasser ; Mickey | 3 | film
+Musical | Gesang, Bühne, Tanz, Theater, Kostüme ; Hamburg | 2 | film
+Löwenzahn | Peter Lustig, Kinderfernsehen, Latzhose, ZDF, Wiese ; Sendung | 3 | film
+Sandmann | Abend, Kinder, Fernsehen, Sand, Traum ; Figur | 3 | film
+Teletubbies | Kinderfernsehen, Bunt, Tinky Winky, Antenne, Bildschirm ; Sendung | 3 | film
+Bob der Baumeister | Kinderserie, Bagger, Yes we can, Baustelle, Helm ; Zeichentrick | 3 | film
+Feuerwehrmann Sam | Kinderserie, Wales, Feuerwehr, Hund, Zeichentrick ; Held | 3 | film
+Paw Patrol | Hunde, Kinderserie, Chase, Marshall, Einsatz ; Welpen | 2 | film
+Peppa Wutz | Schwein, Kinderserie, Pfützen, George, Familie ; Zeichentrick | 3 | film
+Heidi | Alm, Großvater, Peter, Ziegen, Berge ; Schweiz | 2 | film
+Wickie | Wikinger, Schiff, Nase, Kinderserie, Flicka ; Zeichentrick | 3 | film
+Asterix | Gallier, Zaubertrank, Obelix, Römer, Comic ; Hinkelstein | 1 | film
+Obelix | Hinkelstein, Gallier, dick, Wildschwein, Asterix ; Comic | 2 | film
+Lucky Luke | Comic, Cowboy, Daltons, Western, Schatten ; Zeichentrick | 3 | film
+Tim und Struppi | Comic, Reporter, Hund, Belgien, Zeichentrick ; Kapitän Haddock | 3 | film
+Garfield | Katze, Lasagne, Orange, Comic, Montag ; Odie | 2 | film
+Snoopy | Hund, Peanuts, Charlie Brown, Comic, Doghouse ; Beagle | 2 | film
+Tom und Jerry | Katze, Maus, Zeichentrick, Jagd, Cartoon ; Verfolgung | 1 | film
+Bugs Bunny | Hase, Karotte, Zeichentrick, Looney Tunes, Cartoon ; Fressen | 2 | film
+SpongeBob | Schwamm, Gelb, Bikini Bottom, Patrick, Zeichentrick ; Krabbenburger | 1 | film
+Drache Kokosnuss | Kinderbuch, Drache, Insel, Feuer, Film ; Oskar | 3 | film
+Das Sams | Wunschpunkte, Kinderbuch, Wunsch, Rüssel, Film ; Taschenmann | 3 | film

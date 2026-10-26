@@ -45,6 +45,7 @@ export function stem(w) {
 /** Plural/singular-insensitive key used to detect duplicate Tabuwörter within a card. */
 export function pluralKey(w) {
   let s = w.toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss').replace(/[^a-z]/g, '');
+  if (s.length >= 9 && s.endsWith('in')) s = s.slice(0, -2); // Schauspielerin -> Schauspieler
   for (const x of ['innen', 'en', 'er', 'e', 'n', 's']) {
     if (s.length - x.length >= 4 && s.endsWith(x)) { s = s.slice(0, -x.length); break; }
   }
@@ -90,4 +91,13 @@ export function blocked(text) {
   for (const b of BLOCK_SUBSTR) if (l.includes(b)) return b;
   for (const tok of l.split(/[^a-zäöüß]+/)) if (BLOCK_EXACT.has(tok)) return tok;
   return null;
+}
+
+/** True if two Tabuwörter of one card are redundant: same plural key, or one is a word of the other ("Marty" / "Marty McFly"). */
+export function redundant(a, b) {
+  if (pluralKey(a) === pluralKey(b)) return true;
+  const ta = a.toLowerCase().split(/\s+/), tb = b.toLowerCase().split(/\s+/);
+  if (ta.length === tb.length) return false;
+  const [short, long] = ta.length < tb.length ? [ta, tb] : [tb, ta];
+  return short.every(x => long.includes(x)) && short.join('').length >= 4;
 }

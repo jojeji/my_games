@@ -7,7 +7,7 @@
       "kind": "difficulty",
       "icon": "🚀",
       "desc": "Die besten Karten zum Einsteigen: bekannte, lustige, eindeutige Alltagsbegriffe.",
-      "count": 147,
+      "count": 300,
       "file": "packs/start.json"
     },
     {
@@ -16,7 +16,7 @@
       "kind": "difficulty",
       "icon": "🟢",
       "desc": "Bunte Mischung aus allen Themen, leicht zu erklären.",
-      "count": 744,
+      "count": 775,
       "file": "packs/mix1.json"
     },
     {
@@ -25,7 +25,7 @@
       "kind": "difficulty",
       "icon": "🟡",
       "desc": "Bunte Mischung aus allen Themen, mittlere Schwierigkeit.",
-      "count": 514,
+      "count": 632,
       "file": "packs/mix2.json"
     },
     {
@@ -34,7 +34,7 @@
       "kind": "difficulty",
       "icon": "🔴",
       "desc": "Bunte Mischung aus allen Themen, knifflige Begriffe.",
-      "count": 189,
+      "count": 295,
       "file": "packs/mix3.json"
     },
     {
@@ -43,7 +43,7 @@
       "kind": "topic",
       "icon": "🍕",
       "desc": "Speisen, Getränke, Obst, Gemüse und alles rund ums Essen.",
-      "count": 151,
+      "count": 158,
       "file": "packs/essen.json"
     },
     {
@@ -52,7 +52,7 @@
       "kind": "topic",
       "icon": "🦁",
       "desc": "Haustiere, Wildtiere, Insekten und Fabelwesen.",
-      "count": 124,
+      "count": 137,
       "file": "packs/tiere.json"
     },
     {
@@ -70,7 +70,7 @@
       "kind": "topic",
       "icon": "⚽",
       "desc": "Sportarten, Regeln, Begriffe und Ausrüstung.",
-      "count": 98,
+      "count": 162,
       "file": "packs/sport.json"
     },
     {
@@ -79,7 +79,7 @@
       "kind": "topic",
       "icon": "🎬",
       "desc": "Kino, Fernsehen, Serien, Märchen und Figuren.",
-      "count": 101,
+      "count": 192,
       "file": "packs/film.json"
     },
     {
@@ -88,7 +88,7 @@
       "kind": "topic",
       "icon": "⭐",
       "desc": "Stars, Erfinder, Sportler, Politiker und Figuren der Geschichte.",
-      "count": 132,
+      "count": 181,
       "file": "packs/personen.json"
     },
     {
@@ -97,7 +97,7 @@
       "kind": "topic",
       "icon": "💻",
       "desc": "Geräte, Apps, Internet und Technik im Alltag.",
-      "count": 113,
+      "count": 126,
       "file": "packs/technik.json"
     },
     {
@@ -106,7 +106,7 @@
       "kind": "topic",
       "icon": "🏠",
       "desc": "Berufe, Haushalt, Feste, Reisen und der ganz normale Alltag.",
-      "count": 244,
+      "count": 247,
       "file": "packs/alltag.json"
     }
   ]

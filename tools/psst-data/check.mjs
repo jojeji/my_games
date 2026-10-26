@@ -3,7 +3,7 @@
 //   node tools/psst-data/check.mjs            checks games/psst/data/packs.json + packs/*.json
 import fs from 'node:fs';
 import path from 'node:path';
-import { DATA, sharesStem, pluralKey, blocked } from './lib.mjs';
+import { DATA, sharesStem, redundant, blocked } from './lib.mjs';
 
 export const SRC = ['ot', 'kovah', 'ai', 'mixed'];
 export const TABU_COUNT = 5;
@@ -19,14 +19,13 @@ export function checkCard(c) {
   if (![1, 2, 3].includes(c.d)) p.push(`${at}: d must be 1, 2 or 3`);
   if (!SRC.includes(c.src)) p.push(`${at}: src must be one of ${SRC.join('/')}`);
   if (!Array.isArray(c.t) || c.t.length !== TABU_COUNT) { p.push(`${at}: needs exactly ${TABU_COUNT} Tabuwörter`); return p; }
-  const seen = new Map();
+  const seen = [];
   for (const t of c.t) {
     if (typeof t !== 'string' || !t.trim()) { p.push(`${at}: empty Tabuwort`); continue; }
     if (t.trim() !== t || /\s{2,}/.test(t) || t.length < 2 || t.length > 30) p.push(`${at}: bad Tabuwort "${t}"`);
     if (sharesStem(c.w, t)) p.push(`${at}: Tabuwort "${t}" shares a stem with "${c.w}"`);
-    const key = pluralKey(t);
-    if (seen.has(key)) p.push(`${at}: Tabuwörter "${seen.get(key)}" and "${t}" are duplicates`);
-    seen.set(key, t);
+    for (const o of seen) if (redundant(o, t)) p.push(`${at}: Tabuwörter "${o}" and "${t}" are duplicates`);
+    seen.push(t);
     if (t === t.toUpperCase() && t.length > 6 && /[A-ZÄÖÜ]{7}/.test(t)) p.push(`${at}: Tabuwort "${t}" is all caps`);
   }
   for (const x of [c.w, ...c.t]) {

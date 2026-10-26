@@ -1,113 +1,113 @@
-Handy | Telefon, Display, telefonieren, SMS, Akku | 1 | technik | S
-Smartphone | Handy, Touchscreen, Apps, Display, Apple | 1 | technik
-Computer | Tastatur, Maus, Bildschirm, Internet, Rechner | 1 | technik | S
-Laptop | Notebook, Akku, Tastatur, tragbar, Bildschirm | 1 | technik
+Handy | Telefon, Display, telefonieren, SMS, Akku | 1 | technik
+Smartphone | Handy, Touchscreen, Apps, Display, Apple | 1 | technik | S
+Computer | Tastatur, Maus, Bildschirm, Internet, Rechner | 1 | technik
+Laptop | Notebook, Akku, Tastatur, tragbar, Bildschirm | 1 | technik | S
 Tablet | iPad, Touchscreen, Display, Apps, Bildschirm | 1 | technik
-Tastatur | Computer, Buchstaben, tippen, Maus, Leertaste | 1 | technik
+Tastatur | Computer, Buchstaben, tippen, Maus, Leertaste | 1 | technik | S
 Bildschirm | Monitor, Computer, Pixel, Anzeige, flimmern | 1 | technik
-Drucker | Papier, Tinte, Computer, Patrone, Laser | 1 | technik
-Kamera | Foto, Objektiv, Blitz, Film, Linse | 1 | technik
+Drucker | Papier, Tinte, Computer, Patrone, Laser | 1 | technik | 
+Kamera | Foto, Objektiv, Blitz, Film, Linse | 1 | technik | S
 Fernseher | Programm, Bildschirm, Fernbedienung, Wohnzimmer, Flachbild | 1 | technik
-Radio | Musik, Sender, Antenne, Nachrichten, hören | 1 | technik
-Kopfhörer | Ohren, Musik, Kabel, Bluetooth, Stöpsel | 1 | technik | S
-Lautsprecher | Box, Musik, Bass, Boxen, Anlage | 1 | technik
-Mikrofon | Sänger, Stimme, Bühne, Aufnahme, Karaoke | 1 | technik
+Radio | Musik, Sender, Antenne, Nachrichten, hören | 1 | technik | S
+Kopfhörer | Ohren, Musik, Kabel, Bluetooth, Stöpsel | 1 | technik
+Lautsprecher | Box, Musik, Bass, Boxen, Anlage | 1 | technik | S
+Mikrofon | Sänger, Stimme, Bühne, Aufnahme, Karaoke | 1 | technik | S
 Akku | Strom, laden, Batterie, leer, Handy | 1 | technik
-Batterie | Strom, Plus, Minus, leer, Fernbedienung | 1 | technik
-Ladekabel | Strom, Steckdose, Handy, USB, Akku | 1 | technik
-Steckdose | Strom, Wand, Kabel, Spannung, Adapter | 1 | technik
+Batterie | Strom, Plus, Minus, leer, Fernbedienung | 1 | technik | S
+Ladekabel | Strom, Steckdose, Handy, USB, Akku | 1 | technik | 
+Steckdose | Strom, Wand, Kabel, Spannung, Adapter | 1 | technik | 
 Glühbirne | Licht, Lampe, Edison, Schalter, Fassung | 1 | technik
-Taschenlampe | Licht, Batterie, dunkel, Strahl, Camping | 1 | technik
-Internet | Netz, Browser, WLAN, Seiten, online | 1 | technik | S
+Taschenlampe | Licht, Batterie, dunkel, Strahl, Camping | 1 | technik | S
+Internet | Netz, Browser, WLAN, Seiten, online | 1 | technik
 WLAN | Router, Internet, Passwort, Empfang, drahtlos | 1 | technik | S
-Router | Internet, WLAN, Kabel, Modem, Box | 2 | technik
+Router | Internet, WLAN, Kabel, Modem, Box | 2 | technik | 
 Passwort | Sicherheit, Login, geheim, vergessen, Konto | 1 | technik
-E-Mail | Postfach, Adresse, Nachricht, Anhang, Spam | 1 | technik
-Spam | Werbung, Postfach, E-Mail, unerwünscht, Filter | 2 | technik
-Download | Herunterladen, Datei, Internet, Speicher, Ladebalken | 2 | technik
-Datei | Ordner, Dokument, Speicher, Computer, Anhang | 2 | technik
-Ordner | Dateien, Computer, Papier, Büro, sortieren | 2 | technik
+E-Mail | Postfach, Adresse, Nachricht, Anhang, Spam | 1 | technik | S
+Spam | Werbung, Postfach, E-Mail, unerwünscht, Filter | 2 | technik | 
+Download | herunterladen, Datei, Internet, Speicher, Ladebalken | 2 | technik | 
+Datei | Ordner, Dokument, Speicher, Computer, Anhang | 2 | technik | 
+Ordner | Dateien, Computer, Papier, Büro, sortieren | 2 | technik | 
 USB-Stick | Speicher, Daten, Anschluss, Computer, klein | 1 | technik
-Festplatte | Speicher, Daten, Computer, Gigabyte, Laufwerk | 2 | technik
-Software | Programm, Computer, Update, Installation, Hardware | 2 | technik
-Hardware | Computer, Bauteile, Software, Technik, Geräte | 3 | technik
-App | Smartphone, Download, Store, Programm, Handy | 1 | technik
-Update | Neue Version, Aktualisierung, Software, Download, Installation | 1 | technik
-Virus | Computer, Schaden, Infektion, Schadsoftware, Erkältung | 2 | technik
-Hacker | Computer, Passwort, einbrechen, Daten, Kapuzenpulli | 1 | technik
-Browser | Internet, Chrome, Seiten, Tabs, Adresse | 2 | technik
-Google | Suchmaschine, Internet, suchen, Android, Mountain View | 1 | technik | S
-Suchmaschine | Google, Internet, Ergebnisse, Begriff, finden | 2 | technik
-Facebook | soziales Netzwerk, Freunde, Zuckerberg, Profil, Like | 1 | technik
-Instagram | Fotos, Filter, Follower, Story, soziales Netzwerk | 1 | technik | S
+Festplatte | Speicher, Daten, Computer, Gigabyte, Laufwerk | 2 | technik | 
+Software | Programm, Computer, Update, Installation, Hardware | 2 | technik | 
+Hardware | Computer, Bauteile, Software, Technik, Geräte | 3 | technik | 
+App | Smartphone, Download, Store, Programm, Handy | 1 | technik | 
+Update | Neue Version, Aktualisierung, Software, Download, Installation | 1 | technik | 
+Virus | Computer, Schaden, Infektion, Schadsoftware, Erkältung | 2 | technik | 
+Hacker | Computer, Passwort, einbrechen, Daten, Kapuzenpulli | 1 | technik | S
+Browser | Internet, Chrome, Seiten, Tabs, Adresse | 2 | technik | 
+Google | Suchmaschine, Internet, suchen, Android, Mountain View | 1 | technik
+Suchmaschine | Google, Internet, Ergebnisse, Begriff, finden | 2 | technik | 
+Facebook | soziales Netzwerk, Freunde, Zuckerberg, Profil, Like | 1 | technik | S
+Instagram | Fotos, Filter, Follower, Story, soziales Netzwerk | 1 | technik
 WhatsApp | Nachrichten, Chat, Gruppe, Handy, grün | 1 | technik | S
-TikTok | Videos, Tanz, Kurzvideos, China, Jugendliche | 1 | technik
+TikTok | Videos, Tanz, Kurzvideos, China, Jugendliche | 1 | technik | S
 YouTube | Videos, Kanal, Abo, Google, Influencer | 1 | technik
-Twitter | Tweet, Vogel, Nachrichten, Elon Musk, Zeichen | 2 | technik
-Netflix | Streaming, Serien, Abo, Filme, rotes N | 1 | technik
-Spotify | Musik, Streaming, Playlist, Podcast, grün | 2 | technik
-Amazon | Online, Paket, Bestellung, Prime, Bezos | 1 | technik
-eBay | Auktion, Online, Gebot, Verkauf, Gebrauchtes | 2 | technik
-Podcast | Folge, Audio, Moderator, hören, Abo | 2 | technik
-Influencer | Follower, Instagram, Werbung, Reichweite, Social Media | 1 | technik
-Follower | Anhänger, Instagram, Abonnent, Reichweite, Profil | 2 | technik
-Selfie | Foto, Handy, Arm, Gesicht, Selbstporträt | 1 | technik | S
-Emoji | Smiley, Gesicht, Chat, Symbol, gelb | 1 | technik
-Hashtag | Raute, Twitter, Schlagwort, Social Media, Kreuz | 2 | technik
-Meme | Bild, Internet, lustig, Witz, teilen | 2 | technik
-Livestream | Übertragung, Internet, direkt, Video, Zuschauer | 3 | technik
+Twitter | Tweet, Vogel, Nachrichten, Elon Musk, Zeichen | 2 | technik | 
+Netflix | Streaming, Serien, Abo, Filme, rotes N | 1 | technik | S
+Spotify | Musik, Streaming, Playlist, Podcast, grün | 2 | technik | 
+Amazon | online, Paket, Bestellung, Prime, Bezos | 1 | technik
+eBay | Auktion, online, Gebot, Verkauf, Gebrauchtes | 2 | technik | 
+Podcast | Folge, Audio, Moderator, hören, Abo | 2 | technik | 
+Influencer | Follower, Instagram, Werbung, Reichweite, Social Media | 1 | technik | S
+Follower | Anhänger, Instagram, Abonnent, Reichweite, Profil | 2 | technik | 
+Selfie | Foto, Handy, Arm, Gesicht, Selbstporträt | 1 | technik
+Emoji | Smiley, Gesicht, Chat, Symbol, gelb | 1 | technik | S
+Hashtag | Raute, Twitter, Schlagwort, Social Media, Kreuz | 2 | technik | 
+Meme | Bild, Internet, lustig, Witz, teilen | 2 | technik | 
+Livestream | Übertragung, Internet, direkt, Video, Zuschauer | 3 | technik | 
 Chat | Nachricht, schreiben, Messenger, Gruppe, online | 1 | technik
-Videospiel | Konsole, Controller, Zocken, Level, Bildschirm | 1 | technik
-Konsole | PlayStation, Controller, Zocken, Fernseher, Spiel | 2 | technik
-PlayStation | Sony, Konsole, Controller, Zocken, Spiele | 1 | technik
-Joystick | Steuerung, Hebel, Spiel, Flugzeug, Controller | 3 | technik
-Roboter | Maschine, Metall, künstlich, programmiert, Zukunft | 1 | technik
+Videospiel | Konsole, Controller, zocken, Level, Bildschirm | 1 | technik | S
+Konsole | PlayStation, Controller, zocken, Fernseher, Spiel | 2 | technik | 
+PlayStation | Sony, Konsole, Controller, zocken, Spiele | 1 | technik
+Joystick | Steuerung, Hebel, Spiel, Flugzeug, Controller | 3 | technik | 
+Roboter | Maschine, Metall, künstlich, programmiert, Zukunft | 1 | technik | S
 Drohne | fliegen, Kamera, Propeller, ferngesteuert, Luft | 1 | technik
-Künstliche Intelligenz | ChatGPT, Roboter, lernen, Computer, KI | 2 | technik
-Bluetooth | Kopfhörer, drahtlos, Verbindung, Funk, Lautsprecher | 2 | technik
-GPS | Satellit, Navigation, Standort, Karte, Orten | 2 | technik
-Navi | Route, Auto, Stimme, Karte, abbiegen | 1 | technik
-Satellit | Weltall, Umlaufbahn, Erde, Signal, Antenne | 2 | technik
-Rakete | Weltall, Start, Feuer, Astronaut, Silvester | 1 | technik
-Elektroauto | Akku, Steckdose, Tesla, Strom, leise | 1 | technik
-Windrad | Strom, Propeller, Energie, Feld, Flügel | 2 | technik
-Solarzelle | Sonne, Dach, Strom, Energie, Panel | 2 | technik
-Atomkraftwerk | Strom, Kernenergie, Reaktor, Tschernobyl, Brennstab | 2 | technik
-Steckerleiste | Steckdosen, Kabel, Strom, Verlängerung, Schalter | 3 | technik
-Thermometer | Temperatur, Grad, Fieber, Quecksilber, messen | 2 | technik
-Waage | wiegen, Gewicht, Kilo, Bad, Gleichgewicht | 2 | technik
-Taschenrechner | Zahlen, Mathe, Tasten, Schule, Plus | 1 | technik
+Künstliche Intelligenz | ChatGPT, Roboter, lernen, Computer, KI | 2 | technik | 
+Bluetooth | Kopfhörer, drahtlos, Verbindung, Funk, Lautsprecher | 2 | technik | 
+GPS | Satellit, Navigation, Standort, Karte, orten | 2 | technik | 
+Navi | Route, Auto, Stimme, Karte, abbiegen | 1 | technik | S
+Satellit | Weltall, Umlaufbahn, Erde, Signal, Antenne | 2 | technik | 
+Rakete | Weltall, Start, Feuer, Astronaut, Silvester | 1 | technik | S
+Elektroauto | Akku, Steckdose, Tesla, Strom, leise | 1 | technik | 
+Windrad | Strom, Propeller, Energie, Feld, Flügel | 2 | technik | 
+Solarzelle | Sonne, Dach, Strom, Energie, Panel | 2 | technik | 
+Atomkraftwerk | Strom, Kernenergie, Reaktor, Tschernobyl, Brennstab | 2 | technik | 
+Steckerleiste | Steckdosen, Kabel, Strom, Verlängerung, Schalter | 3 | technik | 
+Thermometer | Temperatur, Grad, Fieber, Quecksilber, messen | 2 | technik | 
+Waage | wiegen, Gewicht, Kilo, Bad, Gleichgewicht | 2 | technik | 
+Taschenrechner | Zahlen, Mathe, Tasten, Schule, Plus | 1 | technik | 
 Uhr | Zeiger, Zeit, Stunden, Ziffernblatt, Armband | 1 | technik
-Wecker | klingeln, Morgen, Aufstehen, Schlaf, Uhr | 1 | technik
-Fotoapparat | Blitz, Objektiv, Film, Knipsen, Bilder | 2 | technik
-Scanner | Papier, Dokument, Laser, Kopierer, digital | 3 | technik
-Kopierer | Papier, Büro, Toner, Original, Duplikat | 2 | technik
+Wecker | klingeln, Morgen, aufstehen, Schlaf, Uhr | 1 | technik | S
+Fotoapparat | Blitz, Objektiv, Film, knipsen, Bilder | 2 | technik | 
+Scanner | Papier, Dokument, Laser, Kopierer, digital | 3 | technik | 
+Kopierer | Papier, Büro, Toner, Original, Duplikat | 2 | technik | 
 Mikrowelle | Essen, wärmen, heiß, Teller, Küche | 1 | technik
-Toaster | Brot, Scheibe, Frühstück, Knusper, Strom | 1 | technik
-Staubsauger | Teppich, Beutel, Putzen, Schmutz, Düse | 1 | technik
-Waschmaschine | Trommel, Waschpulver, Schleudern, Keller, Kleidung | 1 | technik
-Spülmaschine | Geschirr, Tabs, Küche, Teller, Besteck | 2 | technik
-Kühlschrank | Lebensmittel, kalt, Gefrierfach, Küche, Licht | 1 | technik | S
-Föhn | Haare, trocknen, heiß, Bad, Luft | 1 | technik
-Rasierer | Bart, Klinge, Gesicht, Haare, elektrisch | 2 | technik
-Zahnbürste | putzen, Zahnpasta, Bad, Borsten, Mund | 1 | technik | S
-Fahrstuhl | Etage, Knopf, Lift, Hochhaus, Aufzug | 1 | technik
-Rolltreppe | Stufen, Kaufhaus, fahren, Handlauf, Bewegung | 2 | technik
-Magnet | Anziehen, Kühlschrank, Eisen, Pol, Metall | 2 | technik
-Laser | Strahl, Licht, rot, Pointer, Science-Fiction | 2 | technik
-Mikroskop | Linse, klein, Labor, Vergrößerung, Bakterien | 2 | technik
-Fernglas | Linse, Vogelbeobachtung, sehen, Vergrößern, Entfernung | 2 | technik
-Teleskop | Sterne, Linse, Astronomie, Weltall, Fernrohr | 2 | technik
-Lupe | Vergrößerung, Glas, Detektiv, Lesen, sehen | 2 | technik
-3D-Drucker | Kunststoff, Schicht, Modell, Technik, Düse | 3 | technik
-Bitcoin | Kryptowährung, digital, Geld, Mining, Blockchain | 2 | technik
-Cloud | Speicher, Internet, Daten, Wolke, Server | 2 | technik
-Algorithmus | Rechenvorschrift, Programm, Code, Computer, Schritte | 3 | technik
-Programmierer | Code, Computer, Software, Entwickler, Tastatur | 2 | technik
-Server | Rechenzentrum, Internet, Daten, Computer, Netzwerk | 3 | technik
-Pixel | Bild, Punkt, Bildschirm, Auflösung, klein | 3 | technik
-Link | Klick, Internet, Adresse, Seite, blau | 2 | technik
-Screenshot | Bildschirm, Foto, Handy, speichern, Aufnahme | 2 | technik
-Ladebalken | warten, Fortschritt, Download, Computer, Prozent | 3 | technik
-Autokorrektur | Handy, Tippfehler, Wort, Tastatur, ersetzen | 3 | technik
-Bluescreen | Absturz, Windows, Fehler, Computer, blau | 3 | technik
+Toaster | Brot, Scheibe, Frühstück, Knusper, Strom | 1 | technik | S
+Staubsauger | Teppich, Beutel, putzen, Schmutz, Düse | 1 | technik
+Waschmaschine | Trommel, Waschpulver, schleudern, Keller, Kleidung | 1 | technik | S
+Spülmaschine | Geschirr, Tabs, Küche, Teller, Besteck | 2 | technik | 
+Kühlschrank | Lebensmittel, kalt, Gefrierfach, Küche, Licht | 1 | technik
+Föhn | Haare, trocknen, heiß, Bad, Luft | 1 | technik | S
+Rasierer | Bart, Klinge, Gesicht, Haare, elektrisch | 2 | technik | 
+Zahnbürste | putzen, Zahnpasta, Bad, Borsten, Mund | 1 | technik
+Fahrstuhl | Etage, Knopf, Lift, Hochhaus, Aufzug | 1 | technik | S
+Rolltreppe | Stufen, Kaufhaus, fahren, Handlauf, Bewegung | 2 | technik | 
+Magnet | anziehen, Kühlschrank, Eisen, Pol, Metall | 2 | technik | 
+Laser | Strahl, Licht, rot, Pointer, Science-Fiction | 2 | technik | 
+Mikroskop | Linse, klein, Labor, Vergrößerung, Bakterien | 2 | technik | 
+Fernglas | Linse, Vogelbeobachtung, sehen, vergrößern, Entfernung | 2 | technik | 
+Teleskop | Sterne, Linse, Astronomie, Weltall, Fernrohr | 2 | technik | 
+Lupe | Vergrößerung, Glas, Detektiv, lesen, sehen | 2 | technik | 
+3D-Drucker | Kunststoff, Schicht, Modell, Technik, Düse | 3 | technik | 
+Bitcoin | Kryptowährung, digital, Geld, Mining, Blockchain | 2 | technik | 
+Cloud | Speicher, Internet, Daten, Wolke, Server | 2 | technik | 
+Algorithmus | Rechenvorschrift, Programm, Code, Computer, Schritte | 3 | technik | 
+Programmierer | Code, Computer, Software, Entwickler, Tastatur | 2 | technik | 
+Server | Rechenzentrum, Internet, Daten, Computer, Netzwerk | 3 | technik | 
+Pixel | Bild, Punkt, Bildschirm, Auflösung, klein | 3 | technik | 
+Link | Klick, Internet, Adresse, Seite, blau | 2 | technik | 
+Screenshot | Bildschirm, Foto, Handy, speichern, Aufnahme | 2 | technik | 
+Ladebalken | warten, Fortschritt, Download, Computer, Prozent | 3 | technik | 
+Autokorrektur | Handy, Tippfehler, Wort, Tastatur, ersetzen | 3 | technik | 
+Bluescreen | Absturz, Windows, Fehler, Computer, blau | 3 | technik | 

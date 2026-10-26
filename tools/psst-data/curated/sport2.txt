@@ -1,0 +1,80 @@
+# Weitere Sport-, Film- und Schwierigkeitskarten (Wörter nach ";" sind Ersatz, falls eines der ersten fünf abgelehnt wird)
+Fußballverein | Mitglieder, Trikot, Training, Liga, Vorstand ; Spieler | 2 | sport
+Stürmer | Tore, Fußball, Angriff, Strafraum, Mannschaft ; Torjäger | 1 | sport
+Verteidiger | Abwehr, Fußball, Tor, Grätsche, Gegner ; Mannschaft | 2 | sport
+Mittelfeld | Fußball, Spielfeld, Mitte, Pass, Spielmacher ; Position | 3 | sport
+Ersatzbank | Auswechslung, Spieler, Trainer, Fußball, sitzen ; Reservisten | 2 | sport
+Gelbe Karte | Schiedsrichter, Foul, Verwarnung, Fußball, rot ; Pfeife | 1 | sport
+Rote Karte | Schiedsrichter, Platzverweis, Foul, Fußball, Spieler ; Ausschluss | 1 | sport
+Auswechslung | Spieler, Trainer, Bank, Spiel, Schild ; Fußball | 3 | sport
+Halbzeit | Pause, Spiel, Fußball, Kabine, Tee ; 45 Minuten | 2 | sport
+Verlängerung | Spielzeit, Elfmeterschießen, Finale, 30 Minuten, Unentschieden ; Fußball | 3 | sport
+Public Viewing | WM, Leinwand, Fans, Kneipe, Fußball ; Großbildschirm | 2 | sport
+Fanmeile | Berlin, WM, Fans, Leinwand, Feiern ; Brandenburger Tor | 3 | sport
+Torjubel | Tor, Schütze, Jubeln, Mannschaft, Fahne ; Fußball | 3 | sport
+Skiurlaub | Berge, Piste, Schnee, Lift, Hütte ; Alpen | 1 | sport
+Skilift | Berg, Piste, Bügel, Sessel, Seilbahn ; Schnee | 2 | sport
+Schlittenhund | Husky, Alaska, Schnee, Gespann, Polar ; Tier | 3 | sport
+Bergsteiger | Gipfel, Seil, Berg, Klettern, Himalaya ; Eispickel | 2 | sport
+Tauchgang | Flasche, Meer, Unterwasser, Riff, Sauerstoff ; Taucher | 3 | sport
+Schnorcheln | Meer, Brille, Flossen, Rohr, Urlaub ; Wasser | 2 | sport
+Kanu | Paddel, Fluss, Boot, Wildwasser, Rudern ; Kajak | 2 | sport
+Wasserball | Schwimmbad, Tor, Mannschaft, Becken, Pool ; Team | 3 | sport
+Turmspringen | Schwimmbad, Sprung, Wasser, Brett, Höhe ; Olympia | 3 | sport
+Synchronschwimmen | Wasser, Nasenklammer, Choreografie, Musik, Paar ; Olympia | 3 | sport
+Eiskunstlauf | Pirouette, Eis, Kür, Paar, Kufen ; Salto | 2 | sport
+Eisstockschießen | Bayern, Eis, Stock, Stein, Dorf ; Winter | 3 | sport
+Langlauf | Loipe, Ski, Schnee, Ausdauer, Skating ; Winter | 2 | sport
+Schneeschuh | Winter, Wandern, Berg, Schnee, Tiefschnee ; Spur | 3 | sport
+Zumba | Tanz, Fitness, Musik, Kurs, Lateinamerika ; Hüften | 3 | sport
+Pilates | Matte, Rumpf, Kurs, Fitness, Dehnen ; Atmung | 3 | sport
+Spinning | Fitnessstudio, Rad, Kurs, Strampeln, Trainer ; Musik | 3 | sport
+Crossfit | Fitness, Kraft, Box, Training, Gewichte ; Ausdauer | 3 | sport
+Handstand | Hände, Kopf, Turnen, Kopfüber, Balance ; Beine | 2 | sport
+Purzelbaum | Rolle, Kinder, Wiese, Kopf, Turnen ; Überschlag | 2 | sport
+Radtour | Fahrrad, Ausflug, Helm, Sonntag, Radweg ; Picknick | 1 | sport
+Sportplatz | Rasen, Verein, Tore, Laufbahn, Fußball ; Training | 2 | sport
+Schwimmbad | Becken, Sprungturm, Chlor, Badehose, Rutsche ; Bademeister | 1 | sport
+Bademeister | Schwimmbad, Pfeife, Retten, Becken, Aufsicht ; Rettungsring | 2 | sport
+Hindernislauf | Wassergraben, Läufer, Barriere, Leichtathletik, Sprung ; Olympia | 3 | sport
+Sportlehrer | Turnhalle, Pfeife, Schule, Noten, Training ; Ball | 2 | sport
+Pfeife | Schiedsrichter, Pfiff, Mund, Trillerpfeife, Ton ; Rauch | 2 | sport
+Zeitlupe | Wiederholung, langsam, Fernsehen, Tor, Aufnahme ; Video | 3 | sport
+Tippspiel | Wette, Ergebnis, Fußball, Kollegen, Punkte ; Tabelle | 3 | sport
+Fantasy Football | Manager, Team, Liga, Spieler, Punkte ; Kicker | 3 | sport
+Heimspiel | Stadion, Fans, Zuhause, Mannschaft, Vorteil ; Ergebnis | 2 | sport
+Aufstieg | Liga, Mannschaft, Meister, Feier, Tabelle ; Fußball | 3 | sport
+Abstieg | Liga, Mannschaft, Tabelle, Relegation, Tränen ; Fußball | 3 | sport
+Derby | Stadt, Nachbarn, Rivalität, Fußball, Fans ; Spiel | 2 | sport
+Schulsport | Turnhalle, Noten, Sportlehrer, Lauf, Sportzeug ; Springen | 2 | sport
+Sporttasche | Trainingskleidung, Reißverschluss, Fitnessstudio, Handtuch, Schultergurt ; Duschen | 2 | sport
+Trinkflasche | Wasser, Sport, Deckel, Kinder, Rucksack ; Durst | 2 | sport
+Medizinball | Fitness, schwer, Training, Ball, Kraft ; Rehabilitation | 3 | sport
+Boxsack | Training, Schläge, Hängen, Handschuhe, Boxen ; Sandsack | 2 | sport
+Hula-Hoop | Reifen, Hüfte, Kreisen, Kinder, Schwung ; Taille | 2 | sport
+Federball | Garten, Schläger, Netz, Sommer, Badminton ; Spiel | 2 | sport
+Frisbee | Scheibe, Park, Werfen, Hund, Fliegen ; Strand | 1 | sport
+Boule | Frankreich, Kugeln, Sand, Wurf, Zielkugel ; Spiel | 3 | sport
+Minigolf | Bahn, Loch, Schläger, Ball, Familie ; Hindernis | 1 | sport
+Kicker | Tischfußball, Stangen, Kneipe, Tor, Ball ; Spiel | 2
+Tischfußball | Stangen, Kneipe, Tor, Drehen, Kicker ; Ball | 2
+Skat | Kartenspiel, Bube, Kneipe, Reizen, Trumpf ; Herz | 2
+Poker | Kartenspiel, Casino, Blatt, Einsatz, Bluffen ; Chips | 1
+Mau-Mau | Kartenspiel, Karten, Kinder, Ablegen, Bube ; Siebener | 2
+Mikado | Stäbchen, Geschicklichkeit, Spiel, Finger, Haufen ; Bewegung | 3
+Domino | Steine, Reihe, Fallen, Spiel, Augen ; Kette | 2
+Memory | Paare, Kartenspiel, Gedächtnis, Kinder, Aufdecken ; Bilder | 1
+Twister | Matte, Farben, Verrenken, Spiel, Kreisel ; Hände | 3
+Activity | Gesellschaftsspiel, Pantomime, Zeichnen, Erklären, Team ; Sanduhr | 3
+Gesellschaftsspiel | Brettspiel, Familie, Würfel, Spieleabend, Figuren ; Regeln | 2
+Spieleabend | Brettspiel, Freunde, Würfel, Snacks, Wochenende ; Karten | 2
+Sanduhr | Sand, Zeit, Glas, Minuten, Eieruhr ; Spiel | 2
+Schnitzeljagd | Kinder, Spuren, Hinweis, Geburtstag, Wald ; Schatz | 2
+Reifen | Auto, Gummi, Profil, Luft, Fahrrad ; Winter | 2
+Staffellauf | Bahn, Übergabe, Team, Sprint, Stab | 3 | sport
+Ziellinie | Rennen, Ende, Sieger, Läufer, Foto ; Marathon | 2 | sport
+Startschuss | Pistole, Rennen, Läufer, Beginn, Knall ; Sprint | 2 | sport
+Siegerehrung | Podium, Medaille, Hymne, Sieger, Pokal ; Olympia | 2 | sport
+Podium | Sieger, Medaille, Treppchen, Dritter, Gold ; Stufen | 2 | sport
+Maskottchen | Verein, Stadion, Kostüm, Fans, Tier ; Olympia | 2 | sport
+Zuschauertribüne | Stadion, Sitze, Fans, Publikum, Dach ; Reihen | 3 | sport

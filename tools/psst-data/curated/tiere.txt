@@ -1,124 +1,124 @@
-Hund | bellen, Leine, Haustier, Knochen, Gassi | 1 | tiere | S
+Hund | bellen, Leine, Haustier, Knochen, Gassi | 1 | tiere
 Katze | miauen, Maus, Haustier, schnurren, Fell | 1 | tiere | S
 Pferd | reiten, Sattel, Hufe, Mähne, Stall | 1 | tiere | S
-Kuh | Milch, Bauernhof, muhen, Weide, Euter | 1 | tiere | S
-Schwein | Bauernhof, Ringelschwanz, grunzen, rosa, Schnitzel | 1 | tiere
+Kuh | Milch, Bauernhof, muhen, Weide, Euter | 1 | tiere
+Schwein | Bauernhof, Ringelschwanz, grunzen, rosa, Schnitzel | 1 | tiere | S
 Schaf | Wolle, Herde, mähen, Lamm, Weide | 1 | tiere
-Ziege | Bock, Hörner, meckern, Milch, Käse | 1 | tiere
+Ziege | Bock, Hörner, meckern, Milch, Käse | 1 | tiere | S
 Huhn | Ei, gackern, Hahn, Bauernhof, Federn | 1 | tiere
-Hahn | Kikeriki, Morgen, Kamm, Hühner, krähen | 1 | tiere
+Hahn | Kikeriki, Morgen, Kamm, Hühner, krähen | 1 | tiere | S
 Ente | Teich, quaken, Schnabel, schwimmen, Federn | 1 | tiere
-Gans | Weihnachten, Martin, Federn, schnattern, Braten | 2 | tiere
-Esel | Ohren, grau, Ia, stur, Lasttier | 1 | tiere
+Gans | Weihnachten, Martin, Federn, schnattern, braten | 2 | tiere | 
+Esel | Ohren, grau, Ia, stur, Lasttier | 1 | tiere | S
 Hase | Ostern, Ohren, Karotte, Langohr, hoppeln | 1 | tiere
-Kaninchen | Stall, Ohren, Karotte, Haustier, Fell | 1 | tiere
-Hamster | Rad, Backen, Käfig, Nagetier, Körner | 1 | tiere
-Meerschweinchen | Käfig, Nagetier, Haustier, Heu, quieken | 2 | tiere
-Maus | Käse, Katze, Nagetier, klein, Computer | 1 | tiere
-Ratte | Kanalisation, Nagetier, Pest, Hameln, Käfig | 2 | tiere
+Kaninchen | Stall, Ohren, Karotte, Haustier, Fell | 1 | tiere | S
+Hamster | Rad, backen, Käfig, Nagetier, Körner | 1 | tiere
+Meerschweinchen | Käfig, Nagetier, Haustier, Heu, quieken | 2 | tiere | 
+Maus | Käse, Katze, Nagetier, klein, Computer | 1 | tiere | S
+Ratte | Kanalisation, Nagetier, Pest, Hameln, Käfig | 2 | tiere | 
 Eichhörnchen | Baum, Nuss, rot, buschig, klettern | 1 | tiere
-Igel | Stachel, Winterschlaf, Garten, Laub, rollen | 1 | tiere
-Fuchs | Wald, rot, schlau, Hühner, Bau | 1 | tiere
+Igel | Stachel, Winterschlaf, Garten, Laub, rollen | 1 | tiere | S
+Fuchs | Wald, rot, schlau, Hühner, Bau | 1 | tiere | S
 Wolf | Rotkäppchen, heulen, Rudel, Wald, Mond | 1 | tiere
 Bär | Honig, Winterschlaf, Pranke, Wald, brummen | 1 | tiere | S
 Eisbär | Arktis, weiß, Pol, Eis, Robbe | 1 | tiere
-Panda | Bambus, China, schwarz-weiß, Bär, süß | 1 | tiere
-Reh | Wald, Bambi, Geweih, scheu, Hirsch | 2 | tiere
-Hirsch | Geweih, Wald, Röhren, Reh, Jagd | 2 | tiere
-Wildschwein | Wald, Keiler, Borste, Hauer, Frischling | 2 | tiere
-Fledermaus | Nacht, fliegen, Höhle, Flügel, Dracula | 2 | tiere
-Maulwurf | Hügel, blind, Garten, graben, unterirdisch | 2 | tiere
-Löwe | König, Mähne, Afrika, brüllen, Savanne | 1 | tiere | S
-Tiger | gestreift, Asien, Raubkatze, Dschungel, Zirkus | 1 | tiere
-Elefant | Rüssel, Stoßzahn, grau, Afrika, Ohren | 1 | tiere | S
+Panda | Bambus, China, schwarz-weiß, Bär, süß | 1 | tiere | S
+Reh | Wald, Bambi, Geweih, scheu, Hirsch | 2 | tiere | 
+Hirsch | Geweih, Wald, röhren, Reh, Jagd | 2 | tiere | 
+Wildschwein | Wald, Keiler, Borste, Hauer, Frischling | 2 | tiere | 
+Fledermaus | Nacht, fliegen, Höhle, Flügel, Dracula | 2 | tiere | 
+Maulwurf | Hügel, blind, Garten, graben, unterirdisch | 2 | tiere | 
+Löwe | König, Mähne, Afrika, brüllen, Savanne | 1 | tiere
+Tiger | gestreift, Asien, Raubkatze, Dschungel, Zirkus | 1 | tiere | S
+Elefant | Rüssel, Stoßzahn, grau, Afrika, Ohren | 1 | tiere
 Giraffe | Hals, Flecken, Afrika, hoch, Blätter | 1 | tiere | S
 Zebra | Streifen, Afrika, Pferd, schwarz-weiß, Savanne | 1 | tiere
-Nilpferd | Wasser, Afrika, Fluss, dick, Maul | 2 | tiere
-Nashorn | Afrika, Panzer, grau, Dickhäuter, Savanne | 2 | tiere
-Krokodil | Zähne, Fluss, Maul, grün, Echse | 1 | tiere
-Affe | Banane, Baum, klettern, Zoo, Schimpanse | 1 | tiere | S
-Gorilla | Affe, Brust, Afrika, stark, King Kong | 2 | tiere
+Nilpferd | Wasser, Afrika, Fluss, dick, Maul | 2 | tiere | 
+Nashorn | Afrika, Panzer, grau, Dickhäuter, Savanne | 2 | tiere | 
+Krokodil | Zähne, Fluss, Maul, grün, Echse | 1 | tiere | S
+Affe | Banane, Baum, klettern, Zoo, Schimpanse | 1 | tiere
+Gorilla | Affe, Brust, Afrika, stark, King Kong | 2 | tiere | 
 Känguru | Beutel, Australien, hüpfen, Boxen, Baby | 1 | tiere | S
-Koala | Australien, Eukalyptus, schlafen, Beutel, Baum | 2 | tiere
+Koala | Australien, Eukalyptus, schlafen, Beutel, Baum | 2 | tiere | 
 Pinguin | Eis, Antarktis, Frack, watscheln, Vogel | 1 | tiere | S
-Robbe | Meer, Flosse, Seehund, Eis, Fisch | 2 | tiere
+Robbe | Meer, Flosse, Seehund, Eis, Fisch | 2 | tiere | 
 Delfin | Meer, Flipper, Säugetier, springen, klug | 1 | tiere
-Wal | Meer, Blauwal, groß, Fontäne, Säugetier | 1 | tiere
-Hai | Flosse, Meer, Zähne, Fisch, Weißer | 1 | tiere | S
-Fisch | Wasser, Flosse, Schuppen, Angel, schwimmen | 1 | tiere
-Goldfisch | Aquarium, Glas, orange, Haustier, Wasser | 1 | tiere
-Krake | Tentakel, Meer, acht, Tinte, Saugnäpfe | 2 | tiere
-Krebs | Schere, Meer, rückwärts, rot, Schale | 2 | tiere
-Qualle | Meer, brennen, glibberig, Tentakel, durchsichtig | 2 | tiere
-Seepferdchen | Meer, Abzeichen, Schwimmen, klein, Kinder | 2 | tiere
+Wal | Meer, Blauwal, groß, Fontäne, Säugetier | 1 | tiere | S
+Hai | Flosse, Meer, Zähne, Fisch, Weißer | 1 | tiere
+Fisch | Wasser, Flosse, Schuppen, Angel, schwimmen | 1 | tiere | 
+Goldfisch | Aquarium, Glas, orange, Haustier, Wasser | 1 | tiere | S
+Krake | Tentakel, Meer, acht, Tinte, Saugnäpfe | 2 | tiere | 
+Krebs | Schere, Meer, rückwärts, rot, Schale | 2 | tiere | 
+Qualle | Meer, brennen, glibberig, Tentakel, durchsichtig | 2 | tiere | 
+Seepferdchen | Meer, Abzeichen, schwimmen, klein, Kinder | 2 | tiere | 
 Schildkröte | Panzer, langsam, alt, Echse, Kopf | 1 | tiere
 Schlange | giftig, zischen, Gift, Paradies, kriechen | 1 | tiere | S
 Frosch | quaken, Teich, grün, Prinz, hüpfen | 1 | tiere
-Kröte | Teich, warzig, Frosch, quaken, Märchen | 2 | tiere
-Eidechse | Sonne, Reptil, Wand, Schwanz, Mauer | 3 | tiere
-Chamäleon | Farbe, Zunge, Tarnung, wechseln, Reptil | 2 | tiere
+Kröte | Teich, warzig, Frosch, quaken, Märchen | 2 | tiere | 
+Eidechse | Sonne, Reptil, Wand, Schwanz, Mauer | 3 | tiere | 
+Chamäleon | Farbe, Zunge, Tarnung, wechseln, Reptil | 2 | tiere | 
 Spinne | Netz, acht, Beine, krabbeln, Angst | 1 | tiere | S
 Ameise | Staat, Haufen, klein, fleißig, Zucker | 1 | tiere
-Biene | Honig, summen, Stich, Blüte, Imker | 1 | tiere
-Wespe | Stich, gelb, Pflaumenkuchen, summen, Nest | 2 | tiere
+Biene | Honig, summen, Stich, Blüte, Imker | 1 | tiere | S
+Wespe | Stich, gelb, Pflaumenkuchen, summen, Nest | 2 | tiere | 
 Mücke | Stich, Blut, Sommer, jucken, summen | 1 | tiere
-Fliege | Klatsche, summen, nerven, Insekt, Flügel | 1 | tiere
-Schmetterling | Raupe, Flügel, bunt, Blume, flattern | 1 | tiere
+Fliege | Klatsche, summen, nerven, Insekt, Flügel | 1 | tiere | S
+Schmetterling | Raupe, Flügel, bunt, Blume, flattern | 1 | tiere | S
 Marienkäfer | rot, Punkte, Glück, Blattlaus, Insekt | 1 | tiere
-Raupe | Schmetterling, Hunger, Blatt, kriechen, Kokon | 2 | tiere
-Schnecke | Haus, langsam, Schleim, Salat, Garten | 1 | tiere
-Regenwurm | Erde, Boden, Angel, Garten, kriechen | 2 | tiere
-Käfer | Insekt, Panzer, sechs, krabbeln, Volkswagen | 2 | tiere
-Heuschrecke | grün, springen, Insekt, Plage, zirpen | 3 | tiere
-Libelle | Teich, Flügel, Insekt, schillernd, Mückenfresser | 3 | tiere
-Adler | Greifvogel, Flügel, groß, Wappen, Horst | 2 | tiere
+Raupe | Schmetterling, Hunger, Blatt, kriechen, Kokon | 2 | tiere | 
+Schnecke | Haus, langsam, Schleim, Salat, Garten | 1 | tiere | S
+Regenwurm | Erde, Boden, Angel, Garten, kriechen | 2 | tiere | 
+Käfer | Insekt, Panzer, sechs, krabbeln, Volkswagen | 2 | tiere | 
+Heuschrecke | grün, springen, Insekt, Plage, zirpen | 3 | tiere | 
+Libelle | Teich, Flügel, Insekt, schillernd, Mückenfresser | 3 | tiere | 
+Adler | Greifvogel, Flügel, groß, Wappen, Horst | 2 | tiere | 
 Eule | Nacht, Uhu, Käuzchen, Federn, weise | 1 | tiere
-Papagei | bunt, nachsprechen, Pirat, Schnabel, Käfig | 1 | tiere
+Papagei | bunt, nachsprechen, Pirat, Schnabel, Käfig | 1 | tiere | S
 Storch | Baby, Nest, Frosch, Langbein, Zugvogel | 1 | tiere
-Schwan | Teich, weiß, Hals, Märchen, See | 1 | tiere
-Taube | Friede, Stadt, gurren, Vogel, Ölzweig | 1 | tiere
-Spatz | Vogel, klein, Dach, Krümel, Piepmatz | 2 | tiere
-Rabe | schwarz, krächzen, klauen, Krähe, Vogel | 2 | tiere
-Specht | Baum, klopfen, Schnabel, Loch, Vogel | 2 | tiere
-Pfau | Rad, Federn, eitel, bunt, Vogel | 2 | tiere
-Strauß | Kopf, Sand, Laufvogel, groß, Afrika | 2 | tiere
-Flamingo | rosa, Bein, Vogel, Stelzen, Zoo | 2 | tiere
-Pelikan | Schnabel, Beutel, Vogel, Fisch, Wasser | 3 | tiere
-Kolibri | winzig, Flügelschlag, Nektar, Vogel, Amerika | 3 | tiere
+Schwan | Teich, weiß, Hals, Märchen, See | 1 | tiere | S
+Taube | Friede, Stadt, gurren, Vogel, Ölzweig | 1 | tiere | 
+Spatz | Vogel, klein, Dach, Krümel, Piepmatz | 2 | tiere | 
+Rabe | schwarz, krächzen, klauen, Krähe, Vogel | 2 | tiere | 
+Specht | Baum, klopfen, Schnabel, Loch, Vogel | 2 | tiere | 
+Pfau | Rad, Federn, eitel, bunt, Vogel | 2 | tiere | 
+Strauß | Kopf, Sand, Laufvogel, groß, Afrika | 2 | tiere | 
+Flamingo | rosa, Bein, Vogel, stelzen, Zoo | 2 | tiere | 
+Pelikan | Schnabel, Beutel, Vogel, Fisch, Wasser | 3 | tiere | 
+Kolibri | winzig, Flügelschlag, Nektar, Vogel, Amerika | 3 | tiere | 
 Kamel | Höcker, Wüste, Durst, Karawane, Dromedar | 1 | tiere
-Lama | Südamerika, spucken, Wolle, Anden, Alpaka | 2 | tiere
-Ochse | Pflug, Zugtier, Bulle, stark, Rind | 3 | tiere
-Stier | Corrida, Hörner, rot, Spanien, Rind | 2 | tiere
-Welpe | Hund, jung, süß, Baby, Fell | 2 | tiere
-Kätzchen | jung, süß, Baby, Wolle, Miau | 2 | tiere
+Lama | Südamerika, spucken, Wolle, Anden, Alpaka | 2 | tiere | 
+Ochse | Pflug, Zugtier, Bulle, stark, Rind | 3 | tiere | 
+Stier | Corrida, Hörner, rot, Spanien, Rind | 2 | tiere | 
+Welpe | Hund, jung, süß, Baby, Fell | 2 | tiere | 
+Kätzchen | jung, süß, Baby, Wolle, Miau | 2 | tiere | 
 Dinosaurier | ausgestorben, Skelett, Urzeit, Riesen, Museum | 1 | tiere | S
 Einhorn | Regenbogen, Fabelwesen, Pferd, Märchen, magisch | 1 | tiere
-Drache | Feuer, Fabelwesen, Ritter, speien, Schuppen | 1 | tiere
-Gepard | schnell, Raubkatze, Flecken, Afrika, Sprint | 2 | tiere
-Leopard | Raubkatze, Flecken, Afrika, Dschungel, Panther | 3 | tiere
-Luchs | Raubkatze, Pinsel, Ohren, Wald, scheu | 3 | tiere
-Otter | Wasser, Fisch, Fluss, Pelz, Marder | 3 | tiere
-Biber | Damm, Zähne, Holz, Nagetier, Bau | 2 | tiere
-Dachs | Bau, Wald, Streifen, Fell, nachtaktiv | 3 | tiere
-Waschbär | Maske, Fell, Hände, Nacht, Amerika | 2 | tiere
-Stinktier | Gestank, Streifen, Amerika, Spray, schwarz-weiß | 2 | tiere
+Drache | Feuer, Fabelwesen, Ritter, speien, Schuppen | 1 | tiere | S
+Gepard | schnell, Raubkatze, Flecken, Afrika, Sprint | 2 | tiere | 
+Leopard | Raubkatze, Flecken, Afrika, Dschungel, Panther | 3 | tiere | 
+Luchs | Raubkatze, Pinsel, Ohren, Wald, scheu | 3 | tiere | 
+Otter | Wasser, Fisch, Fluss, Pelz, Marder | 3 | tiere | 
+Biber | Damm, Zähne, Holz, Nagetier, Bau | 2 | tiere | 
+Dachs | Bau, Wald, Streifen, Fell, nachtaktiv | 3 | tiere | 
+Waschbär | Maske, Fell, Hände, Nacht, Amerika | 2 | tiere | 
+Stinktier | Gestank, Streifen, Amerika, Spray, schwarz-weiß | 2 | tiere | 
 Faultier | langsam, Baum, hängen, Dschungel, schlafen | 1 | tiere
-Nashornkäfer | Insekt, stark, Wald, Larve, Geweih | 3 | tiere
-Tintenfisch | Arme, Meer, Kalmar, Sepia, Saugnäpfe | 3 | tiere
-Seestern | fünf, Strand, Arme, Meer, Korallen | 2 | tiere
-Hummer | Scheren, rot, Meer, teuer, Krebs | 3 | tiere
-Aal | Schlange, rutschig, Fisch, lang, glatt | 3 | tiere
-Forelle | Bach, Fisch, Angeln, Schubert, Teich | 3 | tiere
-Karpfen | Teich, Weihnachten, Fisch, Gräten, Silvester | 3 | tiere
-Wurm | Erde, Angel, kriechen, lang, Vogel | 2 | tiere
-Zecke | Wald, Biss, Blut, FSME, Spinnentier | 2 | tiere
-Floh | hüpfen, klein, Hund, Zirkus, Biss | 2 | tiere
-Laus | Kopf, Kindergarten, jucken, Haare, Kamm | 2 | tiere
-Skorpion | Stich, Wüste, Gift, Scheren, Spinnentier | 2 | tiere
-Tierheim | Hund, Katze, adoptieren, Käfig, Streuner | 2 | tiere
-Zoo | Tiere, Käfig, Eintritt, Gehege, Affe | 1 | tiere
-Aquarium | Fische, Glas, Wasser, Algen, Becken | 2 | tiere
-Bauernhof | Kuh, Stall, Traktor, Land, Stroh | 1 | tiere
-Bienenstock | Honig, Imker, Wabe, Königin, Schwarm | 3 | tiere
-Vogelnest | Ei, Ast, Baum, Küken, Stroh | 3 | tiere
-Hundehütte | Garten, Wachhund, Dach, Kette, Bello | 3 | tiere
+Nashornkäfer | Insekt, stark, Wald, Larve, Geweih | 3 | tiere | 
+Tintenfisch | Arme, Meer, Kalmar, Sepia, Saugnäpfe | 3 | tiere | 
+Seestern | fünf, Strand, Arme, Meer, Korallen | 2 | tiere | 
+Hummer | Scheren, rot, Meer, teuer, Krebs | 3 | tiere | 
+Aal | Schlange, rutschig, Fisch, lang, glatt | 3 | tiere | 
+Forelle | Bach, Fisch, angeln, Schubert, Teich | 3 | tiere | 
+Karpfen | Teich, Weihnachten, Fisch, Gräten, Silvester | 3 | tiere | 
+Wurm | Erde, Angel, kriechen, lang, Vogel | 2 | tiere | 
+Zecke | Wald, Biss, Blut, FSME, Spinnentier | 2 | tiere | 
+Floh | hüpfen, klein, Hund, Zirkus, Biss | 2 | tiere | 
+Laus | Kopf, Kindergarten, jucken, Haare, Kamm | 2 | tiere | 
+Skorpion | Stich, Wüste, Gift, Scheren, Spinnentier | 2 | tiere | 
+Tierheim | Hund, Katze, adoptieren, Käfig, Streuner | 2 | tiere | 
+Zoo | Tiere, Käfig, Eintritt, Gehege, Affe | 1 | tiere | S
+Aquarium | Fische, Glas, Wasser, Algen, Becken | 2 | tiere | 
+Bauernhof | Kuh, Stall, Traktor, Land, Stroh | 1 | tiere | S
+Bienenstock | Honig, Imker, Wabe, Königin, Schwarm | 3 | tiere | 
+Vogelnest | Ei, Ast, Baum, Küken, Stroh | 3 | tiere | 
+Hundehütte | Garten, Wachhund, Dach, Kette, Bello | 3 | tiere | 

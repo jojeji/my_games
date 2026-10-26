@@ -1,130 +1,130 @@
 Deutschland | Europa, Berlin, Bier, Autos, Fußball | 1 | geo | S
 Österreich | Wien, Alpen, Skifahren, Mozart, Nachbarland | 1 | geo
 Schweiz | Berge, Schokolade, Käse, Banken, neutral | 1 | geo | S
-Italien | Pizza, Rom, Stiefel, Pasta, Urlaub | 1 | geo | S
+Italien | Pizza, Rom, Stiefel, Pasta, Urlaub | 1 | geo
 Frankreich | Paris, Eiffelturm, Baguette, Wein, Käse | 1 | geo | S
 Spanien | Madrid, Sonne, Paella, Stierkampf, Urlaub | 1 | geo
-Portugal | Lissabon, Fado, Atlantik, Spanien, Madeira | 2 | geo
-England | London, Tee, Queen, Fußball, Insel | 1 | geo
-Schottland | Kilt, Dudelsack, Whisky, Nessie, Edinburgh | 2 | geo
-Irland | Grün, Dublin, Guinness, Kleeblatt, Insel | 2 | geo
+Portugal | Lissabon, Fado, Atlantik, Spanien, Madeira | 2 | geo | 
+England | London, Tee, Queen, Fußball, Insel | 1 | geo | S
+Schottland | Kilt, Dudelsack, Whisky, Nessie, Edinburgh | 2 | geo | 
+Irland | Grün, Dublin, Guinness, Kleeblatt, Insel | 2 | geo | 
 Griechenland | Athen, Inseln, Olympia, Feta, Antike | 1 | geo
-Türkei | Istanbul, Döner, Ankara, Halbmond, Urlaub | 1 | geo
+Türkei | Istanbul, Döner, Ankara, Halbmond, Urlaub | 1 | geo | S
 Russland | Moskau, Putin, Kreml, groß, Wodka | 1 | geo
-Polen | Warschau, Nachbarland, Krakau, Wurst, Osteuropa | 2 | geo
-Niederlande | Holland, Tulpen, Windmühle, Amsterdam, Fahrrad | 1 | geo
-Belgien | Brüssel, Pommes, Schokolade, Waffeln, Bier | 2 | geo
-Dänemark | Kopenhagen, Lego, Nordeuropa, Wikinger, Meerjungfrau | 2 | geo
-Schweden | Stockholm, Ikea, ABBA, Elche, Norden | 1 | geo
-Norwegen | Fjord, Oslo, Lachs, Norden, Wikinger | 2 | geo
-Finnland | Sauna, Helsinki, Seen, Weihnachtsmann, Norden | 2 | geo
-Island | Vulkan, Geysir, Reykjavik, Insel, Eis | 2 | geo
-USA | Amerika, Washington, Freiheitsstatue, Trump, Hollywood | 1 | geo | S
-Kanada | Ahornblatt, Bär, Ottawa, Eishockey, Norden | 1 | geo
+Polen | Warschau, Nachbarland, Krakau, Wurst, Osteuropa | 2 | geo | 
+Niederlande | Holland, Tulpen, Windmühle, Amsterdam, Fahrrad | 1 | geo | S
+Belgien | Brüssel, Pommes, Schokolade, Waffeln, Bier | 2 | geo | 
+Dänemark | Kopenhagen, Lego, Nordeuropa, Wikinger, Meerjungfrau | 2 | geo | 
+Schweden | Stockholm, Ikea, ABBA, Elche, Norden | 1 | geo | S
+Norwegen | Fjord, Oslo, Lachs, Norden, Wikinger | 2 | geo | 
+Finnland | Sauna, Helsinki, Seen, Weihnachtsmann, Norden | 2 | geo | 
+Island | Vulkan, Geysir, Reykjavik, Insel, Eis | 2 | geo | 
+USA | Amerika, Washington, Freiheitsstatue, Trump, Hollywood | 1 | geo
+Kanada | Ahornblatt, Bär, Ottawa, Eishockey, Norden | 1 | geo | S
 Mexiko | Sombrero, Tequila, Taco, Maya, Kaktus | 1 | geo
-Brasilien | Karneval, Rio, Fußball, Amazonas, Samba | 1 | geo
-Argentinien | Tango, Buenos Aires, Messi, Fleisch, Südamerika | 2 | geo
-Kuba | Zigarre, Havanna, Castro, Rum, Karibik | 2 | geo
-Peru | Anden, Machu Picchu, Lama, Inka, Südamerika | 3 | geo
-China | Mauer, Peking, Reis, Panda, Drache | 1 | geo | S
+Brasilien | Karneval, Rio, Fußball, Amazonas, Samba | 1 | geo | S
+Argentinien | Tango, Buenos Aires, Messi, Fleisch, Südamerika | 2 | geo | 
+Kuba | Zigarre, Havanna, Castro, Rum, Karibik | 2 | geo | 
+Peru | Anden, Machu Picchu, Lama, Inka, Südamerika | 3 | geo | 
+China | Mauer, Peking, Reis, Panda, Drache | 1 | geo
 Japan | Tokio, Sushi, Kirschblüte, Samurai, Insel | 1 | geo | S
 Indien | Taj Mahal, Curry, Kuh, Delhi, Gewürze | 1 | geo
-Thailand | Bangkok, Strand, Elefant, Tempel, Urlaub | 1 | geo
-Australien | Känguru, Sydney, Koala, Outback, Down Under | 1 | geo | S
-Neuseeland | Kiwi, Schafe, Maori, Herr der Ringe, Insel | 2 | geo
+Thailand | Bangkok, Strand, Elefant, Tempel, Urlaub | 1 | geo | S
+Australien | Känguru, Sydney, Koala, Outback, Down Under | 1 | geo
+Neuseeland | Kiwi, Schafe, Maori, Herr der Ringe, Insel | 2 | geo | 
 Ägypten | Pyramiden, Nil, Pharao, Sphinx, Kairo | 1 | geo | S
-Südafrika | Kapstadt, Mandela, Apartheid, Safari, Kap | 2 | geo
-Marokko | Marrakesch, Wüste, Basar, Minze, Afrika | 3 | geo
-Israel | Jerusalem, Tel Aviv, Nahost, Davidstern, Judentum | 3 | geo
-Berlin | Hauptstadt, Brandenburger Tor, Mauer, Bär, Spree | 1 | geo | S
-München | Oktoberfest, Bayern, Bier, Marienplatz, FC Bayern | 1 | geo | S
-Hamburg | Hafen, Elbe, Reeperbahn, Alster, Fischmarkt | 1 | geo
+Südafrika | Kapstadt, Mandela, Apartheid, Safari, Kap | 2 | geo | 
+Marokko | Marrakesch, Wüste, Basar, Minze, Afrika | 3 | geo | 
+Israel | Jerusalem, Tel Aviv, Nahost, Davidstern, Judentum | 3 | geo | 
+Berlin | Hauptstadt, Brandenburger Tor, Mauer, Bär, Spree | 1 | geo
+München | Oktoberfest, Bayern, Bier, Marienplatz, Frauenkirche | 1 | geo | S
+Hamburg | Hafen, Elbe, Reeperbahn, Alster, Fischmarkt | 1 | geo | S
 Köln | Dom, Karneval, Rhein, Kölsch, Domstadt | 1 | geo
-Frankfurt | Banken, Skyline, Main, Flughafen, Messe | 2 | geo
-Stuttgart | Daimler, Schwaben, Porsche, Neckar, Baden-Württemberg | 3 | geo
-Dresden | Frauenkirche, Elbe, Sachsen, Semperoper, Stollen | 3 | geo
-Leipzig | Sachsen, Messe, Bach, Thomaskirche, Montagsdemo | 3 | geo
-Düsseldorf | Altbier, Rhein, Mode, Königsallee, Landeshauptstadt | 3 | geo
-Bremen | Stadtmusikanten, Weser, Roland, Hanse, Werder | 3 | geo
-Hannover | Messe, Niedersachsen, Expo, Leine, Schützenfest | 3 | geo
-Wien | Österreich, Schnitzel, Walzer, Prater, Donau | 2 | geo
+Frankfurt | Banken, Skyline, Main, Flughafen, Messe | 2 | geo | 
+Stuttgart | Daimler, Schwaben, Porsche, Neckar, Baden-Württemberg | 3 | geo | 
+Dresden | Frauenkirche, Elbe, Sachsen, Semperoper, Stollen | 3 | geo | 
+Leipzig | Sachsen, Messe, Bach, Thomaskirche, Montagsdemo | 3 | geo | 
+Düsseldorf | Altbier, Rhein, Mode, Königsallee, Landeshauptstadt | 3 | geo | 
+Bremen | Stadtmusikanten, Weser, Roland, Hanse, Werder | 3 | geo | 
+Hannover | Messe, Niedersachsen, Expo, Leine, Schützenfest | 3 | geo | 
+Wien | Österreich, Schnitzel, Walzer, Prater, Donau | 2 | geo | 
 Paris | Eiffelturm, Frankreich, Louvre, Liebe, Seine | 1 | geo | S
-London | Big Ben, England, Themse, Tower Bridge, Bus | 1 | geo | S
-Rom | Kolosseum, Italien, Papst, Vatikan, Pizza | 1 | geo
-Venedig | Kanäle, Gondel, Italien, Wasser, Markusplatz | 2 | geo
-Madrid | Spanien, Hauptstadt, Real, Prado, Stierkampf | 2 | geo
-Barcelona | Gaudí, Spanien, Sagrada Familia, Katalonien, Strand | 2 | geo
-Amsterdam | Grachten, Holland, Fahrrad, Tulpen, Hauptstadt | 2 | geo
-Prag | Tschechien, Karlsbrücke, Burg, Bier, Moldau | 3 | geo
-Moskau | Russland, Kreml, Roter Platz, Hauptstadt, Kälte | 2 | geo
-New York | Freiheitsstatue, Big Apple, Wolkenkratzer, Manhattan, Taxi | 1 | geo | S
-Los Angeles | Hollywood, Kalifornien, Stars, Strand, Sonne | 2 | geo
-Las Vegas | Casino, Wüste, Glücksspiel, Heiraten, Nevada | 2 | geo
-Tokio | Japan, Hauptstadt, Neon, Sushi, Metropole | 2 | geo
-Dubai | Burj Khalifa, Wüste, Scheich, Wolkenkratzer, Emirate | 2 | geo
+London | Big Ben, England, Themse, Tower Bridge, Bus | 1 | geo
+Rom | Kolosseum, Italien, Papst, Vatikan, Pizza | 1 | geo | S
+Venedig | Kanäle, Gondel, Italien, Wasser, Markusplatz | 2 | geo | 
+Madrid | Spanien, Hauptstadt, Real, Prado, Stierkampf | 2 | geo | 
+Barcelona | Gaudí, Spanien, Sagrada Familia, Katalonien, Strand | 2 | geo | 
+Amsterdam | Grachten, Holland, Fahrrad, Tulpen, Hauptstadt | 2 | geo | 
+Prag | Tschechien, Karlsbrücke, Burg, Bier, Moldau | 3 | geo | 
+Moskau | Russland, Kreml, Roter Platz, Hauptstadt, Kälte | 2 | geo | 
+New York | Freiheitsstatue, Big Apple, Wolkenkratzer, Manhattan, Taxi | 1 | geo
+Los Angeles | Hollywood, Kalifornien, Stars, Strand, Sonne | 2 | geo | 
+Las Vegas | Casino, Wüste, Glücksspiel, heiraten, Nevada | 2 | geo | 
+Tokio | Japan, Hauptstadt, Neon, Sushi, Metropole | 2 | geo | 
+Dubai | Burj Khalifa, Wüste, Scheich, Wolkenkratzer, Emirate | 2 | geo | 
 Eiffelturm | Paris, Frankreich, Stahl, Wahrzeichen, Aussicht | 1 | geo | S
-Brandenburger Tor | Berlin, Quadriga, Wahrzeichen, Säulen, Wende | 2 | geo
-Kolosseum | Rom, Gladiatoren, Arena, Antike, Ruine | 2 | geo
-Schiefer Turm | Pisa, Italien, geneigt, Wahrzeichen, Galilei | 2 | geo
+Brandenburger Tor | Berlin, Quadriga, Wahrzeichen, Säulen, Wende | 2 | geo | 
+Kolosseum | Rom, Gladiatoren, Arena, Antike, Ruine | 2 | geo | 
+Schiefer Turm | Pisa, Italien, geneigt, Wahrzeichen, Galilei | 2 | geo | 
 Freiheitsstatue | New York, Fackel, Geschenk, Insel, Amerika | 1 | geo
-Pyramide | Ägypten, Pharao, Wüste, Grab, Dreieck | 1 | geo
-Chinesische Mauer | Peking, lang, Wahrzeichen, Weltwunder, Asien | 2 | geo
-Big Ben | London, Uhr, Turm, Glocke, Themse | 2 | geo
-Taj Mahal | Indien, Grab, Marmor, weiß, Liebe | 3 | geo
-Neuschwanstein | Märchenschloss, Bayern, Ludwig, Disney, König | 2 | geo
-Kölner Dom | Kirche, Rhein, Türme, gotisch, Rheinland | 2 | geo
+Pyramide | Ägypten, Pharao, Wüste, Grab, Dreieck | 1 | geo | S
+Chinesische Mauer | Peking, lang, Wahrzeichen, Weltwunder, Asien | 2 | geo | 
+Big Ben | London, Uhr, Turm, Glocke, Themse | 2 | geo | 
+Taj Mahal | Indien, Grab, Marmor, weiß, Liebe | 3 | geo | 
+Neuschwanstein | Märchenschloss, Bayern, Ludwig, Disney, König | 2 | geo | 
+Kölner Dom | Kirche, Rhein, Türme, gotisch, Rheinland | 2 | geo | 
 Alpen | Berge, Schnee, Skifahren, Österreich, Gipfel | 1 | geo
-Rhein | Fluss, Köln, Loreley, Schiff, Weinberge | 2 | geo
-Donau | Fluss, Wien, Schwarzmeer, Walzer, Ulm | 2 | geo
-Elbe | Fluss, Hamburg, Dresden, Hafen, Nordsee | 3 | geo
-Nil | Fluss, Ägypten, lang, Afrika, Kairo | 2 | geo
-Amazonas | Regenwald, Fluss, Brasilien, Südamerika, Dschungel | 2 | geo
-Mississippi | Fluss, Amerika, Tom Sawyer, Dampfer, lang | 3 | geo
-Nordsee | Meer, Ebbe, Flut, Deutschland, Wattenmeer | 1 | geo
+Rhein | Fluss, Köln, Loreley, Schiff, Weinberge | 2 | geo | 
+Donau | Fluss, Wien, Schwarzmeer, Walzer, Ulm | 2 | geo | 
+Elbe | Fluss, Hamburg, Dresden, Hafen, Nordsee | 3 | geo | 
+Nil | Fluss, Ägypten, lang, Afrika, Kairo | 2 | geo | 
+Amazonas | Regenwald, Fluss, Brasilien, Südamerika, Dschungel | 2 | geo | 
+Mississippi | Fluss, Amerika, Tom Sawyer, Dampfer, lang | 3 | geo | 
+Nordsee | Meer, Ebbe, Flut, Deutschland, Wattenmeer | 1 | geo | S
 Ostsee | Meer, Strand, Rügen, Küste, Deutschland | 1 | geo
-Atlantik | Ozean, Amerika, Europa, groß, Meer | 2 | geo
-Mittelmeer | Urlaub, Italien, Südeuropa, Strand, Wasser | 2 | geo
-Sahara | Wüste, Sand, Afrika, Kamel, heiß | 1 | geo
+Atlantik | Ozean, Amerika, Europa, groß, Meer | 2 | geo | 
+Mittelmeer | Urlaub, Italien, Südeuropa, Strand, Wasser | 2 | geo | 
+Sahara | Wüste, Sand, Afrika, Kamel, heiß | 1 | geo | S
 Wüste | Sand, heiß, Kamel, Oase, Dünen | 1 | geo
-Regenwald | Dschungel, Amazonas, feucht, Bäume, Brasilien | 2 | geo
+Regenwald | Dschungel, Amazonas, feucht, Bäume, Brasilien | 2 | geo | 
 Vulkan | Lava, Ausbruch, Berg, Asche, Krater | 1 | geo | S
-Gletscher | Eis, Berge, Schmelze, Alpen, Spalte | 2 | geo
-Wasserfall | Niagara, Felsen, Gischt, rauschen, stürzen | 1 | geo
-Insel | Meer, Wasser, Palme, Robinson, Strand | 1 | geo
-Küste | Meer, Strand, Strandkorb, Wellen, Land | 2 | geo
+Gletscher | Eis, Berge, Schmelze, Alpen, Spalte | 2 | geo | 
+Wasserfall | Niagara, Felsen, Gischt, rauschen, stürzen | 1 | geo | S
+Insel | Meer, Wasser, Palme, Robinson, Strand | 1 | geo | 
+Küste | Meer, Strand, Strandkorb, Wellen, Land | 2 | geo | 
 Dschungel | Urwald, Tarzan, Lianen, tropisch, Regenwald | 1 | geo
-Mount Everest | Berg, höchster, Himalaya, Nepal, Gipfel | 1 | geo
-Zugspitze | Berg, höchster, Bayern, Deutschland, Gipfel | 2 | geo
+Mount Everest | Berg, höchster, Himalaya, Nepal, Gipfel | 1 | geo | S
+Zugspitze | Berg, höchster, Bayern, Deutschland, Gipfel | 2 | geo | 
 Nordpol | Eis, Weihnachtsmann, Arktis, Kompass, Eisbär | 1 | geo
-Südpol | Antarktis, Pinguin, Eis, Kälte, Amundsen | 2 | geo
-Äquator | Linie, Erde, Mitte, heiß, Breitengrad | 2 | geo
-Kontinent | Erdteil, Afrika, Europa, Asien, Land | 2 | geo
-Europa | Kontinent, Union, Erdteil, Brüssel, Währung | 1 | geo
+Südpol | Antarktis, Pinguin, Eis, Kälte, Amundsen | 2 | geo | 
+Äquator | Linie, Erde, Mitte, heiß, Breitengrad | 2 | geo | 
+Kontinent | Erdteil, Afrika, Europa, Asien, Land | 2 | geo | 
+Europa | Kontinent, Union, Erdteil, Brüssel, Währung | 1 | geo | S
 Afrika | Kontinent, Savanne, heiß, Löwe, Safari | 1 | geo
-Asien | Kontinent, China, Indien, groß, Erdteil | 1 | geo
-Antarktis | Eis, Pinguin, Südpol, kalt, Forschung | 2 | geo
+Asien | Kontinent, China, Indien, groß, Erdteil | 1 | geo | S
+Antarktis | Eis, Pinguin, Südpol, kalt, Forschung | 2 | geo | 
 Karibik | Inseln, Piraten, Rum, Meer, Palmen | 1 | geo
-Hawaii | Inseln, Blumenkette, Surfen, Vulkan, Pazifik | 1 | geo
+Hawaii | Inseln, Blumenkette, Surfen, Vulkan, Pazifik | 1 | geo | S
 Mallorca | Ballermann, Sangria, Insel, Spanien, Urlaub | 1 | geo
-Bodensee | See, Konstanz, Schweiz, Bayern, Zeppelin | 3 | geo
-Schwarzwald | Kuckucksuhr, Kirschtorte, Tannen, Baden, Gebirge | 2 | geo
-Bayern | Freistaat, Weißwurst, München, Lederhose, Bier | 1 | geo
-Sachsen | Dresden, Leipzig, Osten, Freistaat, Dialekt | 3 | geo
-Ruhrgebiet | Kohle, Pott, Stahl, Essen, Dortmund | 3 | geo
-Venezuela | Südamerika, Caracas, Öl, Miss, Karibik | 3 | geo
-Kroatien | Adria, Urlaub, Dubrovnik, Zagreb, Balkan | 2 | geo
-Ukraine | Kiew, Osteuropa, Krieg, Weizen, gelb-blau | 2 | geo
-Singapur | Stadtstaat, Asien, Hafen, sauber, Merlion | 3 | geo
-Südkorea | Seoul, K-Pop, Samsung, Asien, Kimchi | 2 | geo
+Bodensee | See, Konstanz, Schweiz, Bayern, Zeppelin | 3 | geo | 
+Schwarzwald | Kuckucksuhr, Kirschtorte, Tannen, baden, Gebirge | 2 | geo | 
+Bayern | Freistaat, Weißwurst, München, Lederhose, Bier | 1 | geo | S
+Sachsen | Dresden, Leipzig, Osten, Freistaat, Dialekt | 3 | geo | 
+Ruhrgebiet | Kohle, Pott, Stahl, Essen, Dortmund | 3 | geo | 
+Venezuela | Südamerika, Caracas, Öl, Miss, Karibik | 3 | geo | 
+Kroatien | Adria, Urlaub, Dubrovnik, Zagreb, Balkan | 2 | geo | 
+Ukraine | Kiew, Osteuropa, Krieg, Weizen, gelb-blau | 2 | geo | 
+Singapur | Stadtstaat, Asien, Hafen, sauber, Merlion | 3 | geo | 
+Südkorea | Seoul, K-Pop, Samsung, Asien, Kimchi | 2 | geo | 
 Hollywood | Filmstars, Los Angeles, Schriftzug, Oscar, Studio | 1 | geo
-Rotes Meer | Tauchen, Ägypten, Urlaub, Korallen, Moses | 3 | geo
-Sibirien | Kälte, Russland, Tundra, Weite, Wolf | 3 | geo
-Grand Canyon | Schlucht, Arizona, rot, Colorado, tief | 3 | geo
-Niagarafälle | Wasserfall, Kanada, USA, Gischt, riesig | 3 | geo
-Roter Platz | Moskau, Kreml, Basilius, Parade, Lenin | 3 | geo
-Stonehenge | Steinkreis, England, Druiden, Sonnenwende, Felsen | 3 | geo
-Akropolis | Athen, Griechenland, Tempel, Antike, Parthenon | 3 | geo
-Hauptstadt | Regierung, Land, Berlin, Paris, Sitz | 2 | geo
-Landkarte | Atlas, Maßstab, Weg, Papier, Staaten | 2 | geo
-Globus | Erde, Kugel, drehen, Länder, Weltkarte | 1 | geo
-Kompass | Nadel, Norden, Richtung, Wandern, Himmelsrichtung | 1 | geo
+Rotes Meer | tauchen, Ägypten, Urlaub, Korallen, Moses | 3 | geo | 
+Sibirien | Kälte, Russland, Tundra, Weite, Wolf | 3 | geo | 
+Grand Canyon | Schlucht, Arizona, rot, Colorado, tief | 3 | geo | 
+Niagarafälle | Wasserfall, Kanada, USA, Gischt, riesig | 3 | geo | 
+Roter Platz | Moskau, Kreml, Basilius, Parade, Lenin | 3 | geo | 
+Stonehenge | Steinkreis, England, Druiden, Sonnenwende, Felsen | 3 | geo | 
+Akropolis | Athen, Griechenland, Tempel, Antike, Parthenon | 3 | geo | 
+Hauptstadt | Regierung, Land, Berlin, Paris, Sitz | 2 | geo | 
+Landkarte | Atlas, Maßstab, Weg, Papier, Staaten | 2 | geo | 
+Globus | Erde, Kugel, drehen, Länder, Weltkarte | 1 | geo | S
+Kompass | Nadel, Norden, Richtung, wandern, Himmelsrichtung | 1 | geo | S
