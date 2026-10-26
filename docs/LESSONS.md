@@ -87,3 +87,8 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - Autokäufer-Bug in der Praxis: Der „schnellste Amortisation“-Käufer hat nie für Quelle 5+ gespart, der Upgrade-Käufer „günstigstes zuerst“ hat nutzlose Upgrades gekauft. Neue Logik: Nutzen pro Kosten inkl. Bündel-Boni und Synergien, mit Sparen (`prodChoose`, `upgBuyBest`).
 - Spieler-Buttons („Alles kaufen“) und Autokäufer brauchen **unterschiedliche** Logik: Der Autokäufer darf sparen, der Button muss sofort ausgeben,
   sonst wirkt er kaputt („kauft nichts“). Merlin: `prodSpendAll` (Button) vs. `prodBuyAll` (Autokäufer).
+- Replikator, echter Spielstand: Ende von v1 (Story-Ende, alle 8 Challenges, alle Upgrades) nach 13,7 h Spielzeit, insgesamt 61,7 h,
+  davon nur **~2 h aktiv**. Offline-Fortschritt mit voller Rate plus Autokäufer spielt das Spiel praktisch allein. Die Simulation (10,5 h aktiv) hat das nicht abgebildet.
+  Für neue Spiele: Offline-Effizienz bewusst festlegen (z. B. 50 %, oder Boni, die nur aktiv wirken) und auch ein Szenario „fast nur offline“ simulieren.
+- Gespeicherte Spielstände sind lang (Spieltest-Protokoll). In Chat-Nachrichten werden sie abgeschnitten. Auswertbar bleibt der Anfang (Zustand),
+  das Protokoll geht verloren. Eine Kurzform-Export-Funktion („nur Zustand“) oder ein Datei-Export wäre besser.
