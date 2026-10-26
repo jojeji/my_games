@@ -42,5 +42,16 @@ Das Zurücknehmen eines Buzzers, weil er nicht gerechtfertigt war. Es wird kein 
 **Überspringen**:
 Eine Karte ohne Raten abbrechen und die nächste ziehen. Freie Überspringer kosten keinen Punkt.
 
+**Überspringer-Kontingent**:
+Die Zahl freier Überspringer eines Teams, entweder pro Zug (wird jeden Zug neu aufgefüllt) oder pro Spiel (einmal für das ganze Spiel).
+_Avoid_: Joker, Skips
+
+**Zug**:
+Die Zeitspanne, in der ein Team mit laufender Uhr erklärt und rät.
+_Avoid_: Runde (für diese Bedeutung), Durchgang
+
+**Runde**:
+Abgeschlossen, wenn jedes Team genau einen Zug hatte.
+
 **Spielmodus**:
-Die Regel, wann ein Spiel endet (z. B. Punkteziel oder Rundenlimit).
+Die Regel, wann ein Spiel endet: Punkteziel, Rundenlimit oder freies Spiel.
