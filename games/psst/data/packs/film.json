@@ -79,7 +79,7 @@
 {"id":"haus-des-geldes","w":"Haus des Geldes","t":["Serie","Raub","Masken","Professor","Netflix"],"d":2,"src":"ai"},
 {"id":"heidi","w":"Heidi","t":["Alm","Großvater","Peter","Ziegen","Berge"],"d":2,"src":"ai"},
 {"id":"herr-der-ringe","w":"Herr der Ringe","t":["Frodo","Mittelerde","Gandalf","Hobbit","Gollum"],"d":1,"src":"ai"},
-{"id":"hexe","w":"Hexe","t":["Besen","Zauber","Märchen","Kessel","Hut"],"d":1,"src":"ai"},
+{"id":"hexe","w":"Hexe","t":["Besen","Zauber","Halloween","Kessel","Hut"],"d":1,"src":"mixed"},
 {"id":"horrorfilm","w":"Horrorfilm","t":["Angst","Gruseln","Monster","Gänsehaut","Kino"],"d":1,"src":"ai"},
 {"id":"ice-age","w":"Ice Age","t":["Mammut","Eiszeit","Faultier","Säbelzahntiger","Scrat"],"d":2,"src":"ai"},
 {"id":"indiana-jones","w":"Indiana Jones","t":["Hut","Peitsche","Abenteuer","Archäologe","Harrison Ford"],"d":1,"src":"ai"},

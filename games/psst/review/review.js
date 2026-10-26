@@ -2,6 +2,8 @@
 // Lädt ../data/packs/<pack>.json (?pack=start|mix1|...), der Besitzer entscheidet pro Karte
 // (Behalten / Verwerfen / Bearbeiten) per Knopf oder Wischen. Entscheidungen liegen in localStorage,
 // der Export ist ein Textcode PSSTREVIEW1.<base64(JSON)>, den man in den Chat einfügt.
+// Optional: ../data/assoc-report.json (tools/psst-data/assoc.mjs) zeigt pro Karte, wie gut die Tabuwörter zu menschlichen Assoziationen passen,
+// und bietet häufig genannte, fehlende Wörter zum Übernehmen an (landet als normale Bearbeitung im Export).
 
 const CODE_PREFIX = 'PSSTREVIEW1.';
 const TABU_COUNT = 5;
@@ -30,7 +32,7 @@ function h(tag, props, ...kids) {
 function loadStore() {
   try {
     const s = JSON.parse(localStorage.getItem(storeKey) || 'null');
-    if (s && typeof s === 'object') return { dec: s.dec || {}, edits: s.edits || {}, pos: s.pos | 0 };
+    if (s && typeof s === 'object') return { dec: s.dec || {}, edits: s.edits || {}, pos: s.pos | 0, sort: s.sort };
   } catch { /* private mode or broken value */ }
   return { dec: {}, edits: {}, pos: 0 };
 }
@@ -45,7 +47,10 @@ const b64 = {
 };
 
 // ---------------------------------------------------------------- Zustand
-let cards = [];
+let cards = [];      // in der gewählten Reihenfolge
+let allCards = [];   // Reihenfolge der Datei (Export, Fortschritt der alten Prüfungen)
+let report = null;   // assoc-report.json (optional)
+let sortMode = 'orig'; // orig | weak
 let index = null;
 let state = loadStore();
 let cur = 0;
@@ -62,6 +67,40 @@ const counts = () => {
   for (const c of cards) { const d = state.dec[c.id]; if (d === 'keep') keep++; else if (d === 'drop') drop++; }
   return { keep, drop, open: cards.length - keep - drop };
 };
+// ---------------------------------------------------------------- Assoziationen
+const lc = x => String(x).toLowerCase();
+const assocOf = id => (report && report.cards && report.cards[id]) || null;
+/** Treffer nach dem aktuellen Stand der Karte: unveränderte Treffer plus übernommene fehlende Wörter. */
+function assocScore(orig, now) {
+  const a = assocOf(orig.id);
+  if (!a || !a.covered) return null;
+  const weak = new Set(a.weak.map(lc)), miss = new Set(a.missing.map(lc));
+  const good = new Set(orig.t.filter(t => !weak.has(lc(t))).map(lc));
+  return now.t.filter(t => good.has(lc(t)) || miss.has(lc(t))).length;
+}
+const weakFirstKey = c => {
+  const a = assocOf(c.id);
+  return a && a.covered ? a.score : 99;
+};
+function orderCards() {
+  const list = allCards.map((c, i) => ({ c, i }));
+  if (sortMode === 'weak') {
+    list.sort((x, y) => weakFirstKey(x.c) - weakFirstKey(y.c) || (((assocOf(y.c.id)?.missing || []).length) - ((assocOf(x.c.id)?.missing || []).length)) || x.i - y.i);
+  }
+  cards = list.map(x => x.c);
+}
+const hasAssoc = () => !!report && allCards.some(c => assocOf(c.id)?.covered);
+function setSort(next) {
+  sortMode = next;
+  state.sort = next;
+  orderCards();
+  cur = Math.min(firstOpen(), Math.max(cards.length - 1, 0));
+  state.pos = cur;
+  saveStore();
+  mode = 'card';
+  render();
+}
+
 const firstOpen = () => { const i = cards.findIndex(c => !state.dec[c.id]); return i < 0 ? cards.length : i; };
 
 function decide(kind) {
@@ -92,7 +131,7 @@ function toast(msg) {
 // ---------------------------------------------------------------- Export
 function buildPayload() {
   const keep = [], drop = [], edit = {};
-  for (const c of cards) {
+  for (const c of allCards) {
     const d = state.dec[c.id];
     if (d === 'keep') keep.push(c.id);
     else if (d === 'drop') drop.push(c.id);
@@ -133,10 +172,46 @@ function header() {
   ];
 }
 
+/** Übernimmt ein häufig genanntes, fehlendes Wort anstelle des schwächsten Tabuworts (als normale Bearbeitung). */
+function takeOver(word) {
+  const c = cardOf(cur);
+  if (c.t.some(t => lc(t) === lc(word))) return;
+  const weak = new Set((assocOf(c.id)?.weak || []).map(lc));
+  let idx = -1;
+  for (let i = c.t.length - 1; i >= 0; i--) if (weak.has(lc(c.t[i]))) { idx = i; break; }
+  if (idx < 0) idx = c.t.length - 1;
+  const old = c.t[idx];
+  const t = c.t.slice();
+  t[idx] = word;
+  const orig = cards[cur];
+  if (t.every((x, i) => x === orig.t[i]) && c.w === orig.w) delete state.edits[c.id];
+  else state.edits[c.id] = { w: c.w, t };
+  saveStore();
+  toast(`${word} statt ${old}`);
+  render();
+}
+
+function assocBlock(c) {
+  const a = assocOf(c.id);
+  if (!a || !a.covered) return null;
+  const left = a.missing.filter(m => !c.t.some(t => lc(t) === lc(m)));
+  const edited = !!state.edits[c.id];
+  if (!left.length && !edited) return null;
+  return h('div', { class: 'rv-assoc' },
+    left.length > 0 && h('div', { class: 'rv-assoc-h', text: 'Häufig genannt, fehlt:' }),
+    left.length > 0 && h('div', { class: 'rv-assoc-b' }, left.map(m =>
+      h('button', { class: 'rv-take', type: 'button', onclick: () => takeOver(m) }, m, h('small', { text: 'übernehmen' })))),
+    edited && h('button', { class: 'rv-undo', type: 'button', onclick: () => { delete state.edits[c.id]; saveStore(); render(); } }, '↶ Original wiederherstellen'));
+}
+
 function cardView() {
   const c = cardOf(cur);
+  const orig = cards[cur];
   const dec = state.dec[c.id];
   const edited = !!state.edits[c.id];
+  const a = assocOf(c.id);
+  const weak = new Set(a && a.covered ? a.weak.map(lc) : []);
+  const score = assocScore(orig, c);
   const stampK = h('div', { class: 'rv-stamp k', text: 'BEHALTEN' });
   const stampD = h('div', { class: 'rv-stamp d', text: 'VERWERFEN' });
   const el = h('div', { class: 'rv-card' + (dec ? ' ' + dec : ''), 'data-id': c.id },
@@ -146,11 +221,15 @@ function cardView() {
       h('span', { class: 'rv-chip', text: `Quelle ${c.src}` }),
       dec === 'keep' && h('span', { class: 'rv-chip keep', text: 'behalten' }),
       dec === 'drop' && h('span', { class: 'rv-chip drop', text: 'verworfen' }),
-      edited && h('span', { class: 'rv-chip edit', text: 'bearbeitet' })),
+      edited && h('span', { class: 'rv-chip edit', text: 'bearbeitet' }),
+      report && (score == null
+        ? h('span', { class: 'rv-chip assoc none', text: 'Assoziationen: keine Daten' })
+        : h('span', { class: `rv-chip assoc ${score <= 1 ? 'low' : score <= 3 ? 'mid' : 'high'}`, text: `Assoziationen: ${score}/5` }))),
     h('div', { class: 'rv-word', text: c.w }),
     h('div', { class: 'rv-sep' }),
-    h('ul', { class: 'rv-tabu', 'aria-label': 'Tabuwörter' }, c.t.map(t => h('li', { text: t }))),
-    h('div', { class: 'rv-hint', text: 'Nach rechts wischen = behalten, nach links = verwerfen' }));
+    h('ul', { class: 'rv-tabu', 'aria-label': 'Tabuwörter' }, c.t.map(t => h('li', { class: weak.has(lc(t)) ? 'weak' : null, text: t }))),
+    assocBlock(c),
+    h('div', { class: 'rv-hint', text: 'Wischen: → behalten, ← verwerfen' + (weak.size ? ' · gestrichelt: kein Treffer' : '') }));
   attachSwipe(el, stampK, stampD);
   return el;
 }
@@ -203,6 +282,8 @@ function actionBar() {
       h('button', { class: 'rv-btn keep', type: 'button', onclick: () => decide('keep') }, '✓ Behalten', h('small', { text: 'rechts →' }))),
     h('div', { class: 'rv-row', style: 'margin-top:10px' },
       h('button', { class: 'rv-btn', type: 'button', disabled: cur === 0, onclick: back }, '↶ Zurück'),
+      hasAssoc() && h('button', { class: 'rv-btn', type: 'button', 'aria-label': sortMode === 'weak' ? 'Reihenfolge: schwächste zuerst, tippen für Originalreihenfolge' : 'Reihenfolge: Original, tippen für schwächste zuerst', onclick: () => setSort(sortMode === 'weak' ? 'orig' : 'weak') },
+        '⇅ Reihenfolge', h('small', { text: sortMode === 'weak' ? 'Schwächste' : 'Original' })),
       h('button', { class: 'rv-btn', type: 'button', onclick: () => { mode = 'export'; render(); } }, '⇪ Export')));
 }
 
@@ -299,15 +380,24 @@ document.addEventListener('keydown', e => {
 // ---------------------------------------------------------------- Start
 async function boot() {
   try {
-    const [pk, idx] = await Promise.all([
+    const [pk, idx, rep] = await Promise.all([
       fetch(`../data/packs/${packId}.json`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
       fetch('../data/packs.json').then(r => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('../data/assoc-report.json').then(r => (r.ok ? r.json() : null)).catch(() => null),
     ]);
-    cards = pk;
+    allCards = pk;
     index = idx;
+    report = rep && rep.cards ? rep : null;
   } catch {
-    cards = [];
+    allCards = [];
   }
+  // Reihenfolge: gespeicherte Wahl; sonst "Schwächste zuerst" für alle Pakete außer start (dort läuft die Prüfung in Dateireihenfolge)
+  // und für Pakete, in denen schon in Dateireihenfolge entschieden wurde.
+  const started = Object.keys(state.dec).length > 0;
+  sortMode = state.sort === 'weak' || state.sort === 'orig' ? state.sort : (packId === 'start' || started || !hasAssoc() ? 'orig' : 'weak');
+  if (!hasAssoc()) sortMode = 'orig';
+  state.sort = sortMode; // wird beim nächsten Speichern mitgeschrieben, damit die gemerkte Position zur Reihenfolge passt
+  orderCards();
   const open = firstOpen();
   cur = Math.min(Math.max(state.pos, 0), cards.length ? cards.length - 1 : 0);
   // beim Öffnen zur ersten offenen Karte springen, falls die gemerkte Position schon entschieden ist

@@ -15,6 +15,8 @@ Begriffe wie in `games/psst/GLOSSARY.md`: Karte = Suchbegriff + 5 Tabuwörter, K
 | `build.mjs` | Baut alle Kartenpakete, prüft jede Karte, bricht bei Verstößen ab. Deterministisch. |
 | `check.mjs` | Qualitätsprüfung der fertigen Dateien (auch von `tests/psst-data.test.mjs` benutzt). |
 | `import-review.mjs` | Fügt Export-Codes der Prüfseite in `review-decisions.json` ein. |
+| `assoc.mjs` | Assoziationsprüfung: passen die 5 Tabuwörter zu dem, was Menschen zum Suchbegriff einfällt? Schreibt `games/psst/data/assoc-report.json` (siehe unten). |
+| `assoc-swaps.txt` | Von Hand entschiedene Tabuwort-Tausch aus der Assoziationsprüfung, `assoc.mjs --apply` schreibt sie nach `curated.json`. |
 | `lib.mjs` | Gemeinsame Helfer (Slug, Wortstamm-Vergleich, Blockliste). |
 
 ## Neu bauen
@@ -75,3 +77,43 @@ PSSTREVIEW1.<base64 (UTF-8) von {"pack":"start","keep":[ids],"drop":[ids],"edit"
 
 `build.mjs` wendet an: `drop` entfernt die Karte aus **allen** Paketen, `edit` ersetzt Suchbegriff und Tabuwörter (die `id` bleibt, `src` wird `mixed`, die Prüfung läuft danach erneut), `keep` ist nur Protokoll.
 Ein neuer Code für dasselbe Paket ersetzt den alten. Danach `build.mjs` ausführen und die erzeugten Dateien committen.
+
+## Assoziationsprüfung (`assoc.mjs`)
+
+Tabuwörter sollten die Wörter sein, die ein Erklärer von selbst sagen würde. Das messen freie Assoziationsnormen. Das Werkzeug bewertet jede Karte damit, markiert schwache Karten und schlägt Wörter vor.
+Die Rohdaten liegen nur lokal (`$PSST_RAW`, nie im Repo). Eingecheckt wird nur der kleine Bericht mit einzelnen Wörtern, ohne Assoziationslisten und ohne Stärken.
+
+```sh
+# Rohdaten holen (nach $PSST_RAW, nie ins Repo): USF (8 Dateien, 11 MB) und ConceptNet (500 MB)
+mkdir -p $PSST_RAW/usf $PSST_RAW/cn
+for f in A-B C D-F G-K L-O P-R S T-Z; do curl -o $PSST_RAW/usf/Cue_Target_Pairs.$f http://w3.usf.edu/FreeAssociation/AppendixA/Cue_Target_Pairs.$f; done
+curl -o $PSST_RAW/cn/cn.csv.gz https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz
+
+node tools/psst-data/assoc.mjs prepare      # Rohdaten (USF, ConceptNet) -> $PSST_RAW/assoc/*.json, einmalig, ca. 2 min
+node tools/psst-data/assoc.mjs              # bewertet alle Karten, schreibt games/psst/data/assoc-report.json, druckt die Zusammenfassung
+node tools/psst-data/assoc.mjs --suggest    # listet zusätzlich starke fehlende Wörter (Kandidaten für assoc-swaps.txt)
+node tools/psst-data/assoc.mjs --apply      # schreibt die Tausche aus assoc-swaps.txt nach curated.json ("fix"), dann build.mjs, check.mjs, assoc.mjs
+```
+
+**Quellen und Stand.** SWOW-DE (Small World of Words, Deutsch, 5.877 Cues, arXiv 2604.19620) wäre die beste Quelle, aber der Download auf `https://smallworldofwords.org/en/project/research` verlangt Name und E-Mail,
+die Lizenz ist CC BY-NC-ND 3.0 (keine Weitergabe, keine Bearbeitungen). Deshalb wurde SWOW-DE nicht benutzt. Stattdessen:
+
+1. **USF Free Association Norms** (Nelson, McEvoy & Schreiber 1998, Englisch, `http://w3.usf.edu/FreeAssociation/AppendixA/Cue_Target_Pairs.*`, frei herunterladbar). Per Hand übersetzt (siehe unten).
+2. **ConceptNet 5.7** (CC BY-SA 4.0, `https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz`), nur deutsch-deutsche Kanten `RelatedTo`, `Synonym`, `SimilarTo`, `PartOf`, `IsA` (Oberbegriffe).
+   Die deutschen Kanten sind lexikalisch (Wiktionary), keine Alltagsassoziationen. Sie zählen nur als zusätzlicher Treffer für Karten, die die USF-Normen abdecken (Messung: 19 % der Tabuwörter stehen unter den ConceptNet-Nachbarn, bei vertauschten Karten 0,3 %).
+
+**Übersetzung (lokal, nicht im Repo).** Unter `$PSST_RAW/assoc/maps/` liegen die handgemachten Tabellen: `cue-map-*.txt` (`Suchbegriff = englischer USF-Cue | Alternative`, `-` entfernt eine Zuordnung),
+`en2de-*.txt` (`english = Deutsch/Deutsch2`, Kleinschreibung = kein Substantiv) und `cue-tgt-*.txt` (`cue>target = Deutsch`, korrigiert den Sinn eines Worts nur für einen Cue, `-` ignoriert es).
+Mehrdeutige Suchbegriffe (Bank, Schloss, Birne, Fliege, Zug, Tor, Ring, Stein, Kran, Zecke ...) sind bewusst nicht zugeordnet, sie gelten als "keine Daten". Ohne diese Tabellen kann der Bericht nicht neu berechnet werden, die Tests brauchen sie nicht.
+
+**Bewertung pro Karte.**
+- `covered`: der Suchbegriff hat einen eindeutigen USF-Cue. Sonst `{ "covered": false }` = keine Daten (nicht schlecht). Personen, Filme, Orte und Zusammensetzungen fehlen meist.
+- `score` (0..5): wie viele der 5 Tabuwörter unter den Assoziationen stehen (USF, höchstens 25 Antworten, mindestens ca. 2 % der Teilnehmer, übersetzt; dazu ConceptNet-Nachbarn). Gleich ist: gleicher Wortstamm, Singular/Plural, Wortteil eines Kompositums (mindestens 5 Buchstaben).
+- `weak`: Tabuwörter ohne Treffer. Das ist ein Hinweis, kein Urteil: Normen von Amerikanern aus den 1970ern, übersetzt, kennen z. B. keine Marken und Fernsehsendungen.
+- `missing` (höchstens 3): eine der 3 häufigsten Assoziationen, die nicht auf der Karte steht, nicht den Wortstamm des Suchbegriffs teilt, nicht zu allgemein ist (Essen, Zeit, Spaß ...) und die Regeln von `check.mjs` einhält. Oft das erste Wort, das ein Erklärer sagt.
+
+**Anwenden.** Nichts wird automatisch getauscht. `--suggest` zeigt starke Kandidaten, die Entscheidung (höchstens 2 Tausche pro Karte) steht in `assoc-swaps.txt`. `--apply` prüft: Karte existiert, nicht im Paket `start`,
+altes Wort steht auf der Karte, neues Wort ist durch die Normen belegt, `check.mjs`-Regeln. Danach `build.mjs`, `check.mjs` und `assoc.mjs` (Bericht neu). Das Paket `start` wird nie geändert, dort liefert nur der Bericht Hinweise.
+
+**Prüfseite.** `games/psst/review/` zeigt pro Karte "Assoziationen: 3/5" (oder "keine Daten"), gestrichelte Tabuwörter ohne Treffer und "Häufig genannt, fehlt:" mit einem Knopf "übernehmen" (ersetzt das letzte schwache Tabuwort, landet als normale Bearbeitung im Export, "Original wiederherstellen" nimmt es zurück).
+"Reihenfolge" wechselt zwischen Originalreihenfolge und "Schwächste zuerst" (Standard in allen Paketen außer `start`). Das Exportformat ist unverändert.

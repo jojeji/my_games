@@ -92,3 +92,8 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
   Für neue Spiele: Offline-Effizienz bewusst festlegen (z. B. 50 %, oder Boni, die nur aktiv wirken) und auch ein Szenario „fast nur offline“ simulieren.
 - Gespeicherte Spielstände sind lang (Spieltest-Protokoll). In Chat-Nachrichten werden sie abgeschnitten. Auswertbar bleibt der Anfang (Zustand),
   das Protokoll geht verloren. Eine Kurzform-Export-Funktion („nur Zustand“) oder ein Datei-Export wäre besser.
+
+## Nachtrag: Psst! Kartendaten mit Assoziationsnormen prüfen
+- Freie Assoziationsnormen sind das richtige Maß für "Wörter, die ein Erklärer von selbst sagt". Die beste deutsche Quelle (SWOW-DE) verlangt Registrierung und ist CC BY-NC-ND. Brauchbar waren USF (Englisch, per Hand übersetzt) plus deutsche ConceptNet-Kanten. Abdeckung ca. 38 % der Karten, Personen, Filme und Orte fast nie.
+- Automatisches Tauschen von Tabuwörtern nach den Normen verschlechtert Karten (Antonyme und Geschwisterwörter wie Hund/Katze, falscher Wortsinn nach der Übersetzung, z. B. "shot" = Impfung oder Schuss). Deshalb: Werkzeug schlägt vor, ein Mensch entscheidet (`assoc-swaps.txt`). Mehrdeutige Cues (Bank, Ring, Kran, Zecke, Cricket ...) vorher aussortieren, Übersetzungen pro Cue prüfen (`cue>target`).
+- Vor jedem Einbau die Zuordnungsliste Suchbegriff -> englischer Cue -> Assoziationen von Hand lesen. Die Fehler stehen in den obersten 3 Wörtern, genau dort, wo die Vorschläge herkommen.

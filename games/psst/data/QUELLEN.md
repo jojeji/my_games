@@ -31,6 +31,18 @@ Paket `taboo-data` 2.0.0 (https://github.com/Kovah/Taboo-Data, Autor: Kovah), de
 Genutzt: Tabuwörter ausgewählter Karten (hauptsächlich Personen, Tiere, Essen, Internet, Autos) in `tools/psst-data/curated/kovah.txt`, nach Prüfung, Auswahl und teils mit Korrekturen von Tippfehlern.
 Lizenz: GNU General Public License v3.0 oder später.
 
+## Assoziationsnormen (nur lokale Prüfung, nicht weitergegeben)
+
+`assoc-report.json` und `tools/psst-data/assoc.mjs` prüfen, wie gut die Tabuwörter zu freien menschlichen Assoziationen passen. Die Rohdaten werden **nur lokal** zur Berechnung benutzt und nicht in das Repository oder in die Seite übernommen.
+Der Bericht enthält nur einzelne Wörter (je Karte eine Wertung 0 bis 5, höchstens drei fehlende und die schwachen Tabuwörter), keine Assoziationslisten und keine Stärken.
+
+- **USF Free Association Norms**: Nelson, D. L., McEvoy, C. L. & Schreiber, T. A. (1998). The University of South Florida word association, rhyme, and word fragment norms. http://www.usf.edu/FreeAssociation/ (öffentlich zum Download für Forschung, Appendix A). Englisch, nach Hand-Übersetzung der Suchbegriffe und Assoziationen verwendet.
+- **ConceptNet 5.7**: Speer, R., Chin, J. & Havasi, C. (2017). ConceptNet 5.5: An Open Multilingual Graph of General Knowledge. AAAI. https://conceptnet.io/. Lizenz CC BY-SA 4.0. Genutzt: deutsch-deutsche Kanten (RelatedTo, Synonym, SimilarTo, PartOf, IsA).
+- **SWOW-DE** (Small World of Words, Deutsch; Aeschbach, Mata, Lõo, De Deyne & Wulff 2026, arXiv 2604.19620) wurde **nicht** verwendet: Der Download verlangt eine Registrierung, die Lizenz (CC BY-NC-ND 3.0) erlaubt weder Weitergabe noch Bearbeitungen.
+  Wer die Daten selbst beantragt, kann `assoc.mjs` darauf umstellen.
+
+Karten, bei denen die Prüfung ein Tabuwort ersetzt hat, tragen `src` = `mixed`. Die neuen Wörter sind einzelne, allgemein übliche Wörter ohne übernommenen Quelltext.
+
 ## Lizenz der abgeleiteten Kartendateien
 
 Weil CC BY-SA 4.0 (OpenThesaurus) und GPL-3.0 (Kovah) Weitergabe unter gleichen Bedingungen verlangen, stehen die abgeleiteten Kartendateien

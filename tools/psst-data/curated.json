@@ -2,5 +2,402 @@
   "version": 1,
   "_doc": "drop: Suchbegriffe, die aus den curated/*.txt-Dateien nicht übernommen werden. fix: id -> { w?, t? (5 Tabuwörter), d? } überschreibt einzelne Felder einer Karte (src wird mixed).",
   "drop": [],
-  "fix": {}
+  "fix": {
+    "ameise": {
+      "t": [
+        "Staat",
+        "Haufen",
+        "klein",
+        "fleißig",
+        "Insekt"
+      ]
+    },
+    "badewanne": {
+      "t": [
+        "Wasser",
+        "Schaum",
+        "Bad",
+        "entspannen",
+        "Dusche"
+      ]
+    },
+    "bankraeuber": {
+      "t": [
+        "Überfall",
+        "Maske",
+        "Dieb",
+        "Beute",
+        "Polizei"
+      ]
+    },
+    "blume": {
+      "t": [
+        "Blüte",
+        "Duft",
+        "Vase",
+        "Rose",
+        "Strauß"
+      ]
+    },
+    "dessert": {
+      "t": [
+        "Nachtisch",
+        "süß",
+        "Eis",
+        "Pudding",
+        "Kuchen"
+      ]
+    },
+    "durst": {
+      "t": [
+        "trinken",
+        "Wasser",
+        "trocken",
+        "Hunger",
+        "Getränk"
+      ]
+    },
+    "eule": {
+      "t": [
+        "Nacht",
+        "Uhu",
+        "Vogel",
+        "Federn",
+        "weise"
+      ]
+    },
+    "freundschaft": {
+      "t": [
+        "Kumpel",
+        "Vertrauen",
+        "mögen",
+        "Liebe",
+        "Verbundenheit"
+      ]
+    },
+    "friedhof": {
+      "t": [
+        "Gräber",
+        "Grabstein",
+        "Trauer",
+        "Tod",
+        "Blumen"
+      ]
+    },
+    "garnele": {
+      "t": [
+        "Krabbe",
+        "Meeresfrüchte",
+        "Scampi",
+        "rosa",
+        "Schale"
+      ]
+    },
+    "gewuerz": {
+      "t": [
+        "Salz",
+        "Streuer",
+        "Pfeffer",
+        "Zimt",
+        "Kräuter"
+      ]
+    },
+    "gold": {
+      "t": [
+        "Schatz",
+        "Silber",
+        "Ring",
+        "wertvoll",
+        "Medaille"
+      ]
+    },
+    "handtasche": {
+      "t": [
+        "Frau",
+        "Henkel",
+        "Reißverschluss",
+        "Schulter",
+        "Geldbeutel"
+      ]
+    },
+    "hexe": {
+      "t": [
+        "Besen",
+        "Zauber",
+        "Halloween",
+        "Kessel",
+        "Hut"
+      ]
+    },
+    "hund": {
+      "t": [
+        "bellen",
+        "Leine",
+        "Haustier",
+        "Knochen",
+        "Katze"
+      ]
+    },
+    "jacke": {
+      "t": [
+        "Kleidung",
+        "Reißverschluss",
+        "Ärmel",
+        "Mantel",
+        "Kapuze"
+      ]
+    },
+    "kirche": {
+      "t": [
+        "Glocken",
+        "Pfarrer",
+        "Gott",
+        "Sonntag",
+        "Altar"
+      ]
+    },
+    "krankenschwester": {
+      "t": [
+        "Klinik",
+        "Patient",
+        "Spritze",
+        "Pflege",
+        "Arzt"
+      ]
+    },
+    "mikrowelle": {
+      "t": [
+        "Essen",
+        "wärmen",
+        "heiß",
+        "Backofen",
+        "Küche"
+      ]
+    },
+    "monopoly": {
+      "t": [
+        "Brettspiel",
+        "Straßen",
+        "Hotel",
+        "Geld",
+        "Bank"
+      ]
+    },
+    "muffin": {
+      "t": [
+        "Becher",
+        "Törtchen",
+        "Schokostückchen",
+        "backen",
+        "Blaubeere"
+      ]
+    },
+    "muetze": {
+      "t": [
+        "Kopf",
+        "Winter",
+        "Wolle",
+        "warm",
+        "Hut"
+      ]
+    },
+    "oma": {
+      "t": [
+        "Großmutter",
+        "Kekse",
+        "Enkel",
+        "Opa",
+        "alt"
+      ]
+    },
+    "opa": {
+      "t": [
+        "Großvater",
+        "Enkel",
+        "alt",
+        "Geschichten",
+        "Oma"
+      ]
+    },
+    "paket": {
+      "t": [
+        "Post",
+        "Karton",
+        "Bote",
+        "Geschenk",
+        "Inhalt"
+      ]
+    },
+    "ratte": {
+      "t": [
+        "Kanalisation",
+        "Nagetier",
+        "Pest",
+        "Hameln",
+        "Maus"
+      ]
+    },
+    "rentier": {
+      "t": [
+        "Weihnachtsmann",
+        "Geweih",
+        "Schlitten",
+        "Rudolph",
+        "Weihnachten"
+      ]
+    },
+    "rolltreppe": {
+      "t": [
+        "Stufen",
+        "Kaufhaus",
+        "fahren",
+        "Handlauf",
+        "Aufzug"
+      ]
+    },
+    "schuhe": {
+      "t": [
+        "Füße",
+        "Paar",
+        "Sohle",
+        "Schnürsenkel",
+        "Socken"
+      ]
+    },
+    "senf": {
+      "t": [
+        "Wurst",
+        "gelb",
+        "scharf",
+        "Ketchup",
+        "Soße"
+      ]
+    },
+    "speck": {
+      "t": [
+        "Frühstück",
+        "Schwein",
+        "knusprig",
+        "Fett",
+        "Eier"
+      ]
+    },
+    "stadion": {
+      "t": [
+        "Zuschauer",
+        "Fußball",
+        "Tribüne",
+        "Fans",
+        "Spiel"
+      ]
+    },
+    "surfen": {
+      "t": [
+        "Welle",
+        "Brett",
+        "Meer",
+        "Hawaii",
+        "Strand"
+      ]
+    },
+    "tee": {
+      "t": [
+        "Beutel",
+        "Kanne",
+        "heiß",
+        "Kaffee",
+        "Tasse"
+      ]
+    },
+    "tintenfisch": {
+      "t": [
+        "Arme",
+        "Meer",
+        "Kalmar",
+        "Krake",
+        "Saugnäpfe"
+      ]
+    },
+    "topf": {
+      "t": [
+        "Herd",
+        "Deckel",
+        "Pfanne",
+        "kochen",
+        "Küche"
+      ]
+    },
+    "tornado": {
+      "t": [
+        "Wirbelsturm",
+        "Hurrikan",
+        "Zerstörung",
+        "Trichter",
+        "Wind"
+      ]
+    },
+    "umarmung": {
+      "t": [
+        "Arme",
+        "Liebe",
+        "drücken",
+        "Freund",
+        "Kuss"
+      ]
+    },
+    "vanille": {
+      "t": [
+        "Eis",
+        "Schote",
+        "Pudding",
+        "Gewürz",
+        "Schokolade"
+      ]
+    },
+    "virus": {
+      "t": [
+        "Computer",
+        "Grippe",
+        "Infektion",
+        "Schadsoftware",
+        "Erkältung"
+      ]
+    },
+    "wespe": {
+      "t": [
+        "Stich",
+        "gelb",
+        "Biene",
+        "summen",
+        "Nest"
+      ]
+    },
+    "wiese": {
+      "t": [
+        "Gras",
+        "Blumen",
+        "grün",
+        "Kühe",
+        "Feld"
+      ]
+    },
+    "wolf": {
+      "t": [
+        "Rotkäppchen",
+        "heulen",
+        "Rudel",
+        "Wald",
+        "Hund"
+      ]
+    },
+    "zitrone": {
+      "t": [
+        "sauer",
+        "gelb",
+        "Saft",
+        "Limonade",
+        "Limette"
+      ]
+    }
+  }
 }

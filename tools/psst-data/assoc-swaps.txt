@@ -1,0 +1,47 @@
+# Tabuwort swaps decided by hand after reading the association check (node tools/psst-data/assoc.mjs --suggest).
+# Format: Suchbegriff | altes Tabuwort > neues Tabuwort | ...   (at most 2 swaps per card; the new word must be backed by the norms)
+# `node tools/psst-data/assoc.mjs --apply` writes them into curated.json ("fix"); the pack "start" is never touched.
+Ameise | Zucker > Insekt
+Badewanne | Stöpsel > Dusche
+Bankräuber | Tresor > Dieb
+Blume | Wiese > Rose
+Dessert | Menü > Kuchen
+Durst | Mund > Hunger
+Eule | Käuzchen > Vogel
+Freundschaft | Beste > Liebe
+Friedhof | still > Tod
+Garnele | Meerestier > Meeresfrüchte
+Gewürz | Dose > Salz
+Gold | gelb > Silber
+Handtasche | Inhalt > Geldbeutel
+Hexe | Märchen > Halloween
+Hund | Gassi > Katze
+Jacke | Regen > Mantel
+Kirche | Turm > Gott
+Krankenschwester | Kittel > Arzt
+Mikrowelle | Teller > Backofen
+Monopoly | Los > Geld
+Muffin | klein > Blaubeere
+Mütze | Bommel > Hut
+Oma | stricken > Opa
+Opa | Garten > Oma
+Paket | Schleife > Geschenk
+Ratte | Käfig > Maus
+Rentier | Nordpol > Weihnachten
+Rolltreppe | Bewegung > Aufzug
+Schuhe | laufen > Socken
+Senf | Tube > Ketchup
+Speck | Scheibe > Eier
+Stadion | Rasen > Fußball
+Surfen | Neoprenanzug > Strand
+Tee | Kräuter > Kaffee
+Tintenfisch | Sepia > Krake
+Topf | Suppe > Pfanne
+Tornado | Amerika > Hurrikan
+Umarmung | Nähe > Kuss
+Vanille | gelb > Schokolade
+Virus | Schaden > Grippe
+Wespe | Pflaumenkuchen > Biene
+Wiese | Picknick > Feld
+Wolf | Mond > Hund
+Zitrone | auspressen > Limette
