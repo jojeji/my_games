@@ -157,7 +157,7 @@ export function mountMerlin({ root, runtime, offline }) {
         floatText: (gain) => '+' + fmt(gain),
       });
       const spells = spellBar(g, { icons: SPELL_ICONS });
-      const modeBar = buyModeBar(g, { onBuyAll: () => g.prodBuyAll('quellen'), buyAllLabel: 'Alles kaufen' });
+      const modeBar = buyModeBar(g, { onBuyAll: () => g.prodSpendAll('quellen'), buyAllLabel: 'Alles kaufen' });
       const list = producerList(g, 'quellen');
       const swTap = autoSwitch(g, 'auto_tap', { label: 'Sanduhr automatisch wenden' });
       const swBuy = autoSwitch(g, 'auto_buy', { label: 'Automatisch kaufen' });

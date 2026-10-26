@@ -205,6 +205,40 @@ export const producerMethods = {
     return total;
   },
 
+  /**
+   * The player's "buy everything" button: spends until nothing is affordable (never saves up, unlike prodBuyAll).
+   * Among the affordable purchases (one unit, or up to the next bundle threshold) the best payback goes first.
+   * Returns units bought.
+   */
+  prodSpendAll(pid) {
+    const p = this.producerById[pid];
+    const st = this.state.prod[pid];
+    const scale = this.hooks.prodSynergyScale ? this.hooks.prodSynergyScale(this) : 1;
+    let total = 0;
+    for (let iter = 0; iter < 500; iter++) {
+      const money = this.state.cur[p.currency].amount;
+      let best = null;
+      for (let i = 0; i < p.slots.length; i++) {
+        if (!this.prodVisible(p, i)) continue;
+        const start = this.prodCostStart(p, i);
+        const nb = this.prodNextBundle(p, st[i].n);
+        const ks = nb !== null && nb - st[i].n > 1 ? [1, nb - st[i].n] : [1];
+        for (const k of ks) {
+          const cost = Decimal.sumGeometricSeries(k, start, this.prodRatio(p, i), st[i].n);
+          if (cost.gt(money)) continue;
+          const delta = this.prodIncomeGain(p, i, k, scale);
+          const payback = delta.m === 0 ? Infinity : cost.div(delta).toNumber();
+          if (!best || payback < best.payback || (payback === best.payback && cost.lt(best.cost))) best = { i, k, payback, cost };
+        }
+      }
+      if (!best) break;
+      const bought = this.prodBuy(pid, best.i, best.k);
+      if (!bought) break;
+      total += bought;
+    }
+    return total;
+  },
+
   /** Recompute cached unit rates and totals. */
   refreshProducers() {
     for (const p of this.def.producers) {

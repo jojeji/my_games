@@ -164,6 +164,18 @@ test('prodBuyAll: saves for a much better purchase instead of feeding the low sl
   assert.ok(g.state.prod.quellen[3].n >= 1);
 });
 
+test('prodSpendAll (the "Alles kaufen" button) spends where the autobuyer would save', () => {
+  const g = mkQ([14, 10, 6, 0, 0, 0, 0, 0], 3000);
+  assert.equal(g.prodBuyAll('quellen'), 0);
+  assert.ok(g.prodSpendAll('quellen') >= 1);
+  const left = g.get('sand');
+  const cheapest = g.def.producers[0].slots.map((_, i) => g.prodCostStart(g.def.producers[0], i)
+    .mul(g.prodRatio(g.def.producers[0], i).pow(g.state.prod.quellen[i].n)))
+    .filter((_, i) => g.prodVisible(g.def.producers[0], i))
+    .reduce((a, b) => (b.lt(a) ? b : a));
+  assert.ok(left.lt(cheapest), 'nothing affordable is left over');
+});
+
 test('prodBuyAll: with huge money everything is bought, every slot gets units, and it stays cheap in iterations', () => {
   const g = mkQ([0, 0, 0, 0, 0, 0, 0, 0], 1e30);
   g.prodBuyAll('quellen');
