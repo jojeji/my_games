@@ -74,7 +74,7 @@ export function refGain(state, genome, { fx = null, id = null } = {}) {
     g.load(clone(state));
     g.state.rep2.mut.genome = genome;
     g.refresh();
-    return { sys: lg(g.prestigeGain('expansion')), cores: lg(g.prestigeGain('singularity')) };
+    return { bp: lg(g.prestigeGain('replication')), sys: lg(g.prestigeGain('expansion')), cores: lg(g.prestigeGain('singularity')) };
   } finally {
     if (keep) T.mutFx[id] = keep;
   }
@@ -125,6 +125,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
           const rg = refGain(mid, [m.id], { fx: fx || null, id: m.id });
           const d = {
             t10: base.t10 && r.t10 ? (r.t10 / base.t10 - 1) * 100 : null,
+            bp: rg.bp - refBase.bp,
             sys: rg.sys - refBase.sys,
             cores: rg.cores - refBase.cores,
             total: r.total - base.total,
@@ -140,13 +141,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null;
   };
   const f = (x, p = 2, suf = '') => (x === null ? '  -  ' : (x >= 0 ? '+' : '') + x.toFixed(p) + suf);
-  console.log(`Wirkung je Mutation allein, Mittel über ${starts.join('+')} x Seeds ${seeds.join(',')}, ${hours} h Akt II. dt10 = Zeit bis 10 Sektoren (%), dSys / dQK = Faktor auf den Gewinn einer Expansion / Singularität im selben Spielstand (Dekaden, nach den Softcaps), dSumme = Sternsysteme + Quantenkerne gesamt (Dekaden)`);
-  console.log('Mutation'.padEnd(16) + ['beide', 'Nutzen', 'Haken'].map((v) => v.padEnd(7) + ' dt10     dSys   dQK   dSumme |').join(' '));
+  console.log(`Wirkung je Mutation allein, Mittel über ${starts.join('+')} x Seeds ${seeds.join(',')}, ${hours} h Akt II. dt10 = Zeit bis 10 Sektoren (%), dBP / dSys / dQK = Faktor auf den Gewinn einer Replikation / Expansion / Singularität im selben Spielstand (Dekaden, nach den Softcaps), dSumme = Sternsysteme + Quantenkerne gesamt (Dekaden)`);
+  console.log('Mutation'.padEnd(16) + ['beide', 'Nutzen', 'Haken'].map((v) => v.padEnd(6) + ' dt10    dBP  dSys   dQK  dSumme|').join(' '));
   for (const m of muts) {
     const cols = ['beide', 'Nutzen', 'Haken'].map((v) => {
       const ds = rows[m.id] && rows[m.id][v];
-      if (!ds) return ''.padEnd(48);
-      return (f(avg(ds, 't10'), 0, ' %').padStart(8) + f(avg(ds, 'sys')).padStart(8) + f(avg(ds, 'cores')).padStart(7) + f(avg(ds, 'total')).padStart(8)).padEnd(41) + '|';
+      if (!ds) return ''.padEnd(50);
+      return (f(avg(ds, 't10'), 0, ' %').padStart(7) + f(avg(ds, 'bp')).padStart(7) + f(avg(ds, 'sys')).padStart(6) + f(avg(ds, 'cores')).padStart(6) + f(avg(ds, 'total')).padStart(7)).padEnd(40) + '|';
     });
     console.log(m.id.padEnd(16) + cols.join(' '));
   }

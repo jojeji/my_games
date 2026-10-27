@@ -133,7 +133,9 @@ export function repObjective(g) {
   const wSys = T.sysBoostExp + 0.1 * lvl(g, 'sternkarten') + (g.layerUnlocked('singularity') ? T.singExp * wCore : 0);
   const wBp = bpBoostExp(g) + T.expExp * wSys;
   const lg = (id) => {
-    const m = g.prestigeMult(id);
+    let m = g.prestigeMult(id);
+    const post = g.layerById[id].postMult; // factors after the softcap (mutations): they count in full
+    if (post) m = m.mul(post(g));
     return m.m > 0 ? m.log10() : 0;
   };
   v += wBp * lg('replication') + wSys * lg('expansion');
@@ -258,13 +260,14 @@ export const def = {
       basis: 'matter',
       formula: { threshold: T.repThreshold, exp: T.repExp, softcap: T.repSoftcap },
       mult: (g) => {
-        let m = gainMult(g, 'blueprints').mul(mutGain(g, 'blueprints'));
+        let m = gainMult(g, 'blueprints');
         if (g.upgActive('logistik')) m = m.mul(pow(2, lvl(g, 'logistik')));
         if (g.chDone('c_ohne_bp')) m = m.mul(2);
         if (act(g, 'b_ernte')) m = m.mul(3);
         if (g.hasMs('ex20')) m = m.mul(2);
         return m;
       },
+      postMult: (g) => mutGain(g, 'blueprints'), // Mutationen wirken nach dem Softcap
       blurb: 'Setze Materie und Generatoren zurück und erhalte Blaupausen.',
     },
     {
@@ -277,11 +280,12 @@ export const def = {
       basis: 'blueprints',
       formula: { threshold: T.expThreshold, exp: (g) => T.expExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.expSoftcap },
       mult: (g) => {
-        let m = gainMult(g, 'systems').mul(mutGain(g, 'systems'));
+        let m = gainMult(g, 'systems');
         if (g.chDone('c_zeitlupe')) m = m.mul(2);
         if (act(g, 'b_ernte')) m = m.mul(3);
         return m;
       },
+      postMult: (g) => mutGain(g, 'systems'),
       blurb: 'Setze Replikation zurück und besiedle neue Sternsysteme.',
     },
     {
@@ -295,7 +299,7 @@ export const def = {
       unlockWhen: (g) => g.state.cur.systems.total.gte(T.singUnlock),
       formula: { threshold: T.singThreshold, exp: (g) => T.singExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.singSoftcap },
       mult: (g) => {
-        let m = gainMult(g, 'cores').mul(mutGain(g, 'cores'));
+        let m = gainMult(g, 'cores');
         if (g.chDone('c_gipfel')) m = m.mul(2);
         m = m.mul(pow(2, lvl(g, 'kernbau')));
         m = m.mul(pow(T.kernverdichterMult, lvl(g, 'kernverdichter')));
@@ -303,6 +307,7 @@ export const def = {
         if (g.hasMs('s5')) m = m.mul(1.5);
         return m;
       },
+      postMult: (g) => mutGain(g, 'cores'),
       blurb: 'Setze alles zurück und verdichte die Galaxie zu Quantenkernen. Ab der 2. Singularität wächst der Gewinn mit jeder bisherigen.',
     },
   ],

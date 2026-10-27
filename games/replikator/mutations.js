@@ -30,7 +30,8 @@ const fx = (id) => T.mutFx[id];
 /**
  * Mutation definitions. Effect fields (all optional, each a function of the game or a number):
  *   prod(g)      factor on the whole production (labeled in globalParts)
- *   gain         { blueprints|systems|cores: number | (g) => number }  factor on a prestige gain
+ *   gain         { blueprints|systems|cores: (g) => number }  factor on a prestige gain, applied AFTER the softcaps (layer.postMult): a factor before the
+ *                softcap is cut to its square root and nobody feels it (docs/LESSONS.md)
  *   costDiv      generator cost divisor (< 1 = more expensive)
  *   bundle       added to the bundle bonus
  *   tier(i)      factor on generator tier i (careful: tier factors compound along the chain)
@@ -41,34 +42,46 @@ const fx = (id) => T.mutFx[id];
  *   adj          added to the neighbour bonus step of the map
  * `report` = the one line WR-0 files the first time the mutation is taken (Chronik entry, story.js). No names in it (characters.js).
  */
+const allGain = (fn) => ({ blueprints: fn, systems: fn, cores: fn });
+const GAINS = 'Gewinn von Blaupausen, Sternsystemen und Quantenkernen';
+const trip = (x) => `Erschließungen dauern ×${n(x)} so lang`;
+
 export const MUTATIONS = [
   {
     id: 'hyperaktiv',
     name: 'Hyperaktiv',
     rarity: 'gewoehnlich',
-    benefit: () => `Gesamte Produktion ×${n(fx('hyperaktiv').prod)}`,
-    catch: () => `Autokäufer arbeiten ${n(fx('hyperaktiv').auto)}× langsamer`,
+    benefit: () => `Produktion ×${n(fx('hyperaktiv').prod)}, ${trip(fx('hyperaktiv').trip)}`,
+    catch: () => `${GAINS} ×${n(fx('hyperaktiv').gain)}`,
     prod: () => fx('hyperaktiv').prod,
-    autoSlow: () => fx('hyperaktiv').auto,
-    report: 'Kopie arbeitet schneller als der Auftrag verlangt. Die Automaten kommen nicht hinterher. Wird beobachtet.',
+    trip: () => fx('hyperaktiv').trip,
+    gain: allGain(() => fx('hyperaktiv').gain),
+    split: { benefit: { prod: 1, trip: 1 }, catch: { gain: 1 } },
+    report: 'Kopie arbeitet schneller als der Auftrag verlangt. Dabei geht Material verloren. Wird beobachtet.',
   },
   {
     id: 'gigantismus',
     name: 'Gigantismus',
     rarity: 'gewoehnlich',
-    benefit: () => `Sternschmiede ×${n(fx('gigantismus').top)}`,
-    catch: () => `Bohrdrohne und Schmelzer ×${n(fx('gigantismus').low)}`,
+    benefit: () => `Sternschmiede ×${n(fx('gigantismus').top)}, Sternsystem-Gewinn ×${n(fx('gigantismus').sys)}`,
+    catch: () => `Bohrdrohne und Schmelzer ×${n(fx('gigantismus').low)}, ${trip(fx('gigantismus').trip)}`,
     tier: (i) => (i === 7 ? fx('gigantismus').top : i <= 1 ? fx('gigantismus').low : 1),
-    report: 'Sternschmieden größer als geplant. Bohrdrohnen kleiner als geplant. Gesamtgröße: unverändert. Abweichung toleriert.',
+    gain: { systems: () => fx('gigantismus').sys },
+    trip: () => fx('gigantismus').trip,
+    split: { benefit: { top: 1, sys: 1 }, catch: { low: 1, trip: 1 } },
+    report: 'Sternschmieden größer als geplant. Bohrdrohnen kleiner als geplant. Anflüge dauern. Abweichung toleriert.',
   },
   {
     id: 'sparsam',
     name: 'Sparsam',
     rarity: 'gewoehnlich',
-    benefit: () => `Generatorkosten ÷${n(fx('sparsam').costDiv)}`,
-    catch: () => `Bündelbonus −${n(-fx('sparsam').bundle)}`,
+    benefit: () => `Generatorkosten ÷${n(fx('sparsam').costDiv)}, Sektorpreise ×${n(fx('sparsam').mapCost)}`,
+    catch: () => `Bündelbonus −${n(-fx('sparsam').bundle)}, Blaupausen-Gewinn ×${n(fx('sparsam').bp)}`,
     costDiv: () => fx('sparsam').costDiv,
+    mapCost: () => fx('sparsam').mapCost,
     bundle: () => fx('sparsam').bundle,
+    gain: { blueprints: () => fx('sparsam').bp },
+    split: { benefit: { costDiv: 1, mapCost: 1 }, catch: { bundle: 0, bp: 1 } },
     report: 'Kopie spart am Material. Stabilität nicht geprüft. Prüfung steht aus.',
   },
   {
@@ -78,16 +91,19 @@ export const MUTATIONS = [
     benefit: () => `Blaupausen-Gewinn ×${n(fx('nostalgisch').bp)}`,
     catch: () => `Sternsystem-Gewinn ×${n(fx('nostalgisch').sys)}`,
     gain: { blueprints: () => fx('nostalgisch').bp, systems: () => fx('nostalgisch').sys },
+    split: { benefit: { bp: 1 }, catch: { sys: 1 } },
     report: 'Kopie bevorzugt Blaupausen alter Fassung. Neue Sternsysteme besiedelt sie zögerlich. Zustand: sentimental. Nicht vorgesehen, nicht verboten.',
   },
   {
     id: 'schwarmgeist',
     name: 'Schwarmgeist',
     rarity: 'gewoehnlich',
-    benefit: () => `Produktion +${pct(fx('schwarmgeist').perSector)} je erschlossenem Sektor`,
+    benefit: () => `Produktion und Sternsystem-Gewinn +${pct(fx('schwarmgeist').perSector)} je erschlossenem Sektor`,
     catch: () => `Sektorpreise ×${n(fx('schwarmgeist').mapCost)}`,
     prod: (g) => 1 + fx('schwarmgeist').perSector * claimed(g),
+    gain: { systems: (g) => 1 + fx('schwarmgeist').perSector * claimed(g) },
     mapCost: () => fx('schwarmgeist').mapCost,
+    split: { benefit: { perSector: 0 }, catch: { mapCost: 1 } },
     report: 'Kopie arbeitet besser, wenn andere in der Nähe sind. Neue Sektoren kosten dadurch mehr. Zusammenhang wird geprüft.',
   },
   {
@@ -97,6 +113,7 @@ export const MUTATIONS = [
     benefit: () => `Blaupausen-Gewinn bis ×${n(fx('geduldig').max)}, voll ab ${n(fx('geduldig').full / 60)} Minuten Laufzeit`,
     catch: () => `Zu Beginn eines Laufs nur ×${n(fx('geduldig').min)}`,
     gain: { blueprints: (g) => patience(g) },
+    split: { benefit: { min: 1 }, catch: { max: 1 } },
     report: 'Kopie wartet. Ergebnis nach fünf Minuten: besser. Ergebnis davor: schlechter. Geduld wird nicht beanstandet.',
   },
   {
@@ -104,9 +121,10 @@ export const MUTATIONS = [
     name: 'Fehlerfreudig',
     rarity: 'gewoehnlich',
     benefit: () => `Angebote kommen ${n(fx('fehlerfreudig').offers)}× so oft`,
-    catch: () => `Produktion ×${n(fx('fehlerfreudig').prod)}`,
-    prod: () => fx('fehlerfreudig').prod,
+    catch: () => `Quantenkern-Gewinn ×${n(fx('fehlerfreudig').cores)}`,
     offers: () => fx('fehlerfreudig').offers,
+    gain: { cores: () => fx('fehlerfreudig').cores },
+    split: { benefit: { offers: 1 }, catch: { cores: 1 } },
     report: 'Kopie macht Fehler mit Absicht. Ausbeute sinkt. Begründung der Kopie: Übung. Begründung abgelegt.',
   },
   {
@@ -114,18 +132,20 @@ export const MUTATIONS = [
     name: 'Gründlich',
     rarity: 'gewoehnlich',
     benefit: () => `Quantenkern-Gewinn ×${n(fx('gruendlich').cores)}`,
-    catch: () => `Erschließungen dauern ${n(fx('gruendlich').trip)}× so lange`,
+    catch: () => trip(fx('gruendlich').trip),
     gain: { cores: () => fx('gruendlich').cores },
     trip: () => fx('gruendlich').trip,
+    split: { benefit: { cores: 1 }, catch: { trip: 1 } },
     report: 'Kopie prüft jeden Kern doppelt. Anflüge dauern länger. Gründlichkeit vermerkt.',
   },
   {
     id: 'nachtschwaermer',
     name: 'Nachtschwärmer',
     rarity: 'selten',
-    benefit: () => `Produktion offline ×${n(fx('nachtschwaermer').off)}`,
-    catch: () => `Produktion online ×${n(fx('nachtschwaermer').on)}`,
-    prod: (g) => (g.offlineNow ? fx('nachtschwaermer').off : fx('nachtschwaermer').on),
+    benefit: () => `Gewinne offline ×${n(fx('nachtschwaermer').off)}`,
+    catch: () => `Gewinne online ×${n(fx('nachtschwaermer').on)}`,
+    gain: allGain((g) => (g.offlineNow ? fx('nachtschwaermer').off : fx('nachtschwaermer').on)),
+    split: { benefit: { off: 1 }, catch: { on: 1 } },
     report: 'Kopie arbeitet besser, wenn niemand zusieht. Wartung bemüht sich, nicht zuzusehen. Erfolg: mäßig.',
   },
   {
@@ -133,10 +153,11 @@ export const MUTATIONS = [
     name: 'Mosaik',
     rarity: 'selten',
     benefit: () => `Nachbarbonus der Sektoren +${pct(T.mapAdjStep + fx('mosaik').adj)} statt +${pct(T.mapAdjStep)} je Nachbar`,
-    catch: () => `Produktion ×${n(fx('mosaik').prod)}`,
-    prod: () => fx('mosaik').prod,
+    catch: () => trip(fx('mosaik').trip),
     adj: () => fx('mosaik').adj,
-    report: 'Kopie stellt Gleiches zu Gleichem. Ordnung gestiegen. Leistung gesunken. Ordnung hat Vorrang.',
+    trip: () => fx('mosaik').trip,
+    split: { benefit: { adj: 0 }, catch: { trip: 1 } },
+    report: 'Kopie stellt Gleiches zu Gleichem. Ordnung gestiegen. Anflüge dauern länger. Ordnung hat Vorrang.',
   },
   {
     id: 'kolonialist',
@@ -145,49 +166,61 @@ export const MUTATIONS = [
     benefit: () => `Sternsystem-Gewinn ×${n(fx('kolonialist').sys)}`,
     catch: () => `Blaupausen-Gewinn ×${n(fx('kolonialist').bp)}`,
     gain: { systems: () => fx('kolonialist').sys, blueprints: () => fx('kolonialist').bp },
+    split: { benefit: { sys: 1 }, catch: { bp: 1 } },
     report: 'Kopie besiedelt mit Begeisterung. Baupläne bleiben liegen. Begeisterung wird abgeheftet.',
   },
   {
     id: 'buendelfieber',
     name: 'Bündelfieber',
     rarity: 'selten',
-    benefit: () => `Bündelbonus +${n(fx('buendelfieber').bundle)}`,
-    catch: () => `Generatorkosten ×${n(1 / fx('buendelfieber').costDiv)}`,
+    benefit: () => `Bündelbonus +${n(fx('buendelfieber').bundle)}, ${trip(fx('buendelfieber').trip)}`,
+    catch: () => `Generatorkosten ×${n(1 / fx('buendelfieber').costDiv)}, Sternsystem-Gewinn ×${n(fx('buendelfieber').sys)}`,
     bundle: () => fx('buendelfieber').bundle,
+    trip: () => fx('buendelfieber').trip,
     costDiv: () => fx('buendelfieber').costDiv,
+    gain: { systems: () => fx('buendelfieber').sys },
+    split: { benefit: { bundle: 0, trip: 1 }, catch: { costDiv: 1, sys: 1 } },
     report: 'Kopie bündelt Bauteile. Bündel sind teurer. Bündelung: bestätigt.',
   },
   {
     id: 'glueckstreffer',
     name: 'Glückstreffer',
     rarity: 'glueck',
-    benefit: () => `Gesamte Produktion ×${n(fx('glueckstreffer').prod)}`,
-    catch: () => `Quantenkern-Gewinn ×${n(fx('glueckstreffer').cores)}`,
+    benefit: () => `Produktion ×${n(fx('glueckstreffer').prod)}, ${GAINS} ×${n(fx('glueckstreffer').gain)}`,
+    catch: () => trip(fx('glueckstreffer').trip),
     prod: () => fx('glueckstreffer').prod,
-    gain: { cores: () => fx('glueckstreffer').cores },
-    report: 'Kopie funktioniert, und niemand weiß, warum. Kerne fallen kleiner aus. Ursache: ungeklärt. Ergebnis: gut. Prüfung entfällt.',
+    gain: allGain(() => fx('glueckstreffer').gain),
+    trip: () => fx('glueckstreffer').trip,
+    split: { benefit: { prod: 1, gain: 1 }, catch: { trip: 1 } },
+    report: 'Kopie funktioniert, und niemand weiß, warum. Anflüge dauern länger. Ursache: ungeklärt. Ergebnis: gut. Prüfung entfällt.',
   },
   {
     id: 'ueberschuss',
     name: 'Überschuss',
     rarity: 'glueck',
-    benefit: () => `Gewinn von Blaupausen, Sternsystemen und Quantenkernen ×${n(fx('ueberschuss').gain)}`,
-    catch: () => `Produktion ×${n(fx('ueberschuss').prod)}`,
-    gain: { blueprints: () => fx('ueberschuss').gain, systems: () => fx('ueberschuss').gain, cores: () => fx('ueberschuss').gain },
+    benefit: () => `${GAINS} ×${n(fx('ueberschuss').gain)}`,
+    catch: () => `Produktion ×${n(fx('ueberschuss').prod)}, Sektorpreise ×${n(fx('ueberschuss').mapCost)}`,
+    gain: allGain(() => fx('ueberschuss').gain),
     prod: () => fx('ueberschuss').prod,
+    mapCost: () => fx('ueberschuss').mapCost,
+    split: { benefit: { gain: 1 }, catch: { prod: 1, mapCost: 1 } },
     report: 'Kopie erzeugt mehr, als sie verbraucht. Überschuss ist nicht vorgesehen. Wird trotzdem verbucht.',
   },
   {
     id: 'chimaere',
     name: 'Chimäre',
     rarity: 'glueck',
-    benefit: () => `Produktion ×${n(fx('chimaere').perSlot)} je besetztem Genomplatz`,
+    benefit: () => `Produktion ×${n(fx('chimaere').perSlot)} und ${GAINS} ×${n(fx('chimaere').gainSlot)} je besetztem Genomplatz`,
     catch: () => `Angebote kommen halb so oft`,
     prod: (g) => Math.pow(fx('chimaere').perSlot, filled(g)),
+    gain: allGain((g) => Math.pow(fx('chimaere').gainSlot, filled(g))),
     offers: () => fx('chimaere').offers,
+    split: { benefit: { perSlot: 1, gainSlot: 1 }, catch: { offers: 1 } },
     report: 'Kopie besteht aus mehreren Kopien. Alle Kopien melden dasselbe. Meldungen kommen seltener.',
   },
 ];
+/** Which tune.js numbers belong to the benefit and which to the catch, with their neutral values (tools/mutations-replikator.mjs measures each side alone). */
+export const MUT_SPLIT = Object.fromEntries(MUTATIONS.map((m) => [m.id, m.split]));
 export const MUT_BY_ID = Object.fromEntries(MUTATIONS.map((m) => [m.id, m]));
 
 /* ------------------------------------------------------------------ */
@@ -306,7 +339,7 @@ export function mutExtra(g) {
   v -= T.mutMapCostW * lg(mutMapCost(g));
   if (hasMut(g, 'nachtschwaermer')) {
     const f = fx('nachtschwaermer');
-    v += T.mutOfflineShare * (lg(f.off) - lg(f.on));
+    v += T.mutOfflineShare * T.mutGainW * (lg(f.off) - lg(f.on));
   }
   return v;
 }
