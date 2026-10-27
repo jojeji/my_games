@@ -5,6 +5,7 @@ import { formatNumber as fmt, formatMult, formatPercent } from '../../engine/for
 import { TUNE as T } from './tune.js';
 import { STORY, CHAPTERS } from './story.js';
 import { rep2State, migrateToRep2, productionParts, gainMult, autoClaim, claimedCount, act2Check, mapTick, holdSingularity } from './map.js';
+import { mutParts, mutGain, mutTier, mutCostDiv, mutBundle, mutAutoSlow, mutExtra, mutTick, mutChoose as chooseMutation, mutAutoRun, mutUnlocked, migrateToMut } from './mutations.js';
 
 /** Active level of an upgrade (0 while suppressed by a challenge). */
 const lvl = (g, id) => (g.upgActive(id) ? g.upgLevel(id) : 0);
@@ -45,6 +46,7 @@ export function globalParts(g) {
   const ch = challengeGlobal(g);
   if (ch.gt(1)) parts.push(['Herausforderungen', ch]);
   parts.push(...productionParts(g)); // Akt II: Pulsare, Ruinen, Anomalien (map.js)
+  parts.push(...mutParts(g)); // Akt II: Mutationen (mutations.js)
   return parts;
 }
 
@@ -70,7 +72,7 @@ export function tierMult(g, i) {
   if (i <= 3 && g.chDone('c_enge')) m = m.mul(1.5);
   if (i <= 3 && act(g, 'kolonien')) m = m.mul(2);
   if (i >= 4 && act(g, 'dysonnetz')) m = m.mul(2);
-  return m;
+  return m.mul(mutTier(g, i));
 }
 
 export function startMatter(g) {
@@ -86,7 +88,7 @@ function autoInterval(g) {
   t *= Math.pow(0.5, lvl(g, 'speed'));
   if (g.chDone('c_hand')) t *= 0.5;
   if (act(g, 'c_schnell')) t *= 0.25;
-  return Math.max(0.05, t);
+  return Math.max(0.05, t * mutAutoSlow(g));
 }
 
 /* ------------------------------------------------------------------ */
@@ -144,6 +146,14 @@ export const buyRepUpgrades = (g, group) => g.upgBuyBest(group, repObjective);
 
 /** Akt II: claim the best affordable sector (value = rise of repObjective). The Auto-Erkundung AND the sim's player call exactly this. */
 export const mapAutoClaim = (g) => autoClaim(g, repObjective);
+/**
+ * Akt II: strength for valuing a mutation card = repObjective plus the effects it cannot see (offer rate, trip time, sector price, Nachtschwärmer's offline
+ * share, see mutations.js mutExtra). The Auto-Genom AND the sim's player call mutChoose / mutAutoRun, which value every way to take a card with this.
+ */
+export const mutObjective = (g) => repObjective(g) + mutExtra(g);
+export const mutChoose = (g) => chooseMutation(g, mutObjective);
+export const mutAutoGenom = (g) => mutAutoRun(g, mutObjective);
+
 /** Auto-Singularität and the sim's player both wait for the next sector (map.js holdSingularity). */
 export const singularityHeld = (g) => holdSingularity(g);
 
@@ -191,7 +201,7 @@ const autoGens = tierNames.map((n, i) => ({
 export const def = {
   id: 'replikator',
   title: 'Replikator',
-  version: 3,
+  version: 4,
 
   // v1 -> v2: the one-line story became a Chronik (chronicle.read / chronicle.shown). Entries a v1 save has already seen count as read AND shown,
   // so nobody gets old modals or bubbles again. `backfill` makes hooks.onLoad record the new entries whose condition is already true silently
@@ -207,6 +217,8 @@ export const def = {
     },
     // v2 -> v3: Akt II (state.rep2: map, seed, anchor). A save that already finished version 1 starts Akt II at the next load (hooks.onLoad).
     2: migrateToRep2,
+    // v3 -> v4: Mutationen (state.rep2.mut via mergeDefaults; the offer stream gets a seed derived from the map seed)
+    3: migrateToMut,
   },
 
   extraState: rep2State,
@@ -246,7 +258,7 @@ export const def = {
       basis: 'matter',
       formula: { threshold: T.repThreshold, exp: T.repExp, softcap: T.repSoftcap },
       mult: (g) => {
-        let m = gainMult(g, 'blueprints');
+        let m = gainMult(g, 'blueprints').mul(mutGain(g, 'blueprints'));
         if (g.upgActive('logistik')) m = m.mul(pow(2, lvl(g, 'logistik')));
         if (g.chDone('c_ohne_bp')) m = m.mul(2);
         if (act(g, 'b_ernte')) m = m.mul(3);
@@ -265,7 +277,7 @@ export const def = {
       basis: 'blueprints',
       formula: { threshold: T.expThreshold, exp: (g) => T.expExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.expSoftcap },
       mult: (g) => {
-        let m = gainMult(g, 'systems');
+        let m = gainMult(g, 'systems').mul(mutGain(g, 'systems'));
         if (g.chDone('c_zeitlupe')) m = m.mul(2);
         if (act(g, 'b_ernte')) m = m.mul(3);
         return m;
@@ -283,7 +295,7 @@ export const def = {
       unlockWhen: (g) => g.state.cur.systems.total.gte(T.singUnlock),
       formula: { threshold: T.singThreshold, exp: (g) => T.singExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.singSoftcap },
       mult: (g) => {
-        let m = gainMult(g, 'cores');
+        let m = gainMult(g, 'cores').mul(mutGain(g, 'cores'));
         if (g.chDone('c_gipfel')) m = m.mul(2);
         m = m.mul(pow(2, lvl(g, 'kernbau')));
         m = m.mul(pow(T.kernverdichterMult, lvl(g, 'kernverdichter')));
@@ -621,6 +633,20 @@ export const def = {
         mapAutoClaim(g);
       },
     },
+    {
+      id: 'auto_genom',
+      name: 'Auto-Genom',
+      desc: 'Prüft jedes Angebot: nimmt die Mutation mit dem größten Zuwachs (bei vollem Genom tauscht er die schwächste aus) oder verwirft das Angebot, wenn keine hilft.',
+      group: 'genom',
+      where: 'Genom-Tab (und Generatoren-Tab, Automatisierung)',
+      kind: 'misc',
+      defaults: { on: false },
+      unlock: (g) => mutUnlocked(g) && (claimedCount(g) >= T.mutAutoAt || g.state.rep2.mut.taken >= T.mutAutoTaken),
+      interval: () => 1,
+      run: (g) => {
+        mutAutoGenom(g);
+      },
+    },
     ...autoGens,
     prestigeAuto({
       id: 'auto_rep',
@@ -724,13 +750,13 @@ export const def = {
       if (act(g, 'kompress')) d = d.mul(g.upgEffect('kompress'));
       if (act(g, 'handel')) d = d.mul(g.upgEffect('handel'));
       if (act(g, 'b_kosten')) d = d.mul(30);
-      return d;
+      return d.mul(mutCostDiv(g));
     },
     bundleMult: (g) => {
       if (g.rule('noBundle', false)) return 1;
       let b = 2 + 0.05 * lvl(g, 'buendel') + 0.02 * lvl(g, 'buendel2');
       if (g.chDone('c_buendel')) b += 0.05;
-      return b;
+      return Math.max(1, b + mutBundle(g));
     },
     genGlobalMult: (g) => globalParts(g).reduce((acc, [, v]) => acc.mul(v), ONE),
     genTierMult: (g, chain, i) => tierMult(g, i),
@@ -751,6 +777,7 @@ export const def = {
     onTick: (g, dt) => {
       act2Check(g);
       mapTick(g, dt);
+      mutTick(g, dt);
       const c = g.chActive();
       const st = g.state.auto.auto_chal;
       if (c && st.on && g.autoUnlocked('auto_chal') && g.chRunTime() > T.chTimeout) {

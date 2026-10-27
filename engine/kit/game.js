@@ -36,6 +36,7 @@ export class Game {
     this.autoById = byId(def.autos);
     this.cache = { mult: {}, own: {}, rate: {}, maxTier: {}, global: {}, prod: {} };
     this.slow = 0;
+    this.offlineNow = false; // true while the runtime (or a sim) catches up an absence (engine/core.js simulateOffline)
     this.out = () => {}; // event sink, replaced by the runtime (engine/core.js)
     this.state = createState(def);
     this.refresh();

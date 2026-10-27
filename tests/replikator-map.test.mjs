@@ -387,8 +387,8 @@ function loadFixture({ awaySeconds = 0, storage } = {}) {
 
 test('migration 2 -> 3 with the real end-of-v1 save: it starts Akt II with a map, a stable seed and an anchor from the banked stock', () => {
   const { g } = loadFixture();
-  assert.equal(g.version, 3);
-  assert.equal(g.state.v, 3);
+  assert.equal(g.version, 4);
+  assert.equal(g.state.v, 4);
   const r = g.state.rep2;
   assert.equal(r.act2, true, 'Akt II starts on load');
   assert.equal(r.map.cells.length, 19);
@@ -427,7 +427,7 @@ test('migration 2 -> 3: a v2 save keeps everything, gets rep2 with a seed derive
   const fresh = createReplikator();
   createRuntime(fresh, { storage: createStorage(backend), now: () => 1000 }).load();
   assert.equal(fresh.state.rep2.act2, false);
-  assert.equal(fresh.state.v, 3);
+  assert.equal(fresh.state.v, 4);
   assert.equal(fresh.state.rep2.rng.seed, g.migrations[2]({ time: { created: 5 } }).rep2.rng.seed);
 });
 

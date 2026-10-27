@@ -7,7 +7,7 @@ import { formatNumber as fmt, formatMult } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import {
   SECTOR, SECTOR_ORDER, mapCells, mapOf, neighbors, isVisible, canClaim, claim, claimCost, claimedCount, occupiedCount, bonusRows,
-  sameNeighbors, previewClaim, tripOf, tripSecs,
+  sameNeighbors, previewClaim, tripOf, tripSecs, adjStep,
 } from './map.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -182,14 +182,14 @@ export function buildGalaxyTab(ctx) {
       const k = SECTOR[c.type];
       const cnt = c.own ? sameNeighbors(cs, i) : Math.min(T.mapAdjMax, neighbors(cs)[i].filter((j) => cs[j].own && cs[j].type === c.type).length);
       const base = T.mapBase[c.type];
-      const own = Math.pow(base, 1 + T.mapAdjStep * cnt);
+      const own = Math.pow(base, 1 + adjStep(g) * cnt);
       rows.push([k.effect, formatMult(own) + (cnt ? ` (Basis ${formatMult(base)})` : ' je Sektor')]);
       rows.push(['Gleichartige Nachbarn', `${cnt} von max. ${T.mapAdjMax}`]);
       if (!c.own) {
         const pv = previewClaim(g, i);
         rows.push(['Gesamt dieses Typs', `${formatMult(pv.before)} → ${formatMult(pv.after)}`]);
       }
-      hint = `Jeder erschlossene Nachbar gleichen Typs verstärkt den Effekt: +${Math.round(T.mapAdjStep * 100)} % auf den Exponenten, höchstens ${T.mapAdjMax} Nachbarn zählen.`;
+      hint = `Jeder erschlossene Nachbar gleichen Typs verstärkt den Effekt: +${Math.round(adjStep(g) * 100)} % auf den Exponenten, höchstens ${T.mapAdjMax} Nachbarn zählen.`;
     }
     if (c.type === 'ruine' && st !== 'fog') rows.push(['Einmalig', 'Ein Eintrag in der Chronik']);
     const cost = claimCost(g);

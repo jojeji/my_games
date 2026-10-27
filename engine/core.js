@@ -72,10 +72,12 @@ export function createRuntime(logic, opts = {}) {
     const events = [];
     if (logic.plogOffline) logic.plogOffline(used);
     bus.muted = events;
+    logic.offlineNow = true; // lets a game treat offline production differently (Replikator: mutation Nachtschwärmer)
     try {
       advance(logic, used);
     } finally {
       bus.muted = null;
+      logic.offlineNow = false;
     }
     const after = logic.snapshot();
     if (logic.state && logic.state.time) logic.state.time.offline += used;

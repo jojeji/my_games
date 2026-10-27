@@ -21,7 +21,8 @@ import { readFileSync } from 'node:fs';
 import { advance } from '../engine/core.js';
 import { createSaveStore } from '../engine/save.js';
 import { createReplikator } from '../games/replikator/logic.js';
-import { chPower, buyRepUpgrades, mapAutoClaim, singularityHeld } from '../games/replikator/def.js';
+import { chPower, buyRepUpgrades, mapAutoClaim, singularityHeld, mutAutoGenom } from '../games/replikator/def.js';
+import { MUT_BY_ID, RARITY } from '../games/replikator/mutations.js';
 import { TUNE as T } from '../games/replikator/tune.js';
 import { formatNumber as f, formatDuration } from '../engine/format.js';
 
@@ -79,7 +80,7 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
   if (act2) {
     stopAtEnd = false;
   }
-  const map = { start: null, claims: [], echo: [] }; // Akt II: times (sim seconds) of the start, each claimed sector and each Echo occupation
+  const map = { start: null, claims: [], echo: [], mut: [] }; // Akt II: times (sim seconds) of the start, each claimed sector, each Echo occupation and each offer / choice
   if (act2 && g.state.rep2.act2) map.start = 0; // a loaded save that already is in Akt II
   if (S.autosOff) for (const a of g.def.autos) if (a.kind === 'prestige') g.state.auto[a.id].on = false;
   let t = 0;
@@ -127,6 +128,16 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
     } else if (type === 'map-claim') {
       map.claims.push({ t, n: p.n, type: p.type });
       note(`Sektor ${p.n} erreicht: ${p.type} (+${hms(t - (map.start ?? 0))} seit Akt II)`);
+    } else if (type === 'mut-offer') {
+      const row = { t, kind: 'offer', n: p.n, cards: p.cards, claimed: g.state.rep2.map.claimed };
+      map.mut.push(row);
+      note(`Angebot ${p.n}: ` + p.cards.map((id) => `${MUT_BY_ID[id].name} (${RARITY[MUT_BY_ID[id].rarity].name})`).join(' | '), 'quiet');
+    } else if (type === 'mut-take') {
+      map.mut.push({ t, kind: 'take', id: p.id, lost: p.lost, n: p.n });
+      note(`  -> genommen: ${MUT_BY_ID[p.id].name}${p.lost ? ' statt ' + MUT_BY_ID[p.lost].name : ''}  [Genom: ${g.state.rep2.mut.genome.map((x) => MUT_BY_ID[x].name).join(', ')}]`, 'quiet');
+    } else if (type === 'mut-discard') {
+      map.mut.push({ t, kind: 'discard' });
+      note('  -> verworfen', 'quiet');
     } else if (type === 'echo-occupy') {
       map.echo.push({ t, n: p.n });
       note(`Das Echo besetzt einen Sektor (${p.n})`);
@@ -181,7 +192,10 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
   };
 
   const player = () => {
-    if (act2 && g.state.rep2.act2) while (mapAutoClaim(g)); // before the Auto-Erkundung unlocks the player claims by hand, with the same function (everything affordable, before any reset)
+    if (act2 && g.state.rep2.act2) {
+      while (mapAutoClaim(g)); // before the Auto-Erkundung unlocks the player claims by hand, with the same function (everything affordable, before any reset)
+      mutAutoGenom(g); // the Auto-Genom's decision (def.js), taken by hand before it unlocks
+    }
     research();
     buyRepUpgrades(g, 'expansion'); // the same value-based buying as the in-game autobuyers (def.js)
     buyRepUpgrades(g, 'replication');
@@ -240,10 +254,12 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
         t += d;
         if (checkEnd()) done = true;
       };
+      g.offlineNow = true;
       try {
         advance(g, used);
       } finally {
         delete g.tick;
+        g.offlineNow = false;
       }
       g.state.time.offline += used;
       offlineSecs += used;
@@ -301,6 +317,19 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
       const rel = (x) => (map.start == null ? '-' : hms(x - map.start));
       console.log(`Akt II: Start ${map.start == null ? 'nicht erreicht' : hms(map.start)}; Sektoren (seit Start): ` + (map.claims.map((c) => `${c.n}:${rel(c.t)}`).join(' ') || '-'));
       console.log('Echo besetzt (seit Start): ' + (map.echo.map((c) => `${c.n}:${rel(c.t)}`).join(' ') || '-'));
+      const offers = map.mut.filter((x) => x.kind === 'offer');
+      console.log(`Mutationen: ${offers.length} Angebote, ${map.mut.filter((x) => x.kind === 'take').length} genommen, ${map.mut.filter((x) => x.kind === 'discard').length} verworfen; Genom: ` + (g.state.rep2.mut.genome.map((x) => MUT_BY_ID[x].name).join(', ') || '-'));
+      if (verbose) {
+        console.log('Angebote und Entscheidungen (Minuten seit Akt II):');
+        let cur = null;
+        for (const x of map.mut) {
+          if (x.kind === 'offer') {
+            cur = x;
+            console.log(`  ${rel(x.t)}  Sektoren ${x.claimed}  Angebot ${x.n}: ` + x.cards.map((id) => `${MUT_BY_ID[id].name}[${RARITY[MUT_BY_ID[id].rarity].name[0]}]`).join(' | '));
+          } else if (x.kind === 'take') console.log(`           genommen: ${MUT_BY_ID[x.id].name}${x.lost ? ' (ersetzt ' + MUT_BY_ID[x.lost].name + ')' : ''}`);
+          else console.log('           verworfen');
+        }
+      }
     }
     console.log(snapshotLine());
     console.log(

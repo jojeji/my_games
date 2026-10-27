@@ -93,6 +93,45 @@ export const TUNE = {
   mapTries: 8,
   // Effect of ONE sector without neighbours (x per sector): gain of Sternsysteme / Blaupausen / Quantenkerne, production
   mapBase: { haufen: 2, nebel: 2, pulsar: 2, loch: 1.5, ruine: 1.15, anomalie: 1.1 },
+
+  // Akt II - Mutationen (games/replikator/mutations.js). Offers charge by PLAY TIME (online and offline equally), never per replication:
+  // per-replication charging would reward micro-replications (docs/LESSONS.md).
+  mutUnlockAt: 3, // claimed sectors; the first offer is there at once
+  mutEvery: 1500, // seconds of play time per offer ...
+  mutGrow: 1.03, // ... times this per offer so far (slowly growing)
+  mutQueueMax: 3, // pending offers; when full the charge stops (nothing is lost, nothing punished)
+  mutCards: 3,
+  mutRarity: { gewoehnlich: 70, selten: 25, glueck: 5 }, // weights per card
+  genomeSlots: 3, // slots at the start ...
+  genomeSlotAt: [6, 10], // ... +1 at these claimed-sector counts (the galaxy archive adds more later), at most genomeMax
+  genomeMax: 6,
+  mutAutoAt: 10, // Auto-Genom unlocks with this many claimed sectors ...
+  mutAutoTaken: 5, // ... or this many chosen mutations
+  // Auto-Genom / sim: a card is taken when it raises the objective (log10) by at least mutMinGain; weights for effects repObjective cannot see
+  mutMinGain: 0.02, // free slot
+  mutSwapGain: 0.08, // with a full genome (the replaced mutation is lost, so the card has to be clearly better)
+  mutOfferW: 1.0, // per decade of offer rate
+  mutTripW: 1.0, // per decade of Erschliessung time (a longer trip is worse)
+  mutMapCostW: 0.5, // per decade of sector price
+  mutOfflineShare: 0.6, // assumed share of play time spent offline (Nachtschwärmer)
+  // Strength of every mutation (benefit and catch); texts in mutations.js are built from these numbers
+  mutFx: {
+    hyperaktiv: { prod: 2.5, auto: 2 },
+    gigantismus: { top: 10, low: 0.5 },
+    sparsam: { costDiv: 30, bundle: -0.1 },
+    nostalgisch: { bp: 3, sys: 0.7 },
+    schwarmgeist: { perSector: 0.08, mapCost: 1.5 },
+    geduldig: { max: 3, min: 0.5, full: 300 }, // Blaupausen-Gewinn: min at the start of a run, max from `full` s on
+    fehlerfreudig: { offers: 2, prod: 0.8 },
+    gruendlich: { cores: 2, trip: 1.5 },
+    nachtschwaermer: { off: 1.5, on: 0.9 },
+    mosaik: { adj: 0.15, prod: 0.85 },
+    kolonialist: { sys: 3, bp: 0.6 },
+    buendelfieber: { bundle: 0.1, costDiv: 0.5 },
+    glueckstreffer: { prod: 6, cores: 0.5 },
+    ueberschuss: { gain: 2, prod: 0.6 },
+    chimaere: { perSlot: 1.3, offers: 0.5 },
+  },
 };
 
 // Dev only: `TUNE_OVERRIDE='{"singExp":0.5}' node tools/simulate.mjs` for quick balance experiments (Node only).

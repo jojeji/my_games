@@ -9,6 +9,7 @@
 import { D, ONE, Decimal } from '../../engine/decimal.js';
 import { newSeed, rngNext, rngRoll, rngInt, rngShuffle, toSeed } from '../../engine/kit/rng.js';
 import { TUNE as T } from './tune.js';
+import { mutState, mutReset, mutMapCost, mutTrip, mutAdj } from './mutations.js';
 
 /* ------------------------------------------------------------------ */
 /* Hex geometry                                                         */
@@ -83,6 +84,7 @@ export function rep2State() {
       rng: { seed: newSeed() },
       ruins: [], // variants of the claimed Ruinen in claim order (story entries)
       map: { radius: 0, seed: 0, claimed: 0, occupied: 0, trip: null, cells: [] }, // trip: { i, left, dur } while an Erschliessung runs
+      mut: mutState(), // Mutationen (mutations.js), from Akt II on
     },
   };
 }
@@ -180,7 +182,7 @@ export const echoSighted = (g) => {
 };
 
 /** log10 of the price of sector number n+1 (n = sectors claimed so far). */
-export const costLog = (g, n = claimedCount(g)) => R2(g).anchor + T.mapCostOffset + T.mapCostStep * n;
+export const costLog = (g, n = claimedCount(g)) => R2(g).anchor + T.mapCostOffset + T.mapCostStep * n + Math.log10(mutMapCost(g));
 /** Price of the next sector in Sternsysteme (a whole number). */
 export function claimCost(g, n = claimedCount(g)) {
   return Decimal.pow(10, costLog(g, n)).ceil();
@@ -208,7 +210,7 @@ export function claimable(g) {
 }
 
 /** Duration (s) of the Erschliessung of the next sector: grows with the number of sectors claimed so far. */
-export const tripSecs = (g, n = claimedCount(g)) => Math.round(T.mapTripBase * Math.pow(T.mapTripGrow, n));
+export const tripSecs = (g, n = claimedCount(g)) => Math.round(T.mapTripBase * Math.pow(T.mapTripGrow, n) * mutTrip(g));
 /** The running Erschliessung: { i, left, dur } or null. */
 export const tripOf = (g) => (act2Active(g) ? mapOf(g).trip : null);
 
@@ -338,19 +340,23 @@ export function sameNeighbors(cells, i) {
 }
 
 /** Effect of one claimed sector: base ^ (1 + mapAdjStep * same-type neighbours). */
-export function sectorMult(cells, i) {
+export function sectorMult(cells, i, step = T.mapAdjStep) {
   const c = cells[i];
   const base = T.mapBase[c.type];
   if (!base) return ONE;
-  return D(base).pow(1 + T.mapAdjStep * sameNeighbors(cells, i));
+  return D(base).pow(1 + step * sameNeighbors(cells, i));
 }
+
+/** Share of the effect exponent a same-type neighbour adds (a mutation can raise it). */
+export const adjStep = (g) => T.mapAdjStep + mutAdj(g);
 
 /** Product of all claimed sectors of one type. */
 export function typeMult(g, type) {
   if (!act2Active(g)) return ONE;
   const cells = mapCells(g);
+  const step = adjStep(g);
   let m = ONE;
-  for (let i = 0; i < cells.length; i++) if (cells[i].own && cells[i].type === type) m = m.mul(sectorMult(cells, i));
+  for (let i = 0; i < cells.length; i++) if (cells[i].own && cells[i].type === type) m = m.mul(sectorMult(cells, i, step));
   return m;
 }
 
@@ -453,6 +459,7 @@ export function act2Check(g) {
   r.act2At = g.state.time.played;
   r.anchor = T.mapAnchorFixed != null ? T.mapAnchorFixed : best.m > 0 ? Math.max(0, T.mapAnchorSlope * best.log10()) : 0;
   r.map = generateMap(r.rng);
+  mutReset(g);
   g.plog('map', `Akt II beginnt, Anker 1e${r.anchor.toFixed(2)}`);
   g.emit('act2', {});
   return true;
