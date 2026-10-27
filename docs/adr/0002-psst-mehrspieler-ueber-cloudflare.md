@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Psst!: Mehrspieler über einen Cloudflare-Spielraum statt Bluetooth oder WebRTC
