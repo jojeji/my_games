@@ -63,7 +63,8 @@ Einstieg = Ende v1. Die Sonde empfängt ein schwaches Signal aus der eigenen Gal
 - Hex-Karte mit Radius 2 (19 Felder), Zentrum = Heimat (bereits erschlossen). Layout + Sektortypen pro Galaxie aus dem Seed-RNG.
 - **Nebel des Unbekannten:** Typ eines Felds ist erst sichtbar, wenn ein Nachbar erschlossen ist. Erschließen nur neben eigenem Gebiet.
 - **Kosten:** Sternsysteme (der *aktuelle* Bestand, das senkt den Sternsystem-Bonus bis zur nächsten Expansion – bewusste Abwägung).
-  Kosten wachsen pro erschlossenem Sektor (`mapCostBase * mapCostGrow^n`). Erschlossene Sektoren überleben Ebene 1–3, nur der Galaxiensprung setzt die Karte zurück.
+  Umgesetzt (Paket 2): Preis `10^(anker + mapCostOffset + mapCostStep * n)` mit `anker = mapAnchorSlope * log10(Sternsysteme-Bestwert)` beim Akt-II-Start (im Spielstand), siehe `tune.js` und `docs/LESSONS.md`.
+  Erschlossene Sektoren überleben Ebene 1–3, nur der Galaxiensprung setzt die Karte zurück.
 - **Sektortypen** (Effekte global oder gezielt, Nachbarn gleichen Typs verstärken: +50 % Effekt-Exponent pro Nachbar, max. 3):
   - Sternhaufen: Sternsystem-Gewinn ×
   - Nebel: Blaupausen-Gewinn ×

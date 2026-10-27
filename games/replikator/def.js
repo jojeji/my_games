@@ -4,6 +4,7 @@ import { prestigeAuto } from '../../engine/kit/game.js';
 import { formatNumber as fmt, formatMult, formatPercent } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import { STORY, CHAPTERS } from './story.js';
+import { rep2State, migrateToRep2, productionParts, gainMult, autoClaim, claimedCount, act2Check } from './map.js';
 
 /** Active level of an upgrade (0 while suppressed by a challenge). */
 const lvl = (g, id) => (g.upgActive(id) ? g.upgLevel(id) : 0);
@@ -43,6 +44,7 @@ export function globalParts(g) {
   if (act(g, 'z_horizont')) parts.push(['Ereignishorizont', D(100)]);
   const ch = challengeGlobal(g);
   if (ch.gt(1)) parts.push(['Herausforderungen', ch]);
+  parts.push(...productionParts(g)); // Akt II: Pulsare, Ruinen, Anomalien (map.js)
   return parts;
 }
 
@@ -140,6 +142,9 @@ export function repObjective(g) {
 /** Blaupausen- / Expansions-Upgrades: used by the in-game autobuyers AND the sim (same logic, same result). */
 export const buyRepUpgrades = (g, group) => g.upgBuyBest(group, repObjective);
 
+/** Akt II: claim the best affordable sector (value = rise of repObjective). The Auto-Erkundung AND the sim's player call exactly this. */
+export const mapAutoClaim = (g) => autoClaim(g, repObjective);
+
 /* ------------------------------------------------------------------ */
 /* Definition                                                          */
 /* ------------------------------------------------------------------ */
@@ -184,7 +189,7 @@ const autoGens = tierNames.map((n, i) => ({
 export const def = {
   id: 'replikator',
   title: 'Replikator',
-  version: 2,
+  version: 3,
 
   // v1 -> v2: the one-line story became a Chronik (chronicle.read / chronicle.shown). Entries a v1 save has already seen count as read AND shown,
   // so nobody gets old modals or bubbles again. `backfill` makes hooks.onLoad record the new entries whose condition is already true silently
@@ -198,7 +203,11 @@ export const def = {
       data.v = 2;
       return data;
     },
+    // v2 -> v3: Akt II (state.rep2: map, seed, anchor). A save that already finished version 1 starts Akt II at the next load (hooks.onLoad).
+    2: migrateToRep2,
   },
+
+  extraState: rep2State,
 
   currencies: [
     { id: 'matter', name: 'Materie', layer: 0, start: 10 },
@@ -235,7 +244,7 @@ export const def = {
       basis: 'matter',
       formula: { threshold: T.repThreshold, exp: T.repExp, softcap: T.repSoftcap },
       mult: (g) => {
-        let m = ONE;
+        let m = gainMult(g, 'blueprints');
         if (g.upgActive('logistik')) m = m.mul(pow(2, lvl(g, 'logistik')));
         if (g.chDone('c_ohne_bp')) m = m.mul(2);
         if (act(g, 'b_ernte')) m = m.mul(3);
@@ -254,7 +263,7 @@ export const def = {
       basis: 'blueprints',
       formula: { threshold: T.expThreshold, exp: (g) => T.expExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.expSoftcap },
       mult: (g) => {
-        let m = ONE;
+        let m = gainMult(g, 'systems');
         if (g.chDone('c_zeitlupe')) m = m.mul(2);
         if (act(g, 'b_ernte')) m = m.mul(3);
         return m;
@@ -272,7 +281,7 @@ export const def = {
       unlockWhen: (g) => g.state.cur.systems.total.gte(T.singUnlock),
       formula: { threshold: T.singThreshold, exp: (g) => T.singExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.singSoftcap },
       mult: (g) => {
-        let m = ONE;
+        let m = gainMult(g, 'cores');
         if (g.chDone('c_gipfel')) m = m.mul(2);
         m = m.mul(pow(2, lvl(g, 'kernbau')));
         m = m.mul(pow(T.kernverdichterMult, lvl(g, 'kernverdichter')));
@@ -595,6 +604,21 @@ export const def = {
 
   /* ----------------------------- autobuyers ----------------------------- */
   autos: [
+    // first in the list: runs before the prestige autos in the same tick, so the Sternsysteme are spent before a Singularität wipes them
+    {
+      id: 'auto_map',
+      name: 'Auto-Erkundung',
+      desc: 'Erschließt den besten bezahlbaren Sektor der Galaxiekarte, sobald du ihn dir leisten kannst.',
+      group: 'map',
+      where: 'Galaxie-Tab (und Generatoren-Tab, Automatisierung)', // hint toast on unlock; the switch is in both places
+      kind: 'misc',
+      defaults: { on: false },
+      unlock: (g) => claimedCount(g) >= T.mapAutoAt,
+      interval: () => 1,
+      run: (g) => {
+        mapAutoClaim(g);
+      },
+    },
     ...autoGens,
     prestigeAuto({
       id: 'auto_rep',
@@ -718,8 +742,10 @@ export const def = {
         delete c.backfill;
         g.storyBackfill();
       }
+      act2Check(g); // after the backfill: the Akt II entries are real news for an old save
     },
     onTick: (g) => {
+      act2Check(g);
       const c = g.chActive();
       const st = g.state.auto.auto_chal;
       if (c && st.on && g.autoUnlocked('auto_chal') && g.chRunTime() > T.chTimeout) {

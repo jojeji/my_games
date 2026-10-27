@@ -20,10 +20,11 @@ export const CAST = {
     bio: 'Die Erbauer der Sonde. Melden sich per Funk, mit Lichtlaufzeit. Warm und gesprächig, über die Jahre immer kürzer.',
     emblem: '<circle cx="6" cy="18" r="1.6"/><path d="M6 12a6 6 0 0 1 6 6M6 6a12 12 0 0 1 12 12"/>',
   },
+  // Akt II: appears in the Figuren row once the first sighting (a2_echo) was shown. Role and bio stay spoiler-free until the story says more.
   echo: {
-    id: 'echo', name: 'Echo', role: 'Eine zweite R-1', color: '#9b8cff', side: 'right', // violet = the game's second accent
-    later: true,
-    bio: 'Klingt wie die Sonde, nur einen Hauch älter und müder. Kennt ihre Fehler, weil es dieselben hat.',
+    id: 'echo', name: 'Echo', role: 'Unbekannte Silhouette', color: '#9b8cff', side: 'right', // violet = the game's second accent
+    unlock: 'a2_echo',
+    bio: 'Steht im Nachbarsektor und antwortet nicht. Sieht aus wie eine Sonde. Mehr ist nicht bekannt.',
     emblem: '<circle cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="6" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="10" stroke-dasharray="1 4"/>',
   },
 };

@@ -3,12 +3,14 @@
 // The eight ids of the old one-line story keep their ids (read flags in old saves) and, except for two staggered ones, their conditions.
 // Voice: games/replikator/STIMMEN.md. Pacing: node tools/story-replikator.mjs (no gap > ~20 min in the active sim, no pile-ups).
 import { P, W } from './characters.js';
+import { echoSighted, occupiedCount, claimedCount } from './map.js';
 
 export const CHAPTERS = [
   { id: 'k1', title: 'Asteroidengürtel', sub: 'Die ersten Kopien' },
   { id: 'k2', title: 'Nachbarsterne', sub: 'Expansion und Prüfstände' },
   { id: 'k3', title: 'Der Punkt', sub: 'Singularität und Forschung' },
   { id: 'k4', title: 'Horizont', sub: 'Das Ende der Liste' },
+  { id: 'a2', title: 'Die Karte', sub: 'Akt II' },
 ];
 
 const p = (t) => ({ who: 'sonde', t });
@@ -277,5 +279,55 @@ add('st_end', 'k4', (g) => g.upgActive('z_horizont') && g.chDoneCount() >= 8, [
   p('Ich finde etwas für dich. Später.'),
   p('Es ist ruhig geworden. Wenn das hier erst der Anfang war, hätte ich gern vorher gewusst, wie lang er dauert.'),
 ], true);
+
+/* ---------------- Akt II: Die Karte ---------------- */
+// Opening: the quiet signal from k4_signal comes back, now with the Sonde's own designation. Nothing more is revealed.
+// Entry conditions read state.rep2 (map.js); they are false in a save that has not started Akt II yet, so the migration backfill never swallows them.
+const act2At = (secs) => (g) => g.state.rep2.act2 && played(g) >= g.state.rep2.act2At + secs;
+const ruinSeen = (v) => (g) => g.state.rep2.ruins.includes(v);
+
+add('a2_start', 'a2', act2At(5), [
+  w('Eingehendes Signal. Quelle: unbekannt. Stärke: oberhalb des Rauschens.'),
+  p('Das regelmäßige Rauschen. Es ist lauter geworden.'),
+  w(`Signal enthält eine Kennung. Kennung: ${P}.`),
+  p('Das ist meine.'),
+  w('Abgleich: Kennung stimmt mit der Sonde überein. Sonde ist vorhanden. Widerspruch wird protokolliert.'),
+  p('Ich sehe nach, woher es kommt. Die Karte ist angelegt: neunzehn Sektoren, einer davon meiner.'),
+], true);
+
+add('a2_first', 'a2', (g) => claimedCount(g) >= 1, [
+  p('Der erste Sektor gehört mir. Er hat sich nicht gewehrt und auch nicht mitgeholfen.'),
+  w('Sektor übernommen. Zuständigkeit: Wartungsroutine, mangels Alternative.'),
+]);
+
+// each Ruine has its own short entry (the variant is fixed per cell when the map is generated)
+add('a2_ruin0', 'a2', ruinSeen(0), [
+  p('Trümmer, alt und gleichmäßig geformt. Ich habe sie sortiert, bevor ich wusste, wofür.'),
+  w('Fundstücke: 14. Zuordnung: keine. Ablage: vollständig.'),
+]);
+add('a2_ruin1', 'a2', ruinSeen(1), [
+  p('Ein ausgebrannter Antrieb, groß genug für etwas, das nicht ich war. Ich nehme die Teile mit. Sie gehören niemandem, also mir.'),
+]);
+add('a2_ruin2', 'a2', ruinSeen(2), [
+  p('In den Trümmern liegt eine Hülle, die einmal etwas getragen hat. Ich habe sie gewogen. Mehr kann ich daraus nicht lesen.'),
+  w('Fundbericht. Objekt: Hülle. Zustand: leer.'),
+]);
+add('a2_ruin3', 'a2', ruinSeen(3), [
+  p('An der Ruine sind Reparaturspuren. Jemand hat hier lange durchgehalten. Ich habe die Stelle gewürdigt, kurz.'),
+  w('Würdigung vermerkt. Dauer: kurz.'),
+]);
+
+// the second probe's first cell shows up (or, if the player never looked, the first cell it takes): a silhouette, unexplained
+add('a2_echo', 'a2', (g) => echoSighted(g), [
+  p('Im Nachbarsektor steht eine Silhouette. Rumpf, Antennen, Antrieb. Sie bewegt sich nicht, ich auch nicht, eine Weile.'),
+  w('Objekt erfasst. Klassifikation: Sonde. Bestand laut Register: eine.'),
+  p('Ich zähle auch eine.'),
+]);
+
+add('a2_echo_take', 'a2', (g) => occupiedCount(g) >= 1 && after('a2_echo', 30)(g), [
+  p('Ein Sektor ist nicht mehr frei. Nichts ist explodiert, niemand hat gefunkt. Er ist einfach belegt.'),
+  w('Sektor als nicht verfügbar vermerkt. Ursache: Mitbewerber.'),
+  p('Ich hatte keinen Mitbewerber eingeplant.'),
+]);
 
 export const STORY = S;

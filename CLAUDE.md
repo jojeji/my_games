@@ -70,6 +70,16 @@ IMPORTANT: the global multiplier is applied only to tier 0 (final output). Multi
 - Names/portraits: only `characters.js` (`CAST[..].img/.sm`, Merlin has one image per age stage, younger with every era). Story texts use template strings with `J`/`L`; a test forbids hard-coded names.
 - Portraits are swappable: replace the webp files; the UI falls back to the initial when an image is missing.
 
+## Replikator Akt II (Paket 2: Galaxiekarte)
+- State `state.rep2` via `def.extraState` (`act2`, `act2At`, `anchor`, `rng.seed`, `ruins`, `map{cells,claimed,occupied,seed}`); `def.version = 3`, migration `2 -> 3` seeds the map from `time.created`. `hooks.onLoad/onTick -> act2Check` starts Akt II
+  when v1 is finished (`z_horizont` + 8 challenges, same as `st_end`): flag, time stamp, price anchor, map (seeded RNG). The real end-of-v1 save (`tests/fixtures/replikator-end-v1.json`) starts Akt II on load.
+- `games/replikator/map.js` (pure): hex disc radius 2 (19 axial cells), fog (type visible next to own cells), claim only next to own territory, price `10^(anchor + mapCostOffset + mapCostStep n)` in Sternsysteme (from the current amount),
+  adjacency `base^(1 + 0.5 * same-type neighbours <= 3)` (`mapBase`), effects via `gainMult` (layer `mult`) and `productionParts` (`globalParts`, labeled), the Echo takes a cell per 2 claims (`echoChoice`: pure in map seed + count, never cuts a free cell off, so 12 sectors are always possible).
+  `autoClaim`/`bestClaim` (value = rise of `repObjective`) = `mapAutoClaim` in def.js = the Auto-Erkundung (`auto_map`, off by default, unlocks at `mapAutoAt` sectors) = what the sim's player calls. Everything is tuned in `tune.js` (`map*`).
+- UI: `map-view.js` (SVG hex map, sector card, bonus list) as `options.extraTabs` entry in `main.js`. Engine: `extraTabs`, folding of the layer tabs into "Ebenen" when more than `maxTabs` (6) tabs would show, `formatCompact` for header chips.
+- Sim: `node tools/simulate.mjs --act2 --hours 20 --dt 2` (continues after v1; prints Akt II start, each sector, Echo occupations), `--fixture <save file>`, `--seed N`. Pacing: `tests/sim-replikator-act2-map.test.mjs` (fresh AND fixture), logic: `tests/replikator-map.test.mjs`.
+- Story: chapter `a2` in `story.js` (opening modal `a2_start`, `a2_first`, `a2_ruin0..3`, `a2_echo`, `a2_echo_take`); the Echo is a cast member from `a2_echo` on and does not speak yet; the Missionsleitung stays `later`.
+
 ## Conventions
 - Currency amounts are always `Decimal`; never mutate a Decimal in place. Counts of purchases (`bought`) are plain numbers.
 - Logic must stay DOM-free (runs in Node for tests/sim). UI builds DOM once and only writes changed text (`txt`, `setCls`, ...).

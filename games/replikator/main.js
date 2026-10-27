@@ -7,6 +7,8 @@ import { createRuntime } from '../../engine/core.js';
 import { mountStandardApp } from '../../engine/ui/standard-app.js';
 import { registerServiceWorker } from '../../engine/pwa.js';
 import { formatPercent } from '../../engine/format.js';
+import { buildGalaxyTab } from './map-view.js';
+import { act2Active, claimable, canClaim } from './map.js';
 
 const g = createReplikator();
 const runtime = createRuntime(g);
@@ -26,6 +28,17 @@ mountStandardApp({
     multParts: globalParts,
     chronicle: { cast: CAST, figures: metCast, lineText, defaultWho: 'sonde' }, // Chronik tab, story modals and bubbles (story.js)
     bonusText: (game) => `Erfolgs-Bonus: +${formatPercent(0.02 * game.achCount(), 0)} auf alle Produktion`,
+    // Akt II: the Galaxie tab appears when the map exists; a dot says a sector is affordable
+    extraTabs: [
+      {
+        id: 'galaxie',
+        label: 'Galaxie',
+        icon: 'galaxy',
+        visible: (game) => act2Active(game),
+        dot: (game) => claimable(game).some((i) => canClaim(game, i).ok),
+        build: buildGalaxyTab,
+      },
+    ],
     layers: [
       {
         id: 'replication',

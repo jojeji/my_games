@@ -10,11 +10,19 @@
 // --idle  : shorthand for --act 120 --session 20 ("check in every 2 minutes for ~20 s", phone sessions).
 // --session N : player acts continuously for N seconds at the start of each --act interval (default 0 = one action per interval).
 // --both  : run active (act 1) and idle (act 120) and print a comparison (idle should finish in <= ~2x active time).
+// --act2  : keep playing after the end of version 1 (Akt II: the player also claims map sectors with the SAME function as the Auto-Erkundung,
+//           mapAutoClaim in def.js). Prints the time of every claimed sector and of every Echo occupation (relative to the start of Akt II).
+// --fixture <file> : start from a save file (e.g. tests/fixtures/replikator-end-v1.json) instead of a new game; goes through the real
+//           migrations (and starts Akt II when the save has finished version 1). Combine with --act2 --hours N.
+// --seed N : seed of the map RNG (default fixed, so runs are reproducible)
 // --offline : player checks in every --every H hours (default 8) for --session S seconds (default 120); in between the real offline catch-up
 import { pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
 import { advance } from '../engine/core.js';
+import { createSaveStore } from '../engine/save.js';
 import { createReplikator } from '../games/replikator/logic.js';
-import { chPower, buyRepUpgrades } from '../games/replikator/def.js';
+import { chPower, buyRepUpgrades, mapAutoClaim } from '../games/replikator/def.js';
+import { claimCost } from '../games/replikator/map.js';
 import { TUNE as T } from '../games/replikator/tune.js';
 import { formatNumber as f, formatDuration } from '../engine/format.js';
 
@@ -40,8 +48,26 @@ export const STRATEGY = {
   fixed: null, // { layerId: seconds } prestige exactly when the run of that layer is this old
   skip: [], // layer ids that are never prestiged by the player
   noChallenges: false,
+  mapHold: 0, // Akt II: keep a Singularität run up to this many seconds while the next sector is within reach (0 = off)
+  mapHoldReach: 20, // ... within reach = price <= this factor * Sternsysteme in stock
+  mapHoldUntil: 10, // ... and fewer sectors than this are claimed
   autosOff: false, // switch the in-game prestige autos off (the player logic does the prestiging)
 };
+
+export const SIM_SEED = 7; // a typical layout: of 12 seeds the fresh 10-sector time ranged 47-278 min (median ~2 h), see docs/LESSONS.md
+
+/** A game loaded from a save file text through the real migrations (no offline catch-up). `seed` replaces the map seed of a migrated save. */
+export function loadSaveGame(text, { seed = SIM_SEED } = {}) {
+  const g = createReplikator();
+  const mem = new Map([['mg:replikator:save', text]]);
+  const store = createSaveStore({ id: g.id, version: g.version, migrations: g.migrations, storage: { get: (k) => mem.get(k) ?? null, set: (k, v) => mem.set(k, v), remove: (k) => mem.delete(k) } });
+  const res = store.load();
+  if (!res) throw new Error('Spielstand nicht lesbar');
+  if (seed != null) res.data.rep2 = { ...(res.data.rep2 || {}), rng: { seed } };
+  g.load(res.data);
+  return g;
+}
+export const loadSaveFile = (path, opts) => loadSaveGame(readFileSync(path, 'utf8'), opts);
 
 const hms = (s) => {
   const h = Math.floor(s / 3600);
@@ -50,9 +76,16 @@ const hms = (s) => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 };
 
-export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true, game = null, until = null, offline = null } = {}) {
+export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true, game = null, until = null, offline = null, act2 = false, seed = SIM_SEED } = {}) {
   const S = { ...STRATEGY, ...strategy };
   const g = game || createReplikator();
+  if (!game && seed != null) g.state.rep2.rng.seed = seed; // reproducible map
+  if (act2) {
+    stopAtEnd = false;
+    if (strategy.mapHold === undefined) S.mapHold = 24 * 3600; // the Akt II player keeps a Singularität run while the next sector is within reach (see STRATEGY.mapHold)
+  }
+  const map = { start: null, claims: [], echo: [] }; // Akt II: times (sim seconds) of the start, each claimed sector and each Echo occupation
+  if (act2 && g.state.rep2.act2) map.start = 0; // a loaded save that already is in Akt II
   if (S.autosOff) for (const a of g.def.autos) if (a.kind === 'prestige') g.state.auto[a.id].on = false;
   let t = 0;
   const log = [];
@@ -91,6 +124,15 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
       note(`Layer freigeschaltet: ${g.layerById[p.id].name}`);
     } else if (type === 'milestone') {
       note(`Meilenstein: ${p.def.name}`, 'quiet');
+    } else if (type === 'act2') {
+      map.start = t;
+      note(`=== AKT II beginnt (Anker 1e${g.state.rep2.anchor.toFixed(2)}, Sternsysteme ${f(g.get('systems'))}) ===`);
+    } else if (type === 'map-claim') {
+      map.claims.push({ t, n: p.n, type: p.type });
+      note(`Sektor ${p.n}: ${p.type} (Sternsysteme danach ${f(g.get('systems'))}, +${hms(t - (map.start ?? 0))} seit Akt II)`);
+    } else if (type === 'echo-occupy') {
+      map.echo.push({ t, n: p.n });
+      note(`Das Echo besetzt einen Sektor (${p.n})`);
     }
   };
 
@@ -141,12 +183,22 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
     }
   };
 
+  // experimental: a patient Akt II player keeps the Singularität run (and with it the Sternsysteme stock) while the next sector is within reach
+  const holdSingularity = () => {
+    if (!S.mapHold || !act2 || !g.state.rep2.act2) return false;
+    const m = g.state.rep2.map;
+    if (m.claimed >= S.mapHoldUntil) return false;
+    if (g.state.layers.singularity.runTime > S.mapHold) return false;
+    return claimCost(g).lt(g.get('systems').mul(S.mapHoldReach));
+  };
+
   const player = () => {
+    if (act2 && g.state.rep2.act2) while (mapAutoClaim(g)); // before the Auto-Erkundung unlocks the player claims by hand, with the same function (everything affordable, before any reset)
     research();
     buyRepUpgrades(g, 'expansion'); // the same value-based buying as the in-game autobuyers (def.js)
     buyRepUpgrades(g, 'replication');
     g.genBuyAllMax('matter');
-    if (wantPrestige('singularity', S.singFactor, S.singMinTime, S.singStall, S.singMinGain)) g.prestige('singularity');
+    if (wantPrestige('singularity', S.singFactor, S.singMinTime, S.singStall, S.singMinGain) && !holdSingularity()) g.prestige('singularity');
     else if (wantPrestige('expansion', S.expFactor, S.expMinTime, S.expStall, S.expMinGain)) {
       // do not leave a challenge by expanding: expansion is blocked in challenges anyway
       g.prestige('expansion');
@@ -238,7 +290,7 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
   }
   gaps.sort((a, b) => b.len - a.len);
 
-  const result = { t, endTime, firsts, log, gaps: gaps.slice(0, 8), game: g, upgTimes, checkIns, offlineSecs, lostSecs };
+  const result = { t, endTime, firsts, log, gaps: gaps.slice(0, 8), game: g, upgTimes, checkIns, offlineSecs, lostSecs, map };
   if (!quiet) {
     console.log('\n=== Zusammenfassung ===');
     for (const id of ['replication', 'expansion', 'singularity']) {
@@ -257,6 +309,11 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
           .join(' | '),
     );
     console.log('Ende v1: ' + (endTime ? hms(endTime) : 'nicht erreicht in ' + hours + ' h'));
+    if (act2) {
+      const rel = (x) => (map.start == null ? '-' : hms(x - map.start));
+      console.log(`Akt II: Start ${map.start == null ? 'nicht erreicht' : hms(map.start)}; Sektoren (seit Start): ` + (map.claims.map((c) => `${c.n}:${rel(c.t)}`).join(' ') || '-'));
+      console.log('Echo besetzt (seit Start): ' + (map.echo.map((c) => `${c.n}:${rel(c.t)}`).join(' ') || '-'));
+    }
     console.log(snapshotLine());
     console.log(
       'Längste Pausen ohne Kauf/Reset: ' + gaps.slice(0, 5).map((x) => `${formatDuration(x.len)} @${hms(x.from)}`).join(', '),
@@ -273,7 +330,7 @@ function parseArgs(argv) {
       const k = a.slice(2);
       const next = argv[i + 1];
       if (next !== undefined && !next.startsWith('--')) {
-        out[k] = Number(next);
+        out[k] = Number.isNaN(Number(next)) ? next : Number(next);
         i++;
       } else out[k] = true;
     }
@@ -312,6 +369,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     if (a1.endTime && a2.endTime) console.log(`Idle/Aktiv = ${(a2.endTime / a1.endTime).toFixed(2)}x`);
     process.exit(0);
   }
-  runSim({ hours: a.hours ?? 30, dt: a.dt ?? 1, act: a.idle ? 120 : a.act ?? 1, session: a.idle ? 20 : a.session ?? 0, quiet: !!a.quiet, verbose: !!a.verbose });
+  const game = typeof a.fixture === 'string' ? loadSaveFile(a.fixture, { seed: a.seed ?? SIM_SEED }) : null;
+  runSim({ hours: a.hours ?? 30, dt: a.dt ?? 1, act: a.idle ? 120 : a.act ?? 1, session: a.idle ? 20 : a.session ?? 0, quiet: !!a.quiet, verbose: !!a.verbose, game, act2: !!a.act2 || !!game, seed: a.seed ?? SIM_SEED });
   console.log(`(Simulation dauerte ${((Date.now() - started) / 1000).toFixed(1)} s Rechenzeit)`);
 }

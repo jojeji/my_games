@@ -67,6 +67,26 @@ export const TUNE = {
 
   // Challenge goals (Materie reached within one replication run)
   chGoal: [1e16, 1e18, 1e20, 1e22, 1e16, 1e44, 1e50, 1e31],
+
+  // Akt II - Galaxiekarte (games/replikator/map.js)
+  mapRadius: 2, // hex disc: 19 cells
+  // Sector price in Sternsysteme (spent from the current amount): 10^(anchor + mapCostOffset + mapCostStep * n), n = sectors claimed so far.
+  // anchor = mapAnchorSlope * log10(Sternsysteme best) when Akt II starts (stored in the save). Measured with tools/simulate.mjs --act2 (see docs/LESSONS.md):
+  // the active economy saturates at ~1e7 Sternsysteme per Singularität run (soft caps), whether the save finished version 1 after 11 h (best 1.6e6)
+  // or sat idle for 70 h (best 9.4e7), so the price level must follow the banked stock only weakly (4th root) - a linear anchor would lock the long save out.
+  mapAnchorSlope: 0.25,
+  mapAnchorFixed: null, // a number replaces the measured anchor (later galaxies)
+  mapCostOffset: 3.6,
+  mapCostStep: 0.27,
+  mapEchoEvery: 2, // the Echo takes one free cell per this many claimed sectors
+  mapAdjStep: 0.5, // + this share of the effect exponent per same-type claimed neighbour ...
+  mapAdjMax: 3, // ... at most this many neighbours count
+  mapAutoAt: 6, // Auto-Erkundung unlocks with this many claimed sectors
+  // Type mix of the 17 claimable cells and how many layouts are tried (the one with most same-type neighbours wins)
+  mapMix: { haufen: 4, nebel: 3, pulsar: 3, loch: 2, ruine: 3, anomalie: 2 },
+  mapTries: 8,
+  // Effect of ONE sector without neighbours (x per sector): gain of Sternsysteme / Blaupausen / Quantenkerne, production
+  mapBase: { haufen: 2, nebel: 2, pulsar: 2, loch: 1.5, ruine: 1.15, anomalie: 1.1 },
 };
 
 // Dev only: `TUNE_OVERRIDE='{"singExp":0.5}' node tools/simulate.mjs` for quick balance experiments (Node only).

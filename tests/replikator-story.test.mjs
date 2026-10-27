@@ -10,6 +10,7 @@ import { runSim } from '../tools/simulate.mjs';
 import { storyTimeline, storyPacing } from '../tools/story-replikator.mjs';
 
 const OLD_IDS = ['st_start', 'st_rep', 'st_dock', 'st_exp', 'st_chal', 'st_sing', 'st_res', 'st_end'];
+const isV1 = (s) => s.chapter !== 'a2'; // Akt II entries (map.js) have their own tests (replikator-map.test.mjs)
 const FIXTURE_TEXT = readFileSync(new URL('./fixtures/replikator-end-v1.json', import.meta.url), 'utf8');
 const FIXTURE_T = JSON.parse(FIXTURE_TEXT).t;
 const mem = () => {
@@ -18,7 +19,7 @@ const mem = () => {
 };
 const allText = (def) => def.story.flatMap((s) => s.lines.map((l) => l.t));
 
-test('Figuren: Sonde always, Wartungsroutine after st_start, Akt-II-Figuren never in v1', () => {
+test('Figuren: Sonde always, Wartungsroutine after st_start, Akt-II-Figuren not before their story entry', () => {
   const g = createReplikator();
   assert.deepEqual(metCast(g), ['sonde']);
   g.state.chronicle.shown.st_start = true;
@@ -27,6 +28,9 @@ test('Figuren: Sonde always, Wartungsroutine after st_start, Akt-II-Figuren neve
   g.state.chronicle.read.st_start = true;
   assert.ok(isMet(g, 'wartung'));
   assert.ok(!isMet(g, 'mission') && !isMet(g, 'echo'));
+  // the Echo is introduced by the first sighting (Akt II), the Missionsleitung is not met yet
+  g.state.chronicle.shown.a2_echo = true;
+  assert.ok(isMet(g, 'echo') && !isMet(g, 'mission'));
 });
 
 test('cast: role, bio, colour, side and an emblem for everybody; unlock ids exist in the story', () => {
@@ -55,7 +59,7 @@ test('story data: unique ids, chapters and speakers exist, the eight old ids sta
     assert.ok(s.lines.length && s.lines.every((l) => l.t && CAST[l.who] && !CAST[l.who].later), s.id);
     assert.equal(typeof s.cond, 'function', s.id);
   }
-  assert.deepEqual(d.story.filter((s) => s.modal).map((s) => s.id), ['st_start', 'st_sing', 'k4_horizont', 'st_end']);
+  assert.deepEqual(d.story.filter((s) => s.modal).map((s) => s.id), ['st_start', 'st_sing', 'k4_horizont', 'st_end', 'a2_start']);
   // the old setup survives: the first copy carries the flaws of the original
   const rep = d.story.find((s) => s.id === 'st_rep');
   assert.ok(rep.lines.some((l) => /Fehler/.test(l.t) && /Original/.test(l.t)));
@@ -66,6 +70,7 @@ test('names only via characters.js; no Bobiverse terms; house style rules for th
   for (const c of Object.values(CAST)) assert.ok(!src.includes(c.name), 'hard-coded name ' + c.name);
   const g = createReplikator();
   const texts = allText(g.def).join('\n');
+  const v1texts = g.def.story.filter(isV1).flatMap((s) => s.lines.map((l) => l.t)).join('\n');
   assert.ok(texts.includes(P) && texts.includes(W), 'placeholders resolve to the cast names');
   for (const bad of ['Bob', 'GUPPI', 'Deltan', 'Anderen', 'Others', 'Replikant']) assert.ok(!new RegExp(bad).test(texts), bad);
   for (const s of g.def.story) {
@@ -78,6 +83,8 @@ test('names only via characters.js; no Bobiverse terms; house style rules for th
     assert.ok(!t.trimEnd().endsWith('?'), 'closing question: ' + s.id);
   }
   // the Missionsleitung and the Echo are Akt II: nobody mentions them in version 1
+  assert.ok(!/Missionsleitung|Echo/.test(v1texts));
+  // ... and in Akt II the texts do not name them yet either: the Echo does not speak, the Missionsleitung comes later
   assert.ok(!/Missionsleitung|Echo/.test(texts));
 });
 
@@ -94,9 +101,9 @@ test('pacing (active sim): an entry at least every ~25 min until st_end, no pile
   assert.equal(tl.at(-1).id, 'st_end');
   const hint = tl.findIndex((e) => e.id === 'k4_signal');
   assert.ok(hint > 0 && hint >= tl.length - 4, 'hint late in the story');
-  assert.equal(r.game.def.story.filter((s) => s.lines.some((l) => /Signal/.test(l.t))).length, 1);
+  assert.equal(r.game.def.story.filter((s) => isV1(s) && s.lines.some((l) => /Signal/.test(l.t))).length, 1);
   // every entry that exists was reached in the sim (nothing unreachable)
-  assert.deepEqual(r.game.def.story.filter((s) => r.game.state.story[s.id] === undefined).map((s) => s.id), []);
+  assert.deepEqual(r.game.def.story.filter((s) => isV1(s) && r.game.state.story[s.id] === undefined).map((s) => s.id), []);
 });
 
 test('new game: the first entry is the start modal, bubbles are on by default', () => {
@@ -121,32 +128,35 @@ function loadFixture({ awaySeconds = 0 } = {}) {
 
 test('migration 1 -> 2: the real v1 save gets no modal flood; seen entries are read, new ones are silently backfilled and unread', () => {
   const { g, events } = loadFixture();
-  assert.equal(g.version, 2);
+  assert.equal(g.version, 3);
   const c = g.state.chronicle;
   assert.ok(!('backfill' in c), 'one-time flag removed');
   for (const id of OLD_IDS) assert.ok(c.read[id] && c.shown[id], 'old entry counts as read and shown: ' + id);
-  // nothing pops up: no modal, no bubble backlog
+  // nothing pops up at load: no modal, no bubble backlog (the Akt II opening is real news and follows a few seconds later, see below)
   assert.deepEqual(g.storyPendingModals().map((e) => e.id), []);
   assert.deepEqual(g.storyBubbleBacklog().map((e) => e.id), []);
+  assert.ok(g.state.rep2.act2, 'the finished v1 save starts Akt II');
   // entries whose condition is true for this save are in the Chronik, unread
   const stamped = g.def.story.filter((s) => g.state.story[s.id] !== undefined);
   const unread = g.storyUnread();
   assert.equal(unread, stamped.length - OLD_IDS.length);
+  assert.ok(stamped.every(isV1), 'Akt II entries are not swallowed by the backfill');
   assert.ok(unread >= 40, 'backfilled: ' + unread);
   // old time stamps are untouched, the new entries keep the story order of the Chronik
   assert.equal(g.state.story.st_end, 49480.56353398053);
   const order = g.storyList().map((x) => x.def.id);
   assert.deepEqual(order, g.def.story.map((s) => s.id).filter((id) => order.includes(id)));
-  // later play does not fire anything again
+  // later play fires nothing old again; only the Akt II opening arrives, as a modal
   advance(g, 30);
-  assert.deepEqual(events, []);
-  assert.deepEqual(g.storyPendingModals().map((e) => e.id), []);
+  assert.deepEqual(events, ['a2_start']);
+  assert.deepEqual(g.storyPendingModals().map((e) => e.id), ['a2_start']);
 });
 
 test('migration 1 -> 2 with offline catch-up: still no modal, and the unread entries show up as one Chronik badge, not as bubbles', () => {
   const { g, off } = loadFixture({ awaySeconds: 12 * 3600 });
   assert.ok(off && off.seconds > 3600);
-  assert.deepEqual(g.storyPendingModals().map((e) => e.id), []);
+  // 12 h away: the Akt II opening happened meanwhile and waits as the one modal; the old entries stay quiet
+  assert.deepEqual(g.storyPendingModals().map((e) => e.id), ['a2_start']);
   assert.deepEqual(g.storyBubbleBacklog().map((e) => e.id), []);
   assert.ok(g.storyUnread() >= 40);
 });
