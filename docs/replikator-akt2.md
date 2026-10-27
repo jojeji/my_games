@@ -135,6 +135,19 @@ Einstieg = Ende v1. Die Sonde empfängt ein schwaches Signal aus der eigenen Gal
   Offline-Szenario gemessen und dokumentiert. Laufdauer-Test für alle Ebenen.
 - `docs/LESSONS.md` um die Erkenntnisse ergänzen.
 
+## Kalibrierung mit dem echten Spielstand
+
+Fixture `tests/fixtures/replikator-end-v1.json` (Export vom 2026-10-27, Zustand ohne Erfolge/Protokoll):
+- 86,9 h Gesamtzeit, davon **84,7 h offline (97,5 %)**. v1-Ende nach 13,7 h, danach 73 h reines Weiterlaufen ohne neue Ziele.
+- Die Läufe werden immer länger (Replikation zuletzt 2,8 h, Expansion 8 h, Singularität 14 h): klassische Wand, wenn nichts mehr kommt.
+- Größenordnungen gegenüber dem Sim-Ende von v1 (10,5 h): Sternsysteme gesamt 2,4e8 statt 3,9e5, Quantenkerne 5,4e4 statt 1,1e4, Materie-Bestwert 1e127 statt 1e53.
+
+Folgerungen (verbindlich für Paket 2–5):
+- **Kosten und Gewinne von Akt II dürfen nicht linear an v1-Währungen hängen.** Mit festen Sternsystem-Preisen erschließt dieser Spielstand die ganze Karte sofort.
+  Kartenkosten deshalb relativ (z. B. Anteil des aktuellen Bestands oder in log-Skala), Saatkern-Gewinn mit kleinem Exponenten auf Quantenkerne.
+- Zwei Testfälle für jedes Paket: frischer v1-Abschluss (Sim) **und** diese Fixture. Beide müssen Akt II mit ähnlichem Tempo erleben (Faktor ≤ 2).
+- Die Fixture läuft durch `game.load()` + Migration und muss den Akt-II-Einstieg auslösen (Test).
+
 ## Technik
 
 - `def.version = 2`, Migration `1 → 2` (neue Keys über `mergeDefaults`, alte Story-Flags bleiben).
