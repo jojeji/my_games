@@ -102,3 +102,15 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - Cloudflare Worker `psst-room` läuft unter `https://psst-room.joeylauterbach.workers.dev`. Er wird über **Cloudflare Workers Builds** veröffentlicht (Git-Anbindung, Pfad `workers/psst-room`), ohne API-Token in GitHub.
 - Getestet: zwei WebSocket-Clients im selben Raum, Nachricht in ~27 ms weitergeleitet, Verbindungsaufbau ~0,7 s (aus einem Cloud-Container gemessen).
 - Free Plan: Durable Objects müssen SQLite-basiert sein (`new_sqlite_classes` in der Migration). Den Hibernation-WebSocket-API verwenden (`ctx.acceptWebSocket`), damit ruhende Räume nichts kosten.
+
+## Nachtrag: Psst! Mehrspieler umgesetzt
+- **Geheimhaltung braucht den Routing-Worker.** Der erste Relay-Worker verteilt jede Nachricht an alle: Karten an `to`-adressierte Geräte kommen bei allen auf dem Draht an (gemessen: 5 Karten-Frames bei Rater und Fernseher). Der Client filtert sie weg, das DOM bleibt sauber, aber nur der neue Worker hält sie auch aus dem Netz. Den `hostKey` deshalb nie über ein unbekanntes Relay senden.
+- **Neuen Worker lokal testen geht**: `npm i wrangler` im Scratch-Verzeichnis, `wrangler dev --local` (workerd wird per npm geladen). Der Origin `http://localhost:8765` ist erlaubt, so läuft die komplette Browser-E2E ohne Deploy. `wrangler` legt `.wrangler/` im Worker-Ordner ab (in `.gitignore`).
+- **Host-Reload ist ein Rennen**: Die Kartenpakete laden asynchron, die Gäste klopfen schon an. Ohne Sperre wurden sie als neue Lobby-Spieler angelegt und sahen die Lobby statt des Spiels. Jetzt ignoriert der Host Nachrichten, bis der Zustand geladen ist, und ruft die Geräte danach mit `host-hello` zurück.
+- **Reload eines Gastes**: Der Host sieht den alten Socket noch als verbunden (kein `peer-leave` bei einem alten Relay, bei einem toten Socket auch beim neuen nicht sofort). Beitritt per Name übernimmt deshalb auch Plätze, die noch „online“ aussehen.
+- **Erste gültige Aktion gewinnt** ohne Sperren: Jede Aktion trägt die ID der Karte bzw. des Buzzers, die der Absender gesehen hat (`ref`). Ein zweiter Tap hat eine veraltete `ref` oder trifft die falsche Phase und wird ignoriert.
+- **Uhr**: Der Host sendet die Endzeit in Host-Zeit, Gäste rechnen mit dem Offset des Ping/Pong-Samples mit der kleinsten Laufzeit. Test mit absichtlich 7,8 s vorgehender Host-Uhr.
+- **iOS-Sperrbildschirm**: Socket kann „offen“ aussehen und tot sein. Beim Zurückkehren sofort ein Ping, kommt in 2,5 s nichts, neuer Socket. Der Host baut beim Zurückkehren immer neu auf. Wake Lock zusätzlich in Lobby und Spiel.
+- **CSS**: `.view > main { display:flex }` (Spezifität 0,1,1) überschreibt ein einfaches `.tv { display:grid }`; der Fernseher brauchte `.view > main.tv`.
+- **Playwright**: `text=Raum erstellen` trifft auch die Überschrift „Neuen Raum erstellen“ (Teilstring). Für Buttons `getByRole('button', {name, exact:true})` nehmen.
+

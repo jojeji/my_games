@@ -1,0 +1,127 @@
+/* Psst! multiplayer (loaded after style.css). Phones: same light party theme. Anzeige (Fernseher): dark, huge type, landscape. */
+
+/* ---------- connection chrome ---------- */
+.mp-conn { position: fixed; z-index: 250; top: max(2px, env(safe-area-inset-top)); left: 3px; display: inline-flex; align-items: center; gap: 6px; padding: 0; border-radius: 999px; font-size: 12px; font-weight: 800; pointer-events: none; }
+.mp-conn:has(.mp-conn-text:not(:empty)) { padding: 3px 8px 3px 6px; background: rgba(255, 255, 255, 0.92); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); }
+.mp-conn[hidden], .mp-conn-banner[hidden] { display: none; }
+.mp-conn i { width: 10px; height: 10px; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8); border-radius: 50%; background: var(--good); display: block; }
+.mp-conn.warn i { background: #e6a100; animation: pulse 1s infinite; }
+.mp-conn.bad i { background: var(--bad); }
+.mp-conn .mp-conn-text:empty { display: none; }
+.mp-conn-banner { position: fixed; z-index: 249; left: 50%; transform: translateX(-50%); width: max-content; top: max(28px, calc(env(safe-area-inset-top) + 24px)); max-width: min(92vw, 460px); padding: 8px 16px; border-radius: 999px; font-weight: 800; font-size: 14px; text-align: center; pointer-events: none; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25); }
+.mp-conn-banner.warn { background: #fff3cf; color: #5a3a00; border: 2px solid #e6b422; }
+.mp-conn-banner.bad { background: #fff0ee; color: var(--bad); border: 2px solid var(--bad); }
+
+/* ---------- small pieces ---------- */
+.hint.center { text-align: center; }
+.mp-topline { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 8px; }
+.mp-topline .icon-btn { margin-left: auto; }
+.mp-wait { display: flex; align-items: center; justify-content: center; gap: 10px; text-align: center; color: var(--muted); font-weight: 800; padding: 14px; min-height: 60px; }
+.mp-wait.big { flex-direction: column; font-size: 18px; padding: 48px 16px; }
+.spinner { width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--tc, var(--primary)); animation: spin 0.9s linear infinite; flex: none; }
+.mp-wait.big .spinner { width: 36px; height: 36px; border-width: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.mp-warn { background: #fff3cf; border: 2px solid #e6b422; color: #5a3a00; border-radius: 16px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.busy { opacity: 0.6; }
+.mp-note { text-align: center; color: var(--muted); font-weight: 700; }
+.mp-note.err { color: var(--bad); }
+.mp-error { background: var(--paper); border: 2px solid var(--line); border-left: 8px solid var(--bad); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.mp-error h2 { font-size: 22px; font-weight: 900; }
+.mp-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #b9a89c; flex: none; margin-right: 6px; }
+.mp-dot.on { background: var(--good); }
+.mp-chip { padding: 0 14px 0 12px; }
+.mp-chip.off { opacity: 0.55; }
+.tri-static { width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; color: #fff; flex: none; }
+.tri-static.t-richtig { background: var(--good); }
+.tri-static.t-uebersprungen { background: #6b5750; }
+.tri-static.t-buzzer { background: var(--bad); }
+
+/* ---------- Zug by role ---------- */
+.mp-eyebrow { font-weight: 800; color: var(--muted); font-size: 14px; text-align: center; }
+.mp-card-watch { gap: 8px; }
+.mp-count { text-align: center; font-weight: 900; font-size: 20px; }
+.mp-buzz { min-height: 128px; border-radius: 26px; margin-top: 0 !important; }
+.mp-buzz .big { font-size: 40px; letter-spacing: 0.02em; }
+.mp-buzz small { font-size: 14px; }
+.mp-rater { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 8px; }
+.mp-count-big { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.mp-count-big small { font-size: 18px; font-weight: 800; color: var(--muted); margin-bottom: 6px; }
+.mp-count-big b { font-size: 120px; font-weight: 900; color: var(--tc); font-variant-numeric: tabular-nums; }
+.mp-pause-note { background: var(--bad); color: #fff; font-weight: 900; border-radius: 999px; padding: 8px 18px; font-size: 20px; }
+.mp-zug .sec { font-size: 64px; }
+.mp-zug.role-rater .clock, .mp-zug.role-zuschauer .clock { margin-top: 4px; }
+
+/* ---------- start / join / lobby ---------- */
+.mp-code-in { text-align: center; font-size: 28px; letter-spacing: 0.3em; text-transform: uppercase; font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+.mp-team-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mp-team-btn { border: 0; border-radius: 18px; background: var(--tc); color: #fff; min-height: 76px; padding: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 18px; box-shadow: 0 4px 0 color-mix(in srgb, var(--tc) 60%, #000); overflow-wrap: anywhere; }
+.mp-team-btn small { font-weight: 700; opacity: 0.95; }
+.mp-team-btn:active { transform: translateY(2px); }
+.mp-invite { align-items: center; }
+.qr-box { background: #fff; border-radius: 16px; padding: 6px; width: min(72vw, 280px); aspect-ratio: 1; border: 2px solid var(--line); }
+.qr-box svg { display: block; width: 100%; height: 100%; }
+.qr-box.small { width: 150px; align-self: center; }
+.mp-code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 52px; font-weight: 900; letter-spacing: 0.14em; padding-left: 0.14em; text-align: center; line-height: 1; }
+.mp-code.small { font-size: 34px; }
+.mp-row { display: flex; gap: 10px; width: 100%; }
+.mp-row .btn { flex: 1; }
+.team-card.mine { box-shadow: 0 0 0 3px var(--tc); }
+.team-card.loose { border-left-color: var(--line); }
+.color-dot.static { display: inline-block; }
+.mp-team-name { font-size: 20px; }
+.mp-devices { display: flex; flex-direction: column; gap: 6px; max-height: 30vh; overflow-y: auto; }
+.mp-devices li { display: flex; align-items: center; gap: 4px; font-weight: 700; }
+.mp-devices li small { margin-left: auto; color: var(--muted); }
+.mp-devices li.off { opacity: 0.6; }
+
+/* ---------- Anzeige (Fernseher) ---------- */
+html.tv-mode { background: #17100d; }
+html.tv-mode body { background: #17100d; }
+html.tv-mode .view { max-width: none; }
+html.tv-mode .mp-conn { background: rgba(255, 255, 255, 0.15); color: #fff; }
+.view > main.tv, .tv { --tcl: color-mix(in srgb, var(--tc) 70%, #fff); flex: 1; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 3vh 3vw; padding: 4vh 3vw; min-height: 100vh; min-height: 100dvh; background: radial-gradient(120vw 80vh at 20% 0%, color-mix(in srgb, var(--tc) 40%, #17100d), #17100d 70%); color: #fff; position: relative; overflow: hidden; }
+.tv-main { display: flex; flex-direction: column; justify-content: center; gap: 2vh; min-width: 0; position: relative; z-index: 2; }
+.tv-side { display: flex; flex-direction: column; justify-content: center; gap: 2vh; min-width: 0; position: relative; z-index: 2; }
+.tv-eyebrow { font-size: 3vh; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tcl); }
+.tv-small { font-size: 3.4vh; font-weight: 700; color: #e9d9cf; }
+.tv-team { font-size: 9vh; line-height: 1; font-weight: 900; color: var(--tcl); overflow-wrap: anywhere; }
+.tv-who { font-size: 6vh; font-weight: 800; }
+.tv-clock { font-size: 30vh; line-height: 0.95; font-weight: 900; font-variant-numeric: tabular-nums; color: #fff; }
+.tv-clock.low { color: #ff7b6e; animation: pulse 1s infinite; }
+.tv-bar { height: 3vh; background: rgba(255, 255, 255, 0.2); max-width: 90%; }
+.tv-bar > i { background: var(--tcl); transition: width 0.1s linear; }
+.tv-bar > i.low { background: #ff7b6e; }
+.tv-count { font-size: 7vh; font-weight: 800; }
+.tv-count b { font-size: 9vh; color: var(--tcl); }
+.tv-timeup { font-size: 16vh; font-weight: 900; color: #ff7b6e; line-height: 1; animation: shake 0.5s; }
+.tv-pause { align-self: flex-start; background: #fff3cf; color: #5a3a00; border-radius: 3vh; padding: 1.5vh 3vh; font-size: 5vh; font-weight: 900; display: flex; flex-direction: column; gap: 0.5vh; }
+.tv-pause.buzz { background: #b3201a; color: #fff; animation: pulse 0.9s infinite; }
+.tv-pause span { font-size: 3vh; font-weight: 700; }
+.tv-scores { display: flex; flex-direction: column; gap: 2vh; }
+.tv-scores li { display: flex; align-items: center; gap: 2vh; background: rgba(255, 255, 255, 0.08); border-left: 1.6vh solid var(--tc); border-radius: 2.4vh; padding: 2vh 2.5vh; }
+.tv-scores li.active { background: color-mix(in srgb, var(--tc) 35%, #17100d); box-shadow: 0 0 0 0.5vh var(--tc); }
+.tv-scores li.lead .tv-pts { color: #ffe27a; }
+.tv-dot { display: none; }
+.tv-name { flex: 1; min-width: 0; font-size: 5.4vh; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-pts { font-size: 8vh; font-weight: 900; font-variant-numeric: tabular-nums; }
+.tv-code { font-size: 3vh; font-weight: 800; color: #b9a89c; text-align: right; letter-spacing: 0.1em; }
+.tv-words { display: flex; flex-wrap: wrap; gap: 1.4vh 1.4vw; }
+.tv-words li { display: inline-flex; align-items: center; gap: 1vh; background: rgba(255, 255, 255, 0.1); border-radius: 2vh; padding: 1vh 2vh; font-size: 5vh; font-weight: 800; border: 0.4vh solid transparent; }
+.tv-words li .ic { font-weight: 900; }
+.tv-words li.r-richtig { border-color: #35c58c; }
+.tv-words li.r-richtig .ic { color: #35c58c; }
+.tv-words li.r-uebersprungen { opacity: 0.7; }
+.tv-words li.r-buzzer { border-color: #ff7b6e; }
+.tv-words li.r-buzzer .ic { color: #ff7b6e; }
+.tv-win .tv-main { align-items: flex-start; }
+.tv .confetti { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.tv-lobby .tv-roomcode { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 22vh; font-weight: 900; letter-spacing: 0.12em; line-height: 1; }
+.tv-lobby .tv-qr { width: 30vh; margin-top: 2vh; }
+.tv-lobby-team { background: rgba(255, 255, 255, 0.08); border-left: 1.6vh solid var(--tc); border-radius: 2.4vh; padding: 2vh 2.5vh; display: flex; flex-direction: column; gap: 0.6vh; }
+.tv-lobby-team b { font-size: 5vh; }
+.tv-lobby-team span { font-size: 3.6vh; color: #e9d9cf; overflow-wrap: anywhere; }
+@media (orientation: portrait) {
+  .tv { grid-template-columns: 1fr; padding: 3vh 5vw; }
+  .tv-clock { font-size: 20vh; }
+  .tv-team { font-size: 7vh; }
+}

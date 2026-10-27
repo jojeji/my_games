@@ -16,6 +16,8 @@ const K = {
   game: 'psst:game',
   reports: 'psst:reports',
   progress: 'psst:progress',
+  mpHost: 'psst:mp-host',
+  mpName: 'psst:mp-name',
 };
 
 export function createStore(storage = createStorage()) {
@@ -69,6 +71,13 @@ export function createStore(storage = createStorage()) {
     /** {packId: playedCount} - last known progress per Kartenpaket (only packs that were loaded can be counted). */
     progress: () => read(K.progress, {}),
     saveProgress: (m) => write(K.progress, m),
+
+    /** Multiplayer: the host's room (code, secret key, lobby, game) so a reload resumes the room. */
+    mpHost: () => read(K.mpHost, null),
+    saveMpHost: (snap) => write(K.mpHost, snap),
+    clearMpHost: () => storage.remove(K.mpHost),
+    mpName: () => read(K.mpName, ''),
+    saveMpName: (n) => write(K.mpName, n),
 
     game: () => read(K.game, null),
     saveGame: (json) => write(K.game, json),

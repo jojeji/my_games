@@ -73,3 +73,16 @@ IMPORTANT: the global multiplier is applied only to tier 0 (final output). Multi
   (`--act N` = player acts every N s, `--idle` = act 120 s for a 20 s session, `--both` = active vs idle comparison, `--verbose` prints every prestige).
 Pacing targets (active + idle) are asserted in `tests/sim.test.mjs` / `tests/sim-idle.test.mjs` (deterministic, fixed time step, ~5 s total; they block deployment).
 The in-game Auto-Challenges (def.js, `chPower`) and the sim's manual challenge logic share the same retry rule; keep them in sync.
+
+## Psst! multiplayer (games/psst, workers/psst-room)
+Vocabulary: `games/psst/GLOSSARY.md`; decision: `docs/adr/0002-*`. The single-phone mode is untouched; "Mehrere Handys (Online)" on the start screen opens it. Needs internet.
+- **Worker** `workers/psst-room/src/index.js` (Durable Object, hibernation API) + pure `routing.js` (tested in Node): envelope `{to?:"<id>"|"host"|"all", t, ...}`, the room sets `from`;
+  `host-hello {hostKey}` makes a socket the host (same key takes over again), `peer-join/peer-leave` go to the host, `welcome {id,hosted,hostPresent}` is the first frame, `host-gone`, `error {code}`;
+  16 KB / 20 sockets limits; client ids come from `?cid=` (reconnects keep their id). Deployed by Workers Builds on push to `main` -> keep changes backward compatible.
+  Test it for real with `npm i wrangler` in a scratch dir and `wrangler dev -c workers/psst-room/wrangler.toml --local --port 8787` (client: `localStorage['psst:server']='ws://localhost:8787'`; Origin `http://localhost:8765` is allowed).
+- **Client** (DOM-free, Node-testable with `tests/helpers/memory-room.mjs`, which runs the real `routing.js`): `net.js` (WebSocket, backoff reconnect, ping/pong clock offset, falls back to the plain broadcast relay when no `welcome` arrives: client-side `to` filter, no hostKey on the wire),
+  `host.js` (host session: lobby, game via unchanged `logic.js`, intent -> logic mapping with role checks, pushes per-role views, persists `psst:mp-host`, resume after reload), `views.js` (`roleOf`, `buildView`: the ONLY place deciding who sees the Karte),
+  `client.js` (guest + `createLocalSession` for the host's own screen), UI: `mp-ui.js` (start/join/lobby/host menu), `mp-views.js` (game screens per role + Anzeige), `mp.css`, `qr.js` + `vendor/qrcode.js` (MIT).
+- Rules: never put a card into a view of Rater/Zuschauer/Anzeige (`tests/psst-mp-game.test.mjs` checks views and wire frames); intents that depend on the screen carry `ref` (card id / buzz number) so the first valid tap wins;
+  card frames are only ever sent with `to` = one client id. Add new intents in `host.js` `intent()` with a role check and a test.
+

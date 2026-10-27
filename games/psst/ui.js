@@ -6,6 +6,7 @@ import { createDeck, createGame, restoreGame, REPORT_REASONS } from './logic.js'
 import { TEAM_COLORS } from './store.js';
 import { topbar, segmented, field, switchRow, stepper, section, sheet } from './widgets.js';
 import { createZugView } from './zug-view.js';
+import { createMultiplayer } from './mp-ui.js';
 
 const TILE_COLORS = ['#e8452c', '#2563eb', '#0f7f50', '#8b3fc8', '#b45309', '#c21d6b', '#0e7490', '#4f46e5'];
 const STAR_RULES = [
@@ -59,15 +60,16 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
     if (A.game.phase === 'tabelle' || A.game.phase === 'ende') updateProgress();
   }
 
-  function updateProgress() {
+  function updateProgress(game = A.game, ids = A.packIds) {
     const prog = store.progress();
-    const played = A.game.deck.played;
-    for (const id of A.packIds) {
+    const played = game.deck.played;
+    for (const id of ids) {
       const cards = packs.peek(id);
       if (cards) prog[id] = cards.reduce((n, c) => n + (played.has(c.id) ? 1 : 0), 0);
     }
     store.saveProgress(prog);
   }
+  A.updateProgress = updateProgress;
 
   function gameHooks() {
     return {
@@ -90,6 +92,8 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
       },
     });
   }
+
+  A.buildDeck = buildDeck;
 
   async function startGame() {
     const ids = [...A.selection].filter((id) => A.index.some((p) => p.id === id));
@@ -142,6 +146,7 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
 
   function go(screen) {
     A.screen = screen;
+    if (screen === 'mp-room') mp.beforeRoom();
     render();
     window.scrollTo(0, 0);
   }
@@ -149,16 +154,18 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
   function render() {
     view.replaceChildren();
     view.className = 'view screen-' + A.screen;
-    const fn = { start, teams, packs: packsScreen, settings, reports }[A.screen];
+    const fn = { start, teams, packs: packsScreen, settings, reports, 'mp-packs': () => packsScreen({ back: 'mp-room', label: 'Fertig', onDone: () => mp.packsDone() }), ...mp.screens }[A.screen];
+    const isMp = A.screen.startsWith('mp-');
     if (A.screen !== 'game') {
       zug.stop();
-      wake.off();
+      if (!isMp) wake.off();
     }
     if (A.screen === 'game') {
       view.append(zug.render());
     } else {
       view.append(fn());
     }
+    mp.updateChrome();
   }
 
   /* ---------- start ---------- */
@@ -181,7 +188,9 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
           ? h('button', { class: 'btn btn-primary btn-xl', type: 'button', onClick: resumeGame },
             h('span', { text: 'Spiel fortsetzen' }), h('small', { text: resumeInfo }))
           : null,
-        h('button', { class: 'btn btn-xl ' + (resumable ? '' : 'btn-primary'), type: 'button', onClick: () => go('teams'), text: 'Neues Spiel' }),
+        h('button', { class: 'btn btn-xl ' + (resumable ? '' : 'btn-primary'), type: 'button', onClick: () => go('teams'), text: 'Spiel mit einem Handy' }),
+        h('button', { class: 'btn btn-xl', type: 'button', onClick: () => go('mp-start') },
+          h('span', { text: 'Mehrere Handys (Online)' }), h('small', { text: 'Jeder mit dem eigenen Handy, optional Fernseher' })),
         h('button', { class: 'btn btn-xl', type: 'button', onClick: () => { A.back = 'start'; go('settings'); }, text: 'Einstellungen' }),
       ),
       packs.demo ? h('p', { class: 'note', text: 'Hinweis: Es werden Demo-Karten verwendet.' }) : null,
@@ -260,9 +269,9 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
 
   /* ---------- Kartenpakete ---------- */
 
-  function packsScreen() {
+  function packsScreen(o = {}) {
     const body = h('div', { class: 'scroll' });
-    const startBtn = h('button', { class: 'btn btn-primary btn-xl', type: 'button', text: 'Spiel starten', onClick: startGame });
+    const startBtn = h('button', { class: 'btn btn-primary btn-xl', type: 'button', text: o.label || 'Spiel starten', onClick: o.onDone || startGame });
     const info = h('div', { class: 'sel-info' });
     const bar = h('footer', { class: 'actionbar' }, info, startBtn);
 
@@ -315,7 +324,7 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
     buildTiles();
     refreshBar();
     if (!A.index && !A.indexError) loadIndex().then(() => { if (A.screen === 'packs') { buildTiles(); refreshBar(); } });
-    return h('main', { class: 'page' }, topbar('Kartenpakete', () => go('teams')), body, bar);
+    return h('main', { class: 'page' }, topbar('Kartenpakete', () => go(o.back || 'teams')), body, bar);
   }
 
   async function loadIndex() {
@@ -456,6 +465,8 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
 
   /* ---------- boot ---------- */
 
+  const mp = createMultiplayer(A);
+  A.mp = mp;
   loadIndex();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
@@ -465,5 +476,6 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
   });
   addEventListener('pagehide', () => store.flushPlayed());
   render();
+  mp.boot(); // ?raum=CODE opens the join screen, an interrupted multiplayer game resumes
   return A;
 }

@@ -1,6 +1,6 @@
 # Psst!
 
-Partyspiel für Teams im selben Raum mit einem Handy: Ein Spieler umschreibt einen Begriff, sein Team rät, ohne dass bestimmte Wörter fallen dürfen.
+Partyspiel für Teams im selben Raum, mit einem Handy oder mit einem Handy pro Spieler: Ein Spieler umschreibt einen Begriff, sein Team rät, ohne dass bestimmte Wörter fallen dürfen.
 
 ## Karten
 
@@ -30,7 +30,7 @@ Der Spieler, der im aktuellen Zug die Karten umschreibt.
 _Avoid_: Erzähler, Sprecher
 
 **Wächter**:
-Ein Spieler eines gegnerischen Teams, der während des Zugs mitliest und bei einem Tabuwort den Buzzer drückt.
+Ein Spieler eines gegnerischen Teams, der während des Zugs mitliest und bei einem Tabuwort den Buzzer drückt. Mit mehreren Handys sind das alle Spieler der anderen Teams, auf Wunsch nur einer pro Zug.
 _Avoid_: Schiedsrichter, Kontrolleur
 
 **Buzzer**:
@@ -55,3 +55,31 @@ Abgeschlossen, wenn jedes Team genau einen Zug hatte.
 
 **Spielmodus**:
 Die Regel, wann ein Spiel endet: Punkteziel, Rundenlimit oder freies Spiel.
+
+## Mehrspieler
+
+**Raum**:
+Die gemeinsame Verbindung aller Geräte eines Spiels mit mehreren Handys. Wer beitritt, ist im Raum; ohne Raum gibt es kein Mehrspieler-Spiel.
+_Avoid_: Sitzung, Session, Lobby (das ist nur der Wartebereich vor dem Start)
+
+**Raumcode**:
+Der fünfstellige Code eines Raums, den man eintippt oder als QR-Code scannt, um beizutreten.
+_Avoid_: PIN, Spielcode
+
+**Lobby**:
+Der Wartebereich eines Raums vor dem Spielstart, in dem die Spieler ihr Team wählen und der Gastgeber die Regeln einstellt.
+
+**Gastgeber**:
+Der Spieler, der den Raum eröffnet. Sein Handy führt das Spiel, er verwaltet Teams und Regeln und spielt wie alle anderen mit.
+_Avoid_: Host, Spielleiter
+
+**Rater**:
+Ein Spieler im Team des Erklärers, der den Suchbegriff erraten soll. Er sieht die Karte nie, nur Uhr, Punkte und wie viele Begriffe erraten wurden.
+_Avoid_: Mitspieler (zu unscharf), Ratender
+
+**Zuschauer**:
+Bei der Option „Nur ein Wächter pro Zug“ ein Spieler der anderen Teams, der in diesem Zug nicht Wächter ist. Er sieht die Karte nicht.
+
+**Anzeige**:
+Ein zusätzliches Gerät, etwa ein Fernseher, das Uhr, Punktestand und die erratenen Wörter groß zeigt, aber nie die aktuelle Karte. Es spielt nicht mit.
+_Avoid_: Bildschirm, Display, TV-Modus
