@@ -22,6 +22,7 @@ import { buildEraTab } from './era-view.js';
 import { CAST, portrait, entryEra, DEDICATION, lineText, metCast, merlinStageList } from './characters.js';
 import { ERAS, IDEAS } from './eras.js';
 import { globalParts, jumpThreshold, zeitMult, ideasOwned, bonusAch } from './def.js';
+import { announceAutoUnlocks } from '../../engine/ui/auto-hints.js';
 import { TUNE as T } from './tune.js';
 
 const FINAL = ERAS.length - 1;
@@ -260,10 +261,8 @@ export function mountMerlin({ root, runtime, offline }) {
 
   runtime.on('achievement', ({ def }) => toast(def.desc, { kind: 'good', title: 'Erfolg: ' + def.name }));
   runtime.on('milestone', ({ def }) => toast(def.desc, { kind: 'good', title: 'Meilenstein: ' + def.name }));
-  // new automation: say where its switch lives (unlocks that happened offline arrive with the offline summary)
-  const announceAuto = ({ def }) => toast(`Neu: ${def.name}${def.where ? ' – Schalter im ' + def.where : ''}`, { kind: 'good', ms: 7000 });
-  runtime.on('auto-unlocked', announceAuto);
-  runtime.on('offline', (s) => (s.events || []).filter((e) => e.type === 'auto-unlocked').forEach((e) => announceAuto(e.payload)));
+  // new automation: say where its switch lives (engine/ui/auto-hints.js; also covers unlocks during offline catch-up)
+  announceAutoUnlocks({ runtime, toast, offline });
   runtime.on('prestige', ({ id, gain }) => toast(`+${fmt(gain)} ${g.currencyById[g.layerById[id].currency].name}`, { kind: 'good', title: g.layerById[id].name }));
   runtime.on('upgrade', ({ id }) => {
     const idea = IDEAS.find((i) => i.id === id);

@@ -5,6 +5,7 @@ import { ICONS } from './icons.js';
 import { mountApp } from './app.js';
 import { openModal } from './modal.js';
 import { buildSettingsPanel } from './settings.js';
+import { announceAutoUnlocks } from './auto-hints.js';
 import { buildStatsPanel, defaultStatRows } from './stats.js';
 import {
   buyModeBar, generatorList, upgradeList, prestigePanel, milestoneList, challengeList, researchTree,
@@ -252,6 +253,16 @@ export function mountStandardApp({ root, runtime, options, offline }) {
   runtime.on('story', ({ def }) => toast(def.text, { kind: 'story', ms: 7000 }));
   runtime.on('prestige', ({ id, gain }) => toast(`+${fmt(gain)} ${cur(g.layerById[id].currency)}`, { kind: 'good', title: g.layerById[id].name }));
   runtime.on('challenge-done', ({ id }) => toast(g.chalById[id].reward, { kind: 'good', title: 'Challenge geschafft: ' + g.chalById[id].name }));
+  // new autobuyer: say where its switch is (prestige autos sit in their layer's tab, all others in the generator tab's "Automatisierung")
+  announceAutoUnlocks({
+    runtime,
+    toast,
+    offline,
+    whereOf: (a) => {
+      const lc = a.kind === 'prestige' && options.layers.find((x) => x.id === a.layer);
+      return lc ? `${lc.label || g.layerById[lc.id].name}-Tab` : `${options.generators.label || 'Generatoren'}-Tab (Automatisierung)`;
+    },
+  });
   runtime.on('offline', (s) => showOfflineSummary(g, s));
   runtime.on('respec', () => toast('Forschung zurückgesetzt.', { kind: 'info' }));
   // offline progress that was simulated while loading (before the UI listened)
