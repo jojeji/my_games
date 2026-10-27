@@ -63,6 +63,14 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - **Story in Spielreihenfolge lesen** (Sim-Transkript mit Zeitstempeln). Ziel: keine Story-Lücken > ~20 min, keine Häufungen beim Epochenwechsel.
 - **Nach jeder Textänderung nach verwaisten Antworten suchen** (eine gestrichene Zeile, auf die die nächste noch antwortet).
 - Namen nur an einer Stelle (`characters.js`), Story-Texte nutzen Platzhalter.
+- **Einzeiler zur Chronik ausbauen (Replikator, 8 → 54 Einträge):**
+  - Die alten IDs behalten, damit Lese-Flags gelten. Zwei Einträge mit demselben Auslöser (`st_exp`/`st_chal`, `st_sing`/`st_res`) per `after(id, Sekunden)` staffeln, sonst Häufung.
+  - Für Lücken ≤ 20 min in 12 h Spielzeit braucht es etwa einen Eintrag alle 12 min. Das geht nur mit vielen kleinen Fortschritts-Auslösern (Kopien-/Expansions-/Kollaps-Zahlen, einzelne Forschungen, Materie-Schwellen) plus einigen Zeit-Füllern. Zeit-Füller an einen Fortschrittseintrag koppeln (`at(sekunden, gate)`), sonst stehen sie bei langsamer Spielweise vor dem, worauf sie sich beziehen.
+  - Eintrag über eine **bestimmte** Challenge (`chDone('c_hand')`), nicht über „die n-te“: Die Reihenfolge ist je nach Spieler anders. Exklusive Forschungsäste in der Bedingung beide zulassen (`a_schmiede || b_entropie`).
+  - Texte, die auf Figuren oder Orte zurückverweisen, brauchen eine Bedingung, die das Vorherige garantiert (der summende Punkt erst ab der ersten Singularität).
+  - Tool: `node tools/story-replikator.mjs [--idle]` druckt das Transkript mit Zeitstempeln, größte Lücken und Häufungen; `tests/replikator-story.test.mjs` sichert ≤ 25 min Lücke und keine Häufung < 1 min ab.
+- **Alter Spielstand bekommt eine Chronik nachträglich:** Migration markiert alles bereits Gesehene als gelesen *und* gezeigt. Neue Einträge, deren Bedingung im Spielstand schon wahr ist, trägt `Game.storyBackfill()` still ein (kein Modal, keine Blase, ungelesen, mit dem Zeitstempel des Vorgängers, damit die Reihenfolge stimmt). Echter Spielstand (86 h, alles erreicht): 0 Modals, 0 Blasen, 45 ungelesene Einträge im Chronik-Tab.
+- **Ohne Fotos:** Pro Figur ein SVG-Emblem (Farbe + Symbol, `avatar({ emblem, color })`). Es trägt die Figur genauso wie ein Portrait, solange Farbe und Seite im Chat konsequent bleiben.
 - **Persönliche Easter Eggs** (Geschenk-Spiele): sparsam, ein bis zwei Zeilen, dort, wo sie zum Thema passen. Die Überraschung gehört ans Ende, nicht als Popup beim Start.
 
 ## Bilder und Figuren
@@ -72,6 +80,7 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
   - Stil zuerst festlegen, die Referenz nur für Merkmale nutzen („do not edit or reuse the photo“).
   - Die Gewichtung der Referenz senken, sonst kommt das Foto 1:1 zurück.
   - Altersstufen aus dem fertigen Bild ableiten, nicht aus dem Foto.
+- **Avatar-Ringe werden von `overflow: hidden` abgeschnitten.** Der Blasen-Stapel braucht ein paar Pixel Innenabstand, sonst fehlt Figuren am Rand der halbe Ring (Screenshot 360×740 zeigte es).
 - Portraits als WebP (512 + 160 px), runde Avatare mit Ring in der Figurenfarbe. Antippen öffnet eine Figurenkarte. Figuren erst zeigen, wenn man ihnen begegnet ist.
 
 ## Arbeitsweise

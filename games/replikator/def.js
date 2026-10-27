@@ -3,6 +3,7 @@ import { D, Decimal, ONE, ZERO } from '../../engine/decimal.js';
 import { prestigeAuto } from '../../engine/kit/game.js';
 import { formatNumber as fmt, formatMult, formatPercent } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
+import { STORY, CHAPTERS } from './story.js';
 
 /** Active level of an upgrade (0 while suppressed by a challenge). */
 const lvl = (g, id) => (g.upgActive(id) ? g.upgLevel(id) : 0);
@@ -183,7 +184,21 @@ const autoGens = tierNames.map((n, i) => ({
 export const def = {
   id: 'replikator',
   title: 'Replikator',
-  version: 1,
+  version: 2,
+
+  // v1 -> v2: the one-line story became a Chronik (chronicle.read / chronicle.shown). Entries a v1 save has already seen count as read AND shown,
+  // so nobody gets old modals or bubbles again. `backfill` makes hooks.onLoad record the new entries whose condition is already true silently
+  // (see Game.storyBackfill): no modal, no bubble, but unread in the Chronik.
+  migrations: {
+    1: (data) => {
+      const seen = {};
+      for (const [id, t] of Object.entries(data.story || {})) if (t !== undefined && t !== false) seen[id] = true;
+      const c = data.chronicle && typeof data.chronicle === 'object' ? data.chronicle : {};
+      data.chronicle = { ...c, read: { ...seen, ...(c.read || {}) }, shown: { ...seen, ...(c.shown || {}) }, backfill: true };
+      data.v = 2;
+      return data;
+    },
+  },
 
   currencies: [
     { id: 'matter', name: 'Materie', layer: 0, start: 10 },
@@ -661,16 +676,10 @@ export const def = {
   /* ----------------------------- achievements ----------------------------- */
   achievements: buildAchievements(),
 
-  story: [
-    { id: 'st_start', text: 'Ein einzelner Prototyp erwacht im Asteroidengürtel. Sein Auftrag: mehr werden.', cond: () => true },
-    { id: 'st_rep', text: 'Die erste Kopie ist fertig – mit allen Fehlern des Originals. Die Blaupausen sind nun gesichert.', cond: (g) => g.state.layers.replication.count >= 1 },
-    { id: 'st_dock', text: 'Orbitale Docks: Die Drohnen bauen nun Werften, die Werften bauen Drohnen, die …', cond: (g) => act(g, 'docks') },
-    { id: 'st_exp', text: 'Ein ganzes Sternsystem ist erschlossen. Der Rest der Galaxie wartet geduldig.', cond: (g) => g.state.layers.expansion.count >= 1 },
-    { id: 'st_chal', text: 'Prüfstände entdeckt: Alte Konstruktionspläne mit seltsamen Auflagen. Wer sie meistert, wird belohnt.', cond: (g) => g.hasMs('ex1') },
-    { id: 'st_sing', text: 'Die Materie kollabiert zu einem einzigen Punkt. Er summt. Er denkt.', cond: (g) => g.state.layers.singularity.count >= 1 },
-    { id: 'st_res', text: 'Quantenkerne erlauben Entscheidungen: Wer man werden will, kostet etwas.', cond: (g) => act(g, 'kern') },
-    { id: 'st_end', text: 'Alle Pfade sind beschritten. Die Galaxie gehört dir – und ist doch nur der Anfang.', cond: (g) => act(g, 'z_horizont') && g.chDoneCount() >= 8 },
-  ],
+  // Chronik (games/replikator/story.js): characters, bubbles and modals, shown by the standard UI via options.chronicle
+  chronicle: true,
+  chapters: CHAPTERS,
+  story: STORY,
 
   settingsDefaults: {},
 
@@ -703,6 +712,13 @@ export const def = {
     },
     upgradeDisabled: (g, u) => u.group === 'replication' && g.rule('noBpUpgrades', false),
     // Auto-Challenges: give up a stuck challenge (works even inside "Handarbeit", which disables autobuyers)
+    onLoad: (g) => {
+      const c = g.state.chronicle;
+      if (c && c.backfill) {
+        delete c.backfill;
+        g.storyBackfill();
+      }
+    },
     onTick: (g) => {
       const c = g.chActive();
       const st = g.state.auto.auto_chal;

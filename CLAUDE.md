@@ -29,6 +29,10 @@ workflow). Add new findings there when you learn something from sims, saves or p
 - `tools/` - `simulate-merlin.mjs` (Merlin sim, see below), `simulate.mjs` (balance sim; `--offline` = check in every 8 h for 2 min, real offline catch-up in between), `runlength-replikator.mjs` (gain/s and time-to-next-layer per fixed run length and phase), `new-game.mjs`, `update-precache.mjs`, `make-icons.mjs` (needs playwright installed elsewhere).
 - `tests/*.test.mjs` - `npm test` (= `node --test "tests/*.test.mjs"`).
 
+- `games/replikator/` Chronik (Paket 1): `characters.js` (Sonde R-1, Wartungsroutine WR-0, Missionsleitung und Echo = Akt II, nur Namen/Rollen/Farben/SVG-Embleme), `story.js` (54 Einträge, Platzhalter `P`/`W`),
+  `STIMMEN.md` (Stimmen-Bibel), `def.version = 2` mit Migration 1 -> 2 (`chronicle.read/shown`, `hooks.onLoad` -> `Game.storyBackfill()`). `node tools/story-replikator.mjs [--idle]` = Transkript + Lücken; Tests in `tests/replikator-story.test.mjs` (inkl. echtem v1-Spielstand).
+  `mountStandardApp` bekommt die Chronik über `options.chronicle = { cast, figures(g), lineText?, defaultWho? }` (Tab Chronik mit Ungelesen-Punkt statt Erfolge-Tab, Erfolge wandern nach „Mehr“, Modals + Blasen); `avatar()` zeichnet `emblem` (SVG-Innenmarkup) statt Foto.
+
 ## Def schema (engine/kit)
 `currencies[{id,name,short?,layer,start}]`, `chains[{id,currency,layer,bundle,bundleMult,tiers[{name,desc,baseCost,costMult,unlock?}]}]` (tier n produces tier n-1,
 cost per purchase = base * costMult^(1/bundle)^owned), `layers[{id,name,plural,verb,layer,currency,basis,formula{threshold,exp,softcap?},mult?,unlockWhen?,blurb}]`
