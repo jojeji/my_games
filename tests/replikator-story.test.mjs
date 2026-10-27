@@ -10,7 +10,7 @@ import { runSim } from '../tools/simulate.mjs';
 import { storyTimeline, storyPacing } from '../tools/story-replikator.mjs';
 
 const OLD_IDS = ['st_start', 'st_rep', 'st_dock', 'st_exp', 'st_chal', 'st_sing', 'st_res', 'st_end'];
-const isV1 = (s) => s.chapter !== 'a2'; // Akt II entries (map.js) have their own tests (replikator-map.test.mjs)
+const isV1 = (s) => !s.chapter.startsWith('a2'); // Akt II entries (map.js) have their own tests (replikator-map.test.mjs)
 const FIXTURE_TEXT = readFileSync(new URL('./fixtures/replikator-end-v1.json', import.meta.url), 'utf8');
 const FIXTURE_T = JSON.parse(FIXTURE_TEXT).t;
 const mem = () => {

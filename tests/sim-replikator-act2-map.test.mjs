@@ -56,7 +56,7 @@ test('the sim is reproducible (same seed, same times)', () => {
 test('the Akt II story entries are spread out in both runs (no two within a minute), the opening comes first', () => {
   for (const r of [fresh, fixture]) {
     const g = r.game;
-    const list = g.storyList().filter((x) => x.def.chapter === 'a2');
+    const list = g.storyList().filter((x) => x.def.chapter.startsWith('a2'));
     assert.ok(list.length >= 4, 'entries: ' + list.map((x) => x.def.id));
     assert.equal(list[0].def.id, 'a2_start');
     for (let i = 1; i < list.length; i++) assert.ok(list[i].t - list[i - 1].t >= 59, `${list[i - 1].def.id} -> ${list[i].def.id}: ${list[i].t - list[i - 1].t} s`);

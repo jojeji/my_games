@@ -97,7 +97,7 @@ export const MUTATIONS = [
     benefit: () => `Blaupausen-Gewinn bis ×${n(fx('geduldig').max)}, voll ab ${n(fx('geduldig').full / 60)} Minuten Laufzeit`,
     catch: () => `Zu Beginn eines Laufs nur ×${n(fx('geduldig').min)}`,
     gain: { blueprints: (g) => patience(g) },
-    report: 'Kopie wartet. Worauf, ist nicht hinterlegt. Ergebnis nach fünf Minuten: besser. Ergebnis davor: schlechter. Geduld wird nicht beanstandet.',
+    report: 'Kopie wartet. Ergebnis nach fünf Minuten: besser. Ergebnis davor: schlechter. Geduld wird nicht beanstandet.',
   },
   {
     id: 'fehlerfreudig',
@@ -207,6 +207,7 @@ export function mutState() {
     replaced: 0, // chosen with a full genome (the old one was lost)
     discarded: 0, // offers thrown away
     seen: {}, // id -> play time of the first time it was taken (story)
+    offerAt: 0, // play time the offer on the table was drawn (story pacing)
     luckyAt: 0, // play time the first Glücksfehler showed up in an offer (0 = none yet)
     bonusSlots: 0, // extra genome slots from outside (galaxy archive, later)
     rng: { seed: newSeed() },
@@ -355,6 +356,7 @@ function ensureOffer(g) {
   if (m.queue <= 0 || m.offer) return;
   m.n += 1;
   m.offer = { cards: drawCards(m, m.genome) };
+  m.offerAt = Math.max(0.001, g.state.time.played);
   if (!m.luckyAt && m.offer.cards.some((id) => MUT_BY_ID[id].rarity === 'glueck')) m.luckyAt = g.state.time.played;
   g.plog('mut', `Angebot ${m.n}: ${m.offer.cards.join(', ')}`);
   g.emit('mut-offer', { n: m.n, cards: m.offer.cards.slice() });

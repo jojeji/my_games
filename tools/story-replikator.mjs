@@ -54,7 +54,7 @@ function act2Transcript(args) {
   advance(r.game, 5);
   const g = r.game;
   const start = g.state.rep2.act2At;
-  const list = g.storyList().filter((x) => x.def.chapter === 'a2');
+  const list = g.storyList().filter((x) => x.def.chapter.startsWith('a2'));
   for (const e of list) {
     console.log(`\n+${hms(e.t - start)}  ${e.def.id}${e.def.modal ? ' [Modal]' : ''}`);
     for (const l of e.def.lines) console.log(`  ${CAST[l.who].name.padEnd(5)} ${lineText(g, l)}`);

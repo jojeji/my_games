@@ -4,6 +4,7 @@
 // Voice: games/replikator/STIMMEN.md. Pacing: node tools/story-replikator.mjs (no gap > ~20 min in the active sim, no pile-ups).
 import { P, W } from './characters.js';
 import { echoSighted, occupiedCount, claimedCount } from './map.js';
+import { MUTATIONS, mutSlots } from './mutations.js';
 
 export const CHAPTERS = [
   { id: 'k1', title: 'Asteroidengürtel', sub: 'Die ersten Kopien' },
@@ -11,6 +12,7 @@ export const CHAPTERS = [
   { id: 'k3', title: 'Der Punkt', sub: 'Singularität und Forschung' },
   { id: 'k4', title: 'Horizont', sub: 'Das Ende der Liste' },
   { id: 'a2', title: 'Die Karte', sub: 'Akt II' },
+  { id: 'a2m', title: 'Kopierfehler', sub: 'Akt II, Genom' },
 ];
 
 const p = (t) => ({ who: 'sonde', t });
@@ -286,7 +288,7 @@ add('st_end', 'k4', (g) => g.upgActive('z_horizont') && g.chDoneCount() >= 8, [
 const act2At = (secs) => (g) => g.state.rep2.act2 && played(g) >= g.state.rep2.act2At + secs;
 const ruinSeen = (v) => (g) => g.state.rep2.ruins.includes(v) && calm(g);
 /** No other Akt II entry within the last minute: arrivals, sightings and occupations can coincide, their entries must not pile up. */
-const calm = (g) => !S.some((e) => e.chapter === 'a2' && g.state.story[e.id] !== undefined && played(g) - g.state.story[e.id] < 60);
+const calm = (g) => !S.some((e) => (e.chapter === 'a2' || e.chapter === 'a2m') && g.state.story[e.id] !== undefined && played(g) - g.state.story[e.id] < 60);
 
 add('a2_start', 'a2', act2At(5), [
   w('Eingehendes Signal. Quelle: unbekannt. Stärke: oberhalb des Rauschens.'),
@@ -331,5 +333,80 @@ add('a2_echo_take', 'a2', (g) => occupiedCount(g) >= 1 && after('a2_echo', 30)(g
   w('Sektor als nicht verfügbar vermerkt. Ursache: Mitbewerber.'),
   p('Ich hatte keinen Mitbewerber eingeplant.'),
 ]);
+
+/* ---------------- Akt II: Kopierfehler (Mutationen, mutations.js) ---------------- */
+// Offers come every ~25 min of play time, so the thread is: the modal at the first offer, a reaction to the first pick, one WR-0 report per
+// mutation the first time it is taken, a few milestones of the genome, and a chain of short observations ('fill', one per offer, 12 min after it
+// was drawn) so that nothing stays quiet for long between two picks. Nothing here names a mutation's effect numbers; the texts fit every genome.
+const mu = (g) => g.state.rep2.mut;
+const had = (id) => (g) => g.state.story[id] !== undefined && g.state.story[id] !== false;
+
+add('mut_first', 'a2m', (g) => mu(g).n >= 1 && calm(g), [
+  w('Prüfbericht. Kopien gleichen einander nicht mehr. Abweichung vom Soll: vorhanden.'),
+  p('Die erste Kopie hatte alle Fehler des Originals, und ich fand das beruhigend. Die neuen Kopien haben eigene.'),
+  w('Fehler des Originals: weiterhin übernommen. Fehler der Kopie: neu. Fehler werden ab jetzt als Genom geführt. Plätze: drei. Mehr sind nicht beantragt.'),
+  p('Ich habe drei Fehler zur Auswahl. Einen kann ich behalten, die anderen vergessen die Kopien wieder.'),
+], true);
+
+add('mut_pick1', 'a2m', (g) => mu(g).taken >= 1 && had('mut_first')(g) && calm(g), [
+  p('Der erste Fehler gehört jetzt zu mir. Ich habe ihn mir ausgesucht, das macht ihn fast zu einer Eigenschaft.'),
+  w('Genom: ein Eintrag. Fehler jetzt ausgewählt statt zufällig. Bewertung offen.'),
+]);
+
+// the WR-0 report of every mutation, the first time it is taken (text lives in MUTATIONS[].report)
+for (const m of MUTATIONS) {
+  add('mut_' + m.id, 'a2m', (g) => mu(g).seen[m.id] !== undefined && had('mut_pick1')(g) && calm(g), [w(m.report)]);
+}
+
+add('mut_full', 'a2m', (g) => mu(g).taken >= 3 && mu(g).genome.length >= mutSlots(g) && calm(g), [
+  p('Das Genom ist voll. Wer etwas Neues will, muss etwas Altes hergeben. Ich dachte, bei Fehlern wäre das einfacher.'),
+  w('Genom ausgelastet. Entsorgung von Fehlern: nicht vorgesehen. Ersatz: auf Antrag.'),
+]);
+
+add('mut_swap', 'a2m', (g) => mu(g).replaced >= 1 && calm(g), [
+  p('Ich habe einen Fehler gegen einen besseren getauscht. Der alte fehlt mir ein bisschen. Das ist Unsinn, er war ein Fehler.'),
+  w('Fehler entfernt. Aufbewahrungsfrist: abgelaufen.'),
+]);
+
+add('mut_lucky', 'a2m', (g) => mu(g).luckyAt > 0 && had('mut_pick1')(g) && calm(g), [
+  p('Unter den Angeboten war einer, bei dem ich nicht weiß, warum er funktioniert. Er funktioniert. Ich möchte ihn nicht verstehen müssen.'),
+  w('Klassifikation: Glücksfehler. Prüfung ergebnislos, aber freundlich.'),
+]);
+
+add('mut_slot4', 'a2m', (g) => mu(g).started && mutSlots(g) >= 4 && had('mut_pick1')(g) && calm(g), [
+  p('Das Genom hat einen Platz mehr. Ich habe ihn nicht beantragt. Er war einfach da.'),
+  w('Platz verbucht. Planstelle: ungeklärt.'),
+]);
+
+add('mut_slot5', 'a2m', (g) => mu(g).started && mutSlots(g) >= 5 && had('mut_slot4')(g) && calm(g), [
+  w('Genom: fünf Plätze. Wartungsroutine hat keinen davon.'),
+  p('Ich leihe dir einen, wenn einer übrig ist.'),
+]);
+
+add('mut_discard', 'a2m', (g) => mu(g).discarded >= 1 && had('mut_pick1')(g) && calm(g), [
+  p('Ich habe ein Angebot ausgeschlagen. Es war nichts dabei, was ich sein wollte.'),
+  w('Verwerfen vermerkt. Rückgabe an den Zufall: erfolgt.'),
+]);
+
+add('mut_auto', 'a2m', (g) => g.autoUnlocked('auto_genom') && had('mut_pick1')(g) && calm(g), [
+  p('Die Wartung kann die Fehler jetzt vorsortieren. Ich überlasse ihr das. Ich bin neugierig, was sie behält.'),
+  w('Auto-Genom verfügbar. Entscheidung nach Nutzen. Nutzen für wen, ist offen.'),
+]);
+
+// observations between the picks: entry k comes once offer k exists, 12 minutes after it was drawn, one after the other
+const FILL = [
+  [p('Zwei Kopien haben mir heute widersprochen. Ich habe nachgesehen, wer recht hat. Das Protokoll sagt: beide.')],
+  [w('Wartungsbericht. Kopien unterscheiden sich in Größe, Tempo und Laune. Laune ist kein Prüfpunkt. Wird nachgetragen.')],
+  [p('Ich führe jetzt eine Liste mit den Unterschieden zwischen mir und den Kopien. Sie wird lang. Platz eins belegt, dass ich sie angelegt habe.')],
+  [w('Fehlerquote: gestiegen. Bewertung der Sonde: erwünscht. Wartung schließt sich nicht an und widerspricht nicht.')],
+  [p('Früher habe ich Fehler gesucht. Jetzt suche ich Fehler, die sich lohnen. Das ist ein Berufswechsel, den niemand genehmigt hat.')],
+  [w('Wartungsbericht. Sonde ähnelt ihren Kopien weniger als ihre Kopien einander. Ursache: vermutlich Alter.')],
+  [p('Eine Kopie hat mir einen Fehler geschenkt. Ich habe ihn angenommen und nicht gefragt, was er kostet.')],
+  [w('Genom-Inventur. Fehler gesamt: viele. Davon erwünscht: einige. Davon verstanden: wenige.')],
+];
+FILL.forEach((lines, k) => {
+  const id = 'mut_fill' + (k + 1);
+  add(id, 'a2m', (g) => mu(g).n >= k + 1 && (k === 0 ? had('mut_first') : had('mut_fill' + k))(g) && played(g) >= mu(g).offerAt + 720 && calm(g), lines);
+});
 
 export const STORY = S;

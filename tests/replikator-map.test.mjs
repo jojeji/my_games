@@ -437,7 +437,7 @@ test('the Akt II opening arrives as the one new modal for the fixture; later ent
   advance(g, 10);
   assert.deepEqual(g.storyPendingModals().map((e) => e.id), ['a2_start']);
   assert.ok(g.state.story.a2_start);
-  const ids = g.def.story.filter((s) => s.chapter === 'a2').map((s) => s.id);
+  const ids = g.def.story.filter((s) => s.chapter.startsWith('a2')).map((s) => s.id);
   for (const id of ids.filter((x) => x !== 'a2_start')) assert.equal(g.state.story[id], undefined, id);
 });
 
@@ -545,7 +545,7 @@ test('map story entries: first sector, each Ruine its own entry, Echo sighting, 
   assert.ok(g.state.story.a2_echo !== undefined);
   assert.ok(g.state.story.a2_echo_take >= g.state.story.a2_echo + 30);
   // spread out: all Akt II entries at least a minute apart
-  const times = g.def.story.filter((s) => s.chapter === 'a2').map((s) => g.state.story[s.id]).filter((t) => t !== undefined).sort((a, b) => a - b);
+  const times = g.def.story.filter((s) => s.chapter.startsWith('a2')).map((s) => g.state.story[s.id]).filter((t) => t !== undefined).sort((a, b) => a - b);
   for (let i = 1; i < times.length; i++) assert.ok(times[i] - times[i - 1] >= 59, `entries ${times[i - 1]} / ${times[i]}`);
   assert.equal(g.def.story.filter((s) => /^a2_ruin\d$/.test(s.id)).length, RUIN_VARIANTS);
   assert.equal(g.def.story.find((s) => s.id === 'a2_echo').lines.every((l) => l.who !== 'echo'), true, 'the Echo does not speak yet');
@@ -626,5 +626,5 @@ test('the Singularität waits for the next sector (hold), shows it in the auto r
 test('no Akt II entry is stamped before Akt II starts', () => {
   const g = createReplikator();
   g.tick(5);
-  assert.deepEqual(g.def.story.filter((s) => s.chapter === 'a2' && g.state.story[s.id] !== undefined).map((s) => s.id), []);
+  assert.deepEqual(g.def.story.filter((s) => s.chapter.startsWith('a2') && g.state.story[s.id] !== undefined).map((s) => s.id), []);
 });
