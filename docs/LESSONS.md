@@ -121,3 +121,21 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - **Jede Zähleinheit = ein „Team“**: Statt die Logik zu gabeln, ist in Jeder gegen jeden jeder Spieler ein Team mit einem Namen. Punkte, Statistik, Überspringer-Kontingent pro Spiel, Verlängerung und Speicherstand funktionieren dadurch unverändert.
 - **Tests: `client.act()` meldet nur „gesendet“**, nicht „angenommen“. Rollenprüfungen deshalb über `host.intentFrom(id, …)` (liefert false) plus Zustandsvergleich über den Draht. Ein Gerät dauerhaft offline: `net.close()`; `room.drop()` verbindet sich von selbst wieder.
 - **Sticky-Fußleiste mit Verlauf**: Ein Hinweistext in der halbtransparenten Zone liegt auf der Liste dahinter und ist unlesbar (Playwright-Screenshot der Lobby). Fußleisten mit Hinweis/Fehler bekommen einen deckenden Hintergrund.
+
+## Nachtrag: Replikator Paket 0 (Messungen mit `tools/runlength-replikator.mjs`, `tools/simulate.mjs --offline`)
+- **Laufdauer Replikator ist gesund, die Hypothese „Softcap drückt zu Mikro-Läufen“ stimmte nicht.** Der Materie-Ertrag wächst mit hohem Polynomgrad in der Laufzeit (~t^6–9, 8 Stufen),
+  Blaupausen pro Sekunde steigen deshalb bis mindestens 20 min Laufdauer; 15–60-s-Läufe liegen bei < 1 % des Optimums. Weil die Blaupausen zusätzlich in die Produktion zurückfließen,
+  ist „Gewinn pro Sekunde im festen Fenster“ für die Replikation allein **kein** brauchbares Optimum (wächst immer mit L). Aussagekräftig ist die **Zeit bis zur nächsten Ebene**:
+  früh/mitte/spät vor der ersten Expansion ist 3–5 min am schnellsten (1 min: 2–8× langsamer). Expansion: Sternsysteme/s Optimum 10–80 min, Singularität 15–30 min (2-min-Läufe nur 10–30 %).
+  Ab ~12 Expansionen reicht eine einzige Replikation bis zur nächsten Expansion: die Replikation wird dann zur Durchgangsstation (keine Fehlentwicklung, aber wenig Spiel).
+- **Der Standard der Auto-Replikation (`mult`, Wert 1) ist eifrig:** Ganzes Spiel in der Sim, nur der Replikations-Faktor variiert (Ende v1): Faktor 1 = 9,3 h, 4 = 6,3 h, 16 = 4,7 h.
+  Wert 1 ist aber das, wogegen Pacing und Tests kalibriert sind; wer den Regler hochdreht, spielt schneller. Bei einer Balance-Änderung den Standard (z. B. 4) zusammen mit `tune.js` neu kalibrieren und
+  alte Einstellungen per `onLoad` einmalig anpassen. Nicht in Paket 0 geändert.
+- **Upgrade-Autokauf nach Nutzen statt „günstigstes zuerst“:** `repObjective` (def.js) bewertet Produktion (Taylor-Reihe der Generatorkette über 60 s, sieht Multiplikatoren auf hohe Stufen), Kostenteiler, Brückenkopf-Startmaterie,
+  freigeschaltete Stufen, Autokauf-Upgrades und Prestige-Gewinn-Multiplikatoren (gewichtet über die Boost-Exponenten). Wichtig: Upgrades ohne direkten Einkommenseffekt (Docks, Dyson, Autokauf) brauchen einen eigenen Term,
+  sonst sind sie für `upgBuyBest` wertlos und werden erst ganz am Schluss gekauft. Messung: kein Upgrade verhungert, Pacing im Zielkorridor (Ende v1 aktiv 10,4 h -> 12,2 h). Die Kostenteiler-Gewichtung
+  (1,0 pro Dekade) kommt aus einem Experiment: ÷10 Generatorkosten bringt nach 10 min ~2 Dekaden mehr Materie.
+- **Offline-Szenario** (`--offline`, alle 8 h für 2 min): erste Replikation nach 8 h, Expansion nach 24 h, Singularität nach 48 h, Ende v1 nach ~7,6 Tagen (23 Besuche, 46 min aktiv).
+  Das ist die Untergrenze für „fast nur offline“: Ohne Autokäufer (kommen erst nach der ersten Expansion) bringt Abwesenheit am Anfang fast nichts.
+- Die Engine kann Autokäufer-Hinweise schon (`auto-unlocked` + `state.auto[id].seen`); es fehlte nur der Toast in `standard-app.js` (jetzt `engine/ui/auto-hints.js`, auch für Merlin). Freischaltungen während der Abwesenheit
+  kommen als Events der Offline-Zusammenfassung (der Bus ist dort stumm geschaltet).

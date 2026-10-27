@@ -26,7 +26,7 @@ workflow). Add new findings there when you learn something from sims, saves or p
   `games/_template` is a minimal working example; copy it with `node tools/new-game.mjs <id> "<Titel>"`.
 - `games/merlin/` - second game (id `merlin`, "Rückwärts durch die Zeit"): `tune.js`, `eras.js` (8 eras: names, slot labels, rules; Anachronismen = `IDEAS`), `story.js`, `characters.js`
   (names + portraits, the ONLY place for names), `def.js`, `ui.js` + `era-view.js` (custom tabs on `mountApp`), `art.js` (hourglass SVG), `img/*.webp` (portraits), own theme in `style.css`.
-- `tools/` - `simulate-merlin.mjs` (Merlin sim, see below), `simulate.mjs` (balance sim, `new-game.mjs`, `update-precache.mjs`, `make-icons.mjs` (needs playwright installed elsewhere).
+- `tools/` - `simulate-merlin.mjs` (Merlin sim, see below), `simulate.mjs` (balance sim; `--offline` = check in every 8 h for 2 min, real offline catch-up in between), `runlength-replikator.mjs` (gain/s and time-to-next-layer per fixed run length and phase), `new-game.mjs`, `update-precache.mjs`, `make-icons.mjs` (needs playwright installed elsewhere).
 - `tests/*.test.mjs` - `npm test` (= `node --test "tests/*.test.mjs"`).
 
 ## Def schema (engine/kit)
@@ -48,6 +48,8 @@ IMPORTANT: the global multiplier is applied only to tier 0 (final output). Multi
 - `def.tap = {currency,start,max(g),regen(g),gain(g)}` -> `tapDo(auto)`, `tapRefill()`, `tapCharges()`; charges regenerate in `tick` (also offline), manual taps never run offline, autos do.
 - `def.story[{id,chapter,lines:[{who,t}],modal?,cond(g)}]` + `def.chapters` + `def.chronicle:true` (read/shown flags in the save) -> `storyList/storyUnread/storyMarkRead/storyPendingModals`.
   Modal entries are shown once by `createStoryController` (also those that happened while the app was closed). Replikator's old `{id,text,cond}` entries still work.
+- Replikator's BP/expansion upgrade autos use `buyRepUpgrades` = `upgBuyBest(group, repObjective)` (def.js); the sim calls the same function. New upgrades need an effect that `repObjective` can see (production, cost divisor, gain mult ...), else they are bought last.
+- `engine/kit/rng.js`: seeded PRNG (mulberry32), state = one number in the save (`rngNext(seed)` pure, `rngRoll({seed})` in place). `engine/ui/auto-hints.js`: toast with the switch's place for a newly unlocked auto (`def.where` or the standard tab). Export: `runtime.exportString({short:true})` omits the play-test log.
 - Autobuyers (engine, used by the in-game autos AND the sims): `prodBuyAll` = `prodChoose` (payback = cost / income gained incl. bundle thresholds + synergies, PLUS time to save up; plans "up to the next bundle", saves instead of feeding poor slots);
   `upgBuyBest(group, objective)` (value = benefit of the next level / cost, benefit = rise of a game-supplied log objective, e.g. Merlin `memObjective`; saves for the best upgrade, side purchases only if cheap and far from the goal).
 - Layers: `layer.postMult(g)` = factor applied AFTER the softcap (Merlin: Reife of the Erinnerungen). `formula.threshold` and `formula.softcap.{at,pow}` may be functions of the game; `layer.available(g)` gates `canPrestige`; `prestigeAuto` supports `modes:['time',...]` ('time' = run time >= value s).
