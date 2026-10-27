@@ -9,6 +9,6 @@ Mehrere Handys und ein Fernseher sollen sich zu einem Spiel verbinden, auf iOS u
 ## Consequences
 
 - Mehrspieler braucht durchgehend Internet. Das Spiel mit einem Handy bleibt offline spielbar.
-- Der Besitzer braucht ein Cloudflare-Konto. Der API-Token liegt nur als GitHub-Secret vor, der Worker wird per GitHub Actions veröffentlicht.
+- Der Besitzer braucht ein Cloudflare-Konto. Veröffentlicht wird über Cloudflare Workers Builds (Git-Anbindung an dieses Repo, Stammverzeichnis `workers/psst-room`, nur Änderungen in diesem Ordner lösen einen Build aus). Damit gibt es keinen API-Token und keine Secrets in GitHub.
 - Spielen aus verschiedenen Orten wird nebenbei möglich.
 - Umsetzung erst, nachdem Psst! mit einem Handy geprüft und gespielt wurde.
