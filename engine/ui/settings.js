@@ -42,10 +42,21 @@ async function copyText(text, area) {
 
 export function openExportDialog(ctx) {
   ctx.runtime.save();
-  const text = ctx.runtime.exportString();
-  const area = h('textarea', { class: 'textarea', readOnly: true, rows: 6, value: text, 'aria-label': 'Spielstand-Text' });
+  const hasLog = !!ctx.g.state.plog;
+  const area = h('textarea', { class: 'textarea', readOnly: true, rows: 6, value: '', 'aria-label': 'Spielstand-Text' });
   area.addEventListener('focus', () => area.select());
-  const body = h('div', {}, h('p', { class: 'muted', text: 'Dieser Text enthält deinen kompletten Spielstand. Bewahre ihn sicher auf (Notiz, Mail an dich selbst …).' }), area);
+  const size = h('p', { class: 'muted small' });
+  const kb = (n) => (n < 1000 ? n + ' Zeichen' : Math.round(n / 1000) + ' KB');
+  const fill = (short) => {
+    area.value = ctx.runtime.exportString({ short });
+    size.textContent = `${kb(area.value.length)}.` + (short ? ' Ohne Spieltest-Protokoll: passt in eine Chat-Nachricht und lässt sich normal importieren.' : '');
+  };
+  // two variants: complete (incl. play-test log) or short (state only); import accepts both
+  const mode = h('select', { class: 'select', style: { maxWidth: '100%', width: '100%' }, 'aria-label': 'Umfang', hidden: !hasLog });
+  mode.append(h('option', { value: 'full', text: 'Komplett (mit Protokoll)' }), h('option', { value: 'short', text: 'Nur Spielstand (kurz)' }));
+  mode.addEventListener('change', () => { fill(mode.value === 'short'); area.select(); });
+  fill(false);
+  const body = h('div', { class: 'stack' }, h('p', { class: 'muted', text: 'Dieser Text enthält deinen kompletten Spielstand. Bewahre ihn sicher auf (Notiz, Mail an dich selbst …).' }), mode, area, size);
   openModal({
     title: 'Spielstand exportieren',
     body,
@@ -55,7 +66,7 @@ export function openExportDialog(ctx) {
         label: 'Kopieren',
         kind: 'primary',
         onClick: async () => {
-          const ok = await copyText(text, area);
+          const ok = await copyText(area.value, area);
           ctx.toast(ok ? 'In die Zwischenablage kopiert.' : 'Text markiert – bitte manuell kopieren.', { kind: ok ? 'good' : 'warn' });
           return false;
         },

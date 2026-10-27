@@ -64,3 +64,23 @@ test('log survives save/export/import via the runtime', () => {
   rt2.importString(str);
   assert.ok(g2.plogEvents().some((e) => e[2] === 'hallo'));
 });
+
+test('short export leaves out the log, is much smaller, and imports like a full one', () => {
+  const g = createReplikator();
+  const rt = createRuntime(g, { storage: createStorage(mem()) });
+  rt.load();
+  for (let i = 0; i < 400; i++) g.plog('x', 'Ereignis Nummer ' + i, i);
+  g.add('matter', 12345);
+  const full = rt.exportString();
+  const short = rt.exportString({ short: true });
+  assert.ok(short.length < full.length / 2, `${short.length} vs ${full.length}`);
+  assert.ok(g.plogEvents().length >= 400, 'the running game keeps its log');
+  const g2 = createReplikator();
+  const rt2 = createRuntime(g2, { storage: createStorage(mem()) });
+  rt2.load();
+  rt2.importString(short);
+  assert.equal(g2.state.cur.matter.amount.toString(), g.state.cur.matter.amount.toString());
+  assert.equal(g2.plogEvents().length, 0, 'fresh log after importing the short form');
+  rt2.importString(full);
+  assert.ok(g2.plogEvents().length >= 400);
+});

@@ -159,8 +159,14 @@ export function createRuntime(logic, opts = {}) {
     get lastSaveOk() {
       return lastSaveOk;
     },
-    exportString() {
-      return store.exportString(logic.serialize());
+    /** Backup text. `short`: without the play-test log (state.plog), which is most of the text and does not fit into a chat message. */
+    exportString({ short = false } = {}) {
+      const data = logic.serialize();
+      if (short && data && data.plog) {
+        const { plog, ...rest } = data;
+        return store.exportString(rest);
+      }
+      return store.exportString(data);
     },
     /** Replace the current game by an imported save string (throws on invalid input). */
     importString(str) {
