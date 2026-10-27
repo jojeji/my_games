@@ -2,13 +2,13 @@
 // What does each Replikator mutation really do in Akt II? Every mutation ALONE in the genome (no offers), active sim, per start:
 //   fixture = the real end-of-v1 save, fresh = a fresh v1 finish (snapshot at the start of Akt II, so every variant starts from the same state).
 // Variants: "beide" = benefit and catch, "Nutzen" = catch neutralised, "Haken" = benefit neutralised (needs MUT_SPLIT in mutations.js).
-// Metrics against the run without mutation: (a) change of the time to 10 sectors, (b) change of the Sternsystem gain per Expansion and of the
-// Quantenkern gain per Singularität (log10, mean over the runs after the start of Akt II), (c) change of the Sternsysteme + Quantenkerne total.
+// Metrics against the run without mutation: (a) change of the time to 10 sectors, (b) factor on the gain of an Expansion / Singularität in the same game state (log10, what the softcaps let through), (c) change of the Sternsysteme + Quantenkerne total.
 //
 //   node tools/mutations-replikator.mjs [--hours 3.5] [--seeds 1,2] [--starts fixture,fresh] [--only id,id] [--dt 2] [--md]
 import { pathToFileURL } from 'node:url';
 import { createReplikator } from '../games/replikator/logic.js';
 import { parse, stringify } from '../engine/save.js';
+import { D } from '../engine/decimal.js';
 import { TUNE as T } from '../games/replikator/tune.js';
 import * as M from '../games/replikator/mutations.js';
 import { runSim, loadSaveFile } from './simulate.mjs';
@@ -45,23 +45,38 @@ export function measure(snapState, genome, { hours = 3.5, dt = 2, fx = null, id 
           const L = gg.state.layers[k];
           if (L.count !== seen[k]) {
             seen[k] = L.count;
-            gains[k].push(lg(L.lastGain));
+            gains[k].push(L.lastGain);
           }
         }
         return false;
       },
     });
-    const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+    const sum = (a) => a.reduce((x, y) => x.add(y), D(0)); // everything gained in the window: robust against the number of runs
     const s = r.game.state;
     return {
       t10: r.map.claims[9] ? (r.map.claims[9].t - r.map.start) / 60 : null,
-      sys: mean(gains.expansion),
-      cores: mean(gains.singularity),
+      sys: lg(sum(gains.expansion)),
+      cores: lg(sum(gains.singularity)),
       total: lg(s.cur.systems.total) + lg(s.cur.cores.total),
     };
   } finally {
     T.mutUnlockAt = keepUnlock;
     if (keepFx) T.mutFx[id] = keepFx;
+  }
+}
+
+/** Gain of the Expansion / Singularität right now with a forced genome (log10): the same state with and without a mutation shows the factor the softcaps let through. */
+export function refGain(state, genome, { fx = null, id = null } = {}) {
+  const keep = id && fx ? T.mutFx[id] : null;
+  if (id && fx) T.mutFx[id] = { ...T.mutFx[id], ...fx };
+  try {
+    const g = createReplikator();
+    g.load(clone(state));
+    g.state.rep2.mut.genome = genome;
+    g.refresh();
+    return { sys: lg(g.prestigeGain('expansion')), cores: lg(g.prestigeGain('singularity')) };
+  } finally {
+    if (keep) T.mutFx[id] = keep;
   }
 }
 
@@ -93,21 +108,31 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       const snap = startSnapshot(start, seed);
       const base = measure(snap, [], { hours, dt });
       basis.push(base);
+      // a state in the middle of the window (1 h of play) for the gain factors
+      const midG = createReplikator();
+      midG.load(clone(snap));
+      const unlockAt = T.mutUnlockAt;
+      T.mutUnlockAt = 999;
+      runSim({ game: midG, hours: 1, dt, quiet: true, act2: true });
+      T.mutUnlockAt = unlockAt;
+      const mid = clone(midG.state);
+      const refBase = refGain(mid, []);
       for (const m of muts) {
         for (const v of ['beide', 'Nutzen', 'Haken']) {
           const fx = v === 'beide' ? null : variantFx(m.id, v);
           if (fx === undefined) continue;
           const r = measure(snap, [m.id], { hours, dt, fx: fx || null, id: m.id });
+          const rg = refGain(mid, [m.id], { fx: fx || null, id: m.id });
           const d = {
             t10: base.t10 && r.t10 ? (r.t10 / base.t10 - 1) * 100 : null,
-            sys: r.sys - base.sys,
-            cores: r.cores - base.cores,
+            sys: rg.sys - refBase.sys,
+            cores: rg.cores - refBase.cores,
             total: r.total - base.total,
           };
           ((rows[m.id] ||= {})[v] ||= []).push(d);
         }
       }
-      console.error(`${start} Seed ${seed}: Basis t10 ${base.t10 && base.t10.toFixed(0)} min, Sys/Exp 1e${base.sys.toFixed(2)}, QK/Sing 1e${base.cores.toFixed(2)}`);
+      console.error(`${start} Seed ${seed}: Basis t10 ${base.t10 && base.t10.toFixed(0)} min, Sys gewonnen 1e${base.sys.toFixed(2)}, QK gewonnen 1e${base.cores.toFixed(2)}`);
     }
   }
   const avg = (ds, k) => {
@@ -115,7 +140,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null;
   };
   const f = (x, p = 2, suf = '') => (x === null ? '  -  ' : (x >= 0 ? '+' : '') + x.toFixed(p) + suf);
-  console.log(`Wirkung je Mutation allein, Mittel über ${starts.join('+')} x Seeds ${seeds.join(',')}, ${hours} h Akt II. dt10 = Zeit bis 10 Sektoren (%), dSys / dQK = Änderung des mittleren Gewinns je Expansion / Singularität (Dekaden), dSumme = Sternsysteme + Quantenkerne gesamt (Dekaden)`);
+  console.log(`Wirkung je Mutation allein, Mittel über ${starts.join('+')} x Seeds ${seeds.join(',')}, ${hours} h Akt II. dt10 = Zeit bis 10 Sektoren (%), dSys / dQK = Faktor auf den Gewinn einer Expansion / Singularität im selben Spielstand (Dekaden, nach den Softcaps), dSumme = Sternsysteme + Quantenkerne gesamt (Dekaden)`);
   console.log('Mutation'.padEnd(16) + ['beide', 'Nutzen', 'Haken'].map((v) => v.padEnd(7) + ' dt10     dSys   dQK   dSumme |').join(' '));
   for (const m of muts) {
     const cols = ['beide', 'Nutzen', 'Haken'].map((v) => {
