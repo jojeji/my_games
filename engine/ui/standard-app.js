@@ -6,6 +6,10 @@ import { mountApp } from './app.js';
 import { openModal } from './modal.js';
 import { buildSettingsPanel } from './settings.js';
 import { announceAutoUnlocks } from './auto-hints.js';
+import { chronicleView, createStoryController } from './story-view.js';
+import { createStoryBubbles } from './story-bubbles.js';
+import { avatar } from './avatar.js';
+import { openCharacterCard } from './character-card.js';
 import { buildStatsPanel, defaultStatRows } from './stats.js';
 import {
   buyModeBar, generatorList, upgradeList, prestigePanel, milestoneList, challengeList, researchTree,
@@ -21,6 +25,10 @@ import { formatNumber as fmt, setNotation } from '../format.js';
  *   gameId, title, primary (currency id), chips (currency ids), generators { chain, label, intro?(ctx), details?(ctx) },
  *   layers [{ id, label, icon, groups:[{id,title,research?,branches?}], challenges?:true, visible?(g) }],
  *   multParts?(g) -> [label, Decimal][], bonusText?(g), statRows?(g), tabIcons
+ *   chronicle? { cast, figures(g), lineText?(g,line), defaultWho? }  - Chronik for games with def.chronicle: a Chronik tab with unread dot
+ *     (it replaces the Erfolge tab, which moves into "Mehr"), story modals for def.story entries with `modal`, chat bubbles for the rest.
+ *     cast = { id: { name, role?, color?, side?, bio?, emblem?, img?, sm? } } (see games/replikator/characters.js), figures = ids of the characters met so far.
+ *     Without it the story stays what it was: one toast per entry and a log list in "Mehr".
  */
 export function mountStandardApp({ root, runtime, options, offline }) {
   const g = runtime.logic;
@@ -138,6 +146,28 @@ export function mountStandardApp({ root, runtime, options, offline }) {
     },
   };
 
+  /* ---------------- chronicle: speakers (portraits / emblems) ---------------- */
+  const chron = options.chronicle || null;
+  const cast = chron ? chron.cast : {};
+  const defaultWho = chron ? chron.defaultWho || Object.keys(cast)[0] : null;
+  const castOf = (who) => cast[who] || cast[defaultWho];
+  const showCard = (who, from) => {
+    const c = castOf(who);
+    openCharacterCard({ name: c.name, color: c.color, role: c.role, bio: c.bio, img: c.img, emblem: c.emblem }, { returnFocus: from });
+  };
+  const speaker = (who) => {
+    const c = castOf(who);
+    return {
+      name: c.name,
+      color: c.color,
+      side: c.side,
+      avatar: (size) => avatar({ src: size > 80 ? c.img : c.sm || c.img, emblem: c.emblem, color: c.color, name: c.name, size, cls: 'avatar-' + who, onTap: (el) => showCard(who, el) }),
+    };
+  };
+  let chronikView = null;
+  let story = null;
+  const lineTextOf = (line) => (chron && chron.lineText ? chron.lineText(g, line) : typeof line.t === 'function' ? line.t(g) : line.t);
+
   /* ---------------- tabs ---------------- */
   const tabs = [];
 
@@ -204,15 +234,29 @@ export function mountStandardApp({ root, runtime, options, offline }) {
     });
   }
 
-  tabs.push({
-    id: 'ach',
-    label: 'Erfolge',
-    icon: 'achievements',
-    build() {
-      const grid = achievementGrid(g, { bonusText: options.bonusText });
-      return grid;
-    },
-  });
+  if (chron) {
+    tabs.push({
+      id: 'chronik',
+      label: 'Chronik',
+      icon: 'book',
+      dot: () => g.storyUnread() > 0,
+      build() {
+        const view = chronicleView(g, { speaker, onReplay: (entry) => story && story.replay(entry), figures: () => chron.figures(g) });
+        chronikView = view;
+        return { el: view.el, update: () => view.update() };
+      },
+    });
+  } else {
+    tabs.push({
+      id: 'ach',
+      label: 'Erfolge',
+      icon: 'achievements',
+      build() {
+        const grid = achievementGrid(g, { bonusText: options.bonusText });
+        return grid;
+      },
+    });
+  }
 
   tabs.push({
     id: 'more',
@@ -223,15 +267,21 @@ export function mountStandardApp({ root, runtime, options, offline }) {
       const settings = buildSettingsPanel(ctx);
       const logList = h('ul', { class: 'card log' });
       let logN = -1;
+      // with a Chronik the Erfolge tab is gone: the achievements take the place of the old log list (the Chronik replaces that)
+      const grid = chron ? achievementGrid(g, { bonusText: options.bonusText }) : null;
       const el = h('div', { class: 'stack' },
         sectionTitle('Statistik'), stats.el,
         sectionTitle('Einstellungen'), settings.el,
-        sectionTitle('Logbuch'), logList,
+        chron ? sectionTitle('Erfolge') : sectionTitle('Logbuch'), chron ? grid.el : logList,
       );
       return {
         el,
         update() {
           stats.update();
+          if (grid) {
+            grid.update();
+            return;
+          }
           const entries = (g.def.story || []).filter((s) => g.state.story[s.id]);
           if (entries.length !== logN) {
             logN = entries.length;
@@ -250,7 +300,7 @@ export function mountStandardApp({ root, runtime, options, offline }) {
   runtime.on('achievement', ({ def }) => toast(def.desc, { kind: 'good', title: 'Erfolg: ' + def.name }));
   runtime.on('milestone', ({ def }) => toast(def.desc, { kind: 'good', title: 'Meilenstein: ' + def.name }));
   runtime.on('layer-unlocked', ({ id }) => toast('Neue Ebene: ' + g.layerById[id].name, { kind: 'info', title: 'Freigeschaltet' }));
-  runtime.on('story', ({ def }) => toast(def.text, { kind: 'story', ms: 7000 }));
+  if (!chron) runtime.on('story', ({ def }) => toast(def.text, { kind: 'story', ms: 7000 }));
   runtime.on('prestige', ({ id, gain }) => toast(`+${fmt(gain)} ${cur(g.layerById[id].currency)}`, { kind: 'good', title: g.layerById[id].name }));
   runtime.on('challenge-done', ({ id }) => toast(g.chalById[id].reward, { kind: 'good', title: 'Challenge geschafft: ' + g.chalById[id].name }));
   // new autobuyer: say where its switch is (prestige autos sit in their layer's tab, all others in the generator tab's "Automatisierung")
@@ -263,6 +313,44 @@ export function mountStandardApp({ root, runtime, options, offline }) {
       return lc ? `${lc.label || g.layerById[lc.id].name}-Tab` : `${options.generators.label || 'Generatoren'}-Tab (Automatisierung)`;
     },
   });
+  if (chron) {
+    // story bubbles: new non-modal entries play as a chat above the tab bar (a toast when switched off); modal entries are dialogs
+    const bubbles = createStoryBubbles(g, {
+      mount: root,
+      speaker,
+      lineText: lineTextOf,
+      summaryWho: defaultWho,
+      blocked: () => !!document.querySelector('.modal-overlay'),
+      suppress: () => {
+        const p = document.getElementById('page-chronik');
+        return !!p && !p.hidden;
+      },
+      openChronik: (id) => {
+        app.select('chronik');
+        if (chronikView) chronikView.reveal(id);
+      },
+    });
+    ctx.storyBubbles = bubbles;
+    story = createStoryController(g, {
+      runtime,
+      title: (entry) => ((g.def.chapters || []).find((x) => x.id === entry.chapter) || {}).title || '',
+      renderPage: (entry, line, i) => {
+        const who = speaker(line.who || defaultWho);
+        return h('div', { class: 'story-page', style: who.color ? { '--c': who.color } : null }, who.avatar(128, entry, i), h('b', { class: 'story-name', text: who.name }), h('p', { class: 'story-body', text: lineTextOf(line) }));
+      },
+    });
+    ctx.story = story;
+    runtime.on('story', ({ def }) => {
+      if (def.modal) return;
+      if (!bubbles.push(def)) toast(lineTextOf(def.lines[0]), { kind: 'story', ms: 7000, title: speaker(def.lines[0].who || defaultWho).name });
+    });
+    // entries that fired while the app was closed or in the background are muted by the runtime: announce them once
+    const catchUp = (ms) => setTimeout(() => { story.next(); bubbles.syncBacklog(); }, ms);
+    runtime.on('offline', () => catchUp(500));
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && catchUp(600));
+    setTimeout(() => story.next(), 700);
+    setTimeout(() => bubbles.syncBacklog(), 1000);
+  }
   runtime.on('offline', (s) => showOfflineSummary(g, s));
   runtime.on('respec', () => toast('Forschung zurückgesetzt.', { kind: 'info' }));
   // offline progress that was simulated while loading (before the UI listened)

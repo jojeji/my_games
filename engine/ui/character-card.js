@@ -5,7 +5,7 @@ import { openModal } from './modal.js';
 import { avatar } from './avatar.js';
 
 /**
- * @param {{name:string, color?:string, role?:string, bio?:string, img?:string, stages?:Array<{img:string, sm?:string, age?:number, current?:boolean}>}} info
+ * @param {{name:string, color?:string, role?:string, bio?:string, img?:string, emblem?:string, stages?:Array<{img:string, sm?:string, age?:number, current?:boolean}>}} info
  * @param {{returnFocus?:Element|null}} [opts]
  */
 export function openCharacterCard(info, { returnFocus = document.activeElement } = {}) {
@@ -23,7 +23,7 @@ export function openCharacterCard(info, { returnFocus = document.activeElement }
     thumbs.forEach((t, k) => { t.classList.toggle('sel', k === i); t.setAttribute('aria-pressed', String(k === i)); });
   };
   if (stages.length) big.append(avatar({ src: stages[cur].img, name: info.name, size, cls: 'avatar-xl', eager: true }));
-  else big.append(avatar({ src: info.img, name: info.name, size, cls: 'avatar-xl', eager: true }));
+  else big.append(avatar({ src: info.img, emblem: info.emblem, color: info.color, name: info.name, size, cls: 'avatar-xl', eager: true }));
 
   let row = null;
   if (stages.length > 1) {

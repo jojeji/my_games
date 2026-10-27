@@ -347,6 +347,9 @@ details.section > summary .badge { margin-left: auto; margin-right: 8px; }
 .avatar { display: inline-flex; flex: none; border-radius: 50%; overflow: hidden; background: #151d36; box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); align-items: center; justify-content: center; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .avatar-initial { font-size: 1.1em; color: var(--accent); }
+/* emblem instead of a photo: stroke symbol in the character's colour on a dark tint of it */
+.avatar-emblem { background: color-mix(in srgb, var(--ec, var(--accent)) 14%, #0b1220); color: var(--ec, var(--accent)); }
+.avatar-emblem svg { width: 62%; height: 62%; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; display: block; }
 .story-line { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; }
 .story-line .avatar { margin-top: 3px; box-shadow: 0 0 0 1.5px var(--accent); }
 .story-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -355,9 +358,9 @@ details.section > summary .badge { margin-left: auto; margin-right: 8px; }
 .story-line.fresh { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
 .chronik-head { display: flex; justify-content: space-between; align-items: baseline; }
 .story-modal { display: flex; flex-direction: column; gap: 10px; }
-.story-page { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
-.story-page .avatar { box-shadow: 0 0 0 3px var(--accent), 0 0 24px color-mix(in srgb, var(--accent) 35%, transparent); }
-.story-name { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.story-page { --c: var(--accent); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.story-page .avatar { box-shadow: 0 0 0 3px var(--c), 0 0 24px color-mix(in srgb, var(--c) 35%, transparent); }
+.story-name { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c); }
 .story-body { font-size: 17px; line-height: 1.5; text-align: left; }
 
 /* ---------- story bubbles (overlay) + Chronik chat ---------- */
@@ -367,7 +370,7 @@ details.section > summary .badge { margin-left: auto; margin-right: 8px; }
 .sb-top { display: flex; justify-content: flex-end; height: 30px; flex: none; }
 .sb-close { pointer-events: auto; flex: none; width: 44px; height: 44px; margin: -12px 0 0 0; border: 0; background: radial-gradient(circle, var(--surface2) 0 13px, color-mix(in srgb, var(--text) 35%, transparent) 13px 14px, transparent 14.5px); color: var(--text); font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .sb-close:focus-visible { outline: 2px solid var(--accent); border-radius: 50%; }
-.sb-stack { display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; overflow: hidden; min-height: 0; flex: 0 1 auto; pointer-events: none; }
+.sb-stack { display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; overflow: hidden; padding: 3px 4px 4px; /* room for the avatar rings, which overflow:hidden would clip */ min-height: 0; flex: 0 1 auto; pointer-events: none; }
 .sb-msg, .msg { --c: var(--accent); display: flex; gap: 8px; align-items: flex-end; }
 .sb-msg { pointer-events: auto; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; transition: opacity 0.3s; animation: sb-up 0.22s ease-out; }
 .sb-msg.side-right, .msg.side-right { flex-direction: row-reverse; }

@@ -50,4 +50,29 @@ export const storyMethods = {
   storyBubbleShown(id) {
     if (this.state.chronicle) this.state.chronicle.shown[id] = true;
   },
+
+  /**
+   * For a save that gets a chronicle after the fact (migration from the one-line story): entries whose condition is already true
+   * but that were never stamped are recorded silently - shown (no modal, no bubble), still unread (badge in the Chronik).
+   * Each gets the stamp of the previous entry in definition order, so the Chronik keeps the story order.
+   * @returns {string[]} ids that were backfilled
+   */
+  storyBackfill() {
+    const c = this.state.chronicle;
+    if (!c) return [];
+    const done = [];
+    let last = 0;
+    for (const st of this.def.story || []) {
+      const t = this.state.story[st.id];
+      if (t !== undefined && t !== false) {
+        last = Math.max(last, t);
+        continue;
+      }
+      if (!st.cond(this)) continue;
+      this.state.story[st.id] = last || 0.001; // slowChecks treats a falsy stamp as "not yet happened"
+      c.shown[st.id] = true;
+      done.push(st.id);
+    }
+    return done;
+  },
 };
