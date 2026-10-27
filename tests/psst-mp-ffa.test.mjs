@@ -310,6 +310,8 @@ test('substitute in Jeder gegen jeden: the next connected player (not the Wächt
   T.host.intent('weiter');
   await settle();
   assert.equal(T.host.viewFor(T.host.id).turn.erklaerer, 'Anna');
+  // the 61 s clock jump made every guest look silent at the host's sweep; Anna is back with her next ping (every 40 ms here)
+  await until(() => T.host.S.players[T.guests.Anna.net.id].connected === true);
   assert.equal(T.host.substitute(), false, 'Anna is online');
   T.guests.Anna.net.close();
   await until(() => T.host.S.players[T.guests.Anna.net.id].connected === false);
