@@ -12,7 +12,7 @@ import { createStorage, parse, stringify } from '../engine/save.js';
 import { rngRoll, rngInt } from '../engine/kit/rng.js';
 import {
   generateMap, hexDisc, hexDist, neighbors, isVisible, canClaim, claim, claimCost, claimable, costLog, claimedCount, occupiedCount, freeCount,
-  echoChoice, echoSighted, gainMult, typeMult, sectorMult, sameNeighbors, act2Check, bonusRows, bestClaim, SECTOR, RUIN_VARIANTS,
+  echoChoice, echoSighted, arrive, tripOf, tripSecs, holdSingularity, gainMult, typeMult, sectorMult, sameNeighbors, act2Check, bonusRows, bestClaim, SECTOR, RUIN_VARIANTS,
 } from '../games/replikator/map.js';
 
 const FIXTURE_TEXT = readFileSync(new URL('./fixtures/replikator-end-v1.json', import.meta.url), 'utf8');
@@ -41,6 +41,13 @@ function finishV1(g) {
   g.state.upg.z_horizont = 1;
   for (const c of g.def.challenges) g.state.challenge.done[c.id] = 1;
 }
+
+/** Claim and let the probe arrive at once (the travel time has its own tests). */
+const claimNow = (g, i) => {
+  const ok = claim(g, i);
+  if (ok) arrive(g);
+  return ok;
+};
 
 const typeCounts = (cells) => cells.reduce((m, c) => ((m[c.type] = (m[c.type] || 0) + 1), m), {});
 
@@ -126,7 +133,7 @@ test('fog: a type is only visible next to own territory; only visible neighbours
   assert.deepEqual(claimable(g).sort(), ring1.sort());
   // claiming a ring-1 cell reveals its ring-2 neighbours and makes them claimable
   const first = ring1[0];
-  assert.ok(claim(g, first));
+  assert.ok(claimNow(g, first));
   const nb = neighbors(cells);
   for (const j of nb[first]) assert.ok(isVisible(cells, j));
   const newly = nb[first].filter((j) => dist(j) === 2 && !cells[j].echo && !cells[j].own);
@@ -144,7 +151,7 @@ test('Echo cells are not claimable, also not when they touch own territory', () 
   // walk towards the Echo until it is revealed
   while (!isVisible(cells, echo)) {
     const cand = claimable(g).sort((a, b) => hexDist(cells[a], cells[echo]) - hexDist(cells[b], cells[echo]));
-    assert.ok(claim(g, cand[0]));
+    assert.ok(claimNow(g, cand[0]));
   }
   assert.ok(nb[echo].some((j) => cells[j].own), 'the Echo cell touches own territory');
   assert.deepEqual(canClaim(g, echo), { ok: false, reason: 'echo' });
@@ -164,13 +171,13 @@ test('cost: 10^(anchor + offset + step * n) Sternsysteme, paid from the current 
   // not affordable -> reason 'cost', nothing is spent
   const target = claimable(g)[0];
   assert.deepEqual(canClaim(g, target), { ok: false, reason: 'cost' });
-  assert.equal(claim(g, target), false);
+  assert.equal(claimNow(g, target), false);
   assert.equal(claimedCount(g), 0);
   // affordable: exactly the price is paid, the next one is dearer
   const cost0 = claimCost(g);
   g.grant('systems', cost0.mul(1.5));
   const before = g.get('systems');
-  assert.ok(claim(g, target));
+  assert.ok(claimNow(g, target));
   assert.ok(before.sub(g.get('systems')).sub(cost0).abs().lt(1e-6 * before.toNumber()), 'paid the price');
   assert.equal(claimedCount(g), 1);
   assert.ok(claimCost(g).gt(cost0.mul(1.5)));
@@ -270,7 +277,7 @@ test('Echo rule: one free cell per 2 claimed sectors, adjacent to Echo territory
   const nb = neighbors(cells);
   const echoCount = () => cells.filter((c) => c.echo).length;
   assert.equal(echoCount(), 1);
-  claim(g, claimable(g)[0]);
+  claimNow(g, claimable(g)[0]);
   assert.equal(occupiedCount(g), 0, 'after 1 claim');
   // time does nothing, offline neither
   advance(g, 3600);
@@ -278,15 +285,15 @@ test('Echo rule: one free cell per 2 claimed sectors, adjacent to Echo territory
   assert.equal(occupiedCount(g), 0, 'time does not move the Echo');
   assert.equal(echoCount(), 1);
   const before = cells.map((c, i) => i).filter((i) => cells[i].echo);
-  claim(g, claimable(g)[0]);
+  claimNow(g, claimable(g)[0]);
   assert.equal(occupiedCount(g), 1, 'after 2 claims');
   assert.equal(echoCount(), 2);
   const taken = cells.map((c, i) => i).find((i) => cells[i].echo === 2);
   assert.ok(nb[taken].some((j) => before.includes(j)), 'next to the Echo territory');
   assert.ok(!cells[taken].own);
-  claim(g, claimable(g)[0]);
+  claimNow(g, claimable(g)[0]);
   assert.equal(occupiedCount(g), 1, 'after 3 claims');
-  claim(g, claimable(g)[0]);
+  claimNow(g, claimable(g)[0]);
   assert.equal(occupiedCount(g), 2, 'after 4 claims');
   assert.equal(occupiedCount(g), Math.floor(claimedCount(g) / T.mapEchoEvery));
 });
@@ -311,7 +318,7 @@ test('the player can always claim at least 12 sectors: random claim orders on 40
       if (!options.length) break;
       // invariant: while there are free cells, one of them is claimable (no free cell is cut off)
       assert.ok(options.length >= 1);
-      assert.ok(claim(g, options[rngInt(pick, 0, options.length - 1)]), 'claim, seed ' + seed);
+      assert.ok(claimNow(g, options[rngInt(pick, 0, options.length - 1)]), 'claim, seed ' + seed);
       assert.ok(++guard < 40);
     }
     assert.equal(freeCount(g), 0, `seed ${seed}: free cells left that cannot be reached`);
@@ -327,7 +334,7 @@ test('claiming the best-valued sector first or the worst first: both orders stil
       let n = 0;
       while (claimable(g).length && n++ < 40) {
         const c = claimable(g).sort((a, b) => flip * (g.state.rep2.map.cells[a].type < g.state.rep2.map.cells[b].type ? -1 : 1));
-        claim(g, c[0]);
+        claimNow(g, c[0]);
       }
       assert.ok(claimedCount(g) >= 12, `seed ${seed} flip ${flip}: ${claimedCount(g)}`);
     }
@@ -436,7 +443,7 @@ test('the Akt II opening arrives as the one new modal for the fixture; later ent
 
 test('save round trip: the map, ruins and counters survive stringify/parse', () => {
   const g = act2Game(9);
-  for (let i = 0; i < 5; i++) claim(g, claimable(g)[0]);
+  for (let i = 0; i < 5; i++) claimNow(g, claimable(g)[0]);
   const text = stringify(g.serialize());
   const h2 = createReplikator();
   h2.load(parse(text));
@@ -457,9 +464,9 @@ test('Auto-Erkundung: starts off, unlocks with 6 claimed sectors, claims the bes
   assert.equal(g.state.auto.auto_map.on, false, 'new autos start off');
   assert.ok(!g.autoUnlocked('auto_map'));
   g.grant('systems', 1e60);
-  for (let i = 0; i < T.mapAutoAt - 1; i++) claim(g, claimable(g)[0]);
+  for (let i = 0; i < T.mapAutoAt - 1; i++) claimNow(g, claimable(g)[0]);
   assert.ok(!g.autoUnlocked('auto_map'));
-  claim(g, claimable(g)[0]);
+  claimNow(g, claimable(g)[0]);
   assert.equal(claimedCount(g), T.mapAutoAt);
   assert.ok(g.autoUnlocked('auto_map'));
   // off: nothing happens by itself
@@ -471,8 +478,16 @@ test('Auto-Erkundung: starts off, unlocks with 6 claimed sectors, claims the bes
   assert.ok(best >= 0);
   const type = g.state.rep2.map.cells[best].type;
   auto.run(g, g.state.auto.auto_map);
+  assert.ok(tripOf(g) && tripOf(g).i === best, 'the Erschließung of the best sector started: ' + type);
+  assert.equal(mapAutoClaim(g), false, 'one Erschließung at a time');
+  advance(g, tripSecs(g, T.mapAutoAt) + 1);
   assert.equal(claimedCount(g), T.mapAutoAt + 1);
   assert.ok(g.state.rep2.map.cells[best].own, 'claimed ' + type);
+  // when it arrives the auto starts the next one
+  g.state.rep2.map.trip = null;
+  auto.run(g, g.state.auto.auto_map);
+  assert.ok(tripOf(g), 'next Erschließung');
+  g.state.rep2.map.trip = null;
   // not affordable: no claim
   g.state.cur.systems.amount = g.state.cur.systems.amount.mul(0);
   assert.equal(mapAutoClaim(g), false);
@@ -505,7 +520,7 @@ test('the best sector is the one with the largest rise of the objective (same-ty
 /* Story                                                                */
 /* ------------------------------------------------------------------ */
 
-test('map story entries: first sector, each Ruine its own entry, Echo sighting, Echo takes a sector', () => {
+test('map story entries: first sector, each Ruine its own entry, Echo sighting, Echo takes a sector; never two within a minute', () => {
   const g = act2Game(13);
   const cells = g.state.rep2.map.cells;
   g.state.rep2.act2At = -100;
@@ -513,29 +528,99 @@ test('map story entries: first sector, each Ruine its own entry, Echo sighting, 
   g.slowChecks();
   assert.ok(g.state.story.a2_start, 'opening');
   assert.equal(g.state.story.a2_first, undefined);
-  claim(g, claimable(g)[0]);
-  g.slowChecks();
-  assert.ok(g.state.story.a2_first);
-  // claim everything: all Ruinen the player can get produce their own entries, distinct per variant
-  const ruinCells = cells.filter((c) => c.type === 'ruine');
+  // play on: claim everything that is claimable, one arrival at a time, a bit of time in between
   let guard = 0;
-  while (claimable(g).length && guard++ < 30) {
-    claim(g, claimable(g)[0]);
-    g.slowChecks();
+  while (claimable(g).length && guard++ < 40) {
+    claimNow(g, claimable(g)[0]);
+    for (let k = 0; k < 12; k++) {
+      g.state.time.played += 10;
+      g.slowChecks();
+    }
   }
+  assert.ok(g.state.story.a2_first);
   const claimedRuins = cells.filter((c) => c.type === 'ruine' && c.own);
-  assert.ok(ruinCells.length === 3);
+  assert.equal(cells.filter((c) => c.type === 'ruine').length, 3);
   for (const c of claimedRuins) assert.ok(g.state.story['a2_ruin' + c.v], 'entry for variant ' + c.v);
   assert.equal(Object.keys(g.state.story).filter((k) => k.startsWith('a2_ruin')).length, claimedRuins.length);
-  // the sighting came before the first occupation, which waits half a minute
   assert.ok(g.state.story.a2_echo !== undefined);
-  g.state.time.played += 40;
-  g.slowChecks();
   assert.ok(g.state.story.a2_echo_take >= g.state.story.a2_echo + 30);
-  // four Ruinen variants exist as entries
+  // spread out: all Akt II entries at least a minute apart
+  const times = g.def.story.filter((s) => s.chapter === 'a2').map((s) => g.state.story[s.id]).filter((t) => t !== undefined).sort((a, b) => a - b);
+  for (let i = 1; i < times.length; i++) assert.ok(times[i] - times[i - 1] >= 59, `entries ${times[i - 1]} / ${times[i]}`);
   assert.equal(g.def.story.filter((s) => /^a2_ruin\d$/.test(s.id)).length, RUIN_VARIANTS);
-  // the Echo is introduced (shown in the figure list) only by the sighting entry
   assert.equal(g.def.story.find((s) => s.id === 'a2_echo').lines.every((l) => l.who !== 'echo'), true, 'the Echo does not speak yet');
+});
+
+test('Erschließung: one at a time, price paid at the start, the sector counts (bonus, story, Echo) only on arrival, runs offline too', () => {
+  const g = act2Game(17, { rich: false });
+  g.grant('systems', 1e14);
+  const events = [];
+  g.out = (t) => events.push(t);
+  const a = claimable(g)[0];
+  const before = g.get('systems');
+  assert.ok(claim(g, a));
+  assert.ok(g.get('systems').lt(before), 'price paid at the start');
+  const trip = tripOf(g);
+  assert.deepEqual([trip.i, trip.dur, trip.left], [a, tripSecs(g, 0), tripSecs(g, 0)]);
+  assert.equal(tripSecs(g, 0), T.mapTripBase);
+  assert.ok(tripSecs(g, 11) > 5 * tripSecs(g, 0), 'later sectors take much longer');
+  assert.equal(claimedCount(g), 0);
+  assert.ok(!g.state.rep2.map.cells[a].own);
+  assert.equal(canClaim(g, claimable(g)[0]).reason, 'trip', 'only one Erschließung at a time');
+  assert.equal(claim(g, claimable(g)[0]), false);
+  assert.ok(!claimable(g).includes(a), 'the cell being flown to is not offered again');
+  const mult = g.prestigeMult('expansion').add(0);
+  g.tick(trip.dur - 1);
+  assert.equal(claimedCount(g), 0, 'not yet');
+  assert.ok(g.prestigeMult('expansion').eq(mult));
+  g.tick(2);
+  assert.equal(claimedCount(g), 1);
+  assert.equal(tripOf(g), null);
+  assert.ok(g.state.rep2.map.cells[a].own);
+  assert.ok(events.includes('map-claim'));
+  // offline catch-up (advance) finishes a long Erschließung and the Echo moves only on arrival
+  claimNow(g, claimable(g)[0]);
+  assert.equal(occupiedCount(g), 1);
+  const c3 = claimable(g)[0];
+  assert.ok(claim(g, c3));
+  advance(g, tripSecs(g, 2) + 5);
+  assert.equal(claimedCount(g), 3);
+  assert.equal(occupiedCount(g), 1);
+  // the Echo never takes the cell the probe is flying to, and keeps all free cells reachable
+  for (let seed = 1; seed <= 100; seed++) {
+    const h = act2Game(seed);
+    claimNow(h, claimable(h)[0]);
+    const t = claimable(h)[0];
+    claim(h, t);
+    const pick = echoChoice(h.state.rep2.map);
+    assert.notEqual(pick, t);
+  }
+  // survives a save in the middle of the trip
+  const h2 = act2Game(5);
+  claim(h2, claimable(h2)[0]);
+  h2.tick(30);
+  const copy = createReplikator();
+  copy.load(parse(stringify(h2.serialize())));
+  assert.deepEqual(copy.state.rep2.map.trip, h2.state.rep2.map.trip);
+});
+
+test('the Singularität waits for the next sector (hold), shows it in the auto row, and lets go when nothing is near', () => {
+  const g = act2Game(23, { rich: false });
+  g.state.rep2.anchor = 5;
+  const need = claimCost(g);
+  g.state.cur.systems.amount = need.mul(T.mapHoldReach / 2);
+  assert.ok(holdSingularity(g), 'the stock is within reach of the next sector');
+  const auto = g.def.autos.find((a) => a.id === 'auto_sing');
+  assert.equal(typeof auto.status, 'function');
+  g.state.cur.systems.amount = need.mul(3);
+  g.state.cur.cores.run = g.state.cur.cores.run.mul(0);
+  assert.match(String(auto.status(g) || 'wartet'), /Wartet|wartet/);
+  g.state.cur.systems.amount = need.div(T.mapHoldReach * 10);
+  assert.ok(!holdSingularity(g), 'far from the next sector: collapse as usual');
+  g.state.cur.systems.amount = need.mul(2);
+  g.state.layers.singularity.runTime = T.mapHoldMax + 1;
+  assert.ok(!holdSingularity(g), 'never longer than mapHoldMax');
+  assert.ok(!holdSingularity(createReplikator()), 'no map, no hold');
 });
 
 test('no Akt II entry is stamped before Akt II starts', () => {

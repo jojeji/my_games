@@ -4,7 +4,7 @@ import { prestigeAuto } from '../../engine/kit/game.js';
 import { formatNumber as fmt, formatMult, formatPercent } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import { STORY, CHAPTERS } from './story.js';
-import { rep2State, migrateToRep2, productionParts, gainMult, autoClaim, claimedCount, act2Check } from './map.js';
+import { rep2State, migrateToRep2, productionParts, gainMult, autoClaim, claimedCount, act2Check, mapTick, holdSingularity } from './map.js';
 
 /** Active level of an upgrade (0 while suppressed by a challenge). */
 const lvl = (g, id) => (g.upgActive(id) ? g.upgLevel(id) : 0);
@@ -144,6 +144,8 @@ export const buyRepUpgrades = (g, group) => g.upgBuyBest(group, repObjective);
 
 /** Akt II: claim the best affordable sector (value = rise of repObjective). The Auto-Erkundung AND the sim's player call exactly this. */
 export const mapAutoClaim = (g) => autoClaim(g, repObjective);
+/** Auto-Singularität and the sim's player both wait for the next sector (map.js holdSingularity). */
+export const singularityHeld = (g) => holdSingularity(g);
 
 /* ------------------------------------------------------------------ */
 /* Definition                                                          */
@@ -654,6 +656,8 @@ export const def = {
       mode: 'mult',
       value: 0.25,
       minGain: 8,
+      hold: singularityHeld,
+      holdText: 'Wartet auf den nächsten Sektor der Galaxiekarte (Sternsysteme sammeln).',
     }),
     {
       id: 'auto_bpupg',
@@ -744,8 +748,9 @@ export const def = {
       }
       act2Check(g); // after the backfill: the Akt II entries are real news for an old save
     },
-    onTick: (g) => {
+    onTick: (g, dt) => {
       act2Check(g);
+      mapTick(g, dt);
       const c = g.chActive();
       const st = g.state.auto.auto_chal;
       if (c && st.on && g.autoUnlocked('auto_chal') && g.chRunTime() > T.chTimeout) {

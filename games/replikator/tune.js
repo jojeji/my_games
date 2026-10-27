@@ -73,11 +73,17 @@ export const TUNE = {
   // Sector price in Sternsysteme (spent from the current amount): 10^(anchor + mapCostOffset + mapCostStep * n), n = sectors claimed so far.
   // anchor = mapAnchorSlope * log10(Sternsysteme best) when Akt II starts (stored in the save). Measured with tools/simulate.mjs --act2 (see docs/LESSONS.md):
   // the active economy saturates at ~1e7 Sternsysteme per Singularität run (soft caps), whether the save finished version 1 after 11 h (best 1.6e6)
-  // or sat idle for 70 h (best 9.4e7), so the price level must follow the banked stock only weakly (4th root) - a linear anchor would lock the long save out.
-  mapAnchorSlope: 0.25,
+  // or sat idle for 70 h (best 9.4e7), so the price level must follow the banked stock only weakly (10th root). With the Erschliessung travel time as the main throttle, prices only have to keep a rich save from clearing its stock on day one - a linear anchor would lock the long save out.
+  mapAnchorSlope: 0.1,
   mapAnchorFixed: null, // a number replaces the measured anchor (later galaxies)
-  mapCostOffset: 3.6,
+  mapCostOffset: 4.5,
   mapCostStep: 0.27,
+  // Erschliessung (travel time): seconds = mapTripBase * mapTripGrow^n for the (n+1)th sector, one at a time, runs offline too
+  mapTripBase: 240,
+  mapTripGrow: 1.25,
+  // The Singularität (auto and sim player) waits while the next sector costs <= mapHoldReach * Sternsysteme stock, at most mapHoldMax s of run time
+  mapHoldReach: 20,
+  mapHoldMax: 86400,
   mapEchoEvery: 2, // the Echo takes one free cell per this many claimed sectors
   mapAdjStep: 0.5, // + this share of the effect exponent per same-type claimed neighbour ...
   mapAdjMax: 3, // ... at most this many neighbours count

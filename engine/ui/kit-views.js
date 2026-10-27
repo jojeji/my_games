@@ -275,9 +275,11 @@ export function autoConfigRow(g, autoId) {
   };
   input.addEventListener('change', apply);
   input.addEventListener('keydown', (e) => e.key === 'Enter' && input.blur());
+  const wait = h('small', { class: 'auto-wait muted', hidden: true });
   const el = h('div', { class: 'card auto-cfg' },
     h('label', { class: 'row' }, h('span', { class: 'row-main' }, h('b', { text: a.name }), h('small', { text: a.desc })), h('span', { class: 'switch' }, toggle, h('i', { class: 'switch-track' }))),
     h('div', { class: 'row gap' }, mode, input),
+    wait,
   );
   let synced = false;
   return {
@@ -292,6 +294,9 @@ export function autoConfigRow(g, autoId) {
         synced = true;
       }
       if (toggle.checked !== st().on) toggle.checked = st().on;
+      const status = a.status && st().on ? a.status(g) : '';
+      setHidden(wait, !status);
+      if (status) txt(wait, status);
       if (document.activeElement !== mode && mode.value !== st().mode) mode.value = st().mode;
     },
   };

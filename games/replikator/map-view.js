@@ -7,7 +7,7 @@ import { formatNumber as fmt, formatMult } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import {
   SECTOR, SECTOR_ORDER, mapCells, mapOf, neighbors, isVisible, canClaim, claim, claimCost, claimedCount, occupiedCount, bonusRows,
-  sameNeighbors, previewClaim,
+  sameNeighbors, previewClaim, tripOf, tripSecs,
 } from './map.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -49,6 +49,15 @@ export function glyphSvg(type, size = 20) {
   return s;
 }
 
+const mmss = (sec) => {
+  const s = Math.max(0, Math.ceil(sec));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = String(s % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${m}:${r}`;
+};
+const RING = 2 * Math.PI * 22;
+
 const REASON = {
   inactive: 'Die Karte ist noch nicht freigeschaltet.',
   own: 'Bereits erschlossen.',
@@ -62,6 +71,7 @@ export function buildGalaxyTab(ctx) {
 
   /* ---------------- status ---------------- */
   const statLine = h('p', { class: 'gal-stat' });
+  const tripLine = h('p', { class: 'gal-trip', hidden: true });
   const costLine = h('p', { class: 'gal-cost muted small' });
   const echoLine = h('p', { class: 'gal-echo muted small', hidden: true });
 
@@ -87,8 +97,9 @@ export function buildGalaxyTab(ctx) {
       const glyph = el('g', { class: 'gal-glyph', transform: 'translate(-13 -15) scale(1.08)' });
       const q = el('text', { class: 'gal-q', x: 0, y: 8, 'text-anchor': 'middle' });
       q.textContent = '?';
-      const tag = el('text', { class: 'gal-tag', x: 0, y: 26, 'text-anchor': 'middle' });
-      const g1 = el('g', { class: 'gal-cell', transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})`, tabindex: 0, role: 'button' }, poly, glyph, q, tag);
+      const tag = el('text', { class: 'gal-tag', x: 0, y: 29, 'text-anchor': 'middle' });
+      const ring = el('circle', { class: 'gal-ring', r: 22, cx: 0, cy: 0, transform: 'rotate(-90)', 'stroke-dasharray': `0 ${RING}`, visibility: 'hidden' });
+      const g1 = el('g', { class: 'gal-cell', transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})`, tabindex: 0, role: 'button' }, poly, glyph, q, tag, ring);
       g1.addEventListener('click', () => openSector(i));
       g1.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -97,7 +108,7 @@ export function buildGalaxyTab(ctx) {
         }
       });
       root.append(g1);
-      nodes.push({ g: g1, glyph, q, tag, shown: null });
+      nodes.push({ g: g1, glyph, q, tag, ring, shown: null, ringOn: false });
     });
   }
 
@@ -114,13 +125,25 @@ export function buildGalaxyTab(ctx) {
   function paint() {
     const cs = cells();
     if (built.n !== cs.length) buildMap();
-    const afford = g.canAfford('systems', claimCost(g));
+    const trip = tripOf(g);
+    const afford = !trip && g.canAfford('systems', claimCost(g));
     cs.forEach((c, i) => {
       const n = nodes[i];
       const st = look(i);
       const typeKey = st === 'fog' ? 'fog' : st === 'echo' ? 'echo' : c.type;
-      const can = st === 'open' && !c.echo && isVisible(cs, i) && neighborsOwn(cs, i);
-      const key = st + typeKey + (can ? (afford ? 'A' : 'N') : '') + (st === 'own' ? sameNeighbors(cs, i) : '');
+      const flying = !!trip && trip.i === i;
+      const can = st === 'open' && !c.echo && !trip && neighborsOwn(cs, i);
+      // the cell the probe flies to: progress ring and remaining time, refreshed every frame
+      if (flying) {
+        n.ring.setAttribute('stroke-dasharray', `${(RING * (1 - trip.left / trip.dur)).toFixed(1)} ${RING}`);
+        txt(n.tag, mmss(trip.left));
+      }
+      if (n.ringOn !== flying) {
+        n.ringOn = flying;
+        n.ring.setAttribute('visibility', flying ? 'visible' : 'hidden');
+        if (!flying) n.tag.textContent = '';
+      }
+      const key = st + typeKey + (flying ? 'F' : '') + (can ? (afford ? 'A' : 'N') : '') + (st === 'own' ? sameNeighbors(cs, i) : '');
       if (n.shown === key) return;
       n.shown = key;
       const info = SECTOR[typeKey] || {};
@@ -130,12 +153,13 @@ export function buildGalaxyTab(ctx) {
       setCls(n.g, 'echo', st === 'echo');
       setCls(n.g, 'can', can && afford);
       setCls(n.g, 'near', can && !afford);
+      setCls(n.g, 'trip', flying);
       n.glyph.innerHTML = st === 'fog' ? '' : `<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${GLYPH[typeKey] || ''}</g>`;
       n.q.style.display = st === 'fog' ? '' : 'none';
       // small tag under the glyph: the neighbour bonus of an own sector
       const adj = st === 'own' && c.type !== 'home' && SECTOR[c.type].kind ? sameNeighbors(cs, i) : 0;
-      n.tag.textContent = adj ? '+'.repeat(adj) : '';
-      const label = st === 'fog' ? 'Unbekannter Sektor' : (info.name || '') + (st === 'own' && c.type !== 'home' ? ', erschlossen' : '') + (can ? (afford ? ', erschließbar' : ', zu teuer') : '');
+      if (!flying) n.tag.textContent = adj ? '+'.repeat(adj) : '';
+      const label = st === 'fog' ? 'Unbekannter Sektor' : (info.name || '') + (st === 'own' && c.type !== 'home' ? ', erschlossen' : '') + (can ? (afford ? ', erschließbar' : ', zu teuer') : '') + (flying ? ', Erschließung läuft' : '');
       setAttr(n.g, 'aria-label', label);
     });
   }
@@ -170,10 +194,13 @@ export function buildGalaxyTab(ctx) {
     if (c.type === 'ruine' && st !== 'fog') rows.push(['Einmalig', 'Ein Eintrag in der Chronik']);
     const cost = claimCost(g);
     const canC = canClaim(g, i);
-    if (st !== 'own' && st !== 'echo') {
+    const trip = tripOf(g);
+    if (st !== 'own' && st !== 'echo' && !(trip && trip.i === i)) {
       rows.push(['Kosten', fmt(cost) + ' Sternsysteme']);
       rows.push(['Du hast', fmt(g.get('systems')) + ' Sternsysteme']);
+      if (st !== 'fog') rows.push(['Erschließung dauert', mmss(tripSecs(g))]);
     }
+    if (trip && trip.i === i) rows.push(['Erschließung läuft', 'noch ' + mmss(trip.left)]);
     if (rows.length) body.append(h('ul', { class: 'mult-list' }, ...rows.map(([a, b]) => h('li', {}, h('span', { text: a }), h('b', { class: 'num', text: b })))));
     if (hint) body.append(h('p', { class: 'muted small', text: hint }));
     let modal;
@@ -184,17 +211,18 @@ export function buildGalaxyTab(ctx) {
     } else {
       btn.addEventListener('click', () => {
         if (claim(g, i)) {
-          ctx.toast && ctx.toast(`${SECTOR[c.type].name} erschlossen.`, { kind: 'good', title: 'Sektor ' + claimedCount(g) });
           modal.close();
           paint();
         }
       });
-      if (st === 'fog') {
+      if (trip && trip.i === i) {
+        btn.hidden = true;
+      } else if (st === 'fog') {
         btn.disabled = true;
         why.textContent = REASON.fog;
       } else if (!canC.ok) {
         btn.disabled = true;
-        why.textContent = canC.reason === 'cost' ? `Zu wenig Sternsysteme: es fehlen ${fmt(cost.sub(g.get('systems')))}. Sie bauen sich mit jeder Expansion auf.` : REASON[canC.reason] || '';
+        why.textContent = canC.reason === 'trip' ? `Eine Erschließung läuft bereits (noch ${mmss(trip.left)}). Die Sonde fliegt nur zu einem Sektor gleichzeitig.` : canC.reason === 'cost' ? `Zu wenig Sternsysteme: es fehlen ${fmt(cost.sub(g.get('systems')))}. Sie bauen sich mit jeder Expansion auf.` : REASON[canC.reason] || '';
       }
       body.append(btn, why);
     }
@@ -242,16 +270,16 @@ export function buildGalaxyTab(ctx) {
   const autoInput = h('input', { type: 'checkbox', class: 'switch-input' });
   autoInput.addEventListener('change', () => (g.state.auto.auto_map.on = autoInput.checked));
   const autoRow = h('label', { class: 'row setting card', hidden: true },
-    h('span', { class: 'row-main' }, h('b', { text: 'Auto-Erkundung' }), h('small', { class: 'muted', text: 'Erschließt automatisch den besten bezahlbaren Sektor.' })),
+    h('span', { class: 'row-main' }, h('b', { text: 'Auto-Erkundung' }), h('small', { class: 'muted', text: 'Startet die nächste Erschließung, sobald die laufende ankommt und du den besten Sektor bezahlen kannst.' })),
     h('span', { class: 'switch' }, autoInput, h('i', { class: 'switch-track' })),
   );
   const autoLocked = h('p', { class: 'muted small center', hidden: true });
 
   const wrap = h('div', { class: 'gal-wrap' }, root);
   const page = h('div', { class: 'stack' },
-    h('div', { class: 'card gal-head' }, statLine, costLine, echoLine),
-    wrap,
-    h('p', { class: 'muted small center gal-hint', text: 'Sektor antippen: Typ, Effekt und Kosten. Erschließen geht nur neben eigenem Gebiet.' }),
+    wrap, // the map first: story bubbles rise from the bottom and should not cover it
+    h('div', { class: 'card gal-head' }, tripLine, statLine, costLine, echoLine),
+    h('p', { class: 'muted small center gal-hint', text: 'Sektor antippen: Typ, Effekt, Kosten und Dauer. Erschließen geht nur neben eigenem Gebiet, immer nur einen Sektor gleichzeitig.' }),
     legend,
     autoRow,
     autoLocked,
@@ -267,6 +295,9 @@ export function buildGalaxyTab(ctx) {
       const n = claimedCount(g);
       const free = mapCells(g).filter((c) => !c.own && !c.echo).length;
       txt(statLine, `Galaxie 1 · ${n} Sektoren erschlossen`);
+      const trip = tripOf(g);
+      setHidden(tripLine, !trip);
+      if (trip) txt(tripLine, `Erschließung läuft: ${SECTOR[mapCells(g)[trip.i].type].name}, noch ${mmss(trip.left)}`);
       txt(costLine, free > 0 ? `Nächster Sektor: ${fmt(claimCost(g))} Sternsysteme (du hast ${fmt(g.get('systems'))})` : 'Alle freien Sektoren sind vergeben.');
       const autoOpen = g.autoUnlocked('auto_map');
       setHidden(autoRow, !autoOpen);

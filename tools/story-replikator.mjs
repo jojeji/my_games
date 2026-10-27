@@ -7,7 +7,7 @@
 // Reuse in tests: import { storyTimeline, storyPacing } and feed them the game of a finished runSim().
 import { pathToFileURL } from 'node:url';
 import { advance } from '../engine/core.js';
-import { runSim } from './simulate.mjs';
+import { runSim, loadSaveFile } from './simulate.mjs';
 import { lineText } from '../games/replikator/characters.js';
 import { CAST } from '../games/replikator/characters.js';
 
@@ -45,8 +45,30 @@ function printTranscript(timeline, g) {
   }
 }
 
+/** Akt II transcript (map entries) of a sim run: node tools/story-replikator.mjs --act2 [--fixture file] [--seed N] */
+function act2Transcript(args) {
+  const fx = args.indexOf('--fixture') >= 0 ? args[args.indexOf('--fixture') + 1] : null;
+  const seed = args.indexOf('--seed') >= 0 ? Number(args[args.indexOf('--seed') + 1]) : undefined;
+  const game = fx ? loadSaveFile(fx, { seed }) : null;
+  const r = runSim({ game, hours: fx ? 10 : 11.5 + 10, dt: 2, quiet: true, act2: true, seed, until: (g) => g.state.rep2.map.claimed >= 12 });
+  advance(r.game, 5);
+  const g = r.game;
+  const start = g.state.rep2.act2At;
+  const list = g.storyList().filter((x) => x.def.chapter === 'a2');
+  for (const e of list) {
+    console.log(`\n+${hms(e.t - start)}  ${e.def.id}${e.def.modal ? ' [Modal]' : ''}`);
+    for (const l of e.def.lines) console.log(`  ${CAST[l.who].name.padEnd(5)} ${lineText(g, l)}`);
+  }
+  const gaps = list.slice(1).map((e, i) => e.t - list[i].t);
+  console.log(`\n${list.length} Einträge in Akt II, kleinster Abstand ${Math.round(Math.min(...gaps))} s, Sektoren: ${r.map.claims.map((c) => hms(c.t - r.map.start)).join(' ')}`);
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = process.argv.slice(2);
+  if (args.includes('--act2')) {
+    act2Transcript(args);
+    process.exit(0);
+  }
   const idle = args.includes('--idle');
   const maxMin = Number(args[args.indexOf('--max') + 1]) || 20;
   const r = idle

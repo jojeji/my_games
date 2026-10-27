@@ -8,14 +8,14 @@ import { mountStandardApp } from '../../engine/ui/standard-app.js';
 import { registerServiceWorker } from '../../engine/pwa.js';
 import { formatPercent } from '../../engine/format.js';
 import { buildGalaxyTab } from './map-view.js';
-import { act2Active, claimable, canClaim } from './map.js';
+import { act2Active, claimable, canClaim, SECTOR } from './map.js';
 
 const g = createReplikator();
 const runtime = createRuntime(g);
 const offline = runtime.load(); // may return an offline-progress summary
 runtime.start();
 
-mountStandardApp({
+const { app } = mountStandardApp({
   root: document.getElementById('app'),
   runtime,
   offline,
@@ -76,6 +76,14 @@ mountStandardApp({
       },
     ],
   },
+});
+
+// arrival toasts only where no story entry tells the same news (the first sector, every Ruine, the first Echo occupation)
+runtime.on('map-claim', ({ type, n }) => {
+  if (n > 1 && type !== 'ruine') app.toast(`${SECTOR[type].name} erschlossen.`, { kind: 'good', title: 'Sektor ' + n });
+});
+runtime.on('echo-occupy', ({ n }) => {
+  if (n > 1) app.toast('Das Echo hat einen weiteren Sektor besetzt.', { kind: 'info' });
 });
 
 registerServiceWorker('../../sw.js');

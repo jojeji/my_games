@@ -99,7 +99,7 @@ export function mountStandardApp({ root, runtime, options, offline }) {
         const el = h('span', { class: 'chip', hidden: true, title: c.name }, h('small', { text: c.short || c.name }), v);
         return { id, v, el };
       });
-      const chipRow = h('div', { class: 'hdr-chips' }, ...chips.map((c) => c.el), mult);
+      const chipRow = h('div', { class: 'hdr-chips fit' }, ...chips.map((c) => c.el), mult);
       const chText = h('span', { class: 'chal-banner-text' });
       const chBar = progressBar();
       const chBanner = h('div', { class: 'chal-banner', hidden: true }, chText, chBar.el);

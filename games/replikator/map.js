@@ -3,6 +3,7 @@
 //  - hex grid in axial coordinates (q, r), radius 2 = 19 cells, centre = Heimat (claimed from the start)
 //  - layout and types come from the seeded RNG (engine/kit/rng.js) when Akt II starts; the cells are stored in the save
 //  - fog: a cell's type is only visible next to an own cell; claiming only next to own territory
+//  - claiming starts an Erschliessung (the probe flies there, `mapTrip*` seconds, one at a time, runs offline too); the sector counts when it arrives
 //  - the Echo takes one free cell per `mapEchoEvery` claimed sectors (never time based) and never cuts off a free cell from the player,
 //    so every map can be claimed down to the last free cell (>= 12 sectors, see tests/replikator-map.test.mjs)
 import { D, ONE, Decimal } from '../../engine/decimal.js';
@@ -81,7 +82,7 @@ export function rep2State() {
       anchor: 0, // log10(Sternsysteme best) at that moment: the map's price level (tune.js mapCost*)
       rng: { seed: newSeed() },
       ruins: [], // variants of the claimed Ruinen in claim order (story entries)
-      map: { radius: 0, seed: 0, claimed: 0, occupied: 0, cells: [] },
+      map: { radius: 0, seed: 0, claimed: 0, occupied: 0, trip: null, cells: [] }, // trip: { i, left, dur } while an Erschliessung runs
     },
   };
 }
@@ -150,7 +151,7 @@ export function generateMap(rng, radius = T.mapRadius) {
   const variants = rngShuffle(rng, [...Array(RUIN_VARIANTS).keys()]);
   let v = 0;
   for (const c of cells) if (c.type === 'ruine') c.v = variants[v++ % RUIN_VARIANTS];
-  return { radius, seed: toSeed(Math.floor(rngRoll(rng) * 4294967296)), claimed: 0, occupied: 0, cells };
+  return { radius, seed: toSeed(Math.floor(rngRoll(rng) * 4294967296)), claimed: 0, occupied: 0, trip: null, cells };
 }
 
 /* ------------------------------------------------------------------ */
@@ -185,7 +186,7 @@ export function claimCost(g, n = claimedCount(g)) {
   return Decimal.pow(10, costLog(g, n)).ceil();
 }
 
-/** { ok, reason } with reason: 'inactive' | 'own' | 'echo' | 'fog' | 'cost'. */
+/** { ok, reason } with reason: 'inactive' | 'own' | 'echo' | 'fog' | 'trip' (an Erschliessung is running) | 'cost'. */
 export function canClaim(g, i) {
   if (!act2Active(g)) return { ok: false, reason: 'inactive' };
   const cells = mapCells(g);
@@ -193,6 +194,7 @@ export function canClaim(g, i) {
   if (!c || c.type === 'home' || c.own) return { ok: false, reason: 'own' };
   if (c.echo) return { ok: false, reason: 'echo' };
   if (!nextToOwn(cells, i)) return { ok: false, reason: 'fog' };
+  if (mapOf(g).trip) return { ok: false, reason: 'trip' };
   if (!g.canAfford('systems', claimCost(g))) return { ok: false, reason: 'cost' };
   return { ok: true, reason: '' };
 }
@@ -201,22 +203,40 @@ export function canClaim(g, i) {
 export function claimable(g) {
   if (!act2Active(g)) return [];
   const cells = mapCells(g);
-  return cells.map((c, i) => i).filter((i) => !cells[i].own && !cells[i].echo && cells[i].type !== 'home' && nextToOwn(cells, i));
+  const trip = mapOf(g).trip;
+  return cells.map((c, i) => i).filter((i) => !cells[i].own && !cells[i].echo && cells[i].type !== 'home' && !(trip && trip.i === i) && nextToOwn(cells, i));
 }
 
-/** Claim a sector: pays Sternsysteme (current amount), then the Echo may take a cell. Returns false when not possible. */
+/** Duration (s) of the Erschliessung of the next sector: grows with the number of sectors claimed so far. */
+export const tripSecs = (g, n = claimedCount(g)) => Math.round(T.mapTripBase * Math.pow(T.mapTripGrow, n));
+/** The running Erschliessung: { i, left, dur } or null. */
+export const tripOf = (g) => (act2Active(g) ? mapOf(g).trip : null);
+
+/** Claim a sector: pays Sternsysteme (current amount) and starts the Erschliessung. The sector counts on arrival (arrive). Returns false when not possible. */
 export function claim(g, i) {
   if (!canClaim(g, i).ok) return false;
   const m = mapOf(g);
-  const c = m.cells[i];
   const cost = claimCost(g);
   g.spend('systems', cost);
+  const dur = tripSecs(g);
+  m.trip = { i, left: dur, dur };
+  g.plog('map', `Erschließung: ${SECTOR[m.cells[i].type].name} (${D(cost).toExponential(1)} Sys, ${dur} s)`);
+  g.emit('map-trip', { i, type: m.cells[i].type, dur });
+  return true;
+}
+
+/** The probe arrives: the sector is claimed (bonus, story, Echo occupation). */
+export function arrive(g) {
+  const m = mapOf(g);
+  if (!m.trip) return false;
+  const c = m.cells[m.trip.i];
+  m.trip = null;
   c.own = 1;
   m.claimed += 1;
   if (c.type === 'ruine') R2(g).ruins.push(c.v ?? 0);
-  g.plog('map', `Sektor ${m.claimed}: ${SECTOR[c.type].name} (${D(cost).toExponential(1)} Sys)`);
+  g.plog('map', `Sektor ${m.claimed}: ${SECTOR[c.type].name}`);
   g.refresh();
-  g.emit('map-claim', { i, type: c.type, n: m.claimed });
+  g.emit('map-claim', { i: m.cells.indexOf(c), type: c.type, n: m.claimed });
   while (m.occupied < Math.floor(m.claimed / T.mapEchoEvery)) {
     const taken = echoOccupy(g);
     if (taken < 0) break;
@@ -224,16 +244,34 @@ export function claim(g, i) {
   return true;
 }
 
+/** Advance the running Erschliessung (hooks.onTick; also during offline catch-up). */
+export function mapTick(g, dt) {
+  const r = g.state.rep2;
+  if (!r.act2 || !r.map.trip) return;
+  r.map.trip.left -= dt;
+  if (r.map.trip.left <= 0) arrive(g);
+}
+
+/**
+ * Should the Singularität wait? It wipes the Sternsysteme stock: while sectors are left and the next one costs at most `mapHoldReach` times
+ * the current stock, the Auto-Singularität (and the sim's player) keep the run, for at most `mapHoldMax` seconds of run time.
+ */
+export function holdSingularity(g) {
+  if (!act2Active(g) || !claimable(g).length) return false;
+  if (g.state.layers.singularity.runTime > T.mapHoldMax) return false;
+  return claimCost(g).lte(g.get('systems').mul(T.mapHoldReach));
+}
+
 /* ------------------------------------------------------------------ */
 /* The Echo                                                             */
 /* ------------------------------------------------------------------ */
 
 /** Would the free cells stay reachable from own territory (through free cells) if cell `skip` were taken? */
-function staysConnected(cells, nb, skip) {
+function staysConnected(cells, nb, skip, rsv = -1) {
   const seen = new Set();
   const stack = [];
   cells.forEach((c, i) => {
-    if (c.own) {
+    if (c.own || i === rsv) {
       seen.add(i);
       stack.push(i);
     }
@@ -245,7 +283,7 @@ function staysConnected(cells, nb, skip) {
       stack.push(j);
     }
   }
-  return cells.every((c, i) => c.own || c.echo || i === skip || seen.has(i));
+  return cells.every((c, i) => c.own || c.echo || i === skip || i === rsv || seen.has(i));
 }
 
 /**
@@ -256,9 +294,10 @@ function staysConnected(cells, nb, skip) {
 export function echoChoice(m) {
   const cells = m.cells;
   const nb = neighbors(cells);
-  const free = cells.map((c, i) => i).filter((i) => !cells[i].own && !cells[i].echo);
+  const rsv = m.trip ? m.trip.i : -1; // the sector the probe is flying to counts as taken
+  const free = cells.map((c, i) => i).filter((i) => !cells[i].own && !cells[i].echo && i !== rsv);
   if (!free.length) return -1;
-  const safe = free.filter((i) => staysConnected(cells, nb, i));
+  const safe = free.filter((i) => staysConnected(cells, nb, i, rsv));
   const pool = safe.length ? safe : free;
   const echoCells = cells.map((c, i) => i).filter((i) => cells[i].echo);
   const adjacent = pool.filter((i) => nb[i].some((j) => cells[j].echo));

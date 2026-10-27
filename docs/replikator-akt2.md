@@ -62,9 +62,11 @@ Einstieg = Ende v1. Die Sonde empfängt ein schwaches Signal aus der eigenen Gal
 
 - Hex-Karte mit Radius 2 (19 Felder), Zentrum = Heimat (bereits erschlossen). Layout + Sektortypen pro Galaxie aus dem Seed-RNG.
 - **Nebel des Unbekannten:** Typ eines Felds ist erst sichtbar, wenn ein Nachbar erschlossen ist. Erschließen nur neben eigenem Gebiet.
-- **Kosten:** Sternsysteme (der *aktuelle* Bestand, das senkt den Sternsystem-Bonus bis zur nächsten Expansion – bewusste Abwägung).
-  Umgesetzt (Paket 2): Preis `10^(anker + mapCostOffset + mapCostStep * n)` mit `anker = mapAnchorSlope * log10(Sternsysteme-Bestwert)` beim Akt-II-Start (im Spielstand), siehe `tune.js` und `docs/LESSONS.md`.
-  Erschlossene Sektoren überleben Ebene 1–3, nur der Galaxiensprung setzt die Karte zurück.
+- **Kosten:** Sternsysteme (der *aktuelle* Bestand). Hinweis: Das senkt den Sternsystem-Bonus **nicht**, denn `globalParts` liest `systems.run`, `spend` verringert nur `amount`.
+  Die Abwägung läuft gegen Expansions-Upgrades (am Ende von v1 alle gekauft) und gegen den Singularitäts-Takt: Eine Singularität setzt den Bestand zurück, deshalb wartet die Auto-Singularität, solange der nächste Sektor nahe ist (`holdSingularity`).
+  Preis `10^(anker + mapCostOffset + mapCostStep * n)` mit `anker = mapAnchorSlope * log10(Sternsysteme-Bestwert)` beim Akt-II-Start (im Spielstand), siehe `tune.js` und `docs/LESSONS.md`. Erschlossene Sektoren überleben Ebene 1–3, nur der Galaxiensprung setzt die Karte zurück.
+- **Erschließung (Reisezeit, Drossel):** Ein Anspruch startet eine Erschließung, der Preis wird sofort bezahlt, der Sektor zählt (Bonus, Story, Echo-Besetzung) erst bei der Ankunft. Immer nur eine zugleich,
+  Dauer `mapTripBase * mapTripGrow^n` s (4 min für den ersten, ~30 min für den zehnten), läuft auch offline. Die Auto-Erkundung startet die nächste, sobald die laufende angekommen ist.
 - **Sektortypen** (Effekte global oder gezielt, Nachbarn gleichen Typs verstärken: +50 % Effekt-Exponent pro Nachbar, max. 3):
   - Sternhaufen: Sternsystem-Gewinn ×
   - Nebel: Blaupausen-Gewinn ×

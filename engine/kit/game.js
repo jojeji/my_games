@@ -391,7 +391,7 @@ export class Game {
  * | 'time' (run time of the layer >= value seconds; enable via `modes: ['time', ...]`).
  * `on`/`mode`/`value` are the defaults a fresh save gets.
  */
-export function prestigeAuto({ id, layer, name, desc, unlock, interval, group, where, on = false, mode = 'amount', value = 1, minGain = 1, modes }) {
+export function prestigeAuto({ id, layer, name, desc, unlock, interval, group, where, on = false, mode = 'amount', value = 1, minGain = 1, modes, hold, holdText }) {
   return {
     id,
     name,
@@ -404,9 +404,12 @@ export function prestigeAuto({ id, layer, name, desc, unlock, interval, group, w
     unlock,
     interval: interval || (() => 1),
     defaults: { on, mode, value: D(value) },
+    // hold(g) -> true: the game wants the run to go on (e.g. a map sector is almost affordable); status(g) says so in the config row
+    status: hold ? (g) => (hold(g) && g.prestigeGain(layer).gte(1) ? holdText || 'Wartet.' : '') : undefined,
     run(g, st) {
       const gain = g.prestigeGain(layer);
       if (gain.lt(1) || g.prestigeBlocked(layer)) return;
+      if (hold && hold(g)) return;
       const l = g.layerById[layer];
       if (st.mode === 'time') {
         if (g.state.layers[layer].runTime >= Number(st.value.toString())) g.prestige(layer);

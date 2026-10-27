@@ -284,7 +284,9 @@ add('st_end', 'k4', (g) => g.upgActive('z_horizont') && g.chDoneCount() >= 8, [
 // Opening: the quiet signal from k4_signal comes back, now with the Sonde's own designation. Nothing more is revealed.
 // Entry conditions read state.rep2 (map.js); they are false in a save that has not started Akt II yet, so the migration backfill never swallows them.
 const act2At = (secs) => (g) => g.state.rep2.act2 && played(g) >= g.state.rep2.act2At + secs;
-const ruinSeen = (v) => (g) => g.state.rep2.ruins.includes(v);
+const ruinSeen = (v) => (g) => g.state.rep2.ruins.includes(v) && calm(g);
+/** No other Akt II entry within the last minute: arrivals, sightings and occupations can coincide, their entries must not pile up. */
+const calm = (g) => !S.some((e) => e.chapter === 'a2' && g.state.story[e.id] !== undefined && played(g) - g.state.story[e.id] < 60);
 
 add('a2_start', 'a2', act2At(5), [
   w('Eingehendes Signal. Quelle: unbekannt. Stärke: oberhalb des Rauschens.'),
@@ -295,7 +297,7 @@ add('a2_start', 'a2', act2At(5), [
   p('Ich sehe nach, woher es kommt. Die Karte ist angelegt: neunzehn Sektoren, einer davon meiner.'),
 ], true);
 
-add('a2_first', 'a2', (g) => claimedCount(g) >= 1, [
+add('a2_first', 'a2', (g) => claimedCount(g) >= 1 && calm(g), [
   p('Der erste Sektor gehört mir. Er hat sich nicht gewehrt und auch nicht mitgeholfen.'),
   w('Sektor übernommen. Zuständigkeit: Wartungsroutine, mangels Alternative.'),
 ]);
@@ -318,13 +320,13 @@ add('a2_ruin3', 'a2', ruinSeen(3), [
 ]);
 
 // the second probe's first cell shows up (or, if the player never looked, the first cell it takes): a silhouette, unexplained
-add('a2_echo', 'a2', (g) => echoSighted(g), [
+add('a2_echo', 'a2', (g) => echoSighted(g) && g.state.story.a2_first !== undefined && calm(g), [
   p('Im Nachbarsektor steht eine Silhouette. Rumpf, Antennen, Antrieb. Sie bewegt sich nicht, ich auch nicht, eine Weile.'),
   w('Objekt erfasst. Klassifikation: Sonde. Bestand laut Register: eine.'),
   p('Ich zähle auch eine.'),
 ]);
 
-add('a2_echo_take', 'a2', (g) => occupiedCount(g) >= 1 && after('a2_echo', 30)(g), [
+add('a2_echo_take', 'a2', (g) => occupiedCount(g) >= 1 && after('a2_echo', 30)(g) && calm(g), [
   p('Ein Sektor ist nicht mehr frei. Nichts ist explodiert, niemand hat gefunkt. Er ist einfach belegt.'),
   w('Sektor als nicht verfügbar vermerkt. Ursache: Mitbewerber.'),
   p('Ich hatte keinen Mitbewerber eingeplant.'),

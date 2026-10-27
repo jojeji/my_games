@@ -46,3 +46,9 @@
 .sector-card .mult-list li { flex-wrap: wrap; }
 .sector-card .mult-list li b { text-align: right; font-weight: 600; }
 .sector-why { color: var(--muted); }
+
+.gal-cell.trip .gal-hex { fill-opacity: 0.3; stroke: var(--accent); stroke-opacity: 1; stroke-width: 2.6; stroke-dasharray: 6 4; }
+.gal-ring { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; pointer-events: none; }
+.gal-cell.trip .gal-tag { fill: var(--accent); font-size: 14px; letter-spacing: 0; }
+.gal-trip { font-weight: 700; color: var(--accent); }
+.auto-wait { display: block; margin-top: 6px; }

@@ -21,8 +21,7 @@ import { readFileSync } from 'node:fs';
 import { advance } from '../engine/core.js';
 import { createSaveStore } from '../engine/save.js';
 import { createReplikator } from '../games/replikator/logic.js';
-import { chPower, buyRepUpgrades, mapAutoClaim } from '../games/replikator/def.js';
-import { claimCost } from '../games/replikator/map.js';
+import { chPower, buyRepUpgrades, mapAutoClaim, singularityHeld } from '../games/replikator/def.js';
 import { TUNE as T } from '../games/replikator/tune.js';
 import { formatNumber as f, formatDuration } from '../engine/format.js';
 
@@ -48,9 +47,6 @@ export const STRATEGY = {
   fixed: null, // { layerId: seconds } prestige exactly when the run of that layer is this old
   skip: [], // layer ids that are never prestiged by the player
   noChallenges: false,
-  mapHold: 0, // Akt II: keep a Singularität run up to this many seconds while the next sector is within reach (0 = off)
-  mapHoldReach: 20, // ... within reach = price <= this factor * Sternsysteme in stock
-  mapHoldUntil: 10, // ... and fewer sectors than this are claimed
   autosOff: false, // switch the in-game prestige autos off (the player logic does the prestiging)
 };
 
@@ -82,7 +78,6 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
   if (!game && seed != null) g.state.rep2.rng.seed = seed; // reproducible map
   if (act2) {
     stopAtEnd = false;
-    if (strategy.mapHold === undefined) S.mapHold = 24 * 3600; // the Akt II player keeps a Singularität run while the next sector is within reach (see STRATEGY.mapHold)
   }
   const map = { start: null, claims: [], echo: [] }; // Akt II: times (sim seconds) of the start, each claimed sector and each Echo occupation
   if (act2 && g.state.rep2.act2) map.start = 0; // a loaded save that already is in Akt II
@@ -127,9 +122,11 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
     } else if (type === 'act2') {
       map.start = t;
       note(`=== AKT II beginnt (Anker 1e${g.state.rep2.anchor.toFixed(2)}, Sternsysteme ${f(g.get('systems'))}) ===`);
+    } else if (type === 'map-trip') {
+      note(`Erschließung startet: ${p.type} (${p.dur} s, Sternsysteme danach ${f(g.get('systems'))})`, 'quiet');
     } else if (type === 'map-claim') {
       map.claims.push({ t, n: p.n, type: p.type });
-      note(`Sektor ${p.n}: ${p.type} (Sternsysteme danach ${f(g.get('systems'))}, +${hms(t - (map.start ?? 0))} seit Akt II)`);
+      note(`Sektor ${p.n} erreicht: ${p.type} (+${hms(t - (map.start ?? 0))} seit Akt II)`);
     } else if (type === 'echo-occupy') {
       map.echo.push({ t, n: p.n });
       note(`Das Echo besetzt einen Sektor (${p.n})`);
@@ -183,22 +180,13 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
     }
   };
 
-  // experimental: a patient Akt II player keeps the Singularität run (and with it the Sternsysteme stock) while the next sector is within reach
-  const holdSingularity = () => {
-    if (!S.mapHold || !act2 || !g.state.rep2.act2) return false;
-    const m = g.state.rep2.map;
-    if (m.claimed >= S.mapHoldUntil) return false;
-    if (g.state.layers.singularity.runTime > S.mapHold) return false;
-    return claimCost(g).lt(g.get('systems').mul(S.mapHoldReach));
-  };
-
   const player = () => {
     if (act2 && g.state.rep2.act2) while (mapAutoClaim(g)); // before the Auto-Erkundung unlocks the player claims by hand, with the same function (everything affordable, before any reset)
     research();
     buyRepUpgrades(g, 'expansion'); // the same value-based buying as the in-game autobuyers (def.js)
     buyRepUpgrades(g, 'replication');
     g.genBuyAllMax('matter');
-    if (wantPrestige('singularity', S.singFactor, S.singMinTime, S.singStall, S.singMinGain) && !holdSingularity()) g.prestige('singularity');
+    if (wantPrestige('singularity', S.singFactor, S.singMinTime, S.singStall, S.singMinGain) && !singularityHeld(g)) g.prestige('singularity');
     else if (wantPrestige('expansion', S.expFactor, S.expMinTime, S.expStall, S.expMinGain)) {
       // do not leave a challenge by expanding: expansion is blocked in challenges anyway
       g.prestige('expansion');
