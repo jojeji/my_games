@@ -79,23 +79,28 @@ Einstieg = Ende v1. Die Sonde empfängt ein schwaches Signal aus der eigenen Gal
 - **Auto-Erkundung** (später freigeschaltet, startet aus): erschließt den Sektor mit dem besten Nutzen/Kosten, dieselbe Funktion nutzt die Sim.
 - UI: eigener Tab mit SVG-Hexraster, Antippen öffnet eine Sektorkarte (Typ, Effekt, Kosten, Nachbarboni, Button). Gesamtboni als Liste darunter.
 
-## Paket 3 – Mutationen
+## Paket 3 – Mutationen (umgesetzt, `games/replikator/mutations.js`, `genome-view.js`)
 
-- Jede Replikation lädt den **Kopierfehler-Zähler**. Bei `mutEvery` Replikationen (wächst langsam) entsteht ein **Angebot**: 3 Karten, eine wählen oder verwerfen.
-  Offline werden bis zu 3 Angebote gesammelt (Warteschlange), danach lädt der Zähler nicht weiter. Nichts verfällt.
-- **Genom:** 3 Plätze, +1 durch Meilensteine/Galaxien-Archiv (max 6). Eine Mutation ersetzen = alte geht verloren. Mutationen überleben alle Resets inkl. Galaxiensprung.
-- Seltenheit: gewöhnlich / selten / „Glücksfehler“ (legendär). Jede Mutation hat **Nutzen und Haken**. Startliste (~15), Beispiele:
-  - Hyperaktiv: Produktion ×3, Autokauf-Intervall ×2
-  - Gigantismus: Sternschmiede ×10, Bohrdrohne und Schmelzer ×0,5
-  - Sparsam: Generatorkosten ÷100, Bündelbonus −0,1
-  - Nostalgisch: Blaupausen-Gewinn ×3, Sternsystem-Gewinn ×0,7
-  - Schwarmgeist: Produktion +8 % pro erschlossenem Sektor, Sektorkosten ×1,5
-  - Fehlerfreudig: Angebote doppelt so oft, Produktion ×0,8
-  - Nachtschwärmer: Offline-Produktion ×1,5, Online ×0,9
-  - Sonnenhunger: Befehle laden doppelt so schnell, Produktion ×0,7
-  - Geduldig: Replikations-Gewinn bis ×3 mit Laufzeit (voll ab 5 min) – **nie** ein Effekt, der kurze Läufe belohnt
-  - Echo-Resonanz (nur nach der Echo-Begegnung, selten): …
-- **Auto-Genom** (spät, startet aus): nimmt das Angebot mit dem größten Zuwachs der Zielfunktion, sonst verwerfen.
+**Entscheidung des Besitzers (ersetzt die erste Fassung „pro Replikation“):** Angebote laden nach **Spielzeit** (online und offline gleich), nicht pro Replikation.
+Grund: Laden pro Replikation belohnt Mikro-Replikationen (der echte Spielstand hat eine schnellste Replikation von 1 s), das verbietet `docs/LESSONS.md`.
+
+- **Freischaltung:** 3 erschlossene Sektoren, das erste Angebot ist sofort da. Danach ein Angebot alle `mutEvery` = 25 min Spielzeit (`* mutGrow` = 1,03 je gezogenem Angebot),
+  höchstens `mutQueueMax` = 3 wartend; ist die Warteschlange voll, hält die Ladung an (nichts geht verloren, nichts wird bestraft).
+- **Angebot:** 3 Karten aus dem Seed-RNG (`rep2.mut.rng`, abgeleitet vom Karten-Seed), nie eine Mutation, die schon im Genom ist, keine Doppelten. Seltenheit je Karte 70 / 25 / 5 (gewöhnlich / selten / Glücksfehler).
+  Das Angebot wird gezogen, wenn es an die Spitze der Warteschlange rückt, und bleibt dann fest. Nehmen oder Verwerfen.
+- **Genom:** 3 Plätze, +1 bei 6 und bei 10 Sektoren (`genomeSlotAt`), Galaxien-Archiv später (`mut.bonusSlots`), höchstens 6. Bei vollem Genom muss man eine Mutation zum Ersetzen wählen (die alte ist weg).
+  Mutationen liegen in `state.rep2.mut` und überleben jeden Reset (auch den späteren Galaxiensprung).
+- **15 Mutationen**, je Nutzen **und** Haken, Zahlen in `tune.js` (`mutFx`), Texte daraus gebaut. Wirkung nur über die vorhandenen Hooks (`globalParts` mit Namen, Layer-`mult`, `genCostDiv`, `bundleMult`, `tierMult`,
+  `autoInterval`, Sektorpreis, Reisezeit, Nachbar-Schritt). Liste siehe unten bzw. `MUTATIONS` in `mutations.js`. **Sonnenhunger** (Befehle) und **Echo-Resonanz** kommen erst mit Paket 4 / 6.
+- **Offline-Flag:** `game.offlineNow` (Engine, gesetzt von `runtime.simulateOffline` und vom Offline-Szenario der Sim) – nötig für Nachtschwärmer.
+- **Auto-Genom** (`auto_genom`, Art `misc`, startet aus, ab 10 Sektoren oder der 5. gewählten Mutation; Schalter im Genom-Tab und in der Automatisierung): `mutChoose(g)` (def.js) bewertet jede Karte (und bei vollem Genom jede Ersetzung)
+  mit `mutObjective` = `repObjective` + `mutExtra` (Angebotsrate, Reisezeit, Sektorpreis, Offline-Anteil von Nachtschwärmer; Geduldig mit vollem Faktor), nimmt den besten Zuwachs
+  (>= `mutMinGain` bei freiem Platz, >= `mutSwapGain` beim Ersetzen) oder verwirft. Die Sim ruft dieselbe Funktion (`mutAutoGenom`).
+- **Laufdauer:** gemessen für alle 15 einzeln mit `tools/runlength-replikator.mjs` (Optimum nie unter 10 min, 30-s-/60-s-Läufe bei 0 %); abgesichert in `tests/sim-replikator-mutation-runlength.test.mjs`.
+  Geduldig ist so gebaut, dass der Start eines Laufs der schwächste Punkt ist (x0,5 bis voll x3 nach 5 min).
+- **Story:** Kapitel `a2m` „Kopierfehler“: Modal beim ersten Angebot (löst „mit allen Fehlern des Originals“ ein), Reaktion auf die erste Wahl, ein WR-0-Bericht je Mutation beim ersten Nehmen (`MUTATIONS[].report`),
+  Meilensteine (Genom voll, erster Tausch, Glücksfehler, Platz 4/5, Verwerfen, Auto-Genom) und 8 kurze Beobachtungen 12 min nach je einem Angebot. Keine Lücke > 25 min bis zum 10. Sektor, nie zwei Einträge innerhalb einer Minute.
+- UI: Tab „Genom“ (`extraTabs`, Punkt bei wartendem Angebot): Platz-Raster, Angebot mit „Nehmen“, Tausch-Dialog, Warteschlange und Restzeit, Auto-Genom-Schalter.
 
 ## Paket 4 – Sondenbefehle und Anomalien
 
@@ -153,7 +158,7 @@ Folgerungen (verbindlich für Paket 2–5):
 
 ## Technik
 
-- `def.version = 2`, Migration `1 → 2` (neue Keys über `mergeDefaults`, alte Story-Flags bleiben).
+- `def.version = 4` (Paket 3), Migrationen `1 → 2`, `2 → 3`, `3 → 4`; ursprünglich `def.version = 2`, Migration `1 → 2` (neue Keys über `mergeDefaults`, alte Story-Flags bleiben).
 - Neuer Spielzustand unter `state.rep2` (`rng`, `map`, `genome`, `offers`, `anomaly`, `galaxy`, `archive`, `echo`) via `def.extraState`.
 - Replikator bleibt auf `mountStandardApp`; neue Tabs (Karte, Genom) über eine Erweiterung der Optionen (`extraTabs`) – generisch, damit andere Spiele sie nutzen können.
 - Sim: `tools/simulate.mjs` bekommt Akt-II-Strategie (Karte, Genom, Befehle, Anomalien, Galaxienwahl) – **über dieselben Auto-Funktionen** aus `def.js`.

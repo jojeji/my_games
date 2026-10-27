@@ -104,3 +104,10 @@ Vocabulary: `games/psst/GLOSSARY.md`; decision: `docs/adr/0002-*`. The single-ph
 - Rules: never put a card into a view of Rater/Zuschauer/Anzeige (`tests/psst-mp-game.test.mjs` checks views and wire frames); intents that depend on the screen carry `ref` (card id / buzz number) so the first valid tap wins;
   card frames are only ever sent with `to` = one client id. Add new intents in `host.js` `intent()` with a role check and a test.
 
+
+## Replikator Akt II (Paket 3: Mutationen)
+- `games/replikator/mutations.js` (pure): `MUTATIONS` (15, je Nutzen + Haken + `report` für die Chronik), State `state.rep2.mut` (`queue`, `offer`, `genome`, `rng`, ...), `def.version = 4` (Migration 3 -> 4 = `migrateToMut`).
+  Angebote laden nach **Spielzeit** (`mutEvery` 25 min * `mutGrow`^n, max 3 wartend), nicht pro Replikation (Mikro-Läufe!). Wirkung nur über `mutParts/mutGain/mutTier/mutCostDiv/mutBundle/mutAutoSlow/mutMapCost/mutTrip/mutAdj`, aufgerufen aus den Hooks in def.js und map.js. Zahlen: `tune.js` (`mut*`, `genome*`, `mutFx`).
+- Auto-Genom (`auto_genom`, startet aus): `mutChoose(g)`/`mutAutoGenom(g)` in def.js (`mutObjective` = `repObjective` + `mutExtra`), dieselbe Funktion ruft die Sim. Engine: `game.offlineNow` (true im Offline-Catch-up).
+- UI: `genome-view.js` als `extraTabs`-Eintrag „Genom“ (max. 6 Tabs, bei 360 px geprüft). Story: Kapitel `a2m` in `story.js` (`mut_*`, Modal `mut_first`, Berichte aus `MUTATIONS[].report`, `mut_fill1..8`).
+- Tools/Tests: `node tools/simulate.mjs --act2 --verbose` druckt Angebote und Entscheidungen; `tests/replikator-mutations.test.mjs`, `tests/sim-replikator-mutations.test.mjs`, `tests/sim-replikator-mutation-runlength.test.mjs`.

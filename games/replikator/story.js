@@ -335,7 +335,7 @@ add('a2_echo_take', 'a2', (g) => occupiedCount(g) >= 1 && after('a2_echo', 30)(g
 ]);
 
 /* ---------------- Akt II: Kopierfehler (Mutationen, mutations.js) ---------------- */
-// Offers come every ~25 min of play time, so the thread is: the modal at the first offer, a reaction to the first pick, one WR-0 report per
+// Offers come every ~25 min of play time, so the thread is: the modal at the first offer, a reaction to the first pick, one maintenance report per
 // mutation the first time it is taken, a few milestones of the genome, and a chain of short observations ('fill', one per offer, 12 min after it
 // was drawn) so that nothing stays quiet for long between two picks. Nothing here names a mutation's effect numbers; the texts fit every genome.
 const mu = (g) => g.state.rep2.mut;
@@ -353,7 +353,7 @@ add('mut_pick1', 'a2m', (g) => mu(g).taken >= 1 && had('mut_first')(g) && calm(g
   w('Genom: ein Eintrag. Fehler jetzt ausgewählt statt zufällig. Bewertung offen.'),
 ]);
 
-// the WR-0 report of every mutation, the first time it is taken (text lives in MUTATIONS[].report)
+// the maintenance routine's report of every mutation, the first time it is taken (text lives in MUTATIONS[].report)
 for (const m of MUTATIONS) {
   add('mut_' + m.id, 'a2m', (g) => mu(g).seen[m.id] !== undefined && had('mut_pick1')(g) && calm(g), [w(m.report)]);
 }
