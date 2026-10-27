@@ -58,6 +58,13 @@ export const TUNE = {
   chRetryPower: 0.3,
   chFreshSeconds: 30, // only start a challenge this soon after an Expansion (nothing is lost)
 
+  // Objective of the upgrade autobuyers (def.js repObjective): horizon (s) of the production estimate and weights (decades of "strength")
+  objHorizon: 60,
+  objCostW: 1.0, // per decade of generator cost divisor
+  objStartW: 0.3, // per decade of start matter
+  objTierW: 0.5, // per unlocked generator tier beyond the fourth
+  objAutoW: 0.3, // per Autokauf-Upgrade (and per halving of the autobuyer interval / 4)
+
   // Challenge goals (Materie reached within one replication run)
   chGoal: [1e16, 1e18, 1e20, 1e22, 1e16, 1e44, 1e50, 1e31],
 };

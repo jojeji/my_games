@@ -10,9 +10,11 @@
 // --idle  : shorthand for --act 120 --session 20 ("check in every 2 minutes for ~20 s", phone sessions).
 // --session N : player acts continuously for N seconds at the start of each --act interval (default 0 = one action per interval).
 // --both  : run active (act 1) and idle (act 120) and print a comparison (idle should finish in <= ~2x active time).
+// --offline : player checks in every --every H hours (default 8) for --session S seconds (default 120); in between the real offline catch-up
 import { pathToFileURL } from 'node:url';
+import { advance } from '../engine/core.js';
 import { createReplikator } from '../games/replikator/logic.js';
-import { chPower } from '../games/replikator/def.js';
+import { chPower, buyRepUpgrades } from '../games/replikator/def.js';
 import { TUNE as T } from '../games/replikator/tune.js';
 import { formatNumber as f, formatDuration } from '../engine/format.js';
 
@@ -34,6 +36,11 @@ export const STRATEGY = {
   singStall: 5400,
   challengeTimeout: 600, // give a challenge up after this many seconds
   challengeRetryExp: 1, // retry a failed challenge after this many more expansions
+  // Measurement switches (tools/runlength-replikator.mjs); all off for normal play:
+  fixed: null, // { layerId: seconds } prestige exactly when the run of that layer is this old
+  skip: [], // layer ids that are never prestiged by the player
+  noChallenges: false,
+  autosOff: false, // switch the in-game prestige autos off (the player logic does the prestiging)
 };
 
 const hms = (s) => {
@@ -43,9 +50,10 @@ const hms = (s) => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 };
 
-export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true } = {}) {
+export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true, game = null, until = null, offline = null } = {}) {
   const S = { ...STRATEGY, ...strategy };
-  const g = createReplikator();
+  const g = game || createReplikator();
+  if (S.autosOff) for (const a of g.def.autos) if (a.kind === 'prestige') g.state.auto[a.id].on = false;
   let t = 0;
   const log = [];
   const firsts = {};
@@ -91,7 +99,8 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
   };
 
   const wantPrestige = (id, factor, minTime, stall, minGain = 1) => {
-    if (!g.canPrestige(id)) return false;
+    if (!g.canPrestige(id) || S.skip.includes(id)) return false;
+    if (S.fixed && S.fixed[id] != null) return g.state.layers[id].runTime >= S.fixed[id];
     const L = g.layerById[id];
     const ls = g.state.layers[id];
     const gain = g.prestigeGain(id);
@@ -134,15 +143,15 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
 
   const player = () => {
     research();
-    g.upgBuyAll('expansion');
-    g.upgBuyAll('replication');
+    buyRepUpgrades(g, 'expansion'); // the same value-based buying as the in-game autobuyers (def.js)
+    buyRepUpgrades(g, 'replication');
     g.genBuyAllMax('matter');
     if (wantPrestige('singularity', S.singFactor, S.singMinTime, S.singStall, S.singMinGain)) g.prestige('singularity');
     else if (wantPrestige('expansion', S.expFactor, S.expMinTime, S.expStall, S.expMinGain)) {
       // do not leave a challenge by expanding: expansion is blocked in challenges anyway
       g.prestige('expansion');
     } else if (wantPrestige('replication', S.repFactor, S.repMinTime, S.repStall, S.repMinGain)) g.prestige('replication');
-    doChallenges();
+    if (!S.noChallenges) doChallenges();
   };
 
   const snapshotLine = () => {
@@ -159,31 +168,65 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
   let sinceAct = 0;
   const maxT = hours * 3600;
   const researchTotal = g.def.upgrades.filter((u) => u.group === 'research').length - 1; // one exclusive branch stays unbought
-  while (t < maxT) {
+  const checkEnd = () => {
+    if (endTime !== null) return false;
+    const owned = g.def.upgrades.filter((u) => u.group === 'research' && g.upgLevel(u.id) > 0).length;
+    if (g.chDoneCount() < g.def.challenges.length || owned < researchTotal) return false;
+    endTime = t;
+    note('=== ENDE v1: alle Challenges + alle (erreichbaren) Forschungsknoten ===');
+    return stopAtEnd;
+  };
+  const snapIfDue = () => {
+    if (t < nextSnap) return;
+    const line = snapshotLine();
+    log.push(line);
+    if (!quiet) console.log(line);
+    nextSnap += 1800;
+  };
+  let checkIns = 0;
+  let offlineSecs = 0;
+  let lostSecs = 0;
+  let done = false;
+  while (t < maxT && !done) {
+    // offline = { every, session }: the player checks in every `every` s for `session` s (acting like the active player);
+    // the rest of the time is caught up exactly like the runtime does after a long absence (core.js advance(), capped by the offline limit)
+    if (offline && t % offline.every >= offline.session) {
+      const away = offline.every - (t % offline.every);
+      const used = Math.min(away, g.offlineCapSeconds());
+      if (g.plogOffline) g.plogOffline(used);
+      const realTick = g.tick;
+      g.tick = (d) => {
+        realTick.call(g, d);
+        t += d;
+        if (checkEnd()) done = true;
+      };
+      try {
+        advance(g, used);
+      } finally {
+        delete g.tick;
+      }
+      g.state.time.offline += used;
+      offlineSecs += used;
+      lostSecs += away - used;
+      t += away - used; // beyond the cap the time passes without progress
+      snapIfDue();
+      continue;
+    }
+    if (offline && (t % offline.every) < dt) checkIns++;
     g.tick(dt);
     t += dt;
     sinceAct += dt;
     // session > 0: the player checks in every `actEvery` s and acts every tick for `session` s (a short phone session)
-    if (session > 0 && actEvery > dt) {
+    if (offline) player();
+    else if (session > 0 && actEvery > dt) {
       if (t % actEvery < session) player();
     } else if (sinceAct >= actEvery) {
       sinceAct = 0;
       player();
     }
-    if (t >= nextSnap) {
-      const line = snapshotLine();
-      log.push(line);
-      if (!quiet) console.log(line);
-      nextSnap += 1800;
-    }
-    if (endTime === null) {
-      const owned = g.def.upgrades.filter((u) => u.group === 'research' && g.upgLevel(u.id) > 0).length;
-      if (g.chDoneCount() >= g.def.challenges.length && owned >= researchTotal) {
-        endTime = t;
-        note('=== ENDE v1: alle Challenges + alle (erreichbaren) Forschungsknoten ===');
-        if (stopAtEnd) break;
-      }
-    }
+    if (until && until(g, t)) break;
+    snapIfDue();
+    if (checkEnd()) break;
   }
 
   // dead-wall analysis: longest gaps between meaningful events
@@ -195,7 +238,7 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
   }
   gaps.sort((a, b) => b.len - a.len);
 
-  const result = { t, endTime, firsts, log, gaps: gaps.slice(0, 8), game: g, upgTimes };
+  const result = { t, endTime, firsts, log, gaps: gaps.slice(0, 8), game: g, upgTimes, checkIns, offlineSecs, lostSecs };
   if (!quiet) {
     console.log('\n=== Zusammenfassung ===');
     for (const id of ['replication', 'expansion', 'singularity']) {
@@ -241,6 +284,21 @@ function parseArgs(argv) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const a = parseArgs(process.argv.slice(2));
   const started = Date.now();
+  if (a.offline) {
+    // player checks in every N hours (default 8) for M seconds (default 120); in between the real offline catch-up runs
+    const every = (a.every ?? 8) * 3600;
+    const sess = a.session ?? 120;
+    const r = runSim({ hours: a.hours ?? 24 * 14, dt: a.dt ?? 1, quiet: true, offline: { every, session: sess } });
+    console.log(`Offline-Szenario: alle ${f(every / 3600)} h für ${sess} s einloggen, dazwischen Offline-Catch-up (Limit ${f(r.game.offlineCapSeconds() / 3600)} h)`);
+    for (const id of ['replication', 'expansion', 'singularity']) {
+      const fi = r.firsts[id];
+      console.log(`Erste ${r.game.layerById[id].name}: ${fi ? hms(fi.t) + ` (Besuch ${Math.floor(fi.t / every) + 1})` : 'nicht erreicht'}`);
+    }
+    console.log('Challenges: ' + r.game.def.challenges.map((c) => `${c.name} ${r.firsts['ch_' + c.id] ? hms(r.firsts['ch_' + c.id].t) : '—'}`).join(' | '));
+    console.log(`Ende v1: ${r.endTime ? hms(r.endTime) + ` (${(r.endTime / 3600 / 24).toFixed(1)} Tage, ${r.checkIns} Besuche, aktiv ${f((r.checkIns * sess) / 60)} min)` : 'nicht erreicht in ' + (a.hours ?? 24 * 14) + ' h'}`);
+    console.log(`Offline berechnet ${f(r.offlineSecs / 3600)} h, durch das Limit verloren ${f(r.lostSecs / 3600)} h`);
+    process.exit(0);
+  }
   if (a.both) {
     const res = {};
     for (const [label, act] of [['aktiv (alle 1 s)', 1], ['idle (120 s / 20 s)', 120]]) {

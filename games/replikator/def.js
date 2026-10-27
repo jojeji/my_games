@@ -1,5 +1,5 @@
 // Replikator - game definition (data + hooks). Pure, DOM-free: runs in Node for tests and simulation.
-import { D, Decimal, ONE } from '../../engine/decimal.js';
+import { D, Decimal, ONE, ZERO } from '../../engine/decimal.js';
 import { prestigeAuto } from '../../engine/kit/game.js';
 import { formatNumber as fmt, formatMult, formatPercent } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
@@ -85,6 +85,59 @@ function autoInterval(g) {
   if (act(g, 'c_schnell')) t *= 0.25;
   return Math.max(0.05, t);
 }
+
+/* ------------------------------------------------------------------ */
+/* Upgrade autobuyer objective (shared by the in-game autos and the sim) */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Matter income a few seconds from now (log10): tier 0's rate plus what the higher tiers will have added after `T.objHorizon` s
+ * (Taylor series of the generator chain). Unlike the plain rate this sees multipliers on higher tiers (Fließband, Dyson-Netz)
+ * before the tier-0 rate has caught up with them.
+ */
+function matterStrength(g) {
+  const gs = g.state.gens.matter;
+  const mult = g.cache.mult.matter;
+  const n = g.cache.maxTier.matter;
+  let sum = ZERO;
+  let coef = ONE;
+  for (let k = 0; k < n; k++) {
+    coef = k === 0 ? mult[0] : coef.mul(mult[k]).mul(T.objHorizon / k);
+    sum = sum.add(gs[k].amount.mul(coef));
+  }
+  return sum.m > 0 ? sum.log10() : -300;
+}
+
+/**
+ * How strong is the current state (log10)? The autobuyer for BP / expansion upgrades (`upgBuyBest`) buys the upgrade whose rise of
+ * this value per cost is best, so every effect only has to show up here once:
+ *  - production (matter strength) incl. bundle, tier and global multipliers,
+ *  - cost reductions (`T.objCostW` per decade of generator cost divisor) and the Brückenkopf start matter,
+ *  - unlocked generator tiers beyond the first four, Autokauf-Upgrades and the autobuyer speed (they do not change income yet),
+ *  - prestige gain multipliers, weighted by how much of that gain comes back as production through the boost chain
+ *    (BP -> BP boost and Sternsysteme, Sternsysteme -> boost and Quantenkerne). The Quantenkern gain only counts once the layer is open.
+ */
+export function repObjective(g) {
+  let v = matterStrength(g);
+  const div = g.hooks.genCostDiv(g);
+  v += T.objCostW * (div.m > 0 ? div.log10() : 0);
+  v += T.objStartW * Math.max(0, startMatter(g).log10());
+  v += T.objTierW * g.def.chains[0].tiers.filter((t, i) => i >= 4 && i < g.cache.maxTier.matter && (!t.unlock || t.unlock(g))).length;
+  v += T.objAutoW * (['auto1', 'auto2', 'auto3', 'auto4'].filter((id) => g.upgLevel(id) > 0).length - Math.log2(autoInterval(g)) / 4);
+  const wCore = T.coreBoostExp;
+  const wSys = T.sysBoostExp + 0.1 * lvl(g, 'sternkarten') + (g.layerUnlocked('singularity') ? T.singExp * wCore : 0);
+  const wBp = bpBoostExp(g) + T.expExp * wSys;
+  const lg = (id) => {
+    const m = g.prestigeMult(id);
+    return m.m > 0 ? m.log10() : 0;
+  };
+  v += wBp * lg('replication') + wSys * lg('expansion');
+  if (g.layerUnlocked('singularity')) v += wCore * lg('singularity');
+  return v;
+}
+
+/** Blaupausen- / Expansions-Upgrades: used by the in-game autobuyers AND the sim (same logic, same result). */
+export const buyRepUpgrades = (g, group) => g.upgBuyBest(group, repObjective);
 
 /* ------------------------------------------------------------------ */
 /* Definition                                                          */
@@ -572,7 +625,7 @@ export const def = {
       unlock: (g) => g.hasMs('ex2'),
       interval: () => 1,
       run: (g) => {
-        g.upgBuyAll('replication');
+        buyRepUpgrades(g, 'replication');
       },
     },
     {
@@ -584,7 +637,7 @@ export const def = {
       unlock: (g) => g.hasMs('ex5'),
       interval: () => 1,
       run: (g) => {
-        g.upgBuyAll('expansion');
+        buyRepUpgrades(g, 'expansion');
       },
     },
     {
