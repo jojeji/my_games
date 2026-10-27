@@ -97,3 +97,8 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - Freie Assoziationsnormen sind das richtige Maß für "Wörter, die ein Erklärer von selbst sagt". Die beste deutsche Quelle (SWOW-DE) verlangt Registrierung und ist CC BY-NC-ND. Brauchbar waren USF (Englisch, per Hand übersetzt) plus deutsche ConceptNet-Kanten. Abdeckung ca. 38 % der Karten, Personen, Filme und Orte fast nie.
 - Automatisches Tauschen von Tabuwörtern nach den Normen verschlechtert Karten (Antonyme und Geschwisterwörter wie Hund/Katze, falscher Wortsinn nach der Übersetzung, z. B. "shot" = Impfung oder Schuss). Deshalb: Werkzeug schlägt vor, ein Mensch entscheidet (`assoc-swaps.txt`). Mehrdeutige Cues (Bank, Ring, Kran, Zecke, Cricket ...) vorher aussortieren, Übersetzungen pro Cue prüfen (`cue>target`).
 - Vor jedem Einbau die Zuordnungsliste Suchbegriff -> englischer Cue -> Assoziationen von Hand lesen. Die Fehler stehen in den obersten 3 Wörtern, genau dort, wo die Vorschläge herkommen.
+
+## Mehrspieler-Infrastruktur (Psst!)
+- Cloudflare Worker `psst-room` läuft unter `https://psst-room.joeylauterbach.workers.dev`. Er wird über **Cloudflare Workers Builds** veröffentlicht (Git-Anbindung, Pfad `workers/psst-room`), ohne API-Token in GitHub.
+- Getestet: zwei WebSocket-Clients im selben Raum, Nachricht in ~27 ms weitergeleitet, Verbindungsaufbau ~0,7 s (aus einem Cloud-Container gemessen).
+- Free Plan: Durable Objects müssen SQLite-basiert sein (`new_sqlite_classes` in der Migration). Den Hibernation-WebSocket-API verwenden (`ctx.acceptWebSocket`), damit ruhende Räume nichts kosten.
