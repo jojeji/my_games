@@ -8,6 +8,8 @@ import { mountStandardApp } from '../../engine/ui/standard-app.js';
 import { registerServiceWorker } from '../../engine/pwa.js';
 import { formatPercent } from '../../engine/format.js';
 import { buildGalaxyTab } from './map-view.js';
+import { buildGenomeTab } from './genome-view.js';
+import { mutUnlocked, mutPending } from './mutations.js';
 import { act2Active, claimable, canClaim, SECTOR } from './map.js';
 
 const g = createReplikator();
@@ -37,6 +39,15 @@ const { app } = mountStandardApp({
         visible: (game) => act2Active(game),
         dot: (game) => claimable(game).some((i) => canClaim(game, i).ok),
         build: buildGalaxyTab,
+      },
+      // Paket 3: the Genom tab appears with the first mutation offer (3 sectors); a dot says an offer waits
+      {
+        id: 'genom',
+        label: 'Genom',
+        icon: 'genome',
+        visible: (game) => mutUnlocked(game),
+        dot: (game) => mutPending(game) > 0,
+        build: buildGenomeTab,
       },
     ],
     layers: [
@@ -81,6 +92,9 @@ const { app } = mountStandardApp({
 // arrival toasts only where no story entry tells the same news (the first sector, every Ruine, the first Echo occupation)
 runtime.on('map-claim', ({ type, n }) => {
   if (n > 1 && type !== 'ruine') app.toast(`${SECTOR[type].name} erschlossen.`, { kind: 'good', title: 'Sektor ' + n });
+});
+runtime.on('mut-offer', ({ n }) => {
+  if (n > 1 && !g.autoActive('auto_genom')) app.toast('Im Genom-Tab wartet ein neues Mutationsangebot.', { kind: 'info', title: 'Kopierfehler' });
 });
 runtime.on('echo-occupy', ({ n }) => {
   if (n > 1) app.toast('Das Echo hat einen weiteren Sektor besetzt.', { kind: 'info' });
