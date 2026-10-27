@@ -253,7 +253,7 @@ export function createMpViews(ctx) {
       h('div', { class: 'mp-rater' },
         h('p', { class: 'mp-eyebrow', text: role === 'rater' ? `Du rätst mit ${z.erklaerer}` : `${z.erklaerer} erklärt – du schaust zu` }),
         h('p', { class: 'mp-count-big' }, h('small', { text: 'Erraten' }), h('b', { text: String(z.guessed) })),
-        h('p', { class: 'hint', text: role === 'rater' ? 'Die Karte siehst nur du nicht – nur Erklärer und Wächter.' : 'Du hast in diesem Zug keine Aufgabe.' }),
+        h('p', { class: 'hint', text: role === 'rater' ? 'Die Karte sehen nur Erklärer und Wächter. Hör gut zu!' : 'Du hast in diesem Zug keine Aufgabe.' }),
         v.zug.pause === 'buzzer' ? h('p', { class: 'mp-pause-note', text: 'Pause – Buzzer!' }) : null),
     ];
   }
