@@ -12,7 +12,7 @@ import { D } from '../engine/decimal.js';
 import { generateMap, claim, arrive, claimable, canClaim } from '../games/replikator/map.js';
 import {
   MUTATIONS, MUT_BY_ID, RARITY, drawCards, mutState, mutSlots, mutUnlocked, mutTick, mutTake, mutDiscard, mutNextIn, mutInterval, mutGain, mutCostDiv,
-  mutBundle, mutAutoSlow, mutMapCost, mutTrip, mutOfferRate, mutOptions,
+  mutBundle, mutMapCost, mutTrip, mutOfferRate, mutOptions, mutGainParts, mutAdj,
 } from '../games/replikator/mutations.js';
 import { claimCost, tripSecs, typeMult, sectorMult } from '../games/replikator/map.js';
 import { loadSaveFile } from '../tools/simulate.mjs';
@@ -44,6 +44,11 @@ function act2Game(n = 0, seed = 5) {
   return g;
 }
 const mut = (g) => g.state.rep2.mut;
+/** Run totals that the prestige gains are computed from. */
+const setRun = (g, o) => {
+  for (const [k, v] of Object.entries(o)) g.state.cur[k].run = D(v);
+  g.refresh();
+};
 const give = (g, ...ids) => {
   mut(g).genome = ids;
   g.refresh();
@@ -190,53 +195,122 @@ test('genome slots: 3 at the start, +1 at 6 and at 10 sectors, at most 6; taking
   assert.equal(mut(g).queue, q - 1);
 });
 
-test('effects: every mutation changes the model, labeled where it is production (globalParts)', () => {
+test('effects: every mutation changes the model; production is labeled in globalParts, gain factors in mutGainParts', () => {
   const g = act2Game(4);
   const base = globalParts(g).length;
+  const f = (id) => T.mutFx[id];
   give(g, 'hyperaktiv');
-  assert.ok(globalParts(g).some(([name, v]) => name === 'Hyperaktiv' && v.eq(T.mutFx.hyperaktiv.prod)));
-  assert.equal(mutAutoSlow(g), T.mutFx.hyperaktiv.auto);
+  assert.ok(globalParts(g).some(([name, v]) => name === 'Hyperaktiv' && v.eq(f('hyperaktiv').prod)));
+  assert.equal(mutTrip(g), f('hyperaktiv').trip);
+  assert.ok(mutGainParts(g, 'cores').some(([name, v]) => name === 'Hyperaktiv' && v.eq(f('hyperaktiv').gain)));
   give(g, 'sparsam');
-  assert.equal(mutCostDiv(g), T.mutFx.sparsam.costDiv);
-  assert.equal(mutBundle(g), T.mutFx.sparsam.bundle);
-  assert.equal(g.hooks.bundleMult(g, g.def.chains[0]), 2 + T.mutFx.sparsam.bundle);
+  assert.equal(mutCostDiv(g), f('sparsam').costDiv);
+  assert.equal(mutBundle(g), f('sparsam').bundle);
+  assert.equal(mutMapCost(g), f('sparsam').mapCost);
+  assert.equal(g.hooks.bundleMult(g, g.def.chains[0]), 2 + f('sparsam').bundle);
+  assert.ok(mutGain(g, 'blueprints').eq(f('sparsam').bp) && mutGain(g, 'systems').eq(1));
   give(g, 'nostalgisch');
-  assert.ok(mutGain(g, 'blueprints').eq(T.mutFx.nostalgisch.bp) && mutGain(g, 'systems').eq(T.mutFx.nostalgisch.sys) && mutGain(g, 'cores').eq(1));
+  assert.ok(mutGain(g, 'blueprints').eq(f('nostalgisch').bp) && mutGain(g, 'systems').eq(f('nostalgisch').sys) && mutGain(g, 'cores').eq(1));
   give(g, 'ueberschuss');
-  for (const k of ['blueprints', 'systems', 'cores']) assert.ok(mutGain(g, k).eq(2));
+  for (const k of ['blueprints', 'systems', 'cores']) assert.ok(mutGain(g, k).eq(f('ueberschuss').gain));
+  assert.ok(globalParts(g).some(([name, v]) => name === 'Überschuss' && v.eq(f('ueberschuss').prod)));
   give(g, 'schwarmgeist');
-  assert.ok(globalParts(g).some(([name, v]) => name === 'Schwarmgeist' && v.eq(1 + 0.08 * 4)));
-  assert.equal(mutMapCost(g), 1.5);
+  assert.ok(globalParts(g).some(([name, v]) => name === 'Schwarmgeist' && v.eq(1 + f('schwarmgeist').perSector * 4)));
+  assert.ok(mutGain(g, 'systems').eq(1 + f('schwarmgeist').perSector * 4));
+  assert.equal(mutMapCost(g), f('schwarmgeist').mapCost);
   const costOff = claimCost(g);
   give(g);
   assert.ok(claimCost(g).lt(costOff), 'Sektorpreise');
   give(g, 'gruendlich');
-  assert.equal(mutTrip(g), 1.5);
-  assert.equal(tripSecs(g), Math.round(T.mapTripBase * Math.pow(T.mapTripGrow, 4) * 1.5));
+  assert.ok(mutGain(g, 'cores').eq(f('gruendlich').cores));
+  assert.equal(mutTrip(g), f('gruendlich').trip);
+  assert.equal(tripSecs(g), Math.round(T.mapTripBase * Math.pow(T.mapTripGrow, 4) * f('gruendlich').trip));
   give(g, 'fehlerfreudig');
-  assert.equal(mutOfferRate(g), 2);
-  assert.equal(mutInterval(g), (T.mutEvery * Math.pow(T.mutGrow, mut(g).n)) / 2);
+  assert.equal(mutOfferRate(g), f('fehlerfreudig').offers);
+  assert.equal(mutInterval(g), (T.mutEvery * Math.pow(T.mutGrow, mut(g).n)) / f('fehlerfreudig').offers);
+  assert.ok(mutGain(g, 'cores').eq(f('fehlerfreudig').cores));
   give(g, 'chimaere', 'glueckstreffer');
-  assert.ok(globalParts(g).some(([name, v]) => name === 'Chimäre' && Math.abs(v.toNumber() - 1.3 ** 2) < 1e-9), 'per occupied slot');
-  assert.equal(mutOfferRate(g), 0.5);
+  assert.ok(globalParts(g).some(([name, v]) => name === 'Chimäre' && Math.abs(v.toNumber() - f('chimaere').perSlot ** 2) < 1e-9), 'per occupied slot');
+  assert.ok(mutGainParts(g, 'systems').some(([name, v]) => name === 'Chimäre' && Math.abs(v.toNumber() - f('chimaere').gainSlot ** 2) < 1e-9));
+  assert.ok(globalParts(g).some(([name]) => name === 'Glückstreffer'));
+  assert.equal(mutOfferRate(g), f('chimaere').offers);
   give(g, 'gigantismus');
-  assert.equal(g.hooks.genTierMult(g, null, 7).toNumber(), 10);
-  assert.equal(g.hooks.genTierMult(g, null, 0).toNumber(), 0.5);
+  assert.equal(g.hooks.genTierMult(g, null, 7).toNumber(), f('gigantismus').top);
+  assert.equal(g.hooks.genTierMult(g, null, 0).toNumber(), f('gigantismus').low);
+  assert.ok(mutGain(g, 'systems').eq(f('gigantismus').sys));
   give(g, 'mosaik');
   const cells = g.state.rep2.map.cells;
   const i = cells.findIndex((c) => c.own && c.type !== 'home');
-  assert.ok(sectorMult(cells, i, 0.5 + T.mutFx.mosaik.adj).gte(sectorMult(cells, i)));
+  assert.ok(sectorMult(cells, i, 0.5 + f('mosaik').adj).gte(sectorMult(cells, i)));
+  assert.equal(mutTrip(g), f('mosaik').trip);
+  give(g, 'kolonialist');
+  assert.ok(mutGain(g, 'systems').eq(f('kolonialist').sys) && mutGain(g, 'blueprints').eq(f('kolonialist').bp));
+  give(g, 'buendelfieber');
+  assert.equal(mutBundle(g), f('buendelfieber').bundle);
+  assert.equal(mutTrip(g), f('buendelfieber').trip);
+  assert.equal(mutCostDiv(g), f('buendelfieber').costDiv);
+  assert.ok(mutGain(g, 'systems').eq(f('buendelfieber').sys));
   give(g, ...MUTATIONS.map((m) => m.id));
-  assert.ok(globalParts(g).length > base + 5);
+  assert.ok(globalParts(g).length > base + 2);
   give(g);
   assert.equal(globalParts(g).length, base);
+  for (const k of ['blueprints', 'systems', 'cores']) assert.equal(mutGainParts(g, k).length, 0);
 });
 
-test('Nachtschwärmer: x1.5 only while the runtime catches up an absence, x0.9 online', () => {
+test('every mutation alone changes something that moves progress (production, a prestige gain, trip time, sector price, offers, cost, bundle, map bonus), benefit AND catch', () => {
+  const g = act2Game(4);
+  setRun(g, { matter: 1e60, blueprints: 1e12, systems: 1e12 });
+  const probe = () => ({
+    prod: g.hooks.genGlobalMult(g).toNumber(),
+    bp: g.prestigeGain('replication').toNumber(),
+    sys: g.prestigeGain('expansion').toNumber(),
+    cores: g.prestigeGain('singularity').toNumber(),
+    trip: tripSecs(g),
+    price: claimCost(g).toNumber(),
+    offers: mutOfferRate(g),
+    costDiv: mutCostDiv(g),
+    bundle: mutBundle(g),
+    t0: g.hooks.genTierMult(g, null, 0).toNumber(),
+    t7: g.hooks.genTierMult(g, null, 7).toNumber(),
+    adj: mutAdj(g),
+  });
+  give(g);
+  const none = probe();
+  assert.ok(none.bp > 0 && none.sys > 0, 'the probe state has gains');
+  const better = { prod: 1, bp: 1, sys: 1, cores: 1, trip: -1, price: -1, offers: 1, costDiv: 1, bundle: 1, t0: 1, t7: 1, adj: 1 };
+  for (const m of MUTATIONS) {
+    give(g, m.id);
+    const p = probe();
+    const keys = Object.keys(p).filter((k) => Math.abs(p[k] - none[k]) > 1e-9 * Math.max(1, Math.abs(none[k])));
+    const good = keys.filter((k) => (p[k] - none[k]) * better[k] > 0);
+    const bad = keys.filter((k) => (p[k] - none[k]) * better[k] < 0);
+    assert.ok(keys.length > 0, `${m.id}: changes nothing`);
+    // Geduldig (start of a run = the catch), Nachtschwärmer (online = the catch), Chimäre (one filled slot) show only one side in this snapshot
+    if (!['geduldig', 'nachtschwaermer', 'chimaere'].includes(m.id)) assert.ok(good.length > 0 && bad.length > 0, `${m.id}: benefit ${good} catch ${bad}`);
+  }
+  give(g);
+});
+
+test('gain factors of mutations act AFTER the softcap: above it a x2.5 factor gives x2.5 (not x1.6), and the Auto-Genom valuation sees it in full', () => {
+  const g = act2Game(4);
+  setRun(g, { matter: 1e80 });
+  give(g);
+  const sc = g.prestigeSoftcap('replication');
+  const a = g.prestigeGain('replication');
+  assert.ok(a.gt(sc.at), 'above the softcap');
+  const obj0 = mutObjective(g);
+  give(g, 'ueberschuss');
+  const ratio = g.prestigeGain('replication').div(a).toNumber();
+  assert.ok(Math.abs(ratio / T.mutFx.ueberschuss.gain - 1) < 1e-6, 'ratio ' + ratio);
+  assert.ok(mutObjective(g) > obj0, 'the valuation sees the full factor');
+  give(g);
+});
+
+test('Nachtschwärmer: gains x1.5 only while the runtime catches up an absence, x0.85 online', () => {
   const g = act2Game(3);
   give(g, 'nachtschwaermer');
-  const part = () => globalParts(g).find(([name]) => name === 'Nachtschwärmer')[1].toNumber();
-  assert.equal(part(), 0.9);
+  const part = () => mutGain(g, 'cores').toNumber();
+  assert.ok(Math.abs(part() - T.mutFx.nachtschwaermer.on) < 1e-12);
   let seen = null;
   const tick = g.tick;
   g.tick = function (dt) {
@@ -245,8 +319,8 @@ test('Nachtschwärmer: x1.5 only while the runtime catches up an absence, x0.9 o
   };
   const rt = createRuntime(g, { storage: createStorage(mem()), now: () => 0 });
   rt.simulateOffline(600);
-  assert.equal(seen, 1.5);
-  assert.equal(part(), 0.9);
+  assert.equal(seen, T.mutFx.nachtschwaermer.off);
+  assert.ok(Math.abs(part() - T.mutFx.nachtschwaermer.on) < 1e-12);
 });
 
 test('Geduldig never rewards short runs: the Blaupausen gain at the start of a run is the lowest, it is full only from 5 minutes', () => {
