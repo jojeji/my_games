@@ -86,6 +86,11 @@ export function formatNumber(x, opts = {}) {
   return comma(s) + 'e' + e;
 }
 
+/** Narrow variant for tight spots (header chips): the standard suffix sits right behind the number ("65,7Mio"). */
+export function formatCompact(x, opts = {}) {
+  return formatNumber(x, opts).replace(/ (?=[A-Za-z])/, '');
+}
+
 /** Counts (generator amounts etc.): exact integers while small. */
 export function formatInt(x, opts = {}) {
   const d = safeDecimal(x);

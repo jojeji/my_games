@@ -8,7 +8,8 @@ import { createToaster } from './toast.js';
  * @param {HTMLElement} cfg.root
  * @param {string} cfg.gameId
  * @param {{build:(ctx)=>{el:Node, update:()=>void}}} cfg.header
- * @param {Array<{id:string,label:string,icon:string,visible?:()=>boolean,build:(ctx)=>{el:Node, update:()=>void}}>} cfg.tabs
+ * @param {Array<{id:string,label:string,icon:string,visible?:()=>boolean,redirect?:()=>(string|null),build:(ctx)=>{el:Node, update:()=>void}}>} cfg.tabs
+ *   redirect(): when it returns another tab id, selecting this tab opens that one instead (a tab that is folded into another one, e.g. the layer tabs inside "Ebenen")
  * @param {object} cfg.ctx  shared context passed to builders (runtime, game, ...)
  * @param {number} [cfg.fps]
  */
@@ -40,7 +41,10 @@ export function mountApp({ root, gameId, header, tabs, ctx, fps = 15 }) {
 
   function select(id) {
     const t = tabs.find((x) => x.id === id);
-    if (!t || (t.visible && !t.visible())) return;
+    if (!t) return;
+    const to = t.redirect ? t.redirect() : null;
+    if (to && to !== id) return select(to);
+    if (t.visible && !t.visible()) return;
     if (active) {
       scrolls[active] = window.scrollY;
       pages[active].el.hidden = true;
@@ -62,7 +66,7 @@ export function mountApp({ root, gameId, header, tabs, ctx, fps = 15 }) {
       if (t.dot) bar.setDot(t.id, vis && active !== t.id && !!t.dot());
     }
     const cur = tabs.find((x) => x.id === active);
-    if (cur && cur.visible && !cur.visible()) select(tabs[0].id);
+    if (cur && cur.visible && !cur.visible()) select((cur.redirect && cur.redirect()) || tabs[0].id);
   }
 
   let last = 0;
@@ -81,7 +85,9 @@ export function mountApp({ root, gameId, header, tabs, ctx, fps = 15 }) {
 
   const saved = prefs.get(`mg:${gameId}:tab`);
   updateTabs();
-  const first = tabs.find((t) => t.id === saved && (!t.visible || t.visible())) || tabs[0];
+  const savedTab = tabs.find((t) => t.id === saved);
+  const target = savedTab && savedTab.redirect && savedTab.redirect() ? tabs.find((t) => t.id === savedTab.redirect()) : savedTab;
+  const first = (target && (!target.visible || target.visible()) ? target : null) || tabs[0];
   select(first.id);
   requestAnimationFrame(frame);
 

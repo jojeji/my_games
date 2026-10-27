@@ -1,6 +1,6 @@
 // Standard mobile UI for kit games: header, generator tab, one tab per prestige layer,
 // achievements, "Mehr" (statistics, settings, log). Games customise it through `options`.
-import { h, txt, setHidden, setDisabled, svgIcon } from './dom.js';
+import { h, txt, setHidden, setDisabled, setCls, svgIcon } from './dom.js';
 import { ICONS } from './icons.js';
 import { mountApp } from './app.js';
 import { openModal } from './modal.js';
@@ -15,7 +15,7 @@ import {
   buyModeBar, generatorList, upgradeList, prestigePanel, milestoneList, challengeList, researchTree,
   respecDialog, autoPanel, achievementGrid, showOfflineSummary, section, sectionTitle, progressBar, doPrestige,
 } from './kit-views.js';
-import { formatNumber as fmt, setNotation } from '../format.js';
+import { formatNumber as fmt, formatCompact, setNotation } from '../format.js';
 
 /**
  * @param {object} cfg
@@ -25,6 +25,9 @@ import { formatNumber as fmt, setNotation } from '../format.js';
  *   gameId, title, primary (currency id), chips (currency ids), generators { chain, label, intro?(ctx), details?(ctx) },
  *   layers [{ id, label, icon, groups:[{id,title,research?,branches?}], challenges?:true, visible?(g) }],
  *   multParts?(g) -> [label, Decimal][], bonusText?(g), statRows?(g), tabIcons
+ *   extraTabs? [{ id, label, icon, visible?(g), dot?(g), build(ctx) -> { el, update } }]  - game specific tabs between the layer tabs and the Chronik/Erfolge tab
+ *   maxTabs? (default 6)  - the bottom bar never shows more tabs than this: when it would, the layer tabs fold into ONE tab "Ebenen"
+ *     (segmented switch on top, one layer view at a time; needs at least two visible layer tabs)
  *   chronicle? { cast, figures(g), lineText?(g,line), defaultWho? }  - Chronik for games with def.chronicle: a Chronik tab with unread dot
  *     (it replaces the Erfolge tab, which moves into "Mehr"), story modals for def.story entries with `modal`, chat bubbles for the rest.
  *     cast = { id: { name, role?, color?, side?, bio?, emblem?, img?, sm? } } (see games/replikator/characters.js), figures = ids of the characters met so far.
@@ -110,10 +113,10 @@ export function mountStandardApp({ root, runtime, options, offline }) {
           for (const c of chips) {
             const show = g.get(c.id).gt(0) || g.state.cur[c.id].total.gt(0);
             setHidden(c.el, !show);
-            if (show) txt(c.v, fmt(g.get(c.id)));
+            if (show) txt(c.v, formatCompact(g.get(c.id)));
           }
           const gm = g.cache.global[options.generators.chain];
-          txt(mult, '×' + fmt(gm) + ' ⓘ');
+          txt(mult, '×' + formatCompact(gm) + ' ⓘ');
           // prestige shortcut: highest layer that can be used now, else the first visible layer
           let target = layersDesc.find((l) => g.canPrestige(l.id));
           let label;
@@ -197,40 +200,116 @@ export function mountStandardApp({ root, runtime, options, offline }) {
     },
   });
 
+  /* ---- layer tabs: one tab per layer, or all in one tab "Ebenen" when the bar would get too crowded ---- */
+  const maxTabs = options.maxTabs || 6;
+  const layerOpen = (lc) => g.layerUnlocked(lc.id) || (lc.visible ? lc.visible(g) : false);
+  const layerViews = {}; // built once, moved between the layer's own page and the "Ebenen" page
+  let layerPick = options.layers[0] && options.layers[0].id;
+  const buildLayerView = (lc) => {
+    if (layerViews[lc.id]) return layerViews[lc.id];
+    const parts = [];
+    const stack = h('div', { class: 'stack' });
+    const add = (view, wrap) => {
+      parts.push(view);
+      stack.append(wrap || view.el);
+    };
+    add(prestigePanel(g, lc.id, ctx));
+    const ms = milestoneList(g, lc.id);
+    if (g.def.milestones.some((m) => m.layer === lc.id)) {
+      parts.push(ms);
+      stack.append(section('Meilensteine', ms.el, { open: false }));
+    }
+    for (const grp of lc.groups || []) {
+      stack.append(sectionTitle(grp.title, grp.sub));
+      if (grp.research) {
+        const tree = researchTree(g, grp.id, { branches: grp.branches, onRespec: () => respecDialog(g) });
+        add(tree);
+      } else add(upgradeList(g, grp.id));
+    }
+    if (lc.challenges) {
+      stack.append(sectionTitle('Challenges', `${g.chDoneCount()}/${g.def.challenges.length}`));
+      add(challengeList(g, ctx));
+    }
+    return (layerViews[lc.id] = { el: stack, update: () => parts.forEach((p) => p.update()) });
+  };
+  let foldedCache = { t: -1, v: false };
+  /** Would the bar exceed maxTabs with one tab per layer? Then the layers fold into "Ebenen". */
+  const folded = () => {
+    const now = performance.now();
+    if (now - foldedCache.t < 150) return foldedCache.v; // select/redirect/visible ask several times per frame
+    const open = options.layers.filter(layerOpen).length;
+    const others = tabs.filter((t) => !t.layer && t.id !== 'ebenen' && (!t.visible || t.visible())).length;
+    foldedCache = { t: now, v: open >= 2 && others + open > maxTabs };
+    return foldedCache.v;
+  };
+  const layerSwitch = h('div', { class: 'segmented seg-full', role: 'tablist' });
+  const layerSlot = h('div', { class: 'layer-slot' });
+  const layerBtns = options.layers.map((lc) => {
+    const b = h('button', { class: 'seg', type: 'button', role: 'tab', text: lc.label || g.layerById[lc.id].name, onClick: () => { layerPick = lc.id; showPicked(); } });
+    layerSwitch.append(b);
+    return { lc, b };
+  });
+  function showPicked() {
+    const open = options.layers.filter(layerOpen);
+    if (!open.some((l) => l.id === layerPick) && open.length) layerPick = open[0].id;
+    const lc = options.layers.find((l) => l.id === layerPick);
+    if (!lc) return;
+    const view = buildLayerView(lc);
+    if (view.el.parentNode !== layerSlot) layerSlot.replaceChildren(view.el);
+    for (const x of layerBtns) {
+      setHidden(x.b, !layerOpen(x.lc));
+      setCls(x.b, 'active', x.lc.id === layerPick);
+      x.b.setAttribute('aria-selected', x.lc.id === layerPick ? 'true' : 'false');
+    }
+    view.update();
+  }
+  tabs.push({
+    id: 'ebenen',
+    label: 'Ebenen',
+    icon: 'layers',
+    visible: folded,
+    redirect: () => (folded() ? null : layerPick),
+    dot: () => options.layers.some((lc) => layerOpen(lc) && g.canPrestige(lc.id)),
+    build() {
+      return { el: h('div', { class: 'stack' }, layerSwitch, layerSlot), update: showPicked };
+    },
+  });
   for (const lc of options.layers) {
     const layer = g.layerById[lc.id];
     tabs.push({
       id: lc.id,
+      layer: true,
       label: lc.label || layer.name,
       icon: lc.icon || lc.id,
-      visible: () => g.layerUnlocked(lc.id) || (lc.visible ? lc.visible(g) : false),
+      visible: () => !folded() && layerOpen(lc),
+      redirect: () => {
+        if (!folded()) return null;
+        layerPick = lc.id;
+        return 'ebenen';
+      },
       dot: () => g.canPrestige(lc.id),
       build() {
-        const parts = [];
-        const stack = h('div', { class: 'stack' });
-        const add = (view, wrap) => {
-          parts.push(view);
-          stack.append(wrap || view.el);
+        const view = buildLayerView(lc);
+        const holder = h('div', {}, view.el);
+        return {
+          el: holder,
+          update() {
+            if (view.el.parentNode !== holder) holder.replaceChildren(view.el);
+            view.update();
+          },
         };
-        add(prestigePanel(g, lc.id, ctx));
-        const ms = milestoneList(g, lc.id);
-        if (g.def.milestones.some((m) => m.layer === lc.id)) {
-          parts.push(ms);
-          stack.append(section('Meilensteine', ms.el, { open: false }));
-        }
-        for (const grp of lc.groups || []) {
-          stack.append(sectionTitle(grp.title, grp.sub));
-          if (grp.research) {
-            const tree = researchTree(g, grp.id, { branches: grp.branches, onRespec: () => respecDialog(g) });
-            add(tree);
-          } else add(upgradeList(g, grp.id));
-        }
-        if (lc.challenges) {
-          stack.append(sectionTitle('Challenges', `${g.chDoneCount()}/${g.def.challenges.length}`));
-          add(challengeList(g, ctx));
-        }
-        return { el: stack, update: () => parts.forEach((p) => p.update()) };
       },
+    });
+  }
+
+  for (const et of options.extraTabs || []) {
+    tabs.push({
+      id: et.id,
+      label: et.label,
+      icon: et.icon,
+      visible: et.visible ? () => !!et.visible(g) : undefined,
+      dot: et.dot ? () => !!et.dot(g) : undefined,
+      build: () => et.build(ctx),
     });
   }
 
