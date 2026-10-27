@@ -21,6 +21,6 @@
     "description": "Das Partyspiel für Teams im selben Raum: Begriffe umschreiben, ohne die Tabuwörter zu sagen. Ein Handy, viele Karten, Buzzer inklusive.",
     "path": "games/psst/",
     "icon": "games/psst/icons/icon-192.png",
-    "status": "soon"
+    "status": "playable"
   }
 ]
