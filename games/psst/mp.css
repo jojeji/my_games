@@ -125,3 +125,14 @@ html.tv-mode .mp-conn { background: rgba(255, 255, 255, 0.15); color: #fff; }
   .tv-clock { font-size: 20vh; }
   .tv-team { font-size: 7vh; }
 }
+
+/* ---------- Jeder gegen jeden ---------- */
+.btn-suggest { width: 100%; min-height: 52px; font-weight: 900; font-size: 17px; background: #fff3cf; border: 2px solid #e6b422; color: #5a3a00; }
+.tv-scores.many { gap: 1vh; }
+.tv-scores.many li { padding: 1vh 2vh; border-radius: 1.6vh; }
+.tv-scores.many .tv-name { font-size: 3.4vh; }
+.tv-scores.many .tv-pts { font-size: 4.4vh; }
+.tv-scores.huge { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8vh; }
+.tv-scores.huge li { padding: 0.8vh 1.4vh; }
+.tv-scores.huge .tv-name { font-size: 2.6vh; }
+.tv-scores.huge .tv-pts { font-size: 3.2vh; }

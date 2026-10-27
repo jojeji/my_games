@@ -23,6 +23,7 @@ export function createMpViews(ctx) {
   let timer = null;
   let live = null;
   let buzzSheet = null; // { seq, sheet }
+  let pickSheet = null; // Jeder gegen jeden: { ref, sheet } "Wer hat es erraten?" on the Erklärer's device
   let stopConfetti = null;
   let lastSec = null;
   let prev = null; // previous view, for sounds
@@ -40,8 +41,15 @@ export function createMpViews(ctx) {
       stopConfetti();
       stopConfetti = null;
     }
+    closePick();
     prev = null;
     celebrated = false;
+  }
+  function closePick() {
+    if (!pickSheet) return;
+    const p = pickSheet;
+    pickSheet = null;
+    p.sheet.close();
   }
 
   const fb = () => ctx.feedback;
@@ -102,6 +110,8 @@ export function createMpViews(ctx) {
       buzzSheet.sheet.close();
       buzzSheet = null;
     }
+    // the picker belongs to one card on the Erklärer's screen: gone as soon as the card or the phase changes
+    if (pickSheet && !(v && v.kind === 'game' && v.role === 'erklaerer' && v.phase === 'laeuft' && v.card && v.card.id === pickSheet.ref)) closePick();
     if (v && v.kind === 'game') {
       if (v.role === 'anzeige') return tv(v, session);
       if (v.phase === 'laeuft' || v.phase === 'pausiert' || v.phase === 'bereit') ctx.wakeOn();
@@ -135,11 +145,18 @@ export function createMpViews(ctx) {
     const t = v.turn;
     const team = v.teams[t.team];
     const first = v.banner.round === 1 && v.teams.every((x) => x.score === 0) && v.turn.team === 0;
+    const ffa = v.form === 'ffa';
     const me = v.role === 'erklaerer';
     const guardName = v.turn.waechter;
     const roles = [h('p', { class: 'role' }, h('small', { text: 'Erklärer' }), h('b', { text: me ? 'Du' : t.erklaerer }), h('span', { class: 'of', text: `(${team.name})` }))];
     const guards = v.teams.filter((_, i) => i !== t.team).map((x) => x.name).join(' & ');
-    roles.push(h('p', { class: 'role dim' }, h('small', { text: 'Wächter' }), h('b', { text: guardName || `alle von ${guards}` })));
+    if (ffa) {
+      roles.length = 0;
+      roles.push(
+        h('p', { class: 'role' }, h('small', { text: 'Erklärer' }), h('b', { text: me ? 'Du' : t.erklaerer })),
+        h('p', { class: 'role' }, h('small', { text: 'Wächter' }), h('b', { text: v.role === 'waechter' ? 'Du' : guardName })),
+        h('p', { class: 'role' }, h('small', { text: 'Raten' }), h('b', { text: t.raters.map((n) => (n === v.you.name ? 'Du' : n)).join(', ') })));
+    } else roles.push(h('p', { class: 'role dim' }, h('small', { text: 'Wächter' }), h('b', { text: guardName || `alle von ${guards}` })));
     const hint = {
       erklaerer: `Zug: ${v.settings.turnSecs} Sekunden. Die Karte bleibt verdeckt, bis du „Bereit“ tippst.`,
       waechter: `Du bist Wächter: Gleich siehst du die Karte und drückst den Buzzer, wenn ${t.erklaerer} ein Tabuwort sagt.`,
@@ -147,18 +164,27 @@ export function createMpViews(ctx) {
       rater: `Du rätst mit. ${t.erklaerer} erklärt, du siehst die Karte nicht.`,
     }[v.role];
     const extra = [];
+    if (session.isHost && v.warn) {
+      extra.push(h('div', { class: 'mp-warn' },
+        h('b', { text: v.warn.kind === 'ffa' ? `Nur noch ${v.warn.n} Spieler verbunden – Jeder gegen jeden braucht 3.` : `Zu wenig Spieler verbunden: ${v.warn.names.join(', ')} (jedes Team braucht 2).` }),
+        v.warn.blocked
+          ? h('div', { class: 'stack tight' },
+            h('p', { class: 'hint', text: 'Ohne genug Mitspieler lässt sich dieser Zug nicht spielen. Warte auf die Rückkehr oder setze den Zug aus (es gibt 0 Punkte).' }),
+            h('button', { class: 'btn', type: 'button', text: 'Zug aussetzen', onClick: () => session.act('zug-aussetzen') }))
+          : h('p', { class: 'hint', text: 'Dieser Zug ist nicht betroffen. Bevor das Team an der Reihe ist, sollten wieder Spieler zurück sein.' })));
+    }
     if (session.isHost && !me && v.erklaerer && !v.erklaerer.connected) {
       extra.push(h('div', { class: 'mp-warn' },
         h('b', { text: `${t.erklaerer} ist offline.` }),
         h('div', { class: 'stack tight' },
           h('button', { class: 'btn', type: 'button', text: `Für ${t.erklaerer} starten`, onClick: () => session.act('bereit') }),
-          h('button', { class: 'btn', type: 'button', text: 'Anderen Erklärer aus dem Team wählen', onClick: () => session.host.substitute() }))));
+          h('button', { class: 'btn', type: 'button', text: ffa ? 'Anderen Erklärer wählen' : 'Anderen Erklärer aus dem Team wählen', onClick: () => session.host.substitute() }))));
     }
     return h('main', { class: 'handover', style: tcStyle(v, t.team) },
       h('div', { class: 'mp-topline' }, banner(v), hostMenuBtn(session)),
       h('div', { class: 'ho-main' },
         h('p', { class: 'eyebrow', text: me ? 'Du bist dran' : first ? 'Los geht’s' : 'Als Nächstes' }),
-        h('h1', { text: me ? `${team.name}: Du erklärst!` : `${t.erklaerer} erklärt gleich …` }),
+        h('h1', { text: me ? (ffa ? 'Du erklärst!' : `${team.name}: Du erklärst!`) : `${t.erklaerer} erklärt gleich …` }),
         h('div', { class: 'roles' }, roles),
         h('p', { class: 'hint', text: hint }),
         ...extra),
@@ -180,9 +206,10 @@ export function createMpViews(ctx) {
     const barEl = h('i');
     const scoreEl = h('b', { text: formatPoints(z.points) });
     live = { secEl, barEl, total: v.timer.totalMs, role };
+    const ffa = v.form === 'ffa';
     const whoText = role === 'erklaerer' ? 'Du erklärst' : `${z.erklaerer} erklärt`;
     const top = h('header', { class: 'zug-top' },
-      h('span', { class: 'chip-team', text: team.name }),
+      ffa ? null : h('span', { class: 'chip-team', text: team.name }),
       h('span', { class: 'who', text: whoText }),
       h('span', { class: 'live-score', title: 'Punkte in diesem Zug' }, scoreEl),
       role === 'erklaerer' ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Pause', text: '⏸', disabled: paused, onClick: () => session.act('pause') }) : null,
@@ -223,13 +250,34 @@ export function createMpViews(ctx) {
       card ? tabooList(card) : null);
     const ref = card ? card.id : '';
     const dis = paused || !card;
+    const raters = v.form === 'ffa' ? v.zug.raters : [];
+    // Jeder gegen jeden: with several Rater the Erklärer names who guessed it (the picker is a dialog on this device); with one Rater it is automatic
+    const richtigBtn = raters.length > 1
+      ? h('button', { class: 'btn-act ok', type: 'button', disabled: dis, onClick: () => { fb().unlock(); openPicker(v, session); } }, h('span', { class: 'big', text: 'Richtig' }), h('small', { text: 'Wer hat’s erraten?' }))
+      : once(h('button', { class: 'btn-act ok', type: 'button', disabled: dis }, h('span', { class: 'big', text: 'Richtig' })), () => { session.act('richtig', { ref }); fb().correct(); });
     return [
       cardEl,
       h('div', { class: 'actions' },
-        once(h('button', { class: 'btn-act ok', type: 'button', disabled: dis }, h('span', { class: 'big', text: 'Richtig' })), () => { session.act('richtig', { ref }); fb().correct(); }),
+        richtigBtn,
         once(h('button', { class: 'btn-act skip', type: 'button', disabled: dis }, h('span', { class: 'big', text: 'Überspringen' }), h('small', { text: skipSub })), () => { session.act('ueberspringen', { ref }); fb().skip(); }),
       ),
     ];
+  }
+
+  /** Jeder gegen jeden: big buttons with the names of the Rater. The intent carries the card `ref` and the Rater's name. */
+  function openPicker(v, session) {
+    if (pickSheet || !v.card) return;
+    const ref = v.card.id;
+    const body = h('div', { class: 'pick-grid' }, v.zug.raters.map((name) => h('button', {
+      class: 'btn btn-xl pick-btn', type: 'button', text: name,
+      onClick: () => {
+        closePick();
+        session.act('richtig', { ref, guesser: name });
+        fb().correct();
+      },
+    })));
+    const sh = sheet({ title: 'Wer hat es erraten?', cls: 'pick-sheet', body, actions: [{ label: 'Abbrechen', kind: 'ghost' }], onClose: () => { if (pickSheet && pickSheet.sheet === sh) pickSheet = null; } });
+    pickSheet = { ref, sheet: sh };
   }
 
   function waechterBody(v, session, paused, buzzOpen) {
@@ -251,7 +299,7 @@ export function createMpViews(ctx) {
     const z = v.zug;
     return [
       h('div', { class: 'mp-rater' },
-        h('p', { class: 'mp-eyebrow', text: role === 'rater' ? `Du rätst mit ${z.erklaerer}` : `${z.erklaerer} erklärt – du schaust zu` }),
+        h('p', { class: 'mp-eyebrow', text: v.form === 'ffa' ? `${z.erklaerer} erklärt – du ratest` : role === 'rater' ? `Du rätst mit ${z.erklaerer}` : `${z.erklaerer} erklärt – du schaust zu` }),
         h('p', { class: 'mp-count-big' }, h('small', { text: 'Erraten' }), h('b', { text: String(z.guessed) })),
         h('p', { class: 'hint', text: role === 'rater' ? 'Die Karte sehen nur Erklärer und Wächter. Hör gut zu!' : 'Du hast in diesem Zug keine Aufgabe.' }),
         v.zug.pause === 'buzzer' ? h('p', { class: 'mp-pause-note', text: 'Pause – Buzzer!' }) : null),
@@ -321,10 +369,23 @@ export function createMpViews(ctx) {
     );
   }
 
+  /** Jeder gegen jeden: who guessed a card. Only the Erklärer changes it (several Rater); everybody sees it. */
+  function guesserRow(v, session, e, i, editable) {
+    const raters = v.zug.raters;
+    if (!editable || raters.length < 2) return h('div', { class: 'guess-chips' }, h('small', { text: `Erraten von ${e.guesser || raters[0] || '?'}` }));
+    return h('div', { class: 'guess-chips', role: 'radiogroup', 'aria-label': `Erraten von, ${e.w}` },
+      h('small', { text: 'Erraten von' }),
+      raters.map((name) => h('button', {
+        type: 'button', role: 'radio', 'aria-checked': String(e.guesser === name), class: 'chip-pick' + (e.guesser === name ? ' on' : ''), text: name,
+        onClick: () => session.act('korrektur', { index: i, result: 'richtig', guesser: name }),
+      })));
+  }
+
   function summary(v, session) {
     const z = v.zug;
     const me = v.role === 'erklaerer';
     const editable = me;
+    const ffa = v.form === 'ffa';
     const rows = v.words.map((e, i) => {
       const ptxt = e.result === 'uebersprungen' ? (e.free ? 'frei, 0 Punkte' : e.points ? `${formatPoints(e.points)} Punkt` : '0 Punkte') : `${formatPoints(e.points)} Punkt${Math.abs(e.points) === 1 ? '' : 'e'}`;
       return h('li', { class: 'sum-row r-' + e.result },
@@ -338,18 +399,20 @@ export function createMpViews(ctx) {
             : h('span', { class: 'tri-static t-' + e.result, 'aria-label': RESULT_LABEL[e.result], text: RESULT_ICON[e.result] })),
         h('div', { class: 'sum-sub' },
           h('span', { text: `${RESULT_LABEL[e.result]} · ${ptxt}` }),
-          editable ? h('button', { class: 'mini-link', type: 'button', text: '⚑ melden', 'aria-label': `Karte ${e.w} melden`, onClick: () => ctx.openReport({ id: e.id, w: e.w }) }) : null));
+          editable ? h('button', { class: 'mini-link', type: 'button', text: '⚑ melden', 'aria-label': `Karte ${e.w} melden`, onClick: () => ctx.openReport({ id: e.id, w: e.w }) }) : null),
+        ffa && e.result === 'richtig' ? guesserRow(v, session, e, i, editable) : null);
     });
     return h('main', { class: 'page summary', style: tcStyle(v, z.team) },
       h('header', { class: 'sum-head' },
         h('div', { class: 'mp-topline' }, hostMenuBtn(session)),
-        h('p', { class: 'eyebrow', text: `Zusammenfassung · ${teamName(v, z.team)}${z.erklaerer ? ' (' + z.erklaerer + ')' : ''}` }),
+        h('p', { class: 'eyebrow', text: ffa ? `Zusammenfassung · ${z.erklaerer}` : `Zusammenfassung · ${teamName(v, z.team)}${z.erklaerer ? ' (' + z.erklaerer + ')' : ''}` }),
         h('h1', { class: 'sum-total' }, h('span', { text: formatPoints(z.points) }), h('small', { text: ' Punkte' })),
-        h('p', { class: 'hint', text: editable ? 'Falsch getippt? Tippe auf das richtige Symbol: ✓ richtig, ↷ übersprungen, ✕ Buzzer.' : `${z.erklaerer} prüft die Karten und bestätigt.` })),
+        h('p', { class: 'hint', text: editable ? 'Falsch getippt? Tippe auf das richtige Symbol: ✓ richtig, ↷ übersprungen, ✕ Buzzer.' + (ffa ? ' Bei ✓ kannst du ändern, wer erraten hat.' : '') : `${z.erklaerer} prüft die Karten und bestätigt.` })),
       h('div', { class: 'scroll' }, rows.length ? h('ul', { class: 'sum-list' }, rows) : h('p', { class: 'note', text: 'In diesem Zug wurde keine Karte gespielt.' })),
       h('footer', { class: 'actionbar' },
+        z.missing && (me || session.isHost) ? h('small', { class: 'mp-note err', role: 'alert', text: `Bei ${z.missing === 1 ? 'einer Karte' : z.missing + ' Karten'} fehlt noch, wer erraten hat.` }) : null,
         me || session.isHost
-          ? once(h('button', { class: 'btn btn-team btn-xl', type: 'button', text: me ? 'Bestätigen' : `Für ${z.erklaerer} bestätigen` }), () => session.act('bestaetigen'))
+          ? once(h('button', { class: 'btn btn-team btn-xl', type: 'button', text: me ? 'Bestätigen' : `Für ${z.erklaerer} bestätigen`, disabled: !!z.missing }), () => session.act('bestaetigen'))
           : h('div', { class: 'mp-wait', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), `Warte auf ${z.erklaerer} …`)),
     );
   }
@@ -360,7 +423,7 @@ export function createMpViews(ctx) {
     return v.teams.map((t, i) => h('li', { class: 'score-row' + (t.score === lead ? ' lead' : ''), style: { '--tc': t.color } },
       h('span', { class: 'dot' }),
       h('div', { class: 'sr-main' }, h('b', { text: t.name }), target ? h('span', { class: 'bar' }, h('i', { style: { width: Math.max(0, Math.min(100, (100 * t.score) / target)) + '%' } })) : null),
-      v.last && v.last.team === i ? h('span', { class: 'delta', text: formatPoints(v.last.points) }) : null,
+      v.last && v.last.deltas && v.last.deltas[i] !== undefined && (v.form === 'ffa' || v.last.team === i) ? h('span', { class: 'delta', text: formatPoints(v.last.deltas[i]) }) : null,
       h('b', { class: 'sr-score', text: String(t.score) })));
   }
 
@@ -371,6 +434,7 @@ export function createMpViews(ctx) {
     else if (v.banner.verlaengerung) msg = h('div', { class: 'banner warn', text: 'Gleichstand! Es folgt eine Verlängerungsrunde.' });
     else if (v.banner.lastRound) msg = h('div', { class: 'banner', text: 'Punkteziel erreicht – die Runde wird zu Ende gespielt.' });
     else if (target) msg = h('div', { class: 'banner soft', text: `Ziel: ${target} Punkte` });
+    if (v.last && v.last.aussetzer) msg = h('div', { class: 'banner warn', text: `Der Zug von ${v.last.erklaerer || teamName(v, v.last.team)} wurde ausgesetzt.` });
     const nextTeam = v.over ? v.last.team : v.next.team;
     return h('main', { class: 'page', style: tcStyle(v, nextTeam) },
       h('header', { class: 'sum-head' },
@@ -392,10 +456,13 @@ export function createMpViews(ctx) {
     const color = v.teams[v.winners[0]].color;
     const canvas = h('canvas', { class: 'confetti', 'aria-hidden': 'true' });
     setTimeout(() => { if (canvas.isConnected) stopConfetti = confetti(canvas); }, 50);
+    const ffa = v.form === 'ffa';
     const table = h('table', { class: 'stats' },
-      h('thead', {}, h('tr', {}, h('th', { text: 'Team' }), h('th', { text: 'Punkte' }), h('th', { title: 'richtig', text: '✓' }), h('th', { title: 'übersprungen', text: '↷' }), h('th', { title: 'Buzzer', text: '✕' }))),
+      h('thead', {}, h('tr', {}, h('th', { text: ffa ? 'Spieler' : 'Team' }), h('th', { text: 'Punkte' }), h('th', { title: ffa ? 'erklärt' : 'richtig', text: '✓' }),
+        ffa ? h('th', { title: 'erraten', text: '★' }) : null, h('th', { title: 'übersprungen', text: '↷' }), h('th', { title: 'Buzzer', text: '✕' }))),
       h('tbody', {}, v.standings.map((r) => h('tr', { class: v.winners.includes(r.team) ? 'win' : '', style: { '--tc': r.color } },
-        h('td', {}, h('span', { class: 'dot' }), ' ', r.name), h('td', { text: String(r.score) }), h('td', { text: String(r.guessed) }), h('td', { text: String(r.skipped) }), h('td', { text: String(r.buzzed) })))));
+        h('td', {}, h('span', { class: 'dot' }), ' ', r.name), h('td', { text: String(r.score) }), h('td', { text: String(r.guessed) }),
+        ffa ? h('td', { text: String(r.solved || 0) }) : null, h('td', { text: String(r.skipped) }), h('td', { text: String(r.buzzed) })))));
     return h('main', { class: 'finale', style: { '--tc': color } },
       canvas,
       h('div', { class: 'ho-main' },
@@ -403,11 +470,12 @@ export function createMpViews(ctx) {
         h('p', { class: 'eyebrow', text: v.winners.length > 1 ? 'Unentschieden' : 'Gewonnen!' }),
         h('h1', { text: v.winners.length > 1 ? names.join(' & ') : names[0] }),
         h('p', { class: 'final-score', text: `${v.teams[v.winners[0]].score} Punkte` }),
-        v.best ? h('p', { class: 'best', text: `Bester Erklärer: ${v.best.name} (${teamName(v, v.best.team)}) mit ${v.best.guessed} richtigen Karten` }) : null,
-        table),
+        v.best ? h('p', { class: 'best', text: ffa ? `Bester Erklärer: ${v.best.name} mit ${v.best.guessed} richtigen Karten` : `Bester Erklärer: ${v.best.name} (${teamName(v, v.best.team)}) mit ${v.best.guessed} richtigen Karten` }) : null,
+        table,
+        ffa ? h('p', { class: 'hint', text: '✓ erklärt · ★ erraten · ↷ übersprungen · ✕ Buzzer' }) : null),
       session.isHost
         ? h('div', { class: 'stack' },
-          h('button', { class: 'btn btn-team btn-xl', type: 'button', text: 'Nochmal mit denselben Teams', onClick: () => ctx.rematch() }),
+          h('button', { class: 'btn btn-team btn-xl', type: 'button', text: ffa ? 'Nochmal mit denselben Spielern' : 'Nochmal mit denselben Teams', onClick: () => ctx.rematch() }),
           h('button', { class: 'btn btn-xl', type: 'button', text: 'Zurück zur Lobby', onClick: () => ctx.toLobby() }),
           h('button', { class: 'link', type: 'button', text: 'Raum schließen', onClick: () => ctx.closeRoom() }))
         : h('div', { class: 'stack' },
@@ -420,7 +488,7 @@ export function createMpViews(ctx) {
 
   function tvScore(v) {
     const lead = Math.max(...v.teams.map((t) => t.score));
-    return h('ol', { class: 'tv-scores' }, v.teams.map((t, i) => h('li', { class: (t.score === lead && lead > 0 ? 'lead ' : '') + (v.zug && v.zug.team === i && v.phase !== 'tabelle' ? 'active' : ''), style: { '--tc': t.color } },
+    return h('ol', { class: 'tv-scores' + (v.teams.length > 10 ? ' huge many' : v.teams.length > 5 ? ' many' : '') }, v.teams.map((t, i) => h('li', { class: (t.score === lead && lead > 0 ? 'lead ' : '') + (v.zug && v.zug.team === i && v.phase !== 'tabelle' ? 'active' : ''), style: { '--tc': t.color } },
       h('span', { class: 'tv-dot' }), h('span', { class: 'tv-name', text: t.name }), h('b', { class: 'tv-pts', text: String(t.score) }))));
   }
 
@@ -432,14 +500,20 @@ export function createMpViews(ctx) {
     let cls = 'tv tv-' + v.phase;
     const roundLine = h('p', { class: 'tv-eyebrow', text: v.banner.mode === 'runden' ? `Runde ${v.banner.round} von ${v.banner.rounds}` : `Runde ${v.banner.round}${v.banner.target ? ' · Ziel ' + v.banner.target : ''}` });
     if (v.phase === 'bereit') {
-      left.push(roundLine, h('p', { class: 'tv-small', text: 'Als Nächstes' }), h('h1', { class: 'tv-team', text: teamName(v, t.team) }), h('p', { class: 'tv-who', text: `${t.erklaerer} erklärt gleich …` }),
-        h('p', { class: 'tv-small', text: `Wächter: ${t.waechter || v.teams.filter((_, i) => i !== t.team).map((x) => x.name).join(' & ')}` }));
+      if (v.form === 'ffa') {
+        left.push(roundLine, h('p', { class: 'tv-small', text: 'Als Nächstes erklärt' }), h('h1', { class: 'tv-team', text: t.erklaerer }),
+          h('p', { class: 'tv-small', text: `Wächter: ${t.waechter}` }), h('p', { class: 'tv-small', text: `Raten: ${t.raters.join(', ')}` }));
+      } else {
+        left.push(roundLine, h('p', { class: 'tv-small', text: 'Als Nächstes' }), h('h1', { class: 'tv-team', text: teamName(v, t.team) }), h('p', { class: 'tv-who', text: `${t.erklaerer} erklärt gleich …` }),
+          h('p', { class: 'tv-small', text: `Wächter: ${t.waechter || v.teams.filter((_, i) => i !== t.team).map((x) => x.name).join(' & ')}` }));
+      }
     } else if (v.phase === 'laeuft' || v.phase === 'pausiert') {
       const secEl = h('div', { class: 'tv-clock', text: String(Math.ceil(session.remaining() / 1000)) });
       const barEl = h('i');
       live = { secEl, barEl, total: v.timer.totalMs, role: 'anzeige' };
       const buzz = v.phase === 'pausiert' && z.pause === 'buzzer';
-      left.push(roundLine, h('h1', { class: 'tv-team', text: teamName(v, z.team) }), h('p', { class: 'tv-who', text: `${z.erklaerer} erklärt` }),
+      const ffa = v.form === 'ffa';
+      left.push(roundLine, h('h1', { class: 'tv-team', text: ffa ? z.erklaerer : teamName(v, z.team) }), h('p', { class: 'tv-who', text: ffa ? `Wächter: ${t.waechter}` : `${z.erklaerer} erklärt` }),
         secEl, h('div', { class: 'bar tv-bar' }, barEl),
         h('p', { class: 'tv-count' }, 'Erraten: ', h('b', { text: String(z.guessed) })));
       if (buzz) left.push(h('div', { class: 'tv-pause buzz', role: 'status' }, h('b', { text: 'Pause – Buzzer!' }), z.buzz.by ? h('span', { text: `${z.buzz.by} hat gebuzzert` }) : null));
@@ -451,9 +525,10 @@ export function createMpViews(ctx) {
       left.push(roundLine, h('h1', { class: 'tv-team', text: teamName(v, z.team) }), h('div', { class: 'tv-timeup', text: 'Zeit um!' }),
         h('p', { class: 'tv-count' }, h('b', { text: String(z.guessed) }), ' erraten'));
     } else if (v.phase === 'zusammenfassung' || v.phase === 'tabelle') {
-      left.push(roundLine, h('h1', { class: 'tv-team', text: teamName(v, z.team) }),
-        h('p', { class: 'tv-who' }, `${z.erklaerer}: `, h('b', { text: formatPoints(z.points) + ' Punkte' })),
-        h('ul', { class: 'tv-words' }, (v.words || []).map((w) => h('li', { class: 'r-' + w.result }, h('span', { class: 'ic', text: RESULT_ICON[w.result] }), w.w))));
+      const ffa = v.form === 'ffa';
+      left.push(roundLine, h('h1', { class: 'tv-team', text: ffa ? z.erklaerer : teamName(v, z.team) }),
+        h('p', { class: 'tv-who' }, ffa ? '' : `${z.erklaerer}: `, h('b', { text: formatPoints(z.points) + ' Punkte' })),
+        h('ul', { class: 'tv-words' }, (v.words || []).map((w) => h('li', { class: 'r-' + w.result }, h('span', { class: 'ic', text: RESULT_ICON[w.result] }), w.w + (w.guesser ? ` (${w.guesser})` : '')))));
       if (v.phase === 'tabelle' && v.banner.lastRound) left.push(h('p', { class: 'tv-small', text: 'Punkteziel erreicht – die Runde wird zu Ende gespielt.' }));
     } else if (v.phase === 'ende') {
       cls += ' tv-win';

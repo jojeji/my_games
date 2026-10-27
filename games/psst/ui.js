@@ -2,7 +2,7 @@
 // The game screens (Zug, Zusammenfassung, Tabelle, Ende) live in zug-view.js.
 import { h } from '../../engine/ui/dom.js';
 import { createToaster } from '../../engine/ui/toast.js';
-import { createDeck, createGame, restoreGame, REPORT_REASONS } from './logic.js';
+import { createDeck, createGame, restoreGame, REPORT_REASONS, UNIT_COLORS, FFA_MIN, FFA_MAX } from './logic.js';
 import { TEAM_COLORS } from './store.js';
 import { topbar, segmented, field, switchRow, stepper, section, sheet } from './widgets.js';
 import { createZugView } from './zug-view.js';
@@ -34,6 +34,7 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
     back: 'start', // where "settings" returns to
     settings: store.settings(),
     teams: store.teams(),
+    ffaPlayers: store.ffaPlayers(),
     selection: new Set(store.packSelection()),
     index: null,
     indexError: null,
@@ -101,7 +102,8 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
     try {
       const deck = await buildDeck(ids);
       A.packIds = ids;
-      A.game = createGame({ teams: A.teams, settings: { ...A.settings }, deck, ...gameHooks() });
+      const teams = A.settings.form === 'ffa' ? A.ffaPlayers.map((name, i) => ({ name, color: UNIT_COLORS[i % UNIT_COLORS.length], players: [name] })) : A.teams;
+      A.game = createGame({ teams, settings: { ...A.settings }, deck, ...gameHooks() });
       persist();
       go('game');
     } catch (e) {
@@ -199,6 +201,37 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
 
   /* ---------- teams ---------- */
 
+  /** Why the one-phone setup cannot start yet (null = fine). Names are optional in Teams, so only a team with exactly one name is a certain mistake. */
+  function setupProblem() {
+    if (A.settings.form === 'ffa') {
+      const n = A.ffaPlayers.length;
+      return n < FFA_MIN ? `Jeder gegen jeden braucht mindestens ${FFA_MIN} Spieler (noch ${FFA_MIN - n}).` : null;
+    }
+    const one = A.teams.find((t) => (t.players || []).length === 1);
+    return one ? `${one.name} braucht noch mindestens 1 weiteren Spieler.` : null;
+  }
+  const formSwitch = (onSet) => segmented([{ value: 'teams', label: 'Teams' }, { value: 'ffa', label: 'Jeder gegen jeden' }], A.settings.form === 'ffa' ? 'ffa' : 'teams', onSet, { label: 'Spielform' });
+
+  /** Player list for Jeder gegen jeden (one phone). */
+  function ffaCard() {
+    const P = A.ffaPlayers;
+    const redraw = () => { store.saveFfaPlayers(P); render(); };
+    const playerIn = h('input', { class: 'input', type: 'text', maxLength: 16, placeholder: 'Spielername', 'aria-label': 'Spieler hinzufügen', autocomplete: 'off', enterKeyHint: 'done' });
+    const addPlayer = () => {
+      const v = playerIn.value.trim();
+      if (!v) return;
+      if (P.some((x) => x.toLocaleLowerCase('de') === v.toLocaleLowerCase('de'))) { toast('Den Namen gibt es schon.', { kind: 'warn' }); return; }
+      if (P.length >= FFA_MAX) return;
+      P.push(v);
+      redraw();
+    };
+    playerIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addPlayer(); } });
+    return section(`Spieler (${P.length})`,
+      h('div', { class: 'chips' }, P.map((p, k) => h('span', { class: 'chip' }, p, h('button', { type: 'button', 'aria-label': `${p} entfernen`, text: '×', onClick: () => { P.splice(k, 1); redraw(); } })))),
+      h('div', { class: 'add-row' }, playerIn, h('button', { class: 'btn', type: 'button', text: 'Hinzufügen', onClick: addPlayer })),
+      h('small', { class: 'hint', text: `Mindestens ${FFA_MIN} Spieler. Jeder erklärt reihum einmal pro Runde, ein Spieler passt als Wächter auf, alle anderen raten.` }));
+  }
+
   function teams() {
     const T = A.teams;
     const save = () => store.saveTeams(T);
@@ -239,31 +272,38 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
           h('div', { class: 'chips' }, (t.players || []).map((p, k) =>
             h('span', { class: 'chip' }, p, h('button', { type: 'button', 'aria-label': `${p} entfernen`, text: '×', onClick: () => { t.players.splice(k, 1); redraw(); } })))),
           h('div', { class: 'add-row' }, playerIn, h('button', { class: 'btn', type: 'button', text: 'Hinzufügen', onClick: addPlayer })),
-          h('small', { class: 'hint', text: 'Mit Namen wechseln Erklärer und Wächter reihum. Ohne Namen heißt es nur „Team … ist dran“.' }),
+          h('small', { class: 'hint', text: 'Mit Namen wechseln Erklärer und Wächter reihum. Ohne Namen heißt es nur „Team … ist dran“. Mit Namen: mindestens 2 pro Team.' }),
         ),
       );
     });
 
     const s = A.settings;
+    const ffaMode = s.form === 'ffa';
+    const formBox = section('Spielform',
+      formSwitch((v) => { s.form = v; saveSettings(); render(); }),
+      h('p', { class: 'hint', text: ffaMode ? 'Jeder spielt für sich: Erklärer, Wächter und Rater wechseln reihum.' : 'Jedes Team braucht mindestens 2 Spieler (Erklärer + Rater).' }));
     const modeBox = section('Spielmodus',
       segmented([{ value: 'punkte', label: 'Punkteziel' }, { value: 'runden', label: 'Runden' }, { value: 'frei', label: 'Frei' }], s.mode, (v) => { s.mode = v; saveSettings(); render(); }, { label: 'Spielmodus' }),
       s.mode === 'punkte' ? field('Punkteziel', 'Wer es erreicht, beendet die laufende Runde.', stepper(s.target, { min: 5, max: 200, step: 5 }, (v) => { s.target = v; saveSettings(); render(); })) : null,
-      s.mode === 'runden' ? field('Anzahl Runden', 'Jedes Team hat pro Runde einen Zug.', stepper(s.rounds, { min: 1, max: 30 }, (v) => { s.rounds = v; saveSettings(); render(); })) : null,
+      s.mode === 'runden' ? field('Anzahl Runden', ffaMode ? 'Jeder Spieler erklärt pro Runde einmal.' : 'Jedes Team hat pro Runde einen Zug.', stepper(s.rounds, { min: 1, max: 30 }, (v) => { s.rounds = v; saveSettings(); render(); })) : null,
       s.mode === 'frei' ? h('p', { class: 'hint', text: 'Du beendest das Spiel selbst über die Punktetafel.' }) : null,
       h('button', { class: 'link', type: 'button', text: 'Weitere Regeln ›', onClick: () => { A.back = 'teams'; go('settings'); } }),
     );
 
+    const problem = setupProblem();
     return h('main', { class: 'page' },
-      topbar('Teams', () => go('start')),
-      h('div', { class: 'scroll' }, ...cards,
-        T.length < 4 ? h('button', { class: 'btn btn-add', type: 'button', text: '+ Team hinzufügen', onClick: () => {
-          const used = new Set(T.map((t) => t.color));
-          T.push({ name: 'Team ' + (T.length + 1), color: TEAM_COLORS.find((c) => !used.has(c)) || TEAM_COLORS[0], players: [] });
-          redraw();
-        } }) : null,
+      topbar(ffaMode ? 'Spieler' : 'Teams', () => go('start')),
+      h('div', { class: 'scroll' }, formBox,
+        ...(ffaMode ? [ffaCard()] : [...cards,
+          T.length < 4 ? h('button', { class: 'btn btn-add', type: 'button', text: '+ Team hinzufügen', onClick: () => {
+            const used = new Set(T.map((t) => t.color));
+            T.push({ name: 'Team ' + (T.length + 1), color: TEAM_COLORS.find((c) => !used.has(c)) || TEAM_COLORS[0], players: [] });
+            redraw();
+          } }) : null]),
         modeBox),
       h('footer', { class: 'actionbar' },
-        h('button', { class: 'btn btn-primary btn-xl', type: 'button', text: 'Weiter zu den Kartenpaketen', onClick: () => { store.saveTeams(T); go('packs'); } })),
+        problem ? h('small', { class: 'mp-note err', role: 'alert', text: problem }) : null,
+        h('button', { class: 'btn btn-primary btn-xl', type: 'button', text: 'Weiter zu den Kartenpaketen', disabled: !!problem, onClick: () => { store.saveTeams(T); store.saveFfaPlayers(A.ffaPlayers); go('packs'); } })),
     );
   }
 
@@ -367,6 +407,7 @@ export function mountPsst({ root, store, packs, feedback, wake }) {
       switchRow('Vibration', 'wenn das Gerät es kann', s.vibrate, (v) => { s.vibrate = v; saveSettings(); render(); if (v) navigator.vibrate && navigator.vibrate(30); }),
     );
     const modeBox = section('Spielmodus (Voreinstellung)',
+      field('Spielform', null, formSwitch((v) => set('form', v))),
       segmented([{ value: 'punkte', label: 'Punkteziel' }, { value: 'runden', label: 'Runden' }, { value: 'frei', label: 'Frei' }], s.mode, (v) => set('mode', v), { label: 'Spielmodus' }),
       s.mode === 'punkte' ? field('Punkteziel', null, stepper(s.target, { min: 5, max: 200, step: 5 }, (v) => set('target', v))) : null,
       s.mode === 'runden' ? field('Anzahl Runden', null, stepper(s.rounds, { min: 1, max: 30 }, (v) => set('rounds', v))) : null,

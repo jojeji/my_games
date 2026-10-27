@@ -114,3 +114,10 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - **CSS**: `.view > main { display:flex }` (Spezifität 0,1,1) überschreibt ein einfaches `.tv { display:grid }`; der Fernseher brauchte `.view > main.tv`.
 - **Playwright**: `text=Raum erstellen` trifft auch die Überschrift „Neuen Raum erstellen“ (Teilstring). Für Buttons `getByRole('button', {name, exact:true})` nehmen.
 
+
+## Nachtrag: Psst! Jeder gegen jeden und Teamgrößen
+- **Ein Team mit einem Spieler ist kein Team**: Wenn es erklärt, rät niemand. Die Lobby warnte vorher nur; jetzt ist „jedes Team ≥ 2“ eine harte Regel (`host.check()`), bei genau 3 Spielern bietet die Lobby „Jeder gegen jeden“ an. Spieler ohne Team zählen als verfügbar (werden beim Start auf die kleinsten Teams verteilt), die Prüfung simuliert diese Verteilung.
+- **Wächter-Rotation fair und ohne Zusatzzustand**: Wächter = Spieler `1 + (Runde mod (n−1))` Plätze nach dem Erklärer. Pro Runde ist jeder genau einmal Wächter, nie der Erklärer, und nach n−1 Runden kam jedes Paar (Erklärer, Wächter) genau einmal dran (Test für n = 3..6).
+- **Jede Zähleinheit = ein „Team“**: Statt die Logik zu gabeln, ist in Jeder gegen jeden jeder Spieler ein Team mit einem Namen. Punkte, Statistik, Überspringer-Kontingent pro Spiel, Verlängerung und Speicherstand funktionieren dadurch unverändert.
+- **Tests: `client.act()` meldet nur „gesendet“**, nicht „angenommen“. Rollenprüfungen deshalb über `host.intentFrom(id, …)` (liefert false) plus Zustandsvergleich über den Draht. Ein Gerät dauerhaft offline: `net.close()`; `room.drop()` verbindet sich von selbst wieder.
+- **Sticky-Fußleiste mit Verlauf**: Ein Hinweistext in der halbtransparenten Zone liegt auf der Liste dahinter und ist unlesbar (Playwright-Screenshot der Lobby). Fußleisten mit Hinweis/Fehler bekommen einen deckenden Hintergrund.

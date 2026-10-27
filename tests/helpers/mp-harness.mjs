@@ -66,4 +66,32 @@ export async function startedGame({ legacy = false, settings = {}, options, tv =
   return { room, ...H, guests };
 }
 
+/**
+ * Jeder gegen jeden: host "Hanna" + the given guests (default Anna, Ben; pass 'Cleo' too for 4 players) + TV, game started.
+ * Turn order = join order, so Hanna explains first, the next player is Wächter, the rest are Rater.
+ */
+export async function startedFfa({ names = ['Anna', 'Ben'], settings = {}, tv = true } = {}) {
+  const room = createMemoryRoom();
+  const H = makeHost(room, { settings: { form: 'ffa', ...settings } });
+  H.host.addSelf('Hanna', null);
+  await until(() => H.net.status === 'online', 1000, 'host online');
+  const guests = {};
+  for (const name of names) {
+    const g = makeGuest(room, 'guest' + name.toLowerCase().padEnd(6, '0'));
+    await until(() => g.net.status === 'online', 1000, name + ' online');
+    g.client.join({ name });
+    guests[name] = g;
+  }
+  if (tv) {
+    const g = makeGuest(room, 'guesttv000001');
+    await until(() => g.net.status === 'online', 1000, 'tv online');
+    g.client.join({ kind: 'display' });
+    guests.TV = g;
+  }
+  for (const g of Object.values(guests)) await until(() => g.client.view, 1500, 'first view');
+  await H.host.startGame();
+  await until(() => Object.values(guests).every((g) => g.client.view.kind === 'game'), 1500, 'game views');
+  return { room, ...H, guests };
+}
+
 export { createMemoryRoom, until, sleep };

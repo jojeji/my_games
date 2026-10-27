@@ -9,11 +9,13 @@
 //   pong / host-hello / room-closed
 // Messages devices -> host: join {name, team, kind}, info, leave, resync, ping, and the game intents
 //   bereit, richtig, ueberspringen, buzzer, buzzer-bestaetigen, einspruch-weiter, einspruch-neu, pause, fortsetzen,
-//   zusammenfassung, korrektur {index,result}, bestaetigen, weiter, beenden (host only).
+//   zusammenfassung, korrektur {index,result,guesser?}, bestaetigen, weiter, beenden and zug-aussetzen (host only).
+// Jeder gegen jeden: `richtig` carries `guesser` (name of the Rater who guessed it; optional with exactly one Rater) and `korrektur` may name
+// the guesser too; both are only accepted from the Erklärer (or the Gastgeber as safety net) and only for a Rater of the running Zug.
 // Intents that depend on the screen carry `ref`: the id of the Karte the sender saw (richtig/ueberspringen/buzzer) or the Buzzer number
 // (buzzer-bestaetigen, einspruch-*). The first valid intent wins; a late duplicate has a stale `ref` or hits the wrong phase and is ignored.
-import { createGame, restoreGame, DEFAULT_SETTINGS } from './logic.js';
-import { buildView, roleOf, idOfName, weiterWho } from './views.js';
+import { createGame, restoreGame, DEFAULT_SETTINGS, UNIT_COLORS, FFA_MIN, FFA_MAX } from './logic.js';
+import { buildView, roleOf, idOfName, weiterWho, isFfa } from './views.js';
 
 export const MAX_DEVICES = 20; // sockets per room incl. the host
 export const MAX_NAME = 16;
@@ -146,6 +148,7 @@ export function createHostSession(deps) {
     return {
       teams: S.teams.map((t, i) => ({ name: t.name, color: t.color, n: playersOf(i).length })),
       running: S.phase === 'game',
+      form: S.settings.form === 'ffa' ? 'ffa' : 'teams',
       rejoin: S.phase === 'game' ? Object.values(S.players).filter((p) => p.kind === 'player' && !p.isHost).sort((a, b) => Number(a.connected) - Number(b.connected)).map((p) => p.name) : [],
       full: Object.keys(S.players).length >= MAX_DEVICES,
       hostName: (S.players[hostId] || {}).name || '',
@@ -237,6 +240,14 @@ export function createHostSession(deps) {
 
   /* ---------- game intents (role validated) ---------- */
 
+  /** Jeder gegen jeden: unit index of the Rater called `name` in the running Zug; undefined = not given; false = not a Rater of this Zug. */
+  function guesserUnit(g, name) {
+    if (!isFfa(g) || name === undefined || name === null) return undefined;
+    const z = g.zug;
+    const u = z && z.raters ? z.raters.find((x) => g.teams[x].players[0] === name) : undefined;
+    return u === undefined ? false : u;
+  }
+
   function intent(from, t, m = {}) {
     const P = S.players[from];
     const g = S.game;
@@ -255,11 +266,17 @@ export function createHostSession(deps) {
           g.bereit();
           return true;
         case 'richtig':
-        case 'ueberspringen':
+        case 'ueberspringen': {
           if (role !== 'erklaerer' || !z || !z.current || m.ref !== z.current.id) return false;
-          if (t === 'richtig') g.richtig();
-          else g.ueberspringen();
+          if (t === 'ueberspringen') {
+            g.ueberspringen();
+            return true;
+          }
+          const guesser = guesserUnit(g, m.guesser);
+          if (guesser === false) return false;
+          g.richtig(guesser);
           return true;
+        }
         case 'buzzer': {
           if (role !== 'waechter' || g.phase !== 'laeuft' || !z.current || m.ref !== z.current.id) return false;
           const before = S.buzz;
@@ -294,7 +311,11 @@ export function createHostSession(deps) {
           return true;
         case 'korrektur':
           if (!asErklaerer || !Number.isInteger(m.index) || !RESULTS.includes(m.result)) return false;
-          g.korrigiere(m.index, m.result);
+          {
+            const guesser = guesserUnit(g, m.guesser);
+            if (guesser === false) return false;
+            g.korrigiere(m.index, m.result, guesser);
+          }
           return true;
         case 'bestaetigen':
           if (!asErklaerer) return false;
@@ -307,6 +328,10 @@ export function createHostSession(deps) {
         case 'beenden':
           if (!isHost) return false;
           g.beenden();
+          return true;
+        case 'zug-aussetzen':
+          if (!isHost || g.phase !== 'bereit') return false;
+          g.zugAussetzen();
           return true;
         default:
           return false;
@@ -381,42 +406,75 @@ export function createHostSession(deps) {
     },
   };
 
-  /** Can the game start? errors block, warnings only inform. */
+  /**
+   * Can the game start? errors block, warnings only inform.
+   * Teams: at least 2 teams and EVERY used team needs 2 players (an Erklärer and at least one Rater). Players without a team are spread over the
+   * smallest teams on start, so they count as available. `suggestFfa` = the team rule fails but Jeder gegen jeden (3+ players) would work.
+   * Jeder gegen jeden: at least 3 players (Erklärer, Wächter, Rater).
+   */
   function check() {
     const errors = [];
     const warnings = [];
     const players = S.order.map((id) => S.players[id]).filter((p) => p && p.kind === 'player');
-    const usedTeams = S.teams.map((_, i) => players.filter((p) => p.team === i).length);
+    let suggestFfa = false;
+    const packError = () => !S.packIds.length && errors.push('Wähle mindestens ein Kartenpaket.');
+    if (S.settings.form === 'ffa') {
+      if (players.length < FFA_MIN) errors.push(`Jeder gegen jeden braucht mindestens ${FFA_MIN} Spieler (noch ${FFA_MIN - players.length}).`);
+      if (players.length > FFA_MAX) errors.push(`Jeder gegen jeden geht mit höchstens ${FFA_MAX} Spielern.`);
+      packError();
+      return { ok: errors.length === 0, errors, warnings, suggestFfa };
+    }
+    const sim = S.teams.map((_, i) => playersOf(i).length);
     const loose = players.filter((p) => p.team === null || p.team === undefined).length;
-    // players without a team are spread over the smallest teams on start, so count them as available
-    const filled = usedTeams.filter((n) => n > 0).length;
-    if (players.length < 2) errors.push('Mindestens 2 Spieler nötig.');
-    else if (filled + Math.min(loose, S.teams.length - filled) < 2) errors.push('Mindestens 2 Teams mit je einem Spieler nötig.');
-    if (!S.packIds.length) errors.push('Wähle mindestens ein Kartenpaket.');
+    for (let k = 0; k < loose; k++) sim[sim.indexOf(Math.min(...sim))]++; // same spreading as on start
+    const filled = sim.filter((n) => n > 0).length;
+    const teamErrors = [];
     S.teams.forEach((t, i) => {
-      if (usedTeams[i] === 1) warnings.push(`${t.name} hat nur einen Spieler – dann gibt es keine Rater.`);
-      else if (usedTeams[i] === 0 && filled >= 2) warnings.push(`${t.name} ist leer und wird weggelassen.`);
+      if (sim[i] === 1) teamErrors.push(`${t.name} braucht noch 1 Spieler.`);
+    });
+    if (filled < 2) {
+      let need = 2 - filled;
+      S.teams.forEach((t, i) => {
+        if (sim[i] === 0 && need > 0) {
+          teamErrors.push(`${t.name} braucht noch 2 Spieler.`);
+          need--;
+        }
+      });
+    }
+    if (teamErrors.length) {
+      errors.unshift(...teamErrors);
+      suggestFfa = players.length >= FFA_MIN;
+    }
+    S.teams.forEach((t, i) => {
+      if (sim[i] === 0 && filled >= 2) warnings.push(`${t.name} ist leer und wird weggelassen.`);
     });
     if (loose) warnings.push(`${loose} Spieler ohne Team werden zufällig verteilt.`);
-    return { ok: errors.length === 0, errors, warnings };
+    packError();
+    return { ok: errors.length === 0, errors, warnings, suggestFfa };
   }
 
   async function startGame() {
     if (S.closed) throw new Error('Raum geschlossen.');
     const c = check();
     if (!c.ok) throw new Error(c.errors[0]);
-    for (const p of loosePlayers()) p.team = smallestTeam();
-    // drop empty teams and renumber
-    const keep = S.teams.map((_, i) => playersOf(i).length > 0);
-    const remap = {};
-    let k = 0;
-    keep.forEach((yes, i) => {
-      if (yes) remap[i] = k++;
-    });
-    S.teams = S.teams.filter((_, i) => keep[i]);
-    for (const p of Object.values(S.players)) if (p.kind === 'player') p.team = remap[p.team];
+    let teams;
+    if (S.settings.form === 'ffa') {
+      // every player is a scoring unit; the lobby teams stay untouched (the Gastgeber may switch back to Teams)
+      teams = S.order.map((id) => S.players[id]).filter((p) => p && p.kind === 'player').map((p, i) => ({ name: p.name, color: UNIT_COLORS[i % UNIT_COLORS.length], players: [p.name] }));
+    } else {
+      for (const p of loosePlayers()) p.team = smallestTeam();
+      // drop empty teams and renumber
+      const keep = S.teams.map((_, i) => playersOf(i).length > 0);
+      const remap = {};
+      let k = 0;
+      keep.forEach((yes, i) => {
+        if (yes) remap[i] = k++;
+      });
+      S.teams = S.teams.filter((_, i) => keep[i]);
+      for (const p of Object.values(S.players)) if (p.kind === 'player') p.team = remap[p.team];
+      teams = S.teams.map((t, i) => ({ name: t.name, color: t.color, players: playersOf(i).map((p) => p.name) }));
+    }
     const deck = await deckFactory(S.packIds);
-    const teams = S.teams.map((t, i) => ({ name: t.name, color: t.color, players: playersOf(i).map((p) => p.name) }));
     S.game = createGame({ teams, settings: { ...S.settings }, deck, rng, now, onChange: changed, onEvent: null });
     S.nameToId = {};
     for (const p of Object.values(S.players)) if (p.kind === 'player') S.nameToId[p.name] = p.id;
@@ -444,6 +502,20 @@ export function createHostSession(deps) {
     const info = g.turnInfo();
     const cur = S.players[idOfName(S, info.erklaerer)];
     if (cur && cur.connected) return false;
+    if (isFfa(g)) {
+      // the next connected player (not the Wächter) takes the turn; the absent player gets the other slot
+      const order = g.state.order;
+      const pos = order.indexOf(info.team);
+      for (let k = 1; k < order.length; k++) {
+        const unit = order[(pos + k) % order.length];
+        const p = unit === info.guardTeam ? null : S.players[idOfName(S, g.teams[unit].players[0])];
+        if (p && p.connected) {
+          g.tauscheErklaerer(unit);
+          return true;
+        }
+      }
+      return false;
+    }
     const list = g.state.teams[info.team].players;
     const i = list.indexOf(info.erklaerer);
     for (let k = 1; k < list.length; k++) {

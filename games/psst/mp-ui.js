@@ -4,9 +4,10 @@ import { h } from '../../engine/ui/dom.js';
 import { createNet, createWebSocketTransport, ROOM_SERVER, makeCode, makeClientId, cleanCode, CODE_RE } from './net.js';
 import { createClient, createLocalSession } from './client.js';
 import { createHostSession, MAX_NAME } from './host.js';
+import { FFA_MIN } from './logic.js';
 import { createMpViews, viewSignature } from './mp-views.js';
 import { qrSvg } from './qr.js';
-import { topbar, field, switchRow, section, sheet } from './widgets.js';
+import { topbar, field, switchRow, section, sheet, segmented } from './widgets.js';
 import { TEAM_COLORS } from './store.js';
 
 const RESUME_MAX_AGE = 3 * 3600 * 1000;
@@ -366,10 +367,14 @@ export function createMultiplayer(A) {
       h('div', { class: 'scroll' },
         h('p', { class: 'hint', text: info.hostName ? `${info.hostName} hat dich eingeladen.` : 'Du wurdest eingeladen.' }),
         section('Dein Name', nameIn),
-        section('Wähle dein Team',
-          h('div', { class: 'mp-team-pick' }, info.teams.map((t, i) => h('button', { class: 'mp-team-btn', type: 'button', style: { '--tc': t.color }, onClick: () => join(i) },
-            h('b', { text: t.name }), h('small', { text: t.n ? `${t.n} Spieler` : 'noch leer' })))),
-          h('button', { class: 'btn btn-xl', type: 'button', text: 'Zufällig', onClick: () => join('random') })),
+        info.form === 'ffa'
+          ? section('Jeder gegen jeden',
+            h('p', { class: 'hint', text: 'Hier spielt jeder für sich, es gibt keine Teams.' }),
+            h('button', { class: 'btn btn-primary btn-xl', type: 'button', text: 'Beitreten', onClick: () => join(null) }))
+          : section('Wähle dein Team',
+            h('div', { class: 'mp-team-pick' }, info.teams.map((t, i) => h('button', { class: 'mp-team-btn', type: 'button', style: { '--tc': t.color }, onClick: () => join(i) },
+              h('b', { text: t.name }), h('small', { text: t.n ? `${t.n} Spieler` : 'noch leer' })))),
+            h('button', { class: 'btn btn-xl', type: 'button', text: 'Zufällig', onClick: () => join('random') })),
         tvBtn));
   }
 
@@ -389,11 +394,17 @@ export function createMultiplayer(A) {
       }
       return S.teams[i].color;
     };
-    const chip = (p) => h('button', { class: 'chip mp-chip' + (p.connected ? '' : ' off'), type: 'button', 'aria-label': `${p.name} verschieben`, onClick: () => moveSheet(p) },
+    const ffa = S.settings.form === 'ffa';
+    const setForm = (v) => {
+      A.settings.form = v;
+      store.saveSettings(A.settings);
+      L.setSettings({ form: v });
+    };
+    const chip = (p) => h('button', { class: 'chip mp-chip' + (p.connected ? '' : ' off'), type: 'button', 'aria-label': ffa ? p.name : `${p.name} verschieben`, disabled: ffa && p.isHost, onClick: () => moveSheet(p) },
       h('i', { class: 'mp-dot' + (p.connected ? ' on' : '') }), p.name + (p.isHost ? ' (du)' : ''));
     const moveSheet = (p) => {
       let s;
-      const body = h('div', { class: 'stack tight' }, S.teams.map((t, i) => h('button', { class: 'btn' + (p.team === i ? ' btn-primary' : ''), type: 'button', style: { '--tc': t.color }, text: t.name, onClick: () => { L.setTeam(p.id, i); s.close(); } })));
+      const body = h('div', { class: 'stack tight' }, ffa ? [] : S.teams.map((t, i) => h('button', { class: 'btn' + (p.team === i ? ' btn-primary' : ''), type: 'button', style: { '--tc': t.color }, text: t.name, onClick: () => { L.setTeam(p.id, i); s.close(); } })));
       s = sheet({ title: p.name, body, actions: [...(p.isHost ? [] : [{ label: 'Aus dem Raum entfernen', kind: 'danger', onClick: () => L.kick(p.id) }]), { label: 'Abbrechen', kind: 'ghost' }] });
     };
     const teamCards = S.teams.map((t, i) => {
@@ -409,6 +420,9 @@ export function createMultiplayer(A) {
     const loose = players.filter((p) => p.team === null || p.team === undefined);
     const s = S.settings;
     const modeText = s.mode === 'punkte' ? `Punkteziel ${s.target}` : s.mode === 'runden' ? `${s.rounds} Runden` : 'Freies Spiel';
+    const playerPanel = section(`Spieler · ${players.length}`,
+      h('div', { class: 'chips' }, players.map(chip)),
+      h('p', { class: 'hint', text: `Jeder spielt für sich. Mindestens ${FFA_MIN} Spieler: Pro Zug erklärt einer, einer passt als Wächter auf, alle anderen raten.` }));
     const invite = h('section', { class: 'panel mp-invite' },
       h('h2', { text: 'Mitspieler einladen' }),
       h('div', { class: 'qr-box', innerHTML: qrSvg(roomUrl(M.code), { label: 'QR-Code zum Beitreten' }) }),
@@ -423,21 +437,25 @@ export function createMultiplayer(A) {
       topbar('Lobby', () => closeRoomConfirm()),
       h('div', { class: 'scroll' },
         invite,
-        h('h2', { class: 'group', text: `Teams · ${players.length} ${players.length === 1 ? 'Spieler' : 'Spieler'}` }),
-        ...teamCards,
-        loose.length ? h('section', { class: 'team-card loose' }, h('p', { class: 'hint', text: 'Noch ohne Team (werden beim Start zufällig verteilt):' }), h('div', { class: 'chips' }, loose.map(chip))) : null,
-        S.teams.length < 4 ? h('button', { class: 'btn btn-add', type: 'button', text: '+ Team hinzufügen', onClick: () => { const used = new Set(S.teams.map((t) => t.color)); L.addTeam(TEAM_COLORS.find((c) => !used.has(c)) || TEAM_COLORS[0]); } }) : null,
+        ...(ffa ? [playerPanel] : [
+          h('h2', { class: 'group', text: `Teams · ${players.length} Spieler` }),
+          ...teamCards,
+          loose.length ? h('section', { class: 'team-card loose' }, h('p', { class: 'hint', text: 'Noch ohne Team (werden beim Start zufällig verteilt):' }), h('div', { class: 'chips' }, loose.map(chip))) : null,
+          S.teams.length < 4 ? h('button', { class: 'btn btn-add', type: 'button', text: '+ Team hinzufügen', onClick: () => { const used = new Set(S.teams.map((t) => t.color)); L.addTeam(TEAM_COLORS.find((c) => !used.has(c)) || TEAM_COLORS[0]); } }) : null]),
         section('Spiel',
+          field('Spielform', ffa ? 'Jeder gegen jeden: keine Teams, jeder spielt für sich.' : 'Teams: Jedes Team braucht mindestens 2 Spieler.',
+            segmented([{ value: 'teams', label: 'Teams' }, { value: 'ffa', label: 'Jeder gegen jeden' }], ffa ? 'ffa' : 'teams', setForm, { label: 'Spielform' })),
           field('Kartenpakete', S.packLabels.length ? S.packLabels.join(', ') : 'noch keine gewählt',
             h('button', { class: 'btn', type: 'button', text: 'Kartenpakete wählen ›', onClick: () => A.go('mp-packs') })),
           field('Regeln', `${s.turnSecs} s pro Zug · ${modeText} · Buzzer ${s.buzzPause ? 'pausiert' : 'zählt sofort'}`,
             h('button', { class: 'btn', type: 'button', text: 'Weitere Regeln ›', onClick: () => { A.back = 'mp-room'; A.go('settings'); } })),
-          switchRow('Nur ein Wächter pro Zug', 'Sonst passen alle Spieler der anderen Teams auf. Mit der Option wechselt ein einzelner Wächter reihum.', S.options.oneGuard, (v) => L.setOptions({ oneGuard: v }))),
+          ffa ? null : switchRow('Nur ein Wächter pro Zug', 'Sonst passen alle Spieler der anderen Teams auf. Mit der Option wechselt ein einzelner Wächter reihum.', S.options.oneGuard, (v) => L.setOptions({ oneGuard: v }))),
         h('p', { class: 'note', text: 'Tipp: Bildschirm anlassen. Wenn ein Handy sich sperrt, trennt es die Verbindung und kommt erst beim Entsperren zurück.' }),
       ),
       h('footer', { class: 'actionbar' },
         // one line is enough: the first problem that blocks the start, else the first hint
-        chk.errors.length ? h('small', { class: 'mp-note err', text: chk.errors[0] }) : chk.warnings.length ? h('small', { class: 'mp-note', text: chk.warnings[0] + (chk.warnings.length > 1 ? ` (+${chk.warnings.length - 1})` : '') }) : null,
+        chk.errors.length ? h('small', { class: 'mp-note err', role: 'alert', text: chk.errors.join(' ') }) : chk.warnings.length ? h('small', { class: 'mp-note', text: chk.warnings[0] + (chk.warnings.length > 1 ? ` (+${chk.warnings.length - 1})` : '') }) : null,
+        chk.suggestFfa && !ffa ? h('button', { class: 'btn btn-suggest', type: 'button', text: players.length === FFA_MIN ? 'Zu dritt? Jeder gegen jeden spielen' : 'Jeder gegen jeden spielen', onClick: () => setForm('ffa') }) : null,
         h('button', { class: 'btn btn-primary btn-xl', type: 'button', text: 'Spiel starten', disabled: !chk.ok, onClick: async (e) => {
           e.currentTarget.disabled = true;
           try { await host.startGame(); } catch (err) { A.toast(err.message || 'Start fehlgeschlagen.', { kind: 'warn' }); refresh(); A.render(); }
@@ -448,6 +466,8 @@ export function createMultiplayer(A) {
   /** Lobby of a guest / the Anzeige (view based). */
   function guestLobby(v, session) {
     const tvMode = v.you.display;
+    const ffa = v.settings.form === 'ffa';
+    const playerChips = v.players.map((p) => h('span', { class: 'chip mp-chip' + (p.connected ? '' : ' off') }, h('i', { class: 'mp-dot' + (p.connected ? ' on' : '') }), p.name + (p.me ? ' (du)' : '')));
     const teams = v.teams.map((t, i) => h('section', { class: 'team-card' + (v.you.team === i ? ' mine' : ''), style: { '--tc': t.color } },
       h('div', { class: 'team-row' }, h('span', { class: 'color-dot static' }), h('b', { class: 'mp-team-name', text: t.name })),
       h('div', { class: 'chips' }, t.players.length ? t.players.map((p) => h('span', { class: 'chip mp-chip' + (p.connected ? '' : ' off') }, h('i', { class: 'mp-dot' + (p.connected ? ' on' : '') }), p.name + (p.me ? ' (du)' : ''))) : h('small', { class: 'hint', text: 'noch leer' })),
@@ -455,18 +475,21 @@ export function createMultiplayer(A) {
     const s = v.settings;
     const modeText = s.mode === 'punkte' ? `Punkteziel ${s.target}` : s.mode === 'runden' ? `${s.rounds} Runden` : 'Freies Spiel';
     if (tvMode) {
+      const side = ffa
+        ? [h('div', { class: 'tv-lobby-team' }, h('b', { text: 'Jeder gegen jeden' }), h('span', { text: v.players.map((p) => p.name).join(', ') || '–' }))]
+        : v.teams.map((t) => h('div', { class: 'tv-lobby-team', style: { '--tc': t.color } }, h('b', { text: t.name }), h('span', { text: t.players.map((p) => p.name).join(', ') || '–' })));
       return h('main', { class: 'tv tv-lobby' },
         h('section', { class: 'tv-main' }, h('p', { class: 'tv-eyebrow', text: 'Psst! · Raum' }), h('div', { class: 'tv-roomcode', text: v.code }), h('p', { class: 'tv-small', text: 'Warte auf den Start durch ' + (v.hostName || 'den Gastgeber') + ' …' }),
           h('div', { class: 'qr-box tv-qr', innerHTML: qrSvg(roomUrl(v.code), { label: 'QR-Code zum Beitreten' }) })),
-        h('aside', { class: 'tv-side' }, v.teams.map((t) => h('div', { class: 'tv-lobby-team', style: { '--tc': t.color } }, h('b', { text: t.name }), h('span', { text: t.players.map((p) => p.name).join(', ') || '–' })))));
+        h('aside', { class: 'tv-side' }, side));
     }
     return h('main', { class: 'page mp-lobby' },
       topbar('Lobby', () => leaveRoom()),
       h('div', { class: 'scroll' },
         h('section', { class: 'panel' }, h('h2', { text: `Raum ${v.code}` }), h('p', { class: 'hint', text: `Du bist ${v.you.name}. ${v.hostName ? v.hostName + ' ist Gastgeber.' : ''}` }),
-          h('p', { class: 'hint', text: `${s.turnSecs} s pro Zug · ${modeText}${v.options.oneGuard ? ' · ein Wächter pro Zug' : ''}${v.packLabels.length ? ' · ' + v.packLabels.join(', ') : ''}` })),
-        ...teams,
-        v.loose.length ? h('section', { class: 'team-card loose' }, h('p', { class: 'hint', text: 'Noch ohne Team:' }), h('div', { class: 'chips' }, v.loose.map((p) => h('span', { class: 'chip mp-chip' }, p.name + (p.me ? ' (du)' : ''))))) : null,
+          h('p', { class: 'hint', text: `${ffa ? 'Jeder gegen jeden · ' : ''}${s.turnSecs} s pro Zug · ${modeText}${v.options.oneGuard && !ffa ? ' · ein Wächter pro Zug' : ''}${v.packLabels.length ? ' · ' + v.packLabels.join(', ') : ''}` })),
+        ...(ffa ? [h('section', { class: 'panel' }, h('h2', { text: `Spieler · ${v.players.length}` }), h('div', { class: 'chips' }, playerChips))] : teams),
+        !ffa && v.loose.length ? h('section', { class: 'team-card loose' }, h('p', { class: 'hint', text: 'Noch ohne Team:' }), h('div', { class: 'chips' }, v.loose.map((p) => h('span', { class: 'chip mp-chip' }, p.name + (p.me ? ' (du)' : ''))))) : null,
         h('div', { class: 'mp-wait', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), 'Warte auf den Start durch den Gastgeber …'),
         h('p', { class: 'note', text: 'Tipp: Bildschirm anlassen, sonst trennt dein Handy die Verbindung.' })));
   }

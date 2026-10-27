@@ -1,6 +1,6 @@
 // Psst! game screens: handover (bereit), Zug (läuft/pausiert), Zeit um, Zusammenfassung, Punktetafel, Ende.
 import { h, txt, setCls, setStyle } from '../../engine/ui/dom.js';
-import { formatPoints } from './logic.js';
+import { formatPoints, zugDeltas } from './logic.js';
 import { sheet } from './widgets.js';
 import { confetti } from './confetti.js';
 
@@ -11,6 +11,7 @@ export function createZugView(A) {
   let timer = null;
   let live = null; // elements updated by the timer loop
   let buzzSheet = null;
+  let pickSheet = null; // Jeder gegen jeden: "Wer hat es erraten?"
   let stopConfetti = null;
   let celebrated = null; // game object we already played the win sound for
   let lastSec = null;
@@ -25,6 +26,7 @@ export function createZugView(A) {
     timer = null;
     live = null;
     if (buzzSheet) { buzzSheet.close(); buzzSheet = null; }
+    if (pickSheet) { pickSheet.close(); pickSheet = null; }
     if (stopConfetti) { stopConfetti(); stopConfetti = null; }
     A.wake.off();
   }
@@ -34,6 +36,7 @@ export function createZugView(A) {
     timer = null;
     live = null;
     if (buzzSheet) { const b = buzzSheet; buzzSheet = null; b.close(); }
+    if (pickSheet) { const b = pickSheet; pickSheet = null; b.close(); }
     if (stopConfetti) { stopConfetti(); stopConfetti = null; }
     const game = g();
     const ph = game.phase;
@@ -72,9 +75,14 @@ export function createZugView(A) {
     const guard = teamOf(info.guardTeam);
     const first = game.state.turnIndex === 0;
     const roles = [];
-    if (info.erklaerer) roles.push(h('p', { class: 'role' }, h('small', { text: 'Erklärer' }), h('b', { text: info.erklaerer }), h('span', { class: 'of', text: `(${team.name})` })));
+    if (game.ffa) {
+      roles.push(
+        h('p', { class: 'role' }, h('small', { text: 'Erklärer' }), h('b', { text: info.erklaerer })),
+        h('p', { class: 'role' }, h('small', { text: 'Wächter' }), h('b', { text: info.waechter })),
+        h('p', { class: 'role' }, h('small', { text: 'Raten' }), h('b', { text: info.raterNames.join(', ') })));
+    } else if (info.erklaerer) roles.push(h('p', { class: 'role' }, h('small', { text: 'Erklärer' }), h('b', { text: info.erklaerer }), h('span', { class: 'of', text: `(${team.name})` })));
     else roles.push(h('p', { class: 'role solo' }, h('b', { text: `${team.name} ist dran` })));
-    if (info.waechter) roles.push(h('p', { class: 'role' }, h('small', { text: 'Wächter' }), h('b', { text: info.waechter }), h('span', { class: 'of', text: `(${guard.name})` })));
+    if (game.ffa) { /* roles listed above */ } else if (info.waechter) roles.push(h('p', { class: 'role' }, h('small', { text: 'Wächter' }), h('b', { text: info.waechter }), h('span', { class: 'of', text: `(${guard.name})` })));
     else if (info.erklaerer) roles.push(h('p', { class: 'role dim' }, h('small', { text: 'Wächter' }), h('b', { text: `ein Spieler von ${guard.name}` })));
     else roles.push(h('p', { class: 'role dim' }, h('small', { text: 'Wächter' }), h('b', { text: guard.name })));
     return h('main', { class: 'handover', style: tcStyle(info.team) },
@@ -83,7 +91,7 @@ export function createZugView(A) {
         h('p', { class: 'eyebrow', text: first ? 'Los geht’s' : 'Handy weitergeben' }),
         h('h1', { text: first ? `${team.name} beginnt` : `Weiter: ${team.name}` }),
         h('div', { class: 'roles' }, roles),
-        h('p', { class: 'hint', text: `Zug: ${game.settings.turnSecs} Sekunden. Die Karte bleibt verdeckt, bis der Erklärer „Bereit“ tippt.` }),
+        h('p', { class: 'hint', text: `Zug: ${game.settings.turnSecs} Sekunden. Die Karte bleibt verdeckt, bis der Erklärer „Bereit“ tippt.${game.ffa ? ' Rater: nicht aufs Handy schauen.' : ''}` }),
       ),
       miniScores(game),
       h('button', { class: 'btn btn-team btn-xxl', type: 'button', text: 'Bereit', onClick: () => { A.feedback.unlock(); game.bereit(); rerender(); } }),
@@ -134,14 +142,15 @@ export function createZugView(A) {
 
     const main = h('main', { class: 'zug', style: tcStyle(z.team) },
       h('header', { class: 'zug-top' },
-        h('span', { class: 'chip-team', text: team.name }),
-        z.erklaerer ? h('span', { class: 'who', text: z.erklaerer }) : null,
+        game.ffa ? null : h('span', { class: 'chip-team', text: team.name }),
+        game.ffa ? h('span', { class: 'who', text: `${z.erklaerer} erklärt · Wächter ${z.waechter}` }) : z.erklaerer ? h('span', { class: 'who', text: z.erklaerer }) : null,
         h('span', { class: 'live-score', title: 'Punkte in diesem Zug' }, scoreEl),
         mute, pauseBtn),
       h('div', { class: 'clock' }, secEl, h('span', { class: 'bar' }, barEl)),
       cardEl,
       h('div', { class: 'actions' },
-        h('button', { class: 'btn-act ok', type: 'button', disabled: paused, onClick: act(() => game.richtig(), () => A.feedback.correct()) },
+        h('button', { class: 'btn-act ok', type: 'button', disabled: paused,
+          onClick: game.ffa && z.raters.length > 1 ? () => { A.feedback.unlock(); openPicker(); } : act(() => game.richtig(), () => A.feedback.correct()) },
           h('span', { class: 'big', text: 'Richtig' })),
         h('button', { class: 'btn-act skip', type: 'button', disabled: paused, onClick: act(() => game.ueberspringen(), () => A.feedback.skip()) },
           h('span', { class: 'big', text: 'Überspringen' }), h('small', { text: skipSub })),
@@ -165,6 +174,26 @@ export function createZugView(A) {
     if (game.phase === 'laeuft') timer = setInterval(loop, 100);
     if (buzzOpen) openBuzzDialog(card);
     return main;
+  }
+
+  /** Jeder gegen jeden: the Erklärer names the Rater who guessed the card. */
+  function openPicker() {
+    const game = g();
+    const z = game.zug;
+    if (pickSheet || game.phase !== 'laeuft') return;
+    const ref = z.current;
+    const body = h('div', { class: 'pick-grid' }, z.raters.map((u) => h('button', {
+      class: 'btn btn-xl pick-btn', type: 'button', style: tcStyle(u), text: teamOf(u).name,
+      onClick: () => {
+        pickSheet.close();
+        if (game.phase !== 'laeuft' || game.zug.current !== ref) return; // the card changed meanwhile (time up): nothing to score
+        A.feedback.correct();
+        game.richtig(u);
+        rerender();
+      },
+    })));
+    const sh = sheet({ title: 'Wer hat es erraten?', cls: 'pick-sheet', body, actions: [{ label: 'Abbrechen', kind: 'ghost' }], onClose: () => { if (pickSheet === sh) pickSheet = null; } });
+    pickSheet = sh;
   }
 
   function updateClock() {
@@ -248,16 +277,26 @@ export function createZugView(A) {
         h('div', { class: 'sum-sub' },
           h('span', { text: `${RESULT_LABEL[e.result]} · ${ptxt}` }),
           h('button', { class: 'mini-link', type: 'button', text: '⚑ melden', 'aria-label': `Karte ${e.card.w} melden`, onClick: () => A.openReport(e.card) })),
+        game.ffa && e.result === 'richtig' && z.raters.length > 1
+          ? h('div', { class: 'guess-chips', role: 'radiogroup', 'aria-label': `Erraten von, ${e.card.w}` },
+            h('small', { text: 'Erraten von' }),
+            z.raters.map((u) => h('button', {
+              type: 'button', role: 'radio', 'aria-checked': String(e.guesser === u), class: 'chip-pick' + (e.guesser === u ? ' on' : ''), style: tcStyle(u), text: teamOf(u).name,
+              onClick: () => { game.korrigiere(i, 'richtig', u); rerender(); },
+            })))
+          : game.ffa && e.result === 'richtig' ? h('div', { class: 'guess-chips' }, h('small', { text: `Erraten von ${teamOf(z.raters[0]).name}` })) : null,
       );
     });
     return h('main', { class: 'page summary', style: tcStyle(z.team) },
       h('header', { class: 'sum-head' },
-        h('p', { class: 'eyebrow', text: `Zusammenfassung · ${team.name}${z.erklaerer ? ' (' + z.erklaerer + ')' : ''}` }),
+        h('p', { class: 'eyebrow', text: game.ffa ? `Zusammenfassung · ${team.name}` : `Zusammenfassung · ${team.name}${z.erklaerer ? ' (' + z.erklaerer + ')' : ''}` }),
         h('h1', { class: 'sum-total' }, h('span', { text: formatPoints(sc.points) }), h('small', { text: ' Punkte' })),
-        h('p', { class: 'hint', text: 'Falsch getippt? Tippe auf das richtige Symbol: ✓ richtig, ↷ übersprungen, ✕ Buzzer.' }),
+        h('p', { class: 'hint', text: 'Falsch getippt? Tippe auf das richtige Symbol: ✓ richtig, ↷ übersprungen, ✕ Buzzer.' + (game.ffa ? ' Bei ✓ kannst du ändern, wer erraten hat.' : '') }),
       ),
       h('div', { class: 'scroll' }, rows.length ? h('ul', { class: 'sum-list' }, rows) : h('p', { class: 'note', text: 'In diesem Zug wurde keine Karte gespielt.' })),
-      h('footer', { class: 'actionbar' }, h('button', { class: 'btn btn-team btn-xl', type: 'button', text: 'Bestätigen', onClick: () => { game.bestaetigen(); rerender(); } })),
+      h('footer', { class: 'actionbar' },
+        sc.missing ? h('small', { class: 'mp-note err', role: 'alert', text: `Bei ${sc.missing === 1 ? 'einer Karte' : sc.missing + ' Karten'} fehlt noch, wer erraten hat.` }) : null,
+        h('button', { class: 'btn btn-team btn-xl', type: 'button', text: 'Bestätigen', disabled: sc.missing > 0, onClick: () => { game.bestaetigen(); rerender(); } })),
     );
   }
 
@@ -269,12 +308,13 @@ export function createZugView(A) {
     const last = S.log[S.log.length - 1];
     const lead = Math.max(...game.scores);
     const target = game.settings.mode === 'punkte' ? game.settings.target : 0;
+    const deltas = last ? zugDeltas(last) : {};
     const rows = game.teams.map((t, i) => h('li', { class: 'score-row' + (game.scores[i] === lead ? ' lead' : ''), style: { '--tc': t.color } },
       h('span', { class: 'dot' }),
       h('div', { class: 'sr-main' },
         h('b', { text: t.name }),
         target ? h('span', { class: 'bar' }, h('i', { style: { width: Math.max(0, Math.min(100, (100 * game.scores[i]) / target)) + '%' } })) : null),
-      last && last.team === i ? h('span', { class: 'delta', text: formatPoints(last.points) }) : null,
+      deltas[i] !== undefined && (game.ffa || last.team === i) ? h('span', { class: 'delta', text: formatPoints(deltas[i]) }) : null,
       h('b', { class: 'sr-score', text: String(game.scores[i]) })));
     const next = game.turnInfo(S.turnIndex + 1);
     let msg = null;
@@ -307,10 +347,13 @@ export function createZugView(A) {
     const canvas = h('canvas', { class: 'confetti', 'aria-hidden': 'true' });
     if (celebrated !== game) { celebrated = game; A.feedback.win(); }
     setTimeout(() => { if (canvas.isConnected) stopConfetti = confetti(canvas); }, 50);
+    const ffa = game.ffa;
     const table = h('table', { class: 'stats' },
-      h('thead', {}, h('tr', {}, h('th', { text: 'Team' }), h('th', { text: 'Punkte' }), h('th', { title: 'richtig', text: '✓' }), h('th', { title: 'übersprungen', text: '↷' }), h('th', { title: 'Buzzer', text: '✕' }))),
+      h('thead', {}, h('tr', {}, h('th', { text: ffa ? 'Spieler' : 'Team' }), h('th', { text: 'Punkte' }), h('th', { title: ffa ? 'erklärt' : 'richtig', text: '✓' }),
+        ffa ? h('th', { title: 'erraten', text: '★' }) : null, h('th', { title: 'übersprungen', text: '↷' }), h('th', { title: 'Buzzer', text: '✕' }))),
       h('tbody', {}, stand.map((r) => h('tr', { class: w.includes(r.team) ? 'win' : '', style: { '--tc': r.color } },
-        h('td', {}, h('span', { class: 'dot' }), ' ', r.name), h('td', { text: String(r.score) }), h('td', { text: String(r.guessed) }), h('td', { text: String(r.skipped) }), h('td', { text: String(r.buzzed) })))));
+        h('td', {}, h('span', { class: 'dot' }), ' ', r.name), h('td', { text: String(r.score) }), h('td', { text: String(r.guessed) }),
+        ffa ? h('td', { text: String(r.solved || 0) }) : null, h('td', { text: String(r.skipped) }), h('td', { text: String(r.buzzed) })))));
     return h('main', { class: 'finale', style: { '--tc': color } },
       canvas,
       h('div', { class: 'ho-main' },
@@ -318,11 +361,12 @@ export function createZugView(A) {
         h('p', { class: 'eyebrow', text: w.length > 1 ? 'Unentschieden' : 'Gewonnen!' }),
         h('h1', { text: w.length > 1 ? names.join(' & ') : names[0] }),
         h('p', { class: 'final-score', text: `${game.scores[w[0]]} Punkte` }),
-        best ? h('p', { class: 'best', text: `Bester Erklärer: ${best.name} (${teamOf(best.team).name}) mit ${best.guessed} richtigen Karten` }) : null,
+        best ? h('p', { class: 'best', text: ffa ? `Bester Erklärer: ${best.name} mit ${best.guessed} richtigen Karten` : `Bester Erklärer: ${best.name} (${teamOf(best.team).name}) mit ${best.guessed} richtigen Karten` }) : null,
         table,
+        ffa ? h('p', { class: 'hint', text: '✓ erklärt · ★ erraten · ↷ übersprungen · ✕ Buzzer' }) : null,
       ),
       h('div', { class: 'stack' },
-        h('button', { class: 'btn btn-team btn-xl', type: 'button', text: 'Nochmal mit denselben Teams', onClick: () => { A.newGameSameSetup(); } }),
+        h('button', { class: 'btn btn-team btn-xl', type: 'button', text: game.ffa ? 'Nochmal mit denselben Spielern' : 'Nochmal mit denselben Teams', onClick: () => { A.newGameSameSetup(); } }),
         h('button', { class: 'btn btn-xl', type: 'button', text: 'Hauptmenü', onClick: () => A.leaveGame({ clear: true }) }),
       ),
     );

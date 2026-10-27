@@ -11,6 +11,7 @@ export const DEFAULT_TEAMS = [
 const K = {
   settings: 'psst:settings',
   teams: 'psst:teams',
+  ffaPlayers: 'psst:ffa-players',
   packs: 'psst:packsel',
   played: 'psst:played',
   game: 'psst:game',
@@ -48,6 +49,12 @@ export function createStore(storage = createStorage()) {
       return Array.isArray(t) && t.length >= 2 ? t : JSON.parse(JSON.stringify(DEFAULT_TEAMS));
     },
     saveTeams: (t) => write(K.teams, t),
+    /** Player names for Jeder gegen jeden on one phone. */
+    ffaPlayers() {
+      const t = read(K.ffaPlayers, []);
+      return Array.isArray(t) ? t.filter((x) => typeof x === 'string') : [];
+    },
+    saveFfaPlayers: (t) => write(K.ffaPlayers, t),
     packSelection: () => read(K.packs, []),
     savePackSelection: (ids) => write(K.packs, ids),
 

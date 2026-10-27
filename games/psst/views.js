@@ -4,7 +4,12 @@
 // The Karte (Suchbegriff + Tabuwörter) is only ever part of the view of the Erklärer and the Wächter - never of Rater, Zuschauer or Anzeige.
 // `S` is the host session state (see host.js): { phase, teams, players, options, settings, game, buzz, code, ... }.
 
+import { zugDeltas } from './logic.js';
+
 export const VIEW_VERSION = 1;
+
+/** True when the running game is Jeder gegen jeden. */
+export const isFfa = (g) => !!g && g.settings.form === 'ffa';
 
 export function roleOf(S, id) {
   const P = S.players[id];
@@ -13,6 +18,7 @@ export function roleOf(S, id) {
   const g = S.game;
   if (S.phase !== 'game' || !g) return 'lobby';
   const info = g.turnInfo();
+  if (isFfa(g)) return P.name === info.erklaerer ? 'erklaerer' : P.name === info.waechter ? 'waechter' : 'rater';
   if (P.team === info.team) return P.name === info.erklaerer ? 'erklaerer' : 'rater';
   if (S.options.oneGuard) return P.name === info.waechter && P.team === info.guardTeam ? 'waechter' : 'zuschauer';
   return 'waechter';
@@ -34,6 +40,7 @@ function lobbyView(S, id) {
   return {
     kind: 'lobby',
     code: S.code,
+    players: S.order.map((pid) => S.players[pid]).filter((p) => p && p.kind === 'player').map((p) => ({ ...publicPlayer(S, p), me: p.id === id })),
     you: { name: P.name, team: P.team ?? null, isHost: !!P.isHost, display: P.kind === 'display' },
     teams,
     loose: loose.map((p) => ({ ...publicPlayer(S, p), me: p.id === id })),
@@ -55,7 +62,23 @@ const pickSettings = (s) => ({
   mode: s.mode,
   target: s.target,
   rounds: s.rounds,
+  form: s.form === 'ffa' ? 'ffa' : 'teams',
 });
+
+/** Hint for the Gastgeber before a Zug: a team (or, in Jeder gegen jeden, the whole group) is too small to play it. */
+function shortHanded(S, g, info) {
+  const online = (name) => {
+    const p = S.players[idOfName(S, name)];
+    return !!(p && p.connected);
+  };
+  if (isFfa(g)) {
+    const n = g.teams.filter((t) => online(t.players[0])).length;
+    return n < 3 ? { kind: 'ffa', n, names: [], blocked: true } : null;
+  }
+  const small = g.teams.map((t, i) => ({ i, name: t.name, n: t.players.filter(online).length })).filter((t) => t.n < 2 && g.teams[t.i].players.length > 0);
+  if (!small.length) return null;
+  return { kind: 'team', n: 0, names: small.map((t) => `${t.name} (${t.n})`), blocked: small.some((t) => t.i === info.team) };
+}
 
 /** Build the view of device `id` at host time `nowMs`. */
 export function buildView(S, id, nowMs) {
@@ -76,9 +99,13 @@ export function buildView(S, id, nowMs) {
     role,
     phase: ph,
     code: S.code,
-    you: { name: P.name, team: P.team ?? null, isHost: !!P.isHost },
+    form: isFfa(g) ? 'ffa' : 'teams',
+    you: { name: P.name, team: isFfa(g) ? null : P.team ?? null, isHost: !!P.isHost },
     teams: g.teams.map((t, i) => ({ name: t.name, color: t.color, score: g.scores[i], players: t.players.slice() })),
-    turn: { team: info.team, guardTeam: info.guardTeam, erklaerer: info.erklaerer, waechter: S.options.oneGuard ? info.waechter : null, round: info.round },
+    turn: {
+      team: info.team, guardTeam: info.guardTeam, erklaerer: info.erklaerer, waechter: S.options.oneGuard || isFfa(g) ? info.waechter : null, round: info.round,
+      ...(isFfa(g) ? { raters: info.raterNames } : {}),
+    },
     next: { team: next.team, erklaerer: next.erklaerer },
     banner: {
       mode: g.settings.mode,
@@ -106,6 +133,10 @@ export function buildView(S, id, nowMs) {
       buzzed: sc.buzzed,
       pause: z.pause,
     };
+    if (isFfa(g)) {
+      v.zug.raters = z.raters.map((u) => g.teams[u].players[0]);
+      v.zug.missing = sc.missing;
+    }
     v.timer = { totalMs: g.settings.turnSecs * 1000, leftMs: left, endsAt: ph === 'laeuft' ? nowMs + left : null };
     if (z.pause === 'buzzer') v.zug.buzz = { seq: S.buzz.seq, by: S.buzz.by };
 
@@ -120,13 +151,13 @@ export function buildView(S, id, nowMs) {
     }
     // the cards of a finished Zug are public (summary, Anzeige list of guessed words)
     if (ph === 'zusammenfassung' || ph === 'tabelle') {
-      v.words = z.cards.map((e, i) => ({ id: e.card.id, w: e.card.w, result: e.result, points: sc.per[i].points, free: sc.per[i].free }));
+      v.words = z.cards.map((e, i) => ({ id: e.card.id, w: e.card.w, result: e.result, points: sc.per[i].points, free: sc.per[i].free, ...(isFfa(g) ? { guesser: e.result === 'richtig' && Number.isInteger(e.guesser) ? g.teams[e.guesser].players[0] : null } : {}) }));
     }
   }
 
   if (ph === 'tabelle') {
     const last = st.log[st.log.length - 1];
-    v.last = last ? { team: last.team, points: last.points, erklaerer: last.erklaerer } : null;
+    v.last = last ? { team: last.team, points: last.points, erklaerer: last.erklaerer, deltas: zugDeltas(last), aussetzer: !!last.aussetzer } : null;
     const who = weiterWho(S);
     v.canWeiter = who.includes(id);
     v.weiterNames = who.map((x) => (S.players[x] || {}).name).filter(Boolean);
@@ -134,6 +165,7 @@ export function buildView(S, id, nowMs) {
   if (ph === 'bereit') {
     const eid = idOfName(S, info.erklaerer);
     v.erklaerer = { name: info.erklaerer, connected: !!(S.players[eid] && S.players[eid].connected) };
+    v.warn = shortHanded(S, g, info);
   }
   if (ph === 'ende') {
     v.winners = g.winners.slice();

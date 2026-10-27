@@ -71,8 +71,9 @@ test('lobby: probe, join with team / random / display, unique names, start check
   assert.equal(tv.client.view.you.display, true);
   assert.equal(g.client.view.displays, 1);
   const c = H.host.check();
-  assert.equal(c.ok, true);
-  assert.ok(c.warnings.some((w) => w.includes('Rot hat nur einen Spieler')));
+  assert.equal(c.ok, false, 'a team of one cannot play');
+  assert.equal(c.errors[0], 'Rot braucht noch 1 Spieler.');
+  assert.equal(c.suggestFfa, true, 'three players: Jeder gegen jeden is suggested');
   // moving a player in the lobby shows up on the device
   H.host.lobby.setTeam('guestanna000', 0);
   await until(() => g.client.view.you.team === 0);
@@ -267,12 +268,12 @@ test('timer: the host sends an absolute end time, clients correct it with the me
   H.host.addSelf('Hanna', 0);
   await until(() => H.net.status === 'online');
   const guests = {};
-  for (const [n, team] of [['Anna', 0], ['Ben', 1]]) {
+  for (const [n, team] of [['Anna', 0], ['Ben', 1], ['Cleo', 1]]) { // every team needs two players
     guests[n] = makeGuest(room, 'guest' + n.toLowerCase() + '000');
     await until(() => guests[n].net.status === 'online');
     guests[n].client.join({ name: n, team });
   }
-  await until(() => guests.Ben.client.view && guests.Anna.client.view);
+  await until(() => guests.Ben.client.view && guests.Anna.client.view && guests.Cleo.client.view);
   await H.host.startGame();
   H.host.intent('bereit');
   await until(() => guests.Ben.client.view.phase === 'laeuft');
@@ -382,12 +383,12 @@ test('host reload: the room resumes from the saved game, guests rejoin on their 
   H.host.addSelf('Hanna', 0);
   await until(() => H.net.status === 'online');
   const guests = {};
-  for (const [n, team] of [['Anna', 0], ['Ben', 1]]) {
+  for (const [n, team] of [['Anna', 0], ['Ben', 1], ['Cleo', 1]]) { // every team needs two players
     guests[n] = makeGuest(room, 'guest' + n.toLowerCase() + '000');
     await until(() => guests[n].net.status === 'online');
     guests[n].client.join({ name: n, team });
   }
-  await until(() => guests.Ben.client.view && guests.Anna.client.view);
+  await until(() => guests.Ben.client.view && guests.Anna.client.view && guests.Cleo.client.view);
   await H.host.startGame();
   H.host.intent('bereit');
   await until(() => guests.Ben.client.view.phase === 'laeuft');
