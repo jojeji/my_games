@@ -113,7 +113,7 @@ export const MUTATIONS = [
     benefit: () => `Blaupausen-Gewinn bis ×${n(fx('geduldig').max)}, voll ab ${n(fx('geduldig').full / 60)} Minuten Laufzeit`,
     catch: () => `Zu Beginn eines Laufs nur ×${n(fx('geduldig').min)}`,
     gain: { blueprints: (g) => patience(g) },
-    split: { benefit: { min: 1 }, catch: { max: 1 } },
+    split: { benefit: { max: 1 }, catch: { min: 1 } },
     report: 'Kopie wartet. Ergebnis nach fünf Minuten: besser. Ergebnis davor: schlechter. Geduld wird nicht beanstandet.',
   },
   {
@@ -164,10 +164,11 @@ export const MUTATIONS = [
     name: 'Kolonialist',
     rarity: 'selten',
     benefit: () => `Sternsystem-Gewinn ×${n(fx('kolonialist').sys)}`,
-    catch: () => `Blaupausen-Gewinn ×${n(fx('kolonialist').bp)}`,
+    catch: () => `Blaupausen-Gewinn ×${n(fx('kolonialist').bp)}, ${trip(fx('kolonialist').trip)}`,
     gain: { systems: () => fx('kolonialist').sys, blueprints: () => fx('kolonialist').bp },
-    split: { benefit: { sys: 1 }, catch: { bp: 1 } },
-    report: 'Kopie besiedelt mit Begeisterung. Baupläne bleiben liegen. Begeisterung wird abgeheftet.',
+    trip: () => fx('kolonialist').trip,
+    split: { benefit: { sys: 1 }, catch: { bp: 1, trip: 1 } },
+    report: 'Kopie besiedelt mit Begeisterung. Baupläne bleiben liegen, Anflüge dauern. Begeisterung wird abgeheftet.',
   },
   {
     id: 'buendelfieber',
@@ -304,11 +305,19 @@ export function mutParts(g) {
   return out;
 }
 
-/** Factor on the gain of a prestige currency ('blueprints' | 'systems' | 'cores'). */
+/** Labeled factors on the gain of a prestige currency ('blueprints' | 'systems' | 'cores'): [[mutation name, factor]], only those that change something. */
+export function mutGainParts(g, kind) {
+  const out = [];
+  for (const m of genomeList(g)) {
+    const v = m.gain && m.gain[kind] ? m.gain[kind](g) : 1;
+    if (v !== 1) out.push([m.name, D(v)]);
+  }
+  return out;
+}
+
+/** Factor on the gain of a prestige currency (applied after the softcap, def.js layer.postMult). */
 export function mutGain(g, kind) {
-  let v = 1;
-  for (const m of genomeList(g)) if (m.gain && m.gain[kind]) v *= m.gain[kind](g);
-  return D(v);
+  return mutGainParts(g, kind).reduce((a, [, v]) => a.mul(v), D(1));
 }
 
 export function mutTier(g, i) {

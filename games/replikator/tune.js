@@ -118,20 +118,20 @@ export const TUNE = {
   // Strength of every mutation (benefit and catch); texts in mutations.js are built from these numbers
   mutFx: {
     hyperaktiv: { prod: 2, trip: 0.75, gain: 0.8 },
-    gigantismus: { top: 10, sys: 2, low: 0.5, trip: 1.3 },
-    sparsam: { costDiv: 30, mapCost: 0.5, bundle: -0.1, bp: 0.7 },
-    nostalgisch: { bp: 2.5, sys: 0.7 },
-    schwarmgeist: { perSector: 0.08, mapCost: 2 },
-    geduldig: { max: 2.5, min: 0.5, full: 300 }, // Blaupausen-Gewinn: min at the start of a run, max from `full` s on
-    fehlerfreudig: { offers: 2, cores: 0.75 },
-    gruendlich: { cores: 2, trip: 1.5 },
-    nachtschwaermer: { off: 1.4, on: 0.85 },
-    mosaik: { adj: 0.25, trip: 1.25 },
-    kolonialist: { sys: 2.5, bp: 0.7 },
-    buendelfieber: { bundle: 0.1, trip: 0.8, costDiv: 0.5, sys: 0.75 },
-    glueckstreffer: { prod: 4, gain: 2, trip: 1.4 },
-    ueberschuss: { gain: 2, prod: 0.6, mapCost: 2 },
-    chimaere: { perSlot: 1.3, gainSlot: 1.2, offers: 0.5 },
+    gigantismus: { top: 10, sys: 2.5, low: 0.5, trip: 1.12 },
+    sparsam: { costDiv: 100, mapCost: 0.3, bundle: -0.1, bp: 0.6 },
+    nostalgisch: { bp: 3.5, sys: 0.7 },
+    schwarmgeist: { perSector: 0.1, mapCost: 1.4 },
+    geduldig: { max: 4, min: 0.5, full: 300 }, // Blaupausen-Gewinn: min at the start of a run, max from `full` s on
+    fehlerfreudig: { offers: 2.5, cores: 0.7 },
+    gruendlich: { cores: 3, trip: 1.15 },
+    nachtschwaermer: { off: 1.5, on: 0.85 },
+    mosaik: { adj: 0.5, trip: 1.1 },
+    kolonialist: { sys: 3, bp: 0.5, trip: 1.1 },
+    buendelfieber: { bundle: 0.1, trip: 0.8, costDiv: 0.4, sys: 0.6 },
+    glueckstreffer: { prod: 4, gain: 2.5, trip: 1.1 },
+    ueberschuss: { gain: 2.5, prod: 0.6, mapCost: 1.7 },
+    chimaere: { perSlot: 1.5, gainSlot: 1.3, offers: 0.5 },
   },
 };
 

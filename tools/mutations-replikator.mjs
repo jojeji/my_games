@@ -4,7 +4,10 @@
 // Variants: "beide" = benefit and catch, "Nutzen" = catch neutralised, "Haken" = benefit neutralised (needs MUT_SPLIT in mutations.js).
 // Metrics against the run without mutation: (a) change of the time to 10 sectors, (b) factor on the gain of an Expansion / Singularität in the same game state (log10, what the softcaps let through), (c) change of the Sternsysteme + Quantenkerne total.
 //
-//   node tools/mutations-replikator.mjs [--hours 3.5] [--seeds 1,2] [--starts fixture,fresh] [--only id,id] [--dt 2] [--md]
+// Chimäre counts occupied genome slots, so it is measured with 3 empty slots next to it (a genome of 4).
+// --offline: the player only checks in every 8 h for 2 min (real offline catch-up in between; Nachtschwärmer's benefit only shows there), use --hours 30.
+//
+//   node tools/mutations-replikator.mjs [--hours 3.5] [--seeds 1,2] [--starts fixture,fresh] [--only id,id] [--dt 2] [--offline]
 import { pathToFileURL } from 'node:url';
 import { createReplikator } from '../games/replikator/logic.js';
 import { parse, stringify } from '../engine/save.js';
@@ -15,6 +18,8 @@ import { runSim, loadSaveFile } from './simulate.mjs';
 
 const FIXTURE = new URL('../tests/fixtures/replikator-end-v1.json', import.meta.url).pathname;
 const clone = (s) => parse(stringify(s));
+/** The genome used to measure a mutation alone (Chimäre scales with the number of occupied slots). */
+export const aloneGenome = (id) => (id === 'chimaere' ? [id, '_', '_', '_'] : [id]);
 
 /** A game at the start of Akt II: 'fixture' (real save) or 'fresh' (sim until v1 is finished). */
 export function startSnapshot(start, seed) {
@@ -26,7 +31,7 @@ export function startSnapshot(start, seed) {
 const lg = (d) => (d && d.m > 0 ? d.log10() : 0);
 
 /** One run: genome forced, no offers. Returns { t10 (min | null), sys (mean log10 gain per Expansion), cores (per Singularität), total (log10 systems+cores total) }. */
-export function measure(snapState, genome, { hours = 3.5, dt = 2, fx = null, id = null } = {}) {
+export function measure(snapState, genome, { hours = 3.5, dt = 2, fx = null, id = null, offline = null } = {}) {
   const keepFx = id && fx ? T.mutFx[id] : null;
   if (id && fx) T.mutFx[id] = { ...T.mutFx[id], ...fx };
   const keepUnlock = T.mutUnlockAt;
@@ -39,7 +44,7 @@ export function measure(snapState, genome, { hours = 3.5, dt = 2, fx = null, id 
     const seen = { expansion: g.state.layers.expansion.count, singularity: g.state.layers.singularity.count };
     const gains = { expansion: [], singularity: [] };
     const r = runSim({
-      game: g, hours, dt, quiet: true, act2: true,
+      game: g, hours, dt, quiet: true, act2: true, offline,
       until: (gg) => {
         for (const k of ['expansion', 'singularity']) {
           const L = gg.state.layers[k];
@@ -99,6 +104,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const dt = Number(a.dt ?? 2);
   const seeds = String(a.seeds ?? '1,2').split(',').map(Number);
   const starts = String(a.starts ?? 'fixture,fresh').split(',');
+  const offline = a.offline ? { every: 8 * 3600, session: 120 } : null;
   const only = a.only ? String(a.only).split(',') : null;
   const muts = M.MUTATIONS.filter((m) => !only || only.includes(m.id));
   const rows = {}; // id -> variant -> [deltas]
@@ -106,7 +112,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   for (const start of starts) {
     for (const seed of seeds) {
       const snap = startSnapshot(start, seed);
-      const base = measure(snap, [], { hours, dt });
+      const base = measure(snap, [], { hours, dt, offline });
       basis.push(base);
       // a state in the middle of the window (1 h of play) for the gain factors
       const midG = createReplikator();
@@ -121,8 +127,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         for (const v of ['beide', 'Nutzen', 'Haken']) {
           const fx = v === 'beide' ? null : variantFx(m.id, v);
           if (fx === undefined) continue;
-          const r = measure(snap, [m.id], { hours, dt, fx: fx || null, id: m.id });
-          const rg = refGain(mid, [m.id], { fx: fx || null, id: m.id });
+          const r = measure(snap, aloneGenome(m.id), { hours, dt, fx: fx || null, id: m.id, offline });
+          const rg = refGain(mid, aloneGenome(m.id), { fx: fx || null, id: m.id });
           const d = {
             t10: base.t10 && r.t10 ? (r.t10 / base.t10 - 1) * 100 : null,
             bp: rg.bp - refBase.bp,

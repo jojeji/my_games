@@ -6,7 +6,7 @@ import { sectionTitle } from '../../engine/ui/kit-views.js';
 import { openModal } from '../../engine/ui/modal.js';
 import { TUNE as T } from './tune.js';
 import { W } from './characters.js';
-import { MUT_BY_ID, RARITY, genomeList, mutSlots, mutNextIn, mutPending, mutTake, mutDiscard, mutInterval } from './mutations.js';
+import { MUT_BY_ID, RARITY, genomeList, mutGain, mutSlots, mutNextIn, mutPending, mutTake, mutDiscard, mutInterval } from './mutations.js';
 
 const clock = (sec) => {
   const s = Math.max(0, Math.ceil(sec));
@@ -51,8 +51,9 @@ export function buildGenomeTab(ctx) {
   /* ---------------- status ---------------- */
   const statLine = h('p', { class: 'gen-stat' });
   const nextLine = h('p', { class: 'muted small' });
+  const gainLine = h('p', { class: 'small', hidden: true });
   const dots = h('span', { class: 'mut-dots', 'aria-hidden': 'true' }, ...Array.from({ length: T.mutQueueMax }, () => h('i')));
-  const head = h('div', { class: 'card gen-head' }, h('div', { class: 'gen-head-row' }, statLine, dots), nextLine);
+  const head = h('div', { class: 'card gen-head' }, h('div', { class: 'gen-head-row' }, statLine, dots), nextLine, gainLine);
 
   /* ---------------- the offer ---------------- */
   const offerTitle = h('h3', { class: 'section-title' });
@@ -183,6 +184,13 @@ export function buildGenomeTab(ctx) {
       dots.childNodes.forEach((d, i) => setCls(d, 'on', i < pending));
       const nx = mutNextIn(g);
       txt(nextLine, nx === null ? `Warteschlange voll (${T.mutQueueMax} von ${T.mutQueueMax}). Entscheide ein Angebot, dann lädt das nächste weiter.` : `Nächstes Angebot in ${clock(nx)}${pending ? ` · ${pending} wartend` : ''}`);
+      const gainTxt = [['blueprints', 'Blaupausen'], ['systems', 'Sternsysteme'], ['cores', 'Quantenkerne']]
+        .map(([k, name]) => [name, mutGain(g, k).toNumber()])
+        .filter(([, v]) => Math.abs(v - 1) > 1e-9)
+        .map(([name, v]) => `${name} ×${String(+v.toFixed(2)).replace('.', ',')}`)
+        .join(' · ');
+      setHidden(gainLine, !gainTxt);
+      txt(gainLine, gainTxt ? `Gewinn durch Mutationen: ${gainTxt}` : '');
       paintOffer();
       paintSlots();
       const open = g.autoUnlocked('auto_genom');
