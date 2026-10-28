@@ -16,6 +16,7 @@ export function act2Game(n = 0, { seed = 5, type = null } = {}) {
   r.ano.on = false;
   r.mut.rng.seed = seed * 7 + 1;
   if (type) for (const c of r.map.cells) if (c.type !== 'home' && !c.echo) c.type = type;
+  for (const c of r.map.cells) if (c.type === 'anomalie' && type !== 'anomalie') c.type = 'haufen'; // tests that want an Anomalie sector make one (tests/replikator-anomalies.test.mjs)
   g.grant('systems', 1e60);
   for (let k = 0; k < n; k++) {
     const i = claimable(g).find((x) => canClaim(g, x).ok);
