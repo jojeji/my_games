@@ -11,6 +11,7 @@ import { D } from '../../engine/decimal.js';
 import { formatNumber as fmt } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import { mutCmdRate, ripen } from './mutations.js';
+import { galCmdRate } from './galaxy.js';
 import { act2Active, claimedCount, ownedOfType, typeMult, tripOf, trimTrip, revealFog } from './map.js';
 
 /** Default state.rep2.cmd (merged into rep2State by map.js). */
@@ -38,7 +39,7 @@ export function pulsarExp(g) {
 /** How many times as fast the Pulsar sectors alone let the commands recharge. */
 export const pulsarRate = (g) => 1 + T.cmdPulsar * pulsarExp(g);
 /** How many times as fast the commands recharge (Pulsar sectors, the mutation Sonnenhunger). */
-export const cmdRate = (g) => pulsarRate(g) * mutCmdRate(g);
+export const cmdRate = (g) => pulsarRate(g) * mutCmdRate(g) * galCmdRate(g);
 
 /** Speed factor of the running Erschliessung from Übertakten for the next `dt` seconds (time weighted: correct for the large offline steps). */
 export function cmdTripSpeed(g, dt) {

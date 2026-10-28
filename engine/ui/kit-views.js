@@ -187,7 +187,8 @@ export function upgradeList(g, group, { buyAllLabel = 'Alles kaufen', emptyText 
   const ownedBox = h('div', { class: 'stack' });
   const ownedCount = h('small', { class: 'badge' });
   const owned = h('details', { class: 'section' }, h('summary', {}, h('span', { text: 'Gekauft' }), ownedCount), ownedBox);
-  const buyAll = h('button', { class: 'btn btn-primary btn-block', type: 'button', text: buyAllLabel, onClick: () => g.upgBuyAll(group) });
+  // buyAllLabel: null = no "buy everything" button (upgrades that are a choice, not a shopping list)
+  const buyAll = buyAllLabel ? h('button', { class: 'btn btn-primary btn-block', type: 'button', text: buyAllLabel, onClick: () => g.upgBuyAll(group) }) : null;
   const el = h('div', { class: 'stack' }, buyAll, avail, owned);
   const where = new Map();
   for (const { c } of cards) {
@@ -214,7 +215,7 @@ export function upgradeList(g, group, { buyAllLabel = 'Alles kaufen', emptyText 
       }
       txt(ownedCount, String(nOwned));
       setHidden(owned, nOwned === 0);
-      setDisabled(buyAll, !anyBuyable);
+      if (buyAll) setDisabled(buyAll, !anyBuyable);
     },
   };
 }

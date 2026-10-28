@@ -406,12 +406,12 @@ test('migration 4 -> 5: a v4 save that already owns Anomalie sectors starts the 
   assert.equal(ano(h).owed, 3, 'the other sectors are owed, one anomaly each in turn');
 });
 
-test('the real end-of-v1 save loads cleanly into version 5: Akt II starts with the anomaly stream from the map seed, commands locked, nothing pending', () => {
+test('the real end-of-v1 save loads cleanly into version 6: Akt II starts with the anomaly stream from the map seed, commands locked, nothing pending', () => {
   const backend = mem();
   backend.setItem('mg:replikator:save', FIXTURE_TEXT);
   const g = createReplikator();
   createRuntime(g, { storage: createStorage(backend), now: () => JSON.parse(FIXTURE_TEXT).t + 5000 }).load();
-  assert.equal(g.state.v, 5);
+  assert.equal(g.state.v, 6);
   assert.ok(g.state.rep2.act2);
   assert.equal(g.state.rep2.ano.rng.seed, anoSeedFrom(g.state.rep2.rng.seed));
   assert.equal(g.state.rep2.ano.on, false);

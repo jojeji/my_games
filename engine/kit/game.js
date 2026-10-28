@@ -37,6 +37,7 @@ export class Game {
     this.cache = { mult: {}, own: {}, rate: {}, maxTier: {}, global: {}, prod: {} };
     this.slow = 0;
     this.offlineNow = false; // true while the runtime (or a sim) catches up an absence (engine/core.js simulateOffline)
+    this.tickDt = 0; // length of the tick in progress (0 between ticks): lets a time-varying multiplier hook average over the step (large offline steps)
     this.out = () => {}; // event sink, replaced by the runtime (engine/core.js)
     this.state = createState(def);
     this.refresh();
@@ -164,6 +165,7 @@ export class Game {
     const s = this.state;
     s.time.played += dt;
     for (const l of this.def.layers || []) s.layers[l.id].runTime += dt;
+    this.tickDt = dt;
     this.refresh();
     this.produce(dt);
     if (this.def.producers) this.produceProducers(dt);
@@ -178,6 +180,7 @@ export class Game {
       this.slow = 0;
       this.slowChecks();
     }
+    this.tickDt = 0;
   }
 
   /** Cheap-enough periodic checks: unlocks, milestones, achievements, story, challenge goal. */

@@ -14,6 +14,7 @@ import { newSeed, rngRoll, rngShuffle, toSeed } from '../../engine/kit/rng.js';
 import { TUNE as T } from './tune.js';
 import { act2Active, ownedOfType, tripOf, echoSighted, claimCost } from './map.js';
 import { mutUnlocked, mutAddOffer, ripen } from './mutations.js';
+import { galAnoRate } from './galaxy.js';
 
 /* ------------------------------------------------------------------ */
 /* State                                                                */
@@ -57,6 +58,14 @@ const played = (g) => g.state.time.played;
 /** Start of Akt II (map.js act2Check): a fresh stream, derived from the map seed. */
 export function anoReset(g) {
   Object.assign(AN(g), anoState(), { rng: { seed: anoSeedFrom(g.state.rep2.rng.seed) } });
+}
+
+/** Galaxiensprung (jump.js): the new map has no Anomalie sectors yet and a running rule change ends; a waiting anomaly stays (nothing is lost), the timer keeps its charge. */
+export function anoJump(g) {
+  const a = AN(g);
+  a.srcSeen = 0;
+  a.owed = 0;
+  a.active = null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -200,7 +209,7 @@ function drawType(g) {
   return a.bag.splice(i, 1)[0];
 }
 
-const nextWait = (g) => T.anoEvery + rngRoll(AN(g).rng) * T.anoSpread;
+const nextWait = (g) => (T.anoEvery + rngRoll(AN(g).rng) * T.anoSpread) / galAnoRate(g);
 
 function create(g, src) {
   const a = AN(g);

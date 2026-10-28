@@ -10,6 +10,7 @@
 import { D } from '../../engine/decimal.js';
 import { newSeed, rngRoll, toSeed } from '../../engine/kit/rng.js';
 import { TUNE as T } from './tune.js';
+import { galOfferRate, archiveSlots } from './galaxy.js';
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                 */
@@ -275,6 +276,8 @@ export function migrateToMut(data) {
 
 const MU = (g) => g.state.rep2.mut;
 const claimed = (g) => (g.state.rep2.act2 ? g.state.rep2.map.claimed : 0);
+/** Most sectors claimed in any galaxy so far: the slots that sector counts opened stay open after a jump. */
+const reach = (g) => (g.state.rep2.act2 ? Math.max(g.state.rep2.map.claimed, g.state.rep2.gal.best || 0) : 0);
 
 /* ------------------------------------------------------------------ */
 /* Genome                                                               */
@@ -288,12 +291,12 @@ export const hasMut = (g, id) => MU(g).genome.includes(id);
 
 /** Number of genome slots now. */
 export function mutSlots(g) {
-  let s = T.genomeSlots + MU(g).bonusSlots;
-  for (const at of T.genomeSlotAt) if (claimed(g) >= at) s++;
+  let s = T.genomeSlots + MU(g).bonusSlots + archiveSlots(g);
+  for (const at of T.genomeSlotAt) if (reach(g) >= at) s++;
   return Math.min(T.genomeMax, s);
 }
 /** Claimed sectors at which the next slot opens, or 0. */
-export const nextSlotAt = (g) => (mutSlots(g) >= T.genomeMax ? 0 : T.genomeSlotAt.find((at) => claimed(g) < at) || 0);
+export const nextSlotAt = (g) => (mutSlots(g) >= T.genomeMax ? 0 : T.genomeSlotAt.find((at) => reach(g) < at) || 0);
 
 /** Geduldig: Blaupausen-Gewinn factor from the run time of the Replikation. g.mutRef (valuation by the Auto-Genom) = the full factor. */
 function patience(g) {
@@ -359,7 +362,7 @@ export const mutBundle = (g) => total(g, 'bundle');
 export const mutAutoSlow = (g) => product(g, 'autoSlow');
 export const mutMapCost = (g) => product(g, 'mapCost');
 export const mutTrip = (g) => product(g, 'trip');
-export const mutOfferRate = (g) => product(g, 'offers');
+export const mutOfferRate = (g) => product(g, 'offers') * galOfferRate(g);
 export const mutAdj = (g) => total(g, 'adj');
 export const mutCmdRate = (g) => product(g, 'cmd');
 

@@ -123,6 +123,41 @@ export const TUNE = {
   spiegel: { cost: 0.5 },
   umkehr: { dur: 300, share: 1 },
 
+  // Akt II - Galaxiensprung (games/replikator/galaxy.js, jump.js). Layer 4: Saatkerne = floor((Quantenkerne dieser Galaxie / jumpThreshold) ^ jumpExp); a small exponent keeps a long
+  // save (many Quantenkerne) and a fresh finish close together (docs/replikator-akt2.md). No softcap per run: the jump needs jumpSectors sectors, so it cannot be done in micro-runs.
+  jumpSectors: 10, // claimed sectors of the current galaxy (and the Echo seen) = the galaxy is "completed" (Archiv) and the jump is open
+  jumpThreshold: 100,
+  jumpExp: 0.4,
+  jumpAutoTypes: 3, // Auto-Sprung unlocks with this many completed galaxy types
+  // Sector price level of galaxies >= 2 (the first galaxy measures it from the save, see mapAnchorSlope): anchor = galAnchor + galAnchorStep * (n - 2)
+  galAnchor: 0.75,
+  galAnchorStep: 0,
+  // Galaxy types: rules while you are in one (galaxy.js GALAXIES) and the permanent Archiv bonus of the first completion of each type
+  galFx: {
+    zwerg: { maxTier: 6, thrDiv: 100, sys: 0.5, trip: 0.5 },
+    elliptisch: { growthPow: 1.5, sys: 3 },
+    kollision: { period: 600, lo: 0.5, hi: 4 },
+    leerraum: { offers: 2 },
+    quasar: { prod: 1000, autoExp: 3 },
+  },
+  galArchive: {
+    spirale: { trip: 0.92 },
+    zwerg: { costDiv: 10 },
+    elliptisch: { sys: 1.5 },
+    kollision: { slot: 1, cmd: 1.25 },
+    leerraum: { slot: 1, offers: 1.25 },
+    quasar: { prod: 10, cores: 1.5 },
+  },
+  // Saatkern-Upgrades (def.js group 'seed')
+  seedFx: {
+    kerne: [20, 200, 2000], // Quantenkerne at the start of every galaxy per level
+    sterne: [1e4, 1e5, 1e6], // Sternsysteme at the start per level
+    flug: 0.88, // trip time x this per level
+    befehl: 1.3, // command recharge x this per level
+    anomalie: 1.4, // anomaly frequency x this per level
+    gewinn: 1.25, // all prestige gains x this per level (after the softcap, ripening)
+  },
+
   // Akt II - Mutationen (games/replikator/mutations.js). Offers charge by PLAY TIME (online and offline equally), never per replication:
   // per-replication charging would reward micro-replications (docs/LESSONS.md).
   mutUnlockAt: 3, // claimed sectors; the first offer is there at once

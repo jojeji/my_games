@@ -4,9 +4,13 @@ import { prestigeAuto } from '../../engine/kit/game.js';
 import { formatNumber as fmt, formatMult, formatPercent } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import { STORY, CHAPTERS } from './story.js';
-import { rep2State, migrateToRep2, productionParts, mapGain, autoClaim, claimedCount, ownedOfType, act2Check, mapTick, holdSingularity } from './map.js';
+import { rep2State, migrateToRep2, productionParts, mapGain, autoClaim, bestClaimed, ownedOfType, act2Check, mapTick, holdSingularity } from './map.js';
 import { anoTick, anoTripSpeed, anoTierMult, anoGain, anoChoose, migrateToAno } from './anomalies.js';
 import { COMMANDS, cmdTick, cmdTripSpeed, cmdGain, cmdUnlocked } from './commands.js';
+import {
+  migrateToJump, galProdParts, galGain, galNoSysBoost, galCostDiv, galGrowthPow, galMaxTier, galThrDiv, galAutosOk, archiveCount,
+} from './galaxy.js';
+import { jumpReady, galaxyCheck, galJump, galAutoChoose } from './jump.js';
 import { mutParts, mutGain, mutTier, mutCostDiv, mutBundle, mutAutoSlow, mutExtra, mutTick, mutChoose as chooseMutation, mutAutoRun, mutUnlocked, migrateToMut } from './mutations.js';
 
 /** Active level of an upgrade (0 while suppressed by a challenge). */
@@ -34,7 +38,7 @@ export function globalParts(g) {
   const parts = [];
   const bp = s.cur.blueprints.run;
   if (!g.rule('noBpBoost', false)) parts.push(['Blaupausen', boost(bp, bpBoostExp(g), T.bpCap)]);
-  parts.push(['Sternsysteme', boost(s.cur.systems.run, T.sysBoostExp + 0.1 * lvl(g, 'sternkarten'), T.sysCap)]);
+  if (!galNoSysBoost(g)) parts.push(['Sternsysteme', boost(s.cur.systems.run, T.sysBoostExp + 0.1 * lvl(g, 'sternkarten'), T.sysCap)]); // Leerraum: no boost
   parts.push(['Quantenkerne', boost(s.cur.cores.total, T.coreBoostExp, T.coreCap)]);
   parts.push(['Erfolge', D(1 + 0.02 * g.achCount())]);
   if (lvl(g, 'tick')) parts.push(['Tick-Beschleuniger', pow(1.15, lvl(g, 'tick'))]);
@@ -49,6 +53,7 @@ export function globalParts(g) {
   if (ch.gt(1)) parts.push(['Herausforderungen', ch]);
   parts.push(...productionParts(g)); // Akt II: Pulsare, Ruinen, Anomalien (map.js)
   parts.push(...mutParts(g)); // Akt II: Mutationen (mutations.js)
+  parts.push(...galProdParts(g)); // Akt II: Galaxie-Regeln (Quasar, Kollisionszone) und Archiv (galaxy.js)
   return parts;
 }
 
@@ -184,7 +189,7 @@ export function singRipeness(g) {
  * to its square root and nobody feels it (docs/LESSONS.md). Factors above 1 on Sternsysteme / Quantenkerne ripen with the run time (mutations.js ripen):
  * without that a stack of them makes short runs optimal.
  */
-export const postGain = (g, kind) => mutGain(g, kind).mul(mapGain(g, kind)).mul(cmdGain(g, kind)).mul(anoGain(g, kind));
+export const postGain = (g, kind) => mutGain(g, kind).mul(mapGain(g, kind)).mul(cmdGain(g, kind)).mul(anoGain(g, kind)).mul(galGain(g, kind));
 
 /** Auto-Singularität and the sim's player both wait for the next sector (map.js holdSingularity). */
 export const singularityHeld = (g) => holdSingularity(g);
@@ -195,13 +200,17 @@ export const singularityHeld = (g) => holdSingularity(g);
 
 const bpUpg = (o) => ({ group: 'replication', layer: 1, currency: 'blueprints', ...o });
 const exUpg = (o) => ({ group: 'expansion', layer: 2, currency: 'systems', keep: keepEx, ...o });
-const rsUpg = (o) => ({ group: 'research', layer: 3, currency: 'cores', max: 1, ...o });
+const rsUpg = (o) => ({ group: 'research', layer: 3, currency: 'cores', max: 1, keep: keepRs, ...o });
+const skUpg = (o) => ({ group: 'seed', layer: 4, currency: 'seeds', max: 1, ...o });
 
 // BP upgrades that survive an Expansion with milestone ex1 (automation + tier unlocks)
-const keepEx1 = (g, L) => L >= 2 && g.hasMs('ex1');
-const keepAll = (g, L) => L >= 2 && g.hasMs('ex3');
+// The milestones keep their upgrades through Expansion / Singularität only (L 2-3); the Galaxiensprung (L 4) wipes them unless a Saatkern-Upgrade keeps them.
+const jumpKeep = (g, L, id) => L >= 4 && g.upgLevel(id) > 0;
+const keepEx1 = (g, L) => (L >= 2 && L < 4 && g.hasMs('ex1')) || jumpKeep(g, L, 'sk_plan');
+const keepAll = (g, L) => (L >= 2 && L < 4 && g.hasMs('ex3')) || jumpKeep(g, L, 'sk_plan');
 const keepBp = keepAll;
-const keepEx = (g, L) => L >= 3 && g.hasMs('s1');
+const keepEx = (g, L) => (L >= 3 && L < 4 && g.hasMs('s1')) || jumpKeep(g, L, 'sk_karten');
+const keepRs = (g, L) => jumpKeep(g, L, 'sk_labor');
 
 const tierNames = ['Bohrdrohne', 'Schmelzer', 'Fabrik', 'Montagewerk', 'Werft', 'Orbitalwerft', 'Dyson-Segment', 'Sternschmiede'];
 const tierDescs = [
@@ -223,17 +232,72 @@ const autoGens = tierNames.map((n, i) => ({
   kind: 'gen',
   tier: i,
   // owned, not "active": the autobuyers keep working in "Ohne Baupläne" (only Handarbeit switches automation off)
-  unlock: (g) => g.upgLevel(['auto1', 'auto1', 'auto2', 'auto2', 'auto3', 'auto3', 'auto4', 'auto4'][i]) > 0,
+  unlock: (g) => g.upgLevel(['auto1', 'auto1', 'auto2', 'auto2', 'auto3', 'auto3', 'auto4', 'auto4'][i]) > 0 && galAutosOk(g), // Quasar: only from 3 Expansions in the galaxy
   interval: autoInterval,
   run: (g) => {
     g.genBuy('matter', i, 'max');
   },
 }));
 
+/**
+ * Auto-Sprung: jumps as soon as the galaxy is completed and picks the next galaxy with galPick (a type you have not completed first), so nothing waits for you.
+ * Unlocks after `jumpAutoTypes` completed galaxy types, starts OFF. The sim's player does the same through jumpPlay.
+ */
+function jumpAuto() {
+  const a = prestigeAuto({
+    id: 'auto_jump',
+    layer: 'jump',
+    name: 'Auto-Sprung',
+    desc: 'Springt, sobald die Galaxie abgeschlossen ist, und wählt die nächste Galaxie (bevorzugt eine, die du noch nicht abgeschlossen hast). Die Saatkerne bleiben für dich liegen.',
+    unlock: (g) => archiveCount(g) >= T.jumpAutoTypes,
+    interval: () => 1,
+    on: false,
+    mode: 'amount',
+    value: 1,
+    minGain: 1,
+  });
+  const base = a.run;
+  a.run = (g, st) => {
+    if (g.state.rep2.gal.choice) galAutoChoose(g);
+    else {
+      base(g, st);
+      if (g.state.rep2.gal.choice) galAutoChoose(g);
+    }
+  };
+  return a;
+}
+
+/** What the sim's player does for the jump (the Auto-Sprung's decision, taken by hand): jump when open, pick a pending galaxy. Returns true if anything happened. */
+export function jumpPlay(g) {
+  if (g.state.rep2.gal.choice) return !!galAutoChoose(g);
+  if (!g.canPrestige('jump')) return false;
+  g.prestige('jump');
+  galAutoChoose(g);
+  return true;
+}
+
+/**
+ * Order in which the sim's player (and a thoughtful human) buys Saatkern-Upgrades: every entry is one more level, the player saves for the next entry (no cheaper side purchases).
+ * No autobuyer on purpose: these are the choices of the jump.
+ */
+export const SEED_PLAN = ['sk_plan', 'sk_flug', 'sk_kerne', 'sk_flug', 'sk_sterne', 'sk_karten', 'sk_gewinn', 'sk_befehl', 'sk_flug', 'sk_kerne', 'sk_labor', 'sk_anomalie', 'sk_flug', 'sk_gewinn', 'sk_sterne', 'sk_befehl', 'sk_anomalie', 'sk_kerne', 'sk_gewinn', 'sk_sterne', 'sk_befehl', 'sk_anomalie', 'sk_gewinn'];
+/** Buys the next entries of SEED_PLAN that are affordable; returns the number of levels bought. */
+export function buySeedPlan(g, plan = SEED_PLAN) {
+  let bought = 0;
+  const want = {};
+  for (const id of plan) {
+    want[id] = (want[id] || 0) + 1;
+    if (g.upgLevel(id) >= want[id]) continue;
+    if (!g.upgBuy(id)) break;
+    bought++;
+  }
+  return bought;
+}
+
 export const def = {
   id: 'replikator',
   title: 'Replikator',
-  version: 5,
+  version: 6,
 
   // v1 -> v2: the one-line story became a Chronik (chronicle.read / chronicle.shown). Entries a v1 save has already seen count as read AND shown,
   // so nobody gets old modals or bubbles again. `backfill` makes hooks.onLoad record the new entries whose condition is already true silently
@@ -253,6 +317,8 @@ export const def = {
     3: migrateToMut,
     // v4 -> v5: Sondenbefehle (state.spells, rep2.cmd) und Anomalien (rep2.ano, Seed aus dem Karten-Seed)
     4: migrateToAno,
+    // v5 -> v6: Galaxiensprung (state.rep2.gal / .archive via mergeDefaults; offer stream seed from the map seed, sector record carried over)
+    5: migrateToJump,
   },
 
   extraState: rep2State,
@@ -265,6 +331,7 @@ export const def = {
     { id: 'blueprints', name: 'Blaupausen', short: 'BP', layer: 1, start: 0 },
     { id: 'systems', name: 'Sternsysteme', short: 'Sys', layer: 2, start: 0 },
     { id: 'cores', name: 'Quantenkerne', short: 'QK', layer: 3, start: 0 },
+    { id: 'seeds', name: 'Saatkerne', short: 'SK', layer: 4, start: 0 },
   ],
 
   chains: [
@@ -293,7 +360,7 @@ export const def = {
       layer: 1,
       currency: 'blueprints',
       basis: 'matter',
-      formula: { threshold: T.repThreshold, exp: T.repExp, softcap: T.repSoftcap },
+      formula: { threshold: (g) => T.repThreshold / galThrDiv(g), exp: T.repExp, softcap: T.repSoftcap },
       mult: (g) => {
         let m = ONE; // the sector bonuses of the map work after the softcap (postMult)
         if (g.upgActive('logistik')) m = m.mul(pow(2, lvl(g, 'logistik')));
@@ -313,7 +380,7 @@ export const def = {
       layer: 2,
       currency: 'systems',
       basis: 'blueprints',
-      formula: { threshold: T.expThreshold, exp: (g) => T.expExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.expSoftcap },
+      formula: { threshold: (g) => T.expThreshold / galThrDiv(g), exp: (g) => T.expExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.expSoftcap },
       mult: (g) => {
         let m = ONE;
         if (g.chDone('c_zeitlupe')) m = m.mul(2);
@@ -332,7 +399,7 @@ export const def = {
       currency: 'cores',
       basis: 'systems',
       unlockWhen: (g) => g.state.cur.systems.total.gte(T.singUnlock),
-      formula: { threshold: T.singThreshold, exp: (g) => T.singExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.singSoftcap },
+      formula: { threshold: (g) => T.singThreshold / galThrDiv(g), exp: (g) => T.singExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.singSoftcap },
       mult: (g) => {
         let m = ONE;
         if (g.chDone('c_gipfel')) m = m.mul(2);
@@ -344,6 +411,19 @@ export const def = {
       },
       postMult: (g) => postGain(g, 'cores').mul(singRipeness(g)), // Reife wie bei Merlin: kurze Läufe zahlen sich nicht aus
       blurb: 'Setze alles zurück und verdichte die Galaxie zu Quantenkernen. Ab der 2. Singularität wächst der Gewinn mit jeder bisherigen.',
+    },
+    {
+      id: 'jump',
+      name: 'Galaxiensprung',
+      plural: 'Galaxiensprünge',
+      verb: 'Springen',
+      layer: 4,
+      currency: 'seeds',
+      basis: 'cores',
+      unlockWhen: (g) => jumpReady(g),
+      available: (g) => jumpReady(g),
+      formula: { threshold: T.jumpThreshold, exp: T.jumpExp }, // no softcap per run: the jump needs a completed galaxy, it cannot be done in micro-runs
+      blurb: 'Verlasse die Galaxie und wähle eine neue. Alles bleibt zurück, bis auf Genom, Archiv, Befehle, Chronik und deine Saatkerne.',
     },
   ],
 
@@ -551,6 +631,65 @@ export const def = {
       requiresAny: ['a_schmiede', 'b_entropie'],
       branch: 'D',
     }),
+
+    // --- Galaxiensprung (Saatkerne): choices that carry over; texts and numbers from tune.js seedFx ---
+    skUpg({ id: 'sk_plan', name: 'Bauplan-Archiv', desc: 'Alle Blaupausen-Upgrades bleiben beim Galaxiensprung erhalten.', cost: 3 }),
+    skUpg({ id: 'sk_karten', name: 'Sternenarchiv', desc: 'Alle Expansions-Upgrades bleiben beim Galaxiensprung erhalten.', cost: 8, requires: ['sk_plan'] }),
+    skUpg({ id: 'sk_labor', name: 'Forschungsspeicher', desc: 'Alle Forschungsknoten bleiben beim Galaxiensprung erhalten.', cost: 14, requires: ['sk_plan'] }),
+    skUpg({
+      id: 'sk_kerne',
+      name: 'Kernsaat',
+      desc: 'Jede neue Galaxie beginnt mit Quantenkernen: ' + T.seedFx.kerne.map((x) => fmt(x)).join(' / ') + '.',
+      max: 3,
+      cost: (l) => [2, 5, 12][l],
+      effect: (l) => (l ? D(T.seedFx.kerne[l - 1]) : D(0)),
+      fmt: (e) => 'Start: ' + fmt(e) + ' Quantenkerne',
+    }),
+    skUpg({
+      id: 'sk_sterne',
+      name: 'Sternensaat',
+      desc: 'Jede neue Galaxie beginnt mit Sternsystemen: ' + T.seedFx.sterne.map((x) => fmt(x)).join(' / ') + '.',
+      max: 3,
+      cost: (l) => [3, 6, 14][l],
+      effect: (l) => (l ? D(T.seedFx.sterne[l - 1]) : D(0)),
+      fmt: (e) => 'Start: ' + fmt(e) + ' Sternsysteme',
+    }),
+    skUpg({
+      id: 'sk_flug',
+      name: 'Antriebsarchiv',
+      desc: 'Erschließungen dauern ×' + String(T.seedFx.flug).replace('.', ',') + ' so lang, pro Stufe.',
+      max: 4,
+      cost: (l) => [4, 8, 14, 24][l],
+      effect: (l) => Math.pow(T.seedFx.flug, l),
+      fmt: (e) => 'Erschließung ×' + fmt(e, { sig: 3 }),
+    }),
+    skUpg({
+      id: 'sk_befehl',
+      name: 'Befehlsspeicher',
+      desc: 'Sondenbefehle laden ×' + String(T.seedFx.befehl).replace('.', ',') + ' so schnell, pro Stufe.',
+      max: 3,
+      cost: (l) => [5, 10, 18][l],
+      effect: (l) => Math.pow(T.seedFx.befehl, l),
+      fmt: (e) => 'Nachladen ×' + fmt(e, { sig: 3 }),
+    }),
+    skUpg({
+      id: 'sk_anomalie',
+      name: 'Anomalie-Sog',
+      desc: 'Zeitgesteuerte Anomalien kommen ×' + String(T.seedFx.anomalie).replace('.', ',') + ' so oft, pro Stufe.',
+      max: 3,
+      cost: (l) => [5, 10, 18][l],
+      effect: (l) => Math.pow(T.seedFx.anomalie, l),
+      fmt: (e) => 'Häufigkeit ×' + fmt(e, { sig: 3 }),
+    }),
+    skUpg({
+      id: 'sk_gewinn',
+      name: 'Fruchtbare Saat',
+      desc: 'Gewinn von Blaupausen, Sternsystemen und Quantenkernen ×' + String(T.seedFx.gewinn).replace('.', ',') + ', pro Stufe.',
+      max: 4,
+      cost: (l) => [6, 12, 22, 40][l],
+      effect: (l) => Math.pow(T.seedFx.gewinn, l),
+      fmt: (e) => 'Gewinn ×' + fmt(e, { sig: 3 }),
+    }),
   ],
 
   /* ----------------------------- milestones ----------------------------- */
@@ -667,7 +806,7 @@ export const def = {
       where: 'Galaxie-Tab (und Generatoren-Tab, Automatisierung)', // hint toast on unlock; the switch is in both places
       kind: 'misc',
       defaults: { on: false },
-      unlock: (g) => claimedCount(g) >= T.mapAutoAt,
+      unlock: (g) => bestClaimed(g) >= T.mapAutoAt, // stays unlocked in later galaxies
       interval: () => 1,
       run: (g) => {
         mapAutoClaim(g);
@@ -681,7 +820,7 @@ export const def = {
       where: 'Galaxie-Tab (und Generatoren-Tab, Automatisierung)',
       kind: 'misc',
       defaults: { on: false },
-      unlock: (g) => cmdUnlocked(g) && claimedCount(g) >= T.cmdAutoAt,
+      unlock: (g) => cmdUnlocked(g) && bestClaimed(g) >= T.cmdAutoAt,
       interval: () => 1,
       run: (g) => {
         g.spellAutoRun();
@@ -695,7 +834,7 @@ export const def = {
       where: 'Genom-Tab (und Generatoren-Tab, Automatisierung)',
       kind: 'misc',
       defaults: { on: false },
-      unlock: (g) => mutUnlocked(g) && (claimedCount(g) >= T.mutAutoAt || g.state.rep2.mut.taken >= T.mutAutoTaken),
+      unlock: (g) => mutUnlocked(g) && (bestClaimed(g) >= T.mutAutoAt || g.state.rep2.mut.taken >= T.mutAutoTaken),
       interval: () => 1,
       run: (g) => {
         mutAutoGenom(g);
@@ -739,6 +878,7 @@ export const def = {
       hold: singularityHeld,
       holdText: 'Wartet auf den nächsten Sektor der Galaxiekarte (Sternsysteme sammeln).',
     }),
+    jumpAuto(),
     {
       id: 'auto_bpupg',
       name: 'Auto-Blaupausen-Upgrades',
@@ -793,9 +933,9 @@ export const def = {
 
   /* ----------------------------- hooks ----------------------------- */
   hooks: {
-    genMaxTier: (g) => g.rule('maxTier', 8),
+    genMaxTier: (g) => Math.min(g.rule('maxTier', 8), galMaxTier(g)),
     genGrowthPow: (g) => {
-      let p = g.rule('growthPow', 1);
+      let p = g.rule('growthPow', 1) * galGrowthPow(g);
       if (g.chDone('c_teuer')) p *= 0.92;
       return p;
     },
@@ -804,7 +944,7 @@ export const def = {
       if (act(g, 'kompress')) d = d.mul(g.upgEffect('kompress'));
       if (act(g, 'handel')) d = d.mul(g.upgEffect('handel'));
       if (act(g, 'b_kosten')) d = d.mul(30);
-      return d.mul(mutCostDiv(g));
+      return d.mul(mutCostDiv(g)).mul(galCostDiv(g));
     },
     bundleMult: (g) => {
       if (g.rule('noBundle', false)) return 1;
@@ -832,6 +972,7 @@ export const def = {
     onTick: (g, dt) => {
       act2Check(g);
       mapTick(g, dt);
+      galaxyCheck(g);
       cmdTick(g);
       anoTick(g, dt);
       mutTick(g, dt);
@@ -850,6 +991,12 @@ export const def = {
       if (L >= 3) {
         if (g.hasMs('s10')) g.add('systems', 50);
         else if (g.hasMs('s3')) g.add('systems', 5);
+      }
+      if (L >= 4) {
+        // Galaxiensprung: Saatkern-Upgrades 'Kernsaat' / 'Sternensaat' (given, not earned: the statistics stay), then leave the galaxy (jump.js)
+        if (lvl(g, 'sk_kerne')) g.grant('cores', g.upgEffect('sk_kerne'));
+        if (lvl(g, 'sk_sterne')) g.grant('systems', g.upgEffect('sk_sterne'));
+        galJump(g);
       }
     },
   },

@@ -12,6 +12,7 @@ import { TUNE as T } from './tune.js';
 import { cmdState } from './commands.js';
 import { anoState, anoReset } from './anomalies.js';
 import { mutState, mutReset, mutMapCost, mutTrip, mutAdj, ripen } from './mutations.js';
+import { galState, archiveState, galSeedFrom, galTrip } from './galaxy.js';
 
 /* ------------------------------------------------------------------ */
 /* Hex geometry                                                         */
@@ -89,6 +90,8 @@ export function rep2State() {
       mut: mutState(), // Mutationen (mutations.js), from Akt II on
       cmd: cmdState(), // Sondenbefehle (commands.js): unlock flag
       ano: anoState(), // Anomalien (anomalies.js)
+      gal: galState(), // Galaxien (galaxy.js, jump.js): number, type, pending choice after a jump
+      archive: archiveState(), // Galaxien-Archiv: type -> play time of the first completion
     },
   };
 }
@@ -107,6 +110,8 @@ export const mapOf = (g) => g.state.rep2.map;
 export const mapCells = (g) => g.state.rep2.map.cells;
 export const act2Active = (g) => !!(g.state.rep2 && g.state.rep2.act2);
 export const claimedCount = (g) => (act2Active(g) ? g.state.rep2.map.claimed : 0);
+/** The most sectors claimed in one galaxy so far (this one included): what stays unlocked after a jump (autos, Genom slots). */
+export const bestClaimed = (g) => (act2Active(g) ? Math.max(g.state.rep2.map.claimed, g.state.rep2.gal.best || 0) : 0);
 export const occupiedCount = (g) => (act2Active(g) ? g.state.rep2.map.occupied : 0);
 /** Free sectors that are neither own nor taken by the Echo (the initial Echo cell is not part of the map's claimable total). */
 export const freeCount = (g) => mapCells(g).filter((c) => !c.own && !c.echo).length;
@@ -214,7 +219,7 @@ export function claimable(g) {
 }
 
 /** Duration (s) of the Erschliessung of the next sector: grows with the number of sectors claimed so far. */
-export const tripSecs = (g, n = claimedCount(g)) => Math.round(T.mapTripBase * Math.pow(T.mapTripGrow, n) * mutTrip(g));
+export const tripSecs = (g, n = claimedCount(g)) => Math.round(T.mapTripBase * Math.pow(T.mapTripGrow, n) * mutTrip(g) * galTrip(g));
 /** The running Erschliessung: { i, left, dur } or null. */
 export const tripOf = (g) => (act2Active(g) ? mapOf(g).trip : null);
 
@@ -497,6 +502,8 @@ export function act2Check(g) {
   r.act2At = g.state.time.played;
   r.anchor = T.mapAnchorFixed != null ? T.mapAnchorFixed : best.m > 0 ? Math.max(0, T.mapAnchorSlope * best.log10()) : 0;
   r.map = generateMap(r.rng);
+  Object.assign(r.gal, galState(), { rng: { seed: galSeedFrom(r.rng.seed) }, at: r.act2At, exp0: g.state.layers.expansion.count });
+  r.archive = archiveState();
   mutReset(g);
   anoReset(g);
   g.plog('map', `Akt II beginnt, Anker 1e${r.anchor.toFixed(2)}`);
