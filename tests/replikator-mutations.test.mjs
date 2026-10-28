@@ -12,7 +12,7 @@ import { D } from '../engine/decimal.js';
 import { generateMap, claim, arrive, claimable, canClaim } from '../games/replikator/map.js';
 import {
   MUTATIONS, MUT_BY_ID, RARITY, drawCards, mutState, mutSlots, mutUnlocked, mutTick, mutTake, mutDiscard, mutNextIn, mutInterval, mutGain, mutCostDiv,
-  mutBundle, mutMapCost, mutTrip, mutOfferRate, mutOptions, mutGainParts, mutAdj,
+  mutBundle, mutMapCost, mutTrip, mutOfferRate, mutOptions, mutGainParts, mutAdj, mutCmdRate,
 } from '../games/replikator/mutations.js';
 import { claimCost, tripSecs, typeMult, sectorMult } from '../games/replikator/map.js';
 import { loadSaveFile } from '../tools/simulate.mjs';
@@ -278,11 +278,12 @@ test('every mutation alone changes something that moves progress (production, a 
     t0: g.hooks.genTierMult(g, null, 0).toNumber(),
     t7: g.hooks.genTierMult(g, null, 7).toNumber(),
     adj: mutAdj(g),
+    cmd: mutCmdRate(g),
   });
   give(g);
   const none = probe();
   assert.ok(none.bp > 0 && none.sys > 0, 'the probe state has gains');
-  const better = { prod: 1, bp: 1, sys: 1, cores: 1, trip: -1, price: -1, offers: 1, costDiv: 1, bundle: 1, t0: 1, t7: 1, adj: 1 };
+  const better = { prod: 1, bp: 1, sys: 1, cores: 1, trip: -1, price: -1, offers: 1, costDiv: 1, bundle: 1, t0: 1, t7: 1, adj: 1, cmd: 1 };
   for (const m of MUTATIONS) {
     give(g, m.id);
     const p = probe();
@@ -435,7 +436,7 @@ test('the real end-of-v1 save loads into the new version: Akt II starts, no offe
   backend.setItem('mg:replikator:save', FIXTURE_TEXT);
   const g = createReplikator();
   createRuntime(g, { storage: createStorage(backend), now: () => JSON.parse(FIXTURE_TEXT).t + 5000 }).load();
-  assert.equal(g.state.v, 4);
+  assert.equal(g.state.v, 5);
   assert.ok(g.state.rep2.act2);
   assert.equal(g.state.rep2.mut.queue, 0);
   assert.ok(!mutUnlocked(g));

@@ -1,6 +1,7 @@
 // Pacing of the Akt II map (Paket 2) in the active sim: a fresh v1 finish (sim keeps playing after the end) AND the owner's real end-of-v1 save
 // must experience the map at a similar tempo (the travel time of each Erschliessung is the main throttle, prices are the second one). Deterministic (fixed seed, fixed time step); the player claims with mapAutoClaim, the function
 // of the in-game Auto-Erkundung. Targets: first sector within ~10 min, 10 sectors after ~2-4 h.
+// The map ALONE: the Sondenbefehle and Anomalien (Paket 4, tests/sim-replikator-commands.test.mjs) are switched off here.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runSim, loadSaveFile, SIM_SEED } from '../tools/simulate.mjs';
@@ -9,8 +10,9 @@ const min = (s) => s / 60;
 const stop = (n) => (g) => g.state.rep2.map.claimed >= n;
 const since = (r, n) => (r.map.claims[n - 1] ? r.map.claims[n - 1].t - r.map.start : null);
 
-const fresh = runSim({ hours: 11.5 + 8, dt: 2, quiet: true, act2: true, until: stop(10) });
-const fixture = runSim({ game: loadSaveFile(new URL('./fixtures/replikator-end-v1.json', import.meta.url).pathname), hours: 8, dt: 2, quiet: true, act2: true, until: stop(10) });
+const alone = { commands: false, anomalies: false };
+const fresh = runSim({ hours: 11.5 + 8, dt: 2, quiet: true, act2: true, until: stop(10), ...alone });
+const fixture = runSim({ game: loadSaveFile(new URL('./fixtures/replikator-end-v1.json', import.meta.url).pathname), hours: 8, dt: 2, quiet: true, act2: true, until: stop(10), ...alone });
 
 test('fresh v1 finish: Akt II starts with the end of v1, then 1 / 3 / 6 / 10 sectors at a steady pace', () => {
   assert.ok(fresh.endTime, 'v1 finished');
@@ -49,7 +51,7 @@ test('the Echo takes one sector per 2 claimed sectors in both runs, never by its
 });
 
 test('the sim is reproducible (same seed, same times)', () => {
-  const again = runSim({ hours: 11.5 + 8, dt: 2, quiet: true, act2: true, until: stop(3), seed: SIM_SEED });
+  const again = runSim({ hours: 11.5 + 8, dt: 2, quiet: true, act2: true, until: stop(3), seed: SIM_SEED, ...alone });
   assert.deepEqual(again.map.claims.slice(0, 3).map((c) => c.t), fresh.map.claims.slice(0, 3).map((c) => c.t));
 });
 

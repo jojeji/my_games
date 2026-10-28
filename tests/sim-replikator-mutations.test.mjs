@@ -8,8 +8,9 @@ import { TUNE as T } from '../games/replikator/tune.js';
 import { MUTATIONS } from '../games/replikator/mutations.js';
 
 const stop = (n) => (g) => g.state.rep2.map.claimed >= n;
-const fresh = runSim({ hours: 11.5 + 8, dt: 2, quiet: true, act2: true, until: stop(10) });
-const fixture = runSim({ game: loadSaveFile(new URL('./fixtures/replikator-end-v1.json', import.meta.url).pathname), hours: 8, dt: 2, quiet: true, act2: true, until: stop(10) });
+const alone = { commands: false, anomalies: false }; // Paket 3 alone (the commands and anomalies have tests/sim-replikator-commands.test.mjs)
+const fresh = runSim({ hours: 11.5 + 8, dt: 2, quiet: true, act2: true, until: stop(10), ...alone });
+const fixture = runSim({ game: loadSaveFile(new URL('./fixtures/replikator-end-v1.json', import.meta.url).pathname), hours: 8, dt: 2, quiet: true, act2: true, until: stop(10), ...alone });
 const runs = { fresh, fixture };
 
 test('offers: the first one with the 3rd sector, then about one per 25-30 min of play time; the genome fills up and swaps happen', () => {

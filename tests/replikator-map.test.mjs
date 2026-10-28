@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createReplikator } from '../games/replikator/logic.js';
-import { globalParts, mapAutoClaim, repObjective } from '../games/replikator/def.js';
+import { globalParts, mapAutoClaim, repObjective, mapObjective } from '../games/replikator/def.js';
 import { TUNE as T } from '../games/replikator/tune.js';
 import { D } from '../engine/decimal.js';
 import { advance, createRuntime } from '../engine/core.js';
@@ -391,8 +391,8 @@ function loadFixture({ awaySeconds = 0, storage } = {}) {
 
 test('migration 2 -> 3 with the real end-of-v1 save: it starts Akt II with a map, a stable seed and an anchor from the banked stock', () => {
   const { g } = loadFixture();
-  assert.equal(g.version, 4);
-  assert.equal(g.state.v, 4);
+  assert.equal(g.version, 5);
+  assert.equal(g.state.v, 5);
   const r = g.state.rep2;
   assert.equal(r.act2, true, 'Akt II starts on load');
   assert.equal(r.map.cells.length, 19);
@@ -431,7 +431,7 @@ test('migration 2 -> 3: a v2 save keeps everything, gets rep2 with a seed derive
   const fresh = createReplikator();
   createRuntime(fresh, { storage: createStorage(backend), now: () => 1000 }).load();
   assert.equal(fresh.state.rep2.act2, false);
-  assert.equal(fresh.state.v, 4);
+  assert.equal(fresh.state.v, 5);
   assert.equal(fresh.state.rep2.rng.seed, g.migrations[2]({ time: { created: 5 } }).rep2.rng.seed);
 });
 
@@ -478,7 +478,7 @@ test('Auto-Erkundung: starts off, unlocks with 6 claimed sectors, claims the bes
   assert.equal(claimedCount(g), T.mapAutoAt);
   // on: one sector per run, the best by the objective
   g.state.auto.auto_map.on = true;
-  const best = bestClaim(g, repObjective);
+  const best = bestClaim(g, mapObjective);
   assert.ok(best >= 0);
   const type = g.state.rep2.map.cells[best].type;
   auto.run(g, g.state.auto.auto_map);
@@ -514,7 +514,7 @@ test('the best sector is the one with the largest rise of the objective (same-ty
   cells[own].type = 'haufen';
   cells[own].own = 1; // an own Sternhaufen: the neighbouring Sternhaufen is worth more than a fresh pair
   g.refresh();
-  const best = bestClaim(g, repObjective);
+  const best = bestClaim(g, mapObjective);
   assert.ok(best >= 0);
   assert.equal(cells[best].type === 'haufen' || cells[best].type === 'ruine', true);
   if (nb[own].includes(ring1[0])) assert.equal(best, ring1[0], 'the Sternhaufen next to the own one wins');

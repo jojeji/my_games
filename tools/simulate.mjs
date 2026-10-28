@@ -14,6 +14,7 @@
 //           mapAutoClaim in def.js). Prints the time of every claimed sector and of every Echo occupation (relative to the start of Akt II).
 // --fixture <file> : start from a save file (e.g. tests/fixtures/replikator-end-v1.json) instead of a new game; goes through the real
 //           migrations (and starts Akt II when the save has finished version 1). Combine with --act2 --hours N.
+// runSim options commands:false / anomalies:false: the commands are not cast / no anomaly appears (isolates the map or the mutations)
 // --seed N : seed of the map RNG (default fixed, so runs are reproducible)
 // --offline : player checks in every --every H hours (default 8) for --session S seconds (default 120); in between the real offline catch-up
 import { pathToFileURL } from 'node:url';
@@ -73,7 +74,21 @@ const hms = (s) => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 };
 
-export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true, game = null, until = null, offline = null, act2 = false, seed = SIM_SEED } = {}) {
+/**
+ * `commands: false` / `anomalies: false` switch the Akt II systems of Paket 4 off for this run (measurements and tests that isolate the map or the mutations):
+ * the commands are not cast, no anomaly appears.
+ */
+export function runSim(opts = {}) {
+  const keep = T.anoForce;
+  if (opts.anomalies === false) T.anoForce = 'none';
+  try {
+    return runSimInner(opts);
+  } finally {
+    T.anoForce = keep;
+  }
+}
+
+function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true, game = null, until = null, offline = null, act2 = false, seed = SIM_SEED, commands = true } = {}) {
   const S = { ...STRATEGY, ...strategy };
   const g = game || createReplikator();
   if (!game && seed != null) g.state.rep2.rng.seed = seed; // reproducible map
@@ -82,6 +97,7 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
   }
   const map = { start: null, claims: [], echo: [], mut: [], ano: [], cmd: [] }; // Akt II: times (sim seconds) of the start, each claimed sector, each Echo occupation and each offer / choice
   if (act2 && g.state.rep2.act2) map.start = 0; // a loaded save that already is in Akt II
+  if (!commands) for (const sp of g.def.spells) g.state.spells[sp.id].auto = false;
   if (S.autosOff) for (const a of g.def.autos) if (a.kind === 'prestige') g.state.auto[a.id].on = false;
   let t = 0;
   const log = [];

@@ -128,7 +128,7 @@ function loadFixture({ awaySeconds = 0 } = {}) {
 
 test('migration 1 -> 2: the real v1 save gets no modal flood; seen entries are read, new ones are silently backfilled and unread', () => {
   const { g, events } = loadFixture();
-  assert.equal(g.version, 4);
+  assert.equal(g.version, 5);
   const c = g.state.chronicle;
   assert.ok(!('backfill' in c), 'one-time flag removed');
   for (const id of OLD_IDS) assert.ok(c.read[id] && c.shown[id], 'old entry counts as read and shown: ' + id);

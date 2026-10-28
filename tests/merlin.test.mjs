@@ -257,7 +257,8 @@ test('autos: Replikator keeps its defaults (on, no flag change)', async () => {
   const { createReplikator } = await import('../games/replikator/logic.js');
   const g = createReplikator();
   assert.ok(!g.def.autosStartOff);
-  assert.ok(g.def.autos.filter((a) => a.kind !== 'prestige' && !['auto_map', 'auto_genom'].includes(a.id)).every((a) => g.state.auto[a.id].on === true));
+  assert.ok(g.def.autos.filter((a) => a.kind !== 'prestige' && !['auto_map', 'auto_genom', 'auto_befehl'].includes(a.id)).every((a) => g.state.auto[a.id].on === true));
   assert.equal(g.state.auto.auto_map.on, false, 'the Akt II Auto-Erkundung starts off');
   assert.equal(g.state.auto.auto_genom.on, false, 'the Auto-Genom starts off');
+  assert.equal(g.state.auto.auto_befehl.on, false, 'the Auto-Befehl starts off');
 });
