@@ -170,6 +170,16 @@ export const mutChoose = (g) => chooseMutation(g, mutObjective);
 export const mutAutoGenom = (g) => mutAutoRun(g, mutObjective);
 
 /**
+ * Reife-Faktor der Singularität (0..1): Laufzeit / T.singRipe.secs hoch pow. Nur in Akt II (Version 1 war gemessen gesund: Optimum 15-30 min, Pacing und Story
+ * hängen daran); die Bewertung (g.mutRef) sieht den vollen Wert.
+ */
+export function singRipeness(g) {
+  if (g.mutRef || !g.state.rep2.act2) return 1;
+  const r = T.singRipe;
+  return Math.max(r.floor, Math.pow(Math.min(1, g.state.layers.singularity.runTime / r.secs), r.pow));
+}
+
+/**
  * Everything that multiplies a prestige gain AFTER the softcap (layer.postMult): sector bonuses of the map and mutations. Before the softcap a factor is cut
  * to its square root and nobody feels it (docs/LESSONS.md). Factors above 1 on Sternsysteme / Quantenkerne ripen with the run time (mutations.js ripen):
  * without that a stack of them makes short runs optimal.
@@ -332,7 +342,7 @@ export const def = {
         if (g.hasMs('s5')) m = m.mul(1.5);
         return m;
       },
-      postMult: (g) => postGain(g, 'cores'),
+      postMult: (g) => postGain(g, 'cores').mul(singRipeness(g)), // Reife wie bei Merlin: kurze Läufe zahlen sich nicht aus
       blurb: 'Setze alles zurück und verdichte die Galaxie zu Quantenkernen. Ab der 2. Singularität wächst der Gewinn mit jeder bisherigen.',
     },
   ],

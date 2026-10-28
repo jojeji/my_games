@@ -10,7 +10,7 @@
 import { pathToFileURL } from 'node:url';
 import { createReplikator } from '../games/replikator/logic.js';
 import { parse, stringify } from '../engine/save.js';
-import { runSim } from './simulate.mjs';
+import { runSim, loadSaveFile } from './simulate.mjs';
 
 /** Snapshot points of the active sim: { id, label, layer, count } = right after the count-th prestige of `layer`. */
 export const PHASES = [
@@ -58,6 +58,32 @@ export function takeSnapshots({ phases = PHASES, dt = 1, hours = 22 } = {}) {
     },
   });
   return phases.map((p) => snaps[p.id]).filter(Boolean);
+}
+
+/**
+ * Akt II snapshots: the state after `counts` claimed sectors (0 = right at the start of Akt II) of the active sim, from the real end-of-v1 save ('fixture')
+ * or a fresh v1 finish ('fresh'). Returns [{ phase: { id, label }, state }]. Use measureLayer(snap, layer, lengths, { act2: true }); T.mapHoldReach = 0 switches
+ * the Singularität's waiting for the next sector off (hold off), the default is hold on.
+ */
+export function takeAct2Snapshots(start, counts = [0, 5, 10], { dt = 2, seed = 7 } = {}) {
+  const snaps = [];
+  const fixture = new URL('../tests/fixtures/replikator-end-v1.json', import.meta.url).pathname;
+  runSim({
+    game: start === 'fixture' ? loadSaveFile(fixture, { seed }) : null,
+    hours: 20,
+    dt,
+    quiet: true,
+    act2: true,
+    seed,
+    until: (g) => {
+      if (!g.state.rep2.act2) return false;
+      for (const n of counts) {
+        if (g.state.rep2.map.claimed >= n && !snaps.some((x) => x.n === n)) snaps.push({ n, phase: { id: start + n, label: `Akt II ${start === 'fixture' ? 'Datei' : 'frisch'}, ${n} Sektoren` }, state: clone(g.state) });
+      }
+      return snaps.length === counts.length;
+    },
+  });
+  return snaps;
 }
 
 /** The layer a player works towards while running `layer`, and the gain at which it counts as reached. */

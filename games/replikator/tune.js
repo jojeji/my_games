@@ -15,6 +15,9 @@ export const TUNE = {
   expSoftcap: { at: 1e5, pow: 0.5 },
   singSoftcap: { at: 300, pow: 0.4 },
   singExp: 0.5,
+  // Reife der Singularität: Quantenkern-Gewinn x min(1, Laufzeit / secs)^pow (nach dem Softcap, floor = Untergrenze). Ohne sie sind 2-min-Läufe im fortgeschrittenen Spiel das Optimum
+  // (der Softcap pro Lauf kappt lange Läufe, siehe docs/LESSONS.md); mit ihr liegt das Optimum bei ~secs.
+  singRipe: { secs: 900, pow: 2, floor: 0.02 },
 
   // Boost exponents: (1 + currencyRun) ^ exp
   bpBoostExp: 0.3,
