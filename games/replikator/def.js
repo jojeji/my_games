@@ -11,6 +11,7 @@ import {
   migrateToJump, galProdParts, galGain, galNoSysBoost, galCostDiv, galGrowthPow, galMaxTier, galThrDiv, galAutosOk, archiveCount,
 } from './galaxy.js';
 import { jumpReady, galaxyCheck, galJump, galAutoChoose } from './jump.js';
+import { endGain, endPending, migrateToEnd } from './ending.js';
 import { mutParts, mutGain, mutTier, mutCostDiv, mutBundle, mutAutoSlow, mutExtra, mutTick, mutChoose as chooseMutation, mutAutoRun, mutUnlocked, migrateToMut } from './mutations.js';
 
 /** Active level of an upgrade (0 while suppressed by a challenge). */
@@ -189,7 +190,7 @@ export function singRipeness(g) {
  * to its square root and nobody feels it (docs/LESSONS.md). Factors above 1 on Sternsysteme / Quantenkerne ripen with the run time (mutations.js ripen):
  * without that a stack of them makes short runs optimal.
  */
-export const postGain = (g, kind) => mutGain(g, kind).mul(mapGain(g, kind)).mul(cmdGain(g, kind)).mul(anoGain(g, kind)).mul(galGain(g, kind));
+export const postGain = (g, kind) => mutGain(g, kind).mul(mapGain(g, kind)).mul(cmdGain(g, kind)).mul(anoGain(g, kind)).mul(galGain(g, kind)).mul(endGain(g, kind));
 
 /** Auto-Singularität and the sim's player both wait for the next sector (map.js holdSingularity). */
 export const singularityHeld = (g) => holdSingularity(g);
@@ -255,6 +256,8 @@ function jumpAuto() {
     mode: 'amount',
     value: 1,
     minGain: 1,
+    hold: endPending, // the end of Akt II is a decision that waits: no jump past it
+    holdText: 'Wartet auf deine Entscheidung am Ende von Akt II (Galaxie-Tab).',
   });
   const base = a.run;
   a.run = (g, st) => {
@@ -297,7 +300,7 @@ export function buySeedPlan(g, plan = SEED_PLAN) {
 export const def = {
   id: 'replikator',
   title: 'Replikator',
-  version: 6,
+  version: 7,
 
   // v1 -> v2: the one-line story became a Chronik (chronicle.read / chronicle.shown). Entries a v1 save has already seen count as read AND shown,
   // so nobody gets old modals or bubbles again. `backfill` makes hooks.onLoad record the new entries whose condition is already true silently
@@ -319,6 +322,8 @@ export const def = {
     4: migrateToAno,
     // v5 -> v6: Galaxiensprung (state.rep2.gal / .archive via mergeDefaults; offer stream seed from the map seed, sector record carried over)
     5: migrateToJump,
+    // v6 -> v7: Ende von Akt II (state.rep2.end via mergeDefaults)
+    6: migrateToEnd,
   },
 
   extraState: rep2State,

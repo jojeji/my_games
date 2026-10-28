@@ -436,7 +436,7 @@ test('the real end-of-v1 save loads into the new version: Akt II starts, no offe
   backend.setItem('mg:replikator:save', FIXTURE_TEXT);
   const g = createReplikator();
   createRuntime(g, { storage: createStorage(backend), now: () => JSON.parse(FIXTURE_TEXT).t + 5000 }).load();
-  assert.equal(g.state.v, 6);
+  assert.equal(g.state.v, 7);
   assert.ok(g.state.rep2.act2);
   assert.equal(g.state.rep2.mut.queue, 0);
   assert.ok(!mutUnlocked(g));

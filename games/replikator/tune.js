@@ -149,6 +149,15 @@ export const TUNE = {
     leerraum: { slot: 1, offers: 1.25 },
     quasar: { prod: 10, cores: 1.5 },
   },
+  // Akt II - Ende (games/replikator/ending.js): after all six galaxy types are in the Archiv the Echo question is decided. Verschmelzen: from the next map on the Echo's cells
+  // (its first one and every `mapEchoEvery`th claim) are yours for nothing; they count as sectors but do not push up price and travel time. Abgrenzen: the Echo leaves the maps,
+  // and as a permanent bonus the Erschliessung is faster and every gain bigger (after the softcap, ripening). The other ending is open `endSecondJumps` jumps after the first.
+  endSecondJumps: 3,
+  endFx: {
+    merge: { startCell: true, startTypes: ['haufen', 'nebel', 'pulsar', 'loch'] },
+    split: { trip: 0.8, gain: 1.5 },
+  },
+
   // Saatkern-Upgrades (def.js group 'seed')
   seedFx: {
     kerne: [20, 200, 2000], // Quantenkerne at the start of every galaxy per level

@@ -316,10 +316,10 @@ test('migration 5 -> 6: a v5 save gets the galaxy state, the sector record and a
   assert.equal(g.migrations[5].length, 1);
 });
 
-test('the real end-of-v1 save loads into version 6: galaxy 1, Spirale, no choice, jump layer closed', async () => {
+test('the real end-of-v1 save loads into version 7: galaxy 1, Spirale, no choice, jump layer closed', async () => {
   const { loadSaveFile } = await import('../tools/simulate.mjs');
   const g = loadSaveFile(FIXTURE);
-  assert.equal(g.state.v, 6);
+  assert.equal(g.state.v, 7);
   assert.equal(g.state.rep2.gal.n, 1);
   assert.equal(galType(g), 'spirale');
   assert.equal(g.state.rep2.gal.choice, null);

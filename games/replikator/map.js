@@ -13,6 +13,7 @@ import { cmdState } from './commands.js';
 import { anoState, anoReset } from './anomalies.js';
 import { mutState, mutReset, mutMapCost, mutTrip, mutAdj, ripen } from './mutations.js';
 import { galState, archiveState, galSeedFrom, galTrip } from './galaxy.js';
+import { endState, endMapFlags, endTrip } from './ending.js';
 
 /* ------------------------------------------------------------------ */
 /* Hex geometry                                                         */
@@ -92,6 +93,7 @@ export function rep2State() {
       ano: anoState(), // Anomalien (anomalies.js)
       gal: galState(), // Galaxien (galaxy.js, jump.js): number, type, pending choice after a jump
       archive: archiveState(), // Galaxien-Archiv: type -> play time of the first completion
+      end: endState(), // Ende von Akt II (ending.js): Verschmelzen / Abgrenzen
     },
   };
 }
@@ -110,6 +112,8 @@ export const mapOf = (g) => g.state.rep2.map;
 export const mapCells = (g) => g.state.rep2.map.cells;
 export const act2Active = (g) => !!(g.state.rep2 && g.state.rep2.act2);
 export const claimedCount = (g) => (act2Active(g) ? g.state.rep2.map.claimed : 0);
+/** Sectors that were paid for (claimed minus the free Echo cells of Verschmelzen): the price and the travel time grow with this number, not with the claimed total. */
+export const paidCount = (g) => (act2Active(g) ? g.state.rep2.map.claimed - (g.state.rep2.map.free || 0) : 0);
 /** The most sectors claimed in one galaxy so far (this one included): what stays unlocked after a jump (autos, Genom slots). */
 export const bestClaimed = (g) => (act2Active(g) ? Math.max(g.state.rep2.map.claimed, g.state.rep2.gal.best || 0) : 0);
 export const occupiedCount = (g) => (act2Active(g) ? g.state.rep2.map.occupied : 0);
@@ -187,13 +191,14 @@ export const echoSighted = (g) => {
   if (!act2Active(g)) return false;
   const cells = mapCells(g);
   const i = echoStart(cells);
-  return (i >= 0 && isVisible(cells, i)) || mapOf(g).occupied > 0;
+  if (i < 0) return !!mapOf(g).noEcho; // a map without the silhouette (after an ending): nothing left to look for
+  return isVisible(cells, i) || mapOf(g).occupied > 0;
 };
 
 /** log10 of the price of sector number n+1 (n = sectors claimed so far). */
-export const costLog = (g, n = claimedCount(g)) => R2(g).anchor + T.mapCostOffset + T.mapCostStep * n + Math.log10(mutMapCost(g));
+export const costLog = (g, n = paidCount(g)) => R2(g).anchor + T.mapCostOffset + T.mapCostStep * n + Math.log10(mutMapCost(g));
 /** Price of the next sector in Sternsysteme (a whole number). */
-export function claimCost(g, n = claimedCount(g)) {
+export function claimCost(g, n = paidCount(g)) {
   return Decimal.pow(10, costLog(g, n)).ceil();
 }
 
@@ -219,7 +224,7 @@ export function claimable(g) {
 }
 
 /** Duration (s) of the Erschliessung of the next sector: grows with the number of sectors claimed so far. */
-export const tripSecs = (g, n = claimedCount(g)) => Math.round(T.mapTripBase * Math.pow(T.mapTripGrow, n) * mutTrip(g) * galTrip(g));
+export const tripSecs = (g, n = paidCount(g)) => Math.round(T.mapTripBase * Math.pow(T.mapTripGrow, n) * mutTrip(g) * galTrip(g) * endTrip(g));
 /** The running Erschliessung: { i, left, dur } or null. */
 export const tripOf = (g) => (act2Active(g) ? mapOf(g).trip : null);
 
@@ -248,6 +253,11 @@ export function arrive(g) {
   g.plog('map', `Sektor ${m.claimed}: ${SECTOR[c.type].name}`);
   g.refresh();
   g.emit('map-claim', { i: m.cells.indexOf(c), type: c.type, n: m.claimed });
+  if (m.noEcho) {
+    // after an ending the Echo is not on the map: with Verschmelzen its cells are given to the player (one per `mapEchoEvery` paid sectors)
+    while (m.merge && (m.grants || 0) < Math.floor((m.claimed - (m.free || 0)) / T.mapEchoEvery)) if (echoGrant(g) < 0) break;
+    return true;
+  }
   while (m.occupied < Math.floor(m.claimed / T.mapEchoEvery)) {
     const taken = echoOccupy(g);
     if (taken < 0) break;
@@ -348,7 +358,7 @@ export function echoChoice(m) {
     const lo = Math.min(...pool.map(score));
     cand = pool.filter((i) => score(i) === lo);
   }
-  const [v] = rngNext(m.seed + m.occupied * 7919);
+  const [v] = rngNext(m.seed + (m.occupied + (m.grants || 0)) * 7919);
   return cand[Math.floor(v * cand.length)];
 }
 
@@ -364,6 +374,46 @@ export function echoOccupy(g) {
   g.refresh();
   g.emit('echo-occupy', { i, n: m.occupied });
   return i;
+}
+
+/** Verschmelzen: the cell the Echo would take is the player's instead (free, counts as a sector, does not raise price and travel time). Returns its index or -1. */
+export function echoGrant(g) {
+  const m = mapOf(g);
+  const i = echoChoice(m);
+  if (i < 0) return -1;
+  makeFree(m, m.cells[i]);
+  m.grants = (m.grants || 0) + 1;
+  g.plog('map', `Echo-Sektor übernommen (${m.grants})`);
+  g.refresh();
+  g.emit('echo-merge', { i, n: m.grants });
+  return i;
+}
+function makeFree(m, c) {
+  c.own = 1;
+  c.echo = 3; // 3 = the Echo's cell given to the player: stays "Echo territory" for the choice of the next one
+  c.merged = 1;
+  m.claimed += 1;
+  m.free = (m.free || 0) + 1;
+}
+
+/**
+ * A new map after an ending (jump.js galChoose): the Echo is not on it. With Verschmelzen its first cell is the player's from the start (and `echoGrant` gives the others),
+ * without it the cell is an ordinary sector. Its type is derived from the map seed (the generation draws stay as they were, old seeds give the same maps).
+ */
+export function applyEnding(g, m) {
+  const f = endMapFlags(g);
+  if (!f.merge && !f.split) return m;
+  m.noEcho = 1;
+  m.merge = f.merge ? 1 : 0;
+  const i = echoStart(m.cells);
+  if (i < 0) return m;
+  const c = m.cells[i];
+  const types = T.endFx.merge.startTypes;
+  const [v] = rngNext(m.seed + 31337);
+  c.type = types[Math.floor(v * types.length)];
+  c.echo = 0;
+  if (f.merge && T.endFx.merge.startCell) makeFree(m, c);
+  return m;
 }
 
 /* ------------------------------------------------------------------ */

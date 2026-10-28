@@ -6,7 +6,7 @@
 //  - The pick (galChoose) builds the new map with a new seed, fixed price anchor, and the Echo sits on it again. The Auto-Sprung and the sim pick with galPick.
 import { rngShuffle } from '../../engine/kit/rng.js';
 import { TUNE as T } from './tune.js';
-import { act2Active, echoSighted, generateMap, claimedCount } from './map.js';
+import { act2Active, echoSighted, generateMap, claimedCount, applyEnding } from './map.js';
 import { anoJump } from './anomalies.js';
 import { GAL_ORDER, galType, archiveDone } from './galaxy.js';
 
@@ -89,7 +89,7 @@ export function galChoose(g, type) {
   gal.at = played(g);
   gal.exp0 = g.state.layers.expansion.count;
   r.anchor = T.galAnchor + T.galAnchorStep * (gal.n - 2);
-  r.map = generateMap(r.rng);
+  r.map = applyEnding(g, generateMap(r.rng));
   g.plog('jump', `Galaxie ${gal.n}: ${type}`);
   g.refresh();
   g.emit('galaxy', { type, n: gal.n });
