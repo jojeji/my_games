@@ -150,12 +150,12 @@ export const TUNE = {
     quasar: { prod: 10, cores: 1.5 },
   },
   // Akt II - Ende (games/replikator/ending.js): after all six galaxy types are in the Archiv the Echo question is decided. Verschmelzen: from the next map on the Echo's cells
-  // (its first one and every `mapEchoEvery`th claim) are yours for nothing; they count as sectors but do not push up price and travel time. Abgrenzen: the Echo leaves the maps,
+  // (its first one and every `mapEchoEvery`th claim) are yours for nothing; they count as sectors for nothing (price and travel time of the next ones grow as if they had been claimed). Abgrenzen: the Echo leaves the maps,
   // and as a permanent bonus the Erschliessung is faster and every gain bigger (after the softcap, ripening). The other ending is open `endSecondJumps` jumps after the first.
   endSecondJumps: 3,
   endFx: {
-    merge: { startCell: true, startTypes: ['haufen', 'nebel', 'pulsar', 'loch'] },
-    split: { trip: 0.8, gain: 1.5 },
+    merge: { startCell: true, startTypes: ['haufen', 'nebel', 'pulsar', 'loch'], freeIndex: 1 }, // freeIndex: how much of a sector a free cell counts for the price and travel time of the next ones (0 = nothing, 1 = like a paid one; measured: 1 gives ~-35 % galaxy time, 0 would be ~-55 %)
+    split: { trip: 0.6, gain: 2 },
   },
 
   // Saatkern-Upgrades (def.js group 'seed')

@@ -273,7 +273,7 @@ function jumpAuto() {
 /** What the sim's player does for the jump (the Auto-Sprung's decision, taken by hand): jump when open, pick a pending galaxy. Returns true if anything happened. */
 export function jumpPlay(g) {
   if (g.state.rep2.gal.choice) return !!galAutoChoose(g);
-  if (!g.canPrestige('jump')) return false;
+  if (endPending(g) || !g.canPrestige('jump')) return false; // the decision at the end of Akt II comes first
   g.prestige('jump');
   galAutoChoose(g);
   return true;

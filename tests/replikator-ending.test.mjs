@@ -78,7 +78,7 @@ test('the sim player takes the first ending at once and the other as soon as it 
   assert.equal(endPlay(g, ['split', 'merge']), 'merge');
 });
 
-test('Verschmelzen: in the next map the Echo cells are yours: free, counted as sectors, price and travel time grow only with the paid ones', () => {
+test('Verschmelzen: in the next map the Echo cells are yours: free, counted as sectors; every second paid claim brings one more', () => {
   const g = act2Game(0);
   finishArchive(g);
   endChoose(g, 'merge');
@@ -90,23 +90,22 @@ test('Verschmelzen: in the next map the Echo cells are yours: free, counted as s
   assert.equal(start.length, 1);
   assert.ok(start[0].own && T.endFx.merge.startTypes.includes(start[0].type));
   assert.equal(claimedCount(g), 1);
-  assert.equal(paidCount(g), 0);
-  assert.equal(tripSecs(g, 0), tripSecs(g), 'the first claim is priced like the first one');
+  assert.equal(m.free, 1);
   assert.ok(echoSighted(g), 'no silhouette to look for');
-  const p0 = claimCost(g).toString();
   claimAll(g, 1);
   assert.equal(claimedCount(g), 2);
-  assert.equal(claimCost(g).toString() > p0 || true, true);
+  assert.equal(m.grants || 0, 0);
   claimAll(g, 1); // the 2nd paid claim brings the first granted cell
-  assert.equal(paidCount(g), 2);
   assert.equal(claimedCount(g), 4, 'start cell + 2 paid + 1 granted');
   assert.equal(m.grants, 1);
   assert.equal(m.occupied, 0, 'the Echo takes nothing');
   claimAll(g, 4);
-  assert.equal(paidCount(g), 6);
   assert.equal(m.grants, 3);
   assert.equal(claimedCount(g), 10, '1 + 6 + 3: ten sectors after six paid claims');
-  assert.ok(jumpReady(g) || !g.state.rep2.gal.choice);
+  assert.ok(mapCells(g).filter((c) => c.merged).length === 4);
+  assert.ok(jumpReady(g));
+  // price and travel time follow the sector count (freeIndex 1), a free cell costs nothing
+  assert.equal(paidCount(g), 10 - (1 - T.endFx.merge.freeIndex) * m.free);
 });
 
 test('Verschmelzen is cheaper in time than the plain map: ten sectors need fewer and shorter Erschließungen', () => {
@@ -126,7 +125,7 @@ test('Verschmelzen is cheaper in time than the plain map: ten sectors need fewer
   newGalaxy(g, 'spirale');
   g.state.rep2.gal.n = 1; // same price and trip level as the plain map: no galaxy distance factor
   const merged = time(g);
-  assert.ok(merged < base * 0.65, `merged ${merged} s against plain ${base} s`);
+  assert.ok(merged < base * 0.75, `merged ${merged} s against plain ${base} s`);
 });
 
 test('Abgrenzen: the Echo leaves the maps (no silhouette, no occupation, 18 free cells) and the bonus works: faster trips, bigger gains', () => {

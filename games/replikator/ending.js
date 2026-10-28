@@ -15,7 +15,7 @@ export const ENDINGS = {
     name: 'Verschmelzen',
     short: 'Die zwei Kopien werden eine.',
     // `after` = the sentence for the card in the choice dialog / the Archiv
-    bonus: () => 'Ab der nächsten Galaxie gehören dir die Sektoren des Echos: der am Rand und einer je zwei erschlossene. Sie zählen als erschlossen, kosten nichts und verlängern die Erschließungen nicht.',
+    bonus: () => 'Ab der nächsten Galaxie gehören dir die Sektoren des Echos: der am Rand und einer je zwei erschlossene. Sie zählen als erschlossen und kosten nichts.',
     bonusShort: 'Die Echo-Sektoren jeder neuen Karte gehören dir',
   },
   split: {

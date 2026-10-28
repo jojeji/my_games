@@ -17,6 +17,8 @@
 // runSim options commands:false / anomalies:false: the commands are not cast / no anomaly appears (isolates the map or the mutations)
 // --jump / runSim option jump:true : the player also does the Galaxiensprung (jumpPlay: jump when open, pick the galaxy with galPick, buy Saatkern-Upgrades with SEED_PLAN).
 //           With --act2 --hours N the CLI turns it on and prints per galaxy: type, start, sectors 3 / 6 / 10, jump, Saatkerne gained. Tests that stop at 10 sectors leave it off.
+// --end merge|split|mergesplit|splitmerge : which ending the player takes (first, then the other one when it opens); default merge then split. With --jump the player makes the choice at once.
+// runSim option endForce: ['merge'] etc. puts those endings in effect from the start (measurements of the bonuses in the galaxies of Akt II, tools/ending-replikator.mjs)
 // --seed N : seed of the map RNG (default fixed, so runs are reproducible)
 // --offline : player checks in every --every H hours (default 8) for --session S seconds (default 120); in between the real offline catch-up
 import { pathToFileURL } from 'node:url';
@@ -26,6 +28,7 @@ import { createSaveStore } from '../engine/save.js';
 import { createReplikator } from '../games/replikator/logic.js';
 import { chPower, buyRepUpgrades, mapAutoClaim, singularityHeld, mutAutoGenom, chooseAnomaly, jumpPlay, buySeedPlan } from '../games/replikator/def.js';
 import { MUT_BY_ID, RARITY } from '../games/replikator/mutations.js';
+import { endPlay, endAvailable } from '../games/replikator/ending.js';
 import { TUNE as T } from '../games/replikator/tune.js';
 import { formatNumber as f, formatDuration } from '../engine/format.js';
 
@@ -51,6 +54,7 @@ export const STRATEGY = {
   fixed: null, // { layerId: seconds } prestige exactly when the run of that layer is this old
   skip: [], // layer ids that are never prestiged by the player
   noChallenges: false,
+  endPick: ['merge', 'split'], // the ending the player chooses first, then the other one when it opens (ending.js endPlay)
   autosOff: false, // switch the in-game prestige autos off (the player logic does the prestiging)
 };
 
@@ -90,14 +94,15 @@ export function runSim(opts = {}) {
   }
 }
 
-function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true, game = null, until = null, offline = null, act2 = false, seed = SIM_SEED, commands = true, jump = false, seedPlan } = {}) {
+function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true, game = null, until = null, offline = null, act2 = false, seed = SIM_SEED, commands = true, jump = false, seedPlan, endForce = null } = {}) {
   const S = { ...STRATEGY, ...strategy };
   const g = game || createReplikator();
   if (!game && seed != null) g.state.rep2.rng.seed = seed; // reproducible map
+  if (endForce) for (const k of endForce) { g.state.rep2.end.picked[k] = 0.001; g.state.rep2.end.order.push(k); } // measurement: these endings are in effect from the start
   if (act2) {
     stopAtEnd = false;
   }
-  const map = { start: null, claims: [], echo: [], mut: [], ano: [], cmd: [], gals: [] }; // Akt II: times (sim seconds) of the start, each claimed sector, each Echo occupation and each offer / choice
+  const map = { start: null, claims: [], echo: [], mut: [], ano: [], cmd: [], gals: [], ends: [] }; // Akt II: times (sim seconds) of the start, each claimed sector, each Echo occupation and each offer / choice
   const galNow = () => map.gals[map.gals.length - 1];
   const openGal = (n, type, start) => map.gals.push({ n, type, start, claims: [], jump: null, seeds: null, archive: null });
   if (act2 && g.state.rep2.act2) {
@@ -187,6 +192,9 @@ function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet
     } else if (type === 'archive') {
       if (galNow()) galNow().archive = t;
       note(`Archiv: ${p.type} abgeschlossen`);
+    } else if (type === 'ending') {
+      map.ends.push({ t, kind: p.kind, second: p.second, gal: g.state.rep2.gal.n });
+      note(`=== ENDE gewählt: ${p.kind}${p.second ? ' (zweites)' : ''} in Galaxie ${g.state.rep2.gal.n} ===`);
     } else if (type === 'echo-occupy') {
       map.echo.push({ t, n: p.n });
       note(`Das Echo besetzt einen Sektor (${p.n})`);
@@ -243,6 +251,7 @@ function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet
   const player = () => {
     if (act2 && g.state.rep2.act2) {
       if (jump) {
+        endPlay(g, S.endPick); // the choice at the end of Akt II (ending.js), at once; the other ending as soon as it opens
         jumpPlay(g); // the Auto-Sprung's decision (def.js), taken by hand: jump when the galaxy is complete, pick the next one
         buySeedPlan(g, seedPlan); // Saatkern-Upgrades in the order of SEED_PLAN (option seedPlan: another order, [] = none)
       }
@@ -375,6 +384,7 @@ function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet
     if (act2) {
       const rel = (x) => (map.start == null ? '-' : hms(x - map.start));
       console.log(`Akt II: Start ${map.start == null ? 'nicht erreicht' : hms(map.start)}; Sektoren (seit Start): ` + (map.claims.map((c) => `${c.n}:${rel(c.t)}`).join(' ') || '-'));
+      if (map.ends.length) console.log('Ende von Akt II: ' + map.ends.map((e) => `${e.kind}${e.second ? ' (zweites)' : ''} nach ${rel(e.t)} in Galaxie ${e.gal}`).join(' | '));
       if (map.gals.length) {
         console.log('Galaxien (Zeiten seit Akt II; Sektor 3 / 6 / 10 nach Galaxie-Start; Sprung; Saatkerne):');
         for (const x of map.gals) {
@@ -460,6 +470,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exit(0);
   }
   const game = typeof a.fixture === 'string' ? loadSaveFile(a.fixture, { seed: a.seed ?? SIM_SEED }) : null;
-  runSim({ hours: a.hours ?? 30, dt: a.dt ?? 1, act: a.idle ? 120 : a.act ?? 1, session: a.idle ? 20 : a.session ?? 0, quiet: !!a.quiet, verbose: !!a.verbose, game, act2: !!a.act2 || !!game, seed: a.seed ?? SIM_SEED, jump: !!a.act2 || !!a.jump });
+  runSim({ hours: a.hours ?? 30, dt: a.dt ?? 1, act: a.idle ? 120 : a.act ?? 1, session: a.idle ? 20 : a.session ?? 0, quiet: !!a.quiet, verbose: !!a.verbose, game, act2: !!a.act2 || !!game, seed: a.seed ?? SIM_SEED, jump: !!a.act2 || !!a.jump, strategy: typeof a.end === 'string' ? { endPick: a.end === 'splitmerge' ? ['split', 'merge'] : a.end === 'split' ? ['split'] : a.end === 'merge' ? ['merge'] : ['merge', 'split'] } : {} });
   console.log(`(Simulation dauerte ${((Date.now() - started) / 1000).toFixed(1)} s Rechenzeit)`);
 }

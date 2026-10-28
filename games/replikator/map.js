@@ -112,8 +112,8 @@ export const mapOf = (g) => g.state.rep2.map;
 export const mapCells = (g) => g.state.rep2.map.cells;
 export const act2Active = (g) => !!(g.state.rep2 && g.state.rep2.act2);
 export const claimedCount = (g) => (act2Active(g) ? g.state.rep2.map.claimed : 0);
-/** Sectors that were paid for (claimed minus the free Echo cells of Verschmelzen): the price and the travel time grow with this number, not with the claimed total. */
-export const paidCount = (g) => (act2Active(g) ? g.state.rep2.map.claimed - (g.state.rep2.map.free || 0) : 0);
+/** Sectors counted for the price and the travel time: claimed minus the free Echo cells of Verschmelzen (those count `freeIndex` of a sector, tune.js). */
+export const paidCount = (g) => (act2Active(g) ? g.state.rep2.map.claimed - (g.state.rep2.map.free || 0) * (1 - T.endFx.merge.freeIndex) : 0);
 /** The most sectors claimed in one galaxy so far (this one included): what stays unlocked after a jump (autos, Genom slots). */
 export const bestClaimed = (g) => (act2Active(g) ? Math.max(g.state.rep2.map.claimed, g.state.rep2.gal.best || 0) : 0);
 export const occupiedCount = (g) => (act2Active(g) ? g.state.rep2.map.occupied : 0);
@@ -551,7 +551,7 @@ export function act2Check(g) {
   r.act2 = true;
   r.act2At = g.state.time.played;
   r.anchor = T.mapAnchorFixed != null ? T.mapAnchorFixed : best.m > 0 ? Math.max(0, T.mapAnchorSlope * best.log10()) : 0;
-  r.map = generateMap(r.rng);
+  r.map = applyEnding(g, generateMap(r.rng)); // (no ending yet in a real game; measurements put one in effect from the start)
   Object.assign(r.gal, galState(), { rng: { seed: galSeedFrom(r.rng.seed) }, at: r.act2At, exp0: g.state.layers.expansion.count });
   r.archive = archiveState();
   mutReset(g);
