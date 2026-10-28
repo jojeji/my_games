@@ -35,8 +35,10 @@ export function pulsarExp(g) {
   if (!ownedOfType(g, 'pulsar')) return 0;
   return Math.log(typeMult(g, 'pulsar').toNumber()) / Math.log(T.mapBase.pulsar);
 }
+/** How many times as fast the Pulsar sectors alone let the commands recharge. */
+export const pulsarRate = (g) => 1 + T.cmdPulsar * pulsarExp(g);
 /** How many times as fast the commands recharge (Pulsar sectors, the mutation Sonnenhunger). */
-export const cmdRate = (g) => (1 + T.cmdPulsar * pulsarExp(g)) * mutCmdRate(g);
+export const cmdRate = (g) => pulsarRate(g) * mutCmdRate(g);
 
 /** Speed factor of the running Erschliessung from Übertakten for the next `dt` seconds (time weighted: correct for the large offline steps). */
 export function cmdTripSpeed(g, dt) {
@@ -61,11 +63,6 @@ export const scanCut = (g) => {
 };
 
 const mins = (s) => (s % 60 === 0 ? `${s / 60} Min.` : `${s} s`);
-const rateTxt = (g) => {
-  const r = cmdRate(g);
-  return r > 1.005 ? ` (Pulsare und Mutationen: ${String(+r.toFixed(2)).replace('.', ',')}× schneller geladen)` : '';
-};
-
 /** The def.spells entries. Cooldowns are base / cmdRate at the moment of the cast. */
 export const COMMANDS = [
   {
@@ -76,7 +73,7 @@ export const COMMANDS = [
     unlock: cmdUnlocked,
     duration: () => T.uebertakten.dur,
     cooldown: (g) => T.uebertakten.cd / cmdRate(g),
-    info: (g) => `Erschließung ×${T.uebertakten.trip}, Gewinne ×${String(T.uebertakten.gain).replace('.', ',')} für ${mins(T.uebertakten.dur)}${rateTxt(g)}`,
+    info: (g) => `Erschließung ×${T.uebertakten.trip}, Gewinne ×${String(T.uebertakten.gain).replace('.', ',')} für ${mins(T.uebertakten.dur)}`,
     // an auto-cast is worth it while an Erschliessung is under way that the window can actually speed up
     autoWhen: (g) => {
       const trip = tripOf(g);
@@ -95,7 +92,7 @@ export const COMMANDS = [
       const amount = sonnenwindAmount(g);
       if (amount.gte(1)) g.add('systems', amount);
     },
-    info: (g) => `+${fmt(sonnenwindAmount(g))} Sternsysteme sofort (${Math.round(T.sonnenwind.share * 100)} % der nächsten Expansion)${rateTxt(g)}`,
+    info: (g) => `+${fmt(sonnenwindAmount(g))} Sternsysteme sofort (${T.sonnenwind.share}× die nächste Expansion)`,
     autoWhen: (g) => sonnenwindAmount(g).gte(1),
   },
   {
@@ -110,7 +107,7 @@ export const COMMANDS = [
       revealFog(g, T.tiefenscan.reveal);
       trimTrip(g, scanCut(g));
     },
-    info: (g) => `Deckt ${T.tiefenscan.reveal} Sektoren auf, Erschließung −${Math.round(T.tiefenscan.cut * 100)} % der Dauer${rateTxt(g)}`,
+    info: (g) => `Deckt ${T.tiefenscan.reveal} Sektoren auf, Erschließung −${Math.round(T.tiefenscan.cut * 100)} % der Dauer`,
     // a cast pays when it can cut the full chunk off a running Erschliessung
     autoWhen: (g) => {
       const trip = tripOf(g);

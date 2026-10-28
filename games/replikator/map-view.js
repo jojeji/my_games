@@ -4,6 +4,7 @@ import { h, txt, setCls, setAttr, setHidden } from '../../engine/ui/dom.js';
 import { sectionTitle } from '../../engine/ui/kit-views.js';
 import { openModal } from '../../engine/ui/modal.js';
 import { buildCommands, buildAnomalyCard } from './commands-view.js';
+import { pulsarRate } from './commands.js';
 import { formatNumber as fmt, formatMult } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import {
@@ -235,7 +236,7 @@ export function buildGalaxyTab(ctx) {
   let bonusKey = '';
   function paintBonuses() {
     const rows = bonusRows(g);
-    const key = rows.map((r) => r.type + r.count + r.adj).join('|');
+    const key = rows.map((r) => r.type + r.count + r.adj).join('|') + pulsarRate(g).toFixed(2);
     if (key === bonusKey) return;
     bonusKey = key;
     if (!rows.length) {
@@ -249,7 +250,7 @@ export function buildGalaxyTab(ctx) {
           h('span', { class: 'gal-bonus-ico' }, glyphSvg(r.type, 22)),
           h('div', { class: 'gal-bonus-txt' },
             h('b', { text: `${info.name} × ${r.count}` }),
-            h('span', { class: 'muted small', text: info.effect + (r.adj ? ` · Nachbarbonus ${r.adj}×` : '') }),
+            h('span', { class: 'muted small', text: info.effect + (r.adj ? ` · Nachbarbonus ${r.adj}×` : '') + (r.type === 'pulsar' ? ` · Befehle laden ×${String(+pulsarRate(g).toFixed(2)).replace('.', ',')} schneller` : '') }),
           ),
           h('b', { class: 'num gal-bonus-val', text: formatMult(r.mult) }),
         );

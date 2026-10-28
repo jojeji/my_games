@@ -104,6 +104,7 @@ export function buildAnomalyCard(g) {
         const rk = def.risk ? def.risk(g) : '';
         txt(risk, rk ? 'Preis: ' + rk : '');
         setHidden(risk, !rk);
+        setHidden(desc, !!run && !p); // a running one only needs its numbers and the time left
         setHidden(hint, !def.hint || !p);
         const isRun = !!run && !p;
         setHidden(left, !isRun);
