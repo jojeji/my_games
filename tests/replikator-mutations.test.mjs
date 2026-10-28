@@ -44,9 +44,13 @@ function act2Game(n = 0, seed = 5) {
   return g;
 }
 const mut = (g) => g.state.rep2.mut;
+const ripe = (g) => {
+  for (const l of ['replication', 'expansion', 'singularity']) g.state.layers[l].runTime = 1e5;
+};
 /** Run totals that the prestige gains are computed from. */
 const setRun = (g, o) => {
   for (const [k, v] of Object.entries(o)) g.state.cur[k].run = D(v);
+  for (const l of ['replication', 'expansion', 'singularity']) g.state.layers[l].runTime = 1e5; // gain factors are ripe
   g.refresh();
 };
 const give = (g, ...ids) => {
@@ -197,6 +201,7 @@ test('genome slots: 3 at the start, +1 at 6 and at 10 sectors, at most 6; taking
 
 test('effects: every mutation changes the model; production is labeled in globalParts, gain factors in mutGainParts', () => {
   const g = act2Game(4);
+  ripe(g);
   const base = globalParts(g).length;
   const f = (id) => T.mutFx[id];
   give(g, 'hyperaktiv');
@@ -306,8 +311,27 @@ test('gain factors of mutations act AFTER the softcap: above it a x2.5 factor gi
   give(g);
 });
 
+test('gain factors > 1 on Sternsysteme / Quantenkerne ripen with the run time (short runs never profit), catches (< 1) apply at once', () => {
+  const g = act2Game(4);
+  give(g, 'gruendlich', 'fehlerfreudig', 'kolonialist');
+  const f = (t) => {
+    g.state.layers.singularity.runTime = t;
+    g.state.layers.expansion.runTime = t;
+    return [mutGain(g, 'cores').toNumber(), mutGain(g, 'systems').toNumber()];
+  };
+  const full = T.mutFx.gruendlich.cores * T.mutFx.fehlerfreudig.cores;
+  assert.ok(Math.abs(f(1e5)[0] - full) < 1e-9);
+  assert.ok(f(0)[0] < 1 && Math.abs(f(0)[0] - T.mutFx.fehlerfreudig.cores) < 1e-9, 'start: only the catch');
+  assert.ok(f(600)[0] > f(0)[0] && f(600)[0] < full);
+  g.mutRef = true;
+  assert.ok(Math.abs(f(0)[0] - full) < 1e-9, 'valuation = full');
+  g.mutRef = false;
+  give(g);
+});
+
 test('Nachtschwärmer: gains x1.5 only while the runtime catches up an absence, x0.85 online', () => {
   const g = act2Game(3);
+  ripe(g);
   give(g, 'nachtschwaermer');
   const part = () => mutGain(g, 'cores').toNumber();
   assert.ok(Math.abs(part() - T.mutFx.nachtschwaermer.on) < 1e-12);

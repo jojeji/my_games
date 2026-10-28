@@ -114,7 +114,7 @@ export const TUNE = {
   mutTripW: 1.0, // per decade of Erschliessung time (a longer trip is worse)
   mutMapCostW: 0.5, // per decade of sector price
   mutGainW: 1.0, // objective weight of a factor on ALL prestige gains (per decade)
-  mutRipe: { systems: 300, cores: 900 }, // run time (s) from which a gain factor > 1 on Sternsysteme / Quantenkerne works in full (linear before; keeps short runs from becoming optimal)
+  mutRipe: { systems: 300, cores: 1800 }, // run time (s) from which a gain factor > 1 on Sternsysteme / Quantenkerne works in full (linear before; keeps short runs from becoming optimal)
   mutOfflineShare: 0.6, // assumed share of play time spent offline (Nachtschwärmer)
   // Strength of every mutation (benefit and catch); texts in mutations.js are built from these numbers
   mutFx: {

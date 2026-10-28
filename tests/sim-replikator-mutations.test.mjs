@@ -21,7 +21,8 @@ test('offers: the first one with the 3rd sector, then about one per 25-30 min of
     assert.ok(offers.length >= 5 && offers.length <= 8, `${name}: ${offers.length} offers until 10 sectors`);
     for (let i = 1; i < offers.length; i++) {
       const d = offers[i].t - offers[i - 1].t;
-      assert.ok(d >= T.mutEvery - 10 && d <= T.mutEvery * 1.5, `${name}: offer ${i + 1} after ${Math.round(d)} s`);
+      const fastest = Math.max(1, ...Object.values(T.mutFx).map((x) => x.offers || 1)); // Fehlerfreudig
+      assert.ok(d >= T.mutEvery / fastest - 10 && d <= T.mutEvery * 1.5, `${name}: offer ${i + 1} after ${Math.round(d)} s`);
     }
     assert.ok(offers.at(-1).t <= t10 + 1);
     const g = r.game;

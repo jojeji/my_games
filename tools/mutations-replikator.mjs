@@ -78,6 +78,7 @@ export function refGain(state, genome, { fx = null, id = null } = {}) {
     const g = createReplikator();
     g.load(clone(state));
     g.state.rep2.mut.genome = genome;
+    g.mutRef = true; // the full gain factors (they ripen with run time otherwise)
     g.refresh();
     return { bp: lg(g.prestigeGain('replication')), sys: lg(g.prestigeGain('expansion')), cores: lg(g.prestigeGain('singularity')) };
   } finally {
