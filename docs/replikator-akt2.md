@@ -240,14 +240,14 @@ beide                                     1.18   1.13   0.80   0.96    4.07    4
 Beide Enden sparen etwa ein Drittel der Galaxie-Zeit, zusammen etwa die Hälfte; Streuung zwischen Galaxientypen ±10 % (Typen und Saatkern-Käufe ändern sich mit). Erste Fassung: Verschmelzen mit Startfeld und freiem Preisindex 43 %, Abgrenzen ×0,8 / ×1,5 nur 88 % (die Karte ist reisezeitbegrenzt, Gewinne helfen kaum): deshalb Reisezeit ×0,6 und Gewinne ×2.
 
 **Gesamt-Pacing (Paket 6)**, Stunden seit Akt-II-Beginn (v1-Ende nach 11,5 h), `node tools/simulate.mjs --act2 --hours 40 --dt 2 [--idle] [--fixture ...]`, Seed 7, Spielstand = Sim nach `GAL_PICK`:
-| | Sprung 1 | Archiv G2 | G3 | G4 | G5 | G6 = Ende Akt II | 2. Ende |
+| | Sprung 1 | Sprung 2 | Sprung 3 | Sprung 4 | Sprung 5 | Ende Akt II (6. Typ, Wahl) | 2. Ende |
 |---|---|---|---|---|---|---|---|
-| aktiv, frisch | 2,2 | 5,3 | 6,4 | 8,3 | 10,8 | **12,4** (Wahl 12,4) | 14,3 |
+| aktiv, frisch | 2,2 | 5,3 | 6,4 | 8,3 | 10,8 | **12,4** | 14,3 |
 | aktiv, Datei | 2,5 | 5,6 | 7,0 | 9,1 | 11,1 | **13,2** | 15,0 |
 | idle (2 min / 20 s), frisch | 2,3 | 5,8 | 7,2 | 9,3 | 11,8 | **13,5** | 15,0 |
 | idle, Datei | 2,5 | 5,9 | 7,4 | 9,9 | 12,1 | **14,2** | 18,0 |
 | offline (8 h / 2 min), Datei | 24,0 | 32,0 | 40,0 | 42,6 | 45,1 | **48,0** (~2,0 Tage) | 56,0 |
-(Spalten G2..G6 = Zeit des Sprungs aus dieser Galaxie; die Datei- und Idle-Zeilen sind gemessen, G-Spalten gerundet.) Idle / aktiv = 1,09 (frisch) und 1,08 (Datei), Ziel <= 2. Das Ende von Akt II liegt bei 12,4-14,2 h aktiv/idle (Ziel 12-18), offline nach 2 Tagen.
+(Stunden seit Akt-II-Beginn, gerundet; Sprung n = Verlassen der n-ten Galaxie.) Idle / aktiv = 1,09 (frisch) und 1,08 (Datei), Ziel <= 2. Das Ende von Akt II liegt bei 12,4-14,2 h aktiv/idle (Ziel 12-18), offline nach 2 Tagen.
 Ein Sprung wartet in manchen Galaxien bis ~30 min auf die vierte Quantenkern-Einheit (Gewinn >= 1 Saatkern); das war schon vor Paket 6 so.
 Story-Tempo bis zum ersten Epilog: größte Lücke 16 min (frisch und Datei), nie zwei Einträge innerhalb einer Minute (`tests/replikator-story.test.mjs`, 100 Einträge in Akt II).
 Laufdauer-Tests (`tests/sim-replikator-runlength*.test.mjs`) bleiben grün; die Enden ändern keine Laufdauer-Hebel (Gewinnfaktoren reifen, Reisezeit ist ohnehin kein Laufdauer-Faktor).
