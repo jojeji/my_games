@@ -102,21 +102,44 @@ Grund: Laden pro Replikation belohnt Mikro-Replikationen (der echte Spielstand h
   Meilensteine (Genom voll, erster Tausch, Glücksfehler, Platz 4/5, Verwerfen, Auto-Genom) und 8 kurze Beobachtungen 12 min nach je einem Angebot. Keine Lücke > 25 min bis zum 10. Sektor, nie zwei Einträge innerhalb einer Minute.
 - UI: Tab „Genom“ (`extraTabs`, Punkt bei wartendem Angebot): Platz-Raster, Angebot mit „Nehmen“, Tausch-Dialog, Warteschlange und Restzeit, Auto-Genom-Schalter.
 
-## Paket 4 – Sondenbefehle und Anomalien
+## Paket 4 – Sondenbefehle und Anomalien (umgesetzt: `commands.js`, `anomalies.js`, `commands-view.js`)
 
-- **Sondenbefehle** über `def.spells` (Engine aus Merlin), Leiste im Generator-Tab:
-  - Übertakten: Produktion ×10 für 30 s, Abklingzeit 5 min
-  - Sonnenwind-Ernte: sofort Materie = 10 min Produktion, Abklingzeit 15 min
-  - Tiefenscan: deckt ein Feld der Karte auf, Abklingzeit 30 min
-  - Auto-Befehl per Meilenstein (startet aus). Offline wirken nur Auto-Befehle, wie bei Merlin.
-- **Anomalien:** Ereigniskarten, die *warten*, bis du sie startest (max. 1 offen, Quelle: Anomalie-Sektoren + alle ~60–90 min Spielzeit per Seed-RNG).
-  Kurze Regeländerung (3–10 min) mit Belohnung, Beispiele:
-  - Gezeitenwelle: Generatorkosten ÷1e6 für 3 min
-  - Zeitriss: sofort 10 min Produktion aller Ebenen
-  - Kosmischer Strahl: sofortiges Mutationsangebot mit garantierter Seltenheit „selten“
-  - Spiegelangebot (Echo): 50 % der Sternsysteme gegen eine Glücksfehler-Mutation
-  - Signalfragment: Funkspruch + kleiner Dauerbonus
-  - Umkehrfeld: Stufe 8 produziert Materie direkt, Stufe 1 nichts (5 min), Belohnung Quantenkerne
+**Vorab: Kartenboni nach dem Softcap.** Die Gewinn-Boni der Sektoren (`gainMult`) wirkten im Layer-`mult` vor dem Softcap und wurden zur Wurzel (dasselbe Problem wie bei den Mutationen). Jetzt in `layer.postMult`
+(`def.js postGain` = Mutationen x Karte x Befehle x Signalfragmente), mit derselben Reifung (`ripen()` in `mutations.js`: Sternsysteme 5 min, Quantenkerne 30 min Laufzeit, Blaupausen ohne Reifung). `repObjective` wertet nach dem Softcap voll (`g.mutRef`).
+Wirkung: Sternsysteme gesamt in 4 h aus der Datei ~ +1 Dekade, Quantenkerne +0,3; die Zeit bis 10 Sektoren ändert sich kaum (Reisezeit bleibt die Drossel). Kurze Expansions-Läufe werden dadurch **weniger** attraktiv (2-min-Lauf 85 % -> 33 % des Optimums, Test).
+
+### Sondenbefehle (`def.spells`, Engine `spells.js`)
+- **Freischaltung:** erster Pulsar-Sektor ODER 6 Sektoren (bleibt, `rep2.cmd.on`). Leiste (3 Knöpfe) im **Galaxie-Tab** direkt über der Karte, darunter Karten mit Details, Auto-Schalter und „Wirken“ (`spellBar`/`spellCards`); laufende Befehle zusätzlich als Statuszeile unter der Kopfzeile auf jedem Tab (`options.banner`). Toast beim manuellen Wirken.
+- **Übertakten** (45 s, Abklingzeit 5 min): Erschließung x3 (zeitgewichtet über `hooks.tripSpeed`, auch bei den großen Offline-Schritten) und Gewinne x1,5 nach dem Softcap (mit Reifung).
+- **Sonnenwind-Ernte** (sofort, 15 min): Sternsysteme = 2 x die der nächsten Expansion (zählen als verdient, also auch für die Singularität). Anteil 1 hob die Sternsysteme, aber kaum die Quantenkerne (Singularitäts-Formel + Softcap fressen es); bei 2 ist der Quantenkern-Effekt so groß wie bei Übertakten.
+- **Tiefenscan** (sofort, 30 min): deckt die 5 Felder im Nebel auf, die dem Gebiet am nächsten sind (`seen`), und kürzt die laufende Erschließung um 30 % ihrer Dauer (höchstens bis 0).
+- **Pulsar-Aufladung:** Abklingzeit = Basis / (1 + 0,12 x Pulsar-Exponent) / Sonnenhunger. Der Exponent zählt jeden Pulsar-Sektor mit seinem Nachbarbonus (3 Pulsare in einer Reihe ~ x1,7). Die Bonusliste im Galaxie-Tab zeigt es.
+- **Sonnenhunger** (Mutation, selten, Nr. 16): Befehle laden x2 so schnell, Haken Blaupausen-Gewinn x0,5. Eigener WR-0-Bericht, Auto-Genom-Bewertung über `mutCmdW`.
+- **Auto-Befehl** (`auto_befehl`, `misc`, startet aus, ab 9 Sektoren): `g.spellAutoRun()`. Neu in der Engine: optional `spell.autoWhen(g)` hält einen Auto-Cast zurück, der verpuffen würde (Übertakten/Tiefenscan nur bei laufender Erschließung mit genug Rest, Sonnenwind nur bei Expansions-Gewinn); manuelles Wirken ist nie blockiert.
+  Offline wirken nur Auto-Casts. **Engine-Fix:** `Game.tick` zählt die Zauber jetzt VOR den Autos herunter; vorher verlor ein Auto-Cast im selben Tick `dt` Sekunden, bei Offline-Schritten von 19-115 s also die ganze Wirkung (Merlin-Tests unverändert grün).
+  Die Sim wirkt über dieselbe Funktion (`player()` ruft `g.spellAutoRun()`, die Schalter pro Befehl gelten).
+
+### Anomalien (`anomalies.js`, Zustand `rep2.ano`)
+- **Quellen:** jeder Anomalie-Sektor bei der Ankunft (auch mehrere: `owed`, einer nach dem anderen) und alle 60-90 min Spielzeit (`anoEvery` 3600 + RNG x `anoSpread` 1800, Seed im Spielstand, abgeleitet vom Karten-Seed). Die Zeit lädt nur, solange nichts wartet oder läuft. **Freischaltung:** der erste Anomalie-Sektor.
+- **Warten:** höchstens eine offene, nichts verfällt, nichts startet von selbst, auch offline nicht. **Auswahl:** gemischter Beutel, jeder Typ einmal pro Runde, nie zweimal hintereinander; Runde 1 beginnt fest mit Gezeitenwelle, Signalfragment, Zeitriss. Nicht zulässige Typen (Spiegel vor der Echo-Sichtung, Strahl ohne Genom, Umkehr ohne Singularität, Signal nach 4 Fragmenten) bleiben im Beutel.
+- **Auto-Erkundung bewertet Anomalie-Sektoren** (`mapObjective`, `anoSectorW` 0,45 Dekaden), sonst wären sie die letzten der Karte (Produktion x1,1 ist wertlos) und die Anomalien kämen erst nach dem 10. Sektor.
+- **Typen:**
+  - **Gezeitenwelle** (5 min): Erschließung x3 (stapelt mit Übertakten: x9). Die Wirkung ist die Belohnung.
+  - **Zeitriss** (sofort): 10 Minuten Spielzeit vergehen auf einen Schlag (`advance`, online: Nachtschwärmer bleibt aus), alles läuft mit (Reise, Angebote, Abklingzeiten, Automaten).
+  - **Kosmischer Strahl** (sofort): zusätzliches Mutationsangebot, mindestens eine Karte „selten“ (`mutAddOffer`, kommt wie jedes andere in die Warteschlange; die Garantie hängt an der Nummer des Angebots).
+  - **Spiegelangebot** (nur nach Echo-Sichtung): kostet 50 % der Sternsysteme, bringt ein Angebot mit mindestens einem Glücksfehler.
+  - **Signalfragment** (sofort, 4 Varianten): Chronik-Eintrag + dauerhaft alle Gewinne x1,08 (nach dem Softcap, mit Reifung). Danach nicht mehr im Beutel.
+  - **Umkehrfeld** (5 min): Stufen 1-4 produzieren nichts (`tierMult` x0), 5-8 bauen weiter an den unteren Stufen. Belohnung am Ende: 100 % der nächsten Singularität als Quantenkerne.
+  Nur Spiegel und Umkehr haben einen Preis (steht auf der Karte), bei den anderen ist die Entscheidung der **Zeitpunkt** (Gezeitenwelle und Zeitriss lohnen bei langer Erschließung).
+- **Entscheidung der Sim / einer späteren Auto:** `chooseAnomaly` (def.js) = `anoChoose`: Gezeitenwelle bei laufender Erschließung mit >= 6 min Rest, Zeitriss bei >= 8 min Rest, Strahl und Signal sofort, Spiegel wenn die Hälfte nichts Nötiges kostet (oder die Singularität gleich alles löscht), Umkehr direkt nach einer Replikation; nach `anoPatience` (30 min) wird jede startbare genommen. Keine Auto für Anomalien (sie sind die aktive Entscheidung).
+- **UI:** Karte oben im Galaxie-Tab (wartend: Beschreibung, Wirkung, Preis, Starten; laufend: Wirkung, Restzeit, Balken), Punkt am Tab, Statuszeile unter der Kopfzeile, Toast bei neuer Anomalie und beim Ende.
+- **Story** (Kapitel `a2c`): `cmd_unlock`, `cmd_first`, `ano_first` (Modal), je Typ ein kurzer Eintrag beim ersten Start, vier Signalfragmente (`sig_0..3`, von der Wartung abgelegt, Alter 41 / 63 / 118 / 200 Jahre, ohne Absender; siehe STIMMEN.md). Größte Lücke bis zum 10. Sektor 15 min, nie zwei Einträge innerhalb einer Minute (beide Starts, 4 Seeds).
+- **Spielstand:** `def.version = 5`, Migration 4 -> 5 (`migrateToAno`: Seed aus dem Karten-Seed; `rep2.cmd`, `rep2.ano`, `state.spells` kommen über `mergeDefaults`). Die Fixture lädt sauber, startet Akt II und hat nichts offen.
+
+### Pacing mit Befehlen und Anomalien
+Zeit bis 10 Sektoren (aktive Sim, Minuten seit Akt-II-Beginn, Seeds 1 / 2 / 3 / 7 / 9): nur die Karte (Befehle und Anomalien aus) frisch 121 / 119 / 148 / 149 / 143, Datei 121 / 157 / 145 / 143 / 144 (Verhältnis 0,76-1,04);
+mit allem frisch 78 / 90 / 87 / 90 / 88, Datei 75 / 92 / 84 / 102 / 90 (Verhältnis 0,88-1,04). Mit den Beschleunigern ist die Reisezeit nicht mehr die einzige Drossel: ab Sektor 8 begrenzen die Sektorpreise (Sternsysteme), daher bewegt dort Sonnenwind-Ernte / Spiegelangebot etwas.
+Der Wert von 2-4 h gilt für die Karte allein (`tests/sim-replikator-act2-map.test.mjs`); mit allem sind 1,3-1,7 h erwartet (`tests/sim-replikator-commands.test.mjs`: 55 min bis 85 % der reinen Reisezeit).
 
 ## Paket 5 – Ebene 4: Galaxiensprung
 
@@ -158,7 +181,7 @@ Folgerungen (verbindlich für Paket 2–5):
 
 ## Technik
 
-- `def.version = 4` (Paket 3), Migrationen `1 → 2`, `2 → 3`, `3 → 4`; ursprünglich `def.version = 2`, Migration `1 → 2` (neue Keys über `mergeDefaults`, alte Story-Flags bleiben).
+- `def.version = 5` (Paket 4), Migrationen `1 → 2`, `2 → 3`, `3 → 4`, `4 → 5`; ursprünglich `def.version = 2`, Migration `1 → 2` (neue Keys über `mergeDefaults`, alte Story-Flags bleiben).
 - Neuer Spielzustand unter `state.rep2` (`rng`, `map`, `genome`, `offers`, `anomaly`, `galaxy`, `archive`, `echo`) via `def.extraState`.
 - Replikator bleibt auf `mountStandardApp`; neue Tabs (Karte, Genom) über eine Erweiterung der Optionen (`extraTabs`) – generisch, damit andere Spiele sie nutzen können.
 - Sim: `tools/simulate.mjs` bekommt Akt-II-Strategie (Karte, Genom, Befehle, Anomalien, Galaxienwahl) – **über dieselben Auto-Funktionen** aus `def.js`.
@@ -212,3 +235,37 @@ glueckstreffer     +4 %  +0.33 +0.40 +0.40  +0.89       |    -5 %  +0.33 +0.40 +
 ueberschuss        -4 %  +0.33 +0.40 +0.40  +0.91       |    -5 %  +0.33 +0.40 +0.40  +0.91       |   +16 %  +0.00 +0.00 +0.00  -0.25       |
 chimaere           -5 %  +0.38 +0.46 +0.46  +1.07       |    -5 %  +0.38 +0.46 +0.46  +1.07       |    +0 %  +0.00 +0.00 +0.00  +0.00       |
 ```
+
+## Messung der Sondenbefehle, Anomalien und Sonnenhunger (Paket 4)
+
+Werkzeuge: `tools/commands-replikator.mjs` (jeder Befehl allein mit Auto-Cast, Mutationen aus), `tools/anomalies-replikator.mjs` (jeder Typ allein, alle 15 min eine; „natur“ = echte Häufigkeit), `tools/mutations-replikator.mjs --only sonnenhunger`.
+Aktive Sim, frisch UND echter Spielstand, Seeds 1-3, 3,5 h Akt II. `dt6/dt10` = Zeit bis 6 / 10 Sektoren, `dSys/dQK` = Gewinn im Fenster in Dekaden.
+
+```
+Befehl           dt6   dt10   dt12   dSys    dQK  Casts Min/Cast  t10 abs
+ohne            +0 %   +0 %   +0 %  +0.00  +0.00      0      -        126
+uebertakten     -3 %  -19 %  -22 %  +0.15  +0.11     32     +0.7      103
+sonnenwind      +0 %   -2 %   +0 %  +0.64  +0.08     17     +0.3      123
+tiefenscan      -3 %  -16 %  -19 %  +0.06  +0.02      5     +3.7      106
+alle            -6 %  -30 %  -36 %  +0.65  +0.25     45     +0.8       88
+```
+```
+Anomalie           dt6   dt10   dSys    dQK Starts  Min/St  Sys/St   QK/St  Angeb.  Mut.  t10 abs
+ohne              +0 %   +0 %  +0.00  +0.00      0     -       -       -      +0.0  +0.0       96
+gezeitenwelle    -19 %  -23 %  -0.05  +0.08      6    +3.6   -0.01  +0.013    +0.0  -0.5       74
+zeitriss         -22 %  -40 %  +0.66  +0.48     11    +3.4   +0.06  +0.043    +2.8  +1.5       57
+strahl            -1 %   -1 %  +1.04  +0.87     13    +0.1   +0.08  +0.068   +10.3  +5.5       95
+spiegel           +5 %   +6 %  +1.85  +1.43     13    -0.4   +0.14  +0.111    +8.5  +4.7      102
+signal            +4 %   +3 %  +0.25  +0.28     13    -0.2   +0.02  +0.022    +0.0  +0.2       99
+umkehr            +5 %   +3 %  +0.16  +0.31     10    -0.3   +0.02  +0.032    +0.3  -0.2       99
+natur            -17 %  -12 %  +0.17  +0.22      3    +3.7   +0.05  +0.066    +1.2  +0.5       84
+```
+```
+Mutation        beide  dt10    dBP  dSys   dQK  dSumme| Nutzen dt10    dBP  dSys   dQK  dSumme| Haken  dt10    dBP  dSys   dQK  dSumme|
+sonnenhunger      -15 %  -0.30 +0.00 +0.00  +0.22       |   -17 %  +0.00 +0.00 +0.00  +0.28       |    +2 %  -0.30 +0.00 +0.00  -0.12       |
+```
+Lesart: Übertakten und Tiefenscan sind der Zeit-Hebel (Tiefenscan ~3,7 min pro Cast, fünf Casts reichen für -16 %), Übertakten wirkt zusätzlich auf die Quantenkerne; die Sonnenwind-Ernte hebt Sternsysteme um das 4,4-Fache und über sie die Quantenkerne um 20 %, bewegt die Karte aber erst, wenn Preise bremsen.
+Bei den Anomalien sind Gezeitenwelle und Zeitriss der Zeit-Hebel (3,4-3,6 min je Start; das Maximum von 10 min wird nur bei genug Restzeit erreicht), Strahl und Spiegel bringen Mutationen (Strahl +0,07 Dekaden Quantenkerne je Start, Spiegel +0,11 für die halben Sternsysteme, +6 % Kartenzeit),
+das Umkehrfeld zahlt +0,03 Dekaden Quantenkerne je Start für 3 % Kartenzeit, das Signalfragment ist absichtlich klein (x1,08, vier Stück x1,36) und trägt die Story.
+Sonnenhunger: Nutzen -17 % Kartenzeit, Haken -0,30 Dekaden Blaupausen, zusammen -15 % und +0,22 Dekaden Summe.
+Laufdauer: Kartenboni und Befehle machen kurze Expansions-Läufe nicht besser (Test in `tests/sim-replikator-commands.test.mjs`). **Vorbestehend und offen:** im Spielzustand nach 10 Sektoren (echter Spielstand, auch im Commit vor Paket 4 gemessen) ist ein 2-min-Singularitätslauf bei abgeschaltetem Warten auf Sektoren das Optimum (Quantenkerne/s); in den v1-Phasen (`sing1`) trat das nicht auf.

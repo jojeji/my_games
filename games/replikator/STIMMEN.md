@@ -49,3 +49,9 @@ In Version 1 reden die Sonde und die Wartungsroutine. Von den Erbauern spricht d
 - Der Punkt (Singularität) **summt** und denkt. Er kommt in Version 1 noch einmal vor („er summt, wenn ich komme“).
 - **Der Hinweis auf Akt II:** ein schwaches Signal unterhalb des Rauschens, das sich regelmäßig wiederholt. Die Sonde hält es für Rauschen. Nichts weiter, keine Kennung, keine Quelle.
 - Das Ende von Version 1 ist eine Pause. Die letzte Zeile ist trocken, kein Schlusswort.
+
+## Nachtrag Paket 4: Befehle, Anomalien, Signalfragmente
+- **Befehle** sind Sache der Sonde („Ich habe mir selbst einen Befehl gegeben und ihn befolgt“), die Wartung bucht sie („Befehlsgeber und Ausführender: identisch“). Keine Erklärungen der Zahlen im Text, die stehen auf den Karten.
+- **Anomalien:** Die Wartung meldet sachlich („Klassifikation: Anomalie. Ablage: Galaxie-Tab“), die Sonde nimmt es als höfliche Zumutung. Pro Typ höchstens zwei kurze Zeilen beim ersten Start.
+- **Signalfragmente** legt die Wartung ab: das **Alter** steht in jedem Fragment („41 Jahre“, „63 Jahre“, „118 Jahre“, „200 Jahre, Angabe unplausibel“) und wächst, der Inhalt ist verstümmelt („…“, „nicht lesbar“).
+  Es ist **kein Absender genannt**, die Sonde sagt nicht, wen sie hört. Die Missionsleitung bleibt `later`; was in den Fragmenten steht (Dienstag, Kantine, „wir warten“, ein kurzes Wort), muss später in ihren Funksprüchen wiederkommen.

@@ -115,3 +115,13 @@ Vocabulary: `games/psst/GLOSSARY.md`; decision: `docs/adr/0002-*`. The single-ph
 ## Replikator Akt II: Mutationen-Rebalance
 - Gewinn-Faktoren der Mutationen stehen in `layer.postMult` (nach dem Softcap), Faktoren > 1 auf Sternsysteme/Quantenkerne reifen mit der Laufzeit (`ripen`, `mutRipe` in tune.js); `mutGainParts(g,kind)` = beschriftete Faktoren (Genom-Tab zeigt sie). Reisedauer (`trip`), Sektorpreis (`mapCost`) sind die Fortschrittshebel der Karte.
 - Messung: `node tools/mutations-replikator.mjs [--only id] [--offline --hours 30]` (Tabelle vorher/nachher in `docs/replikator-akt2.md`); Test `every mutation alone changes something that moves progress` in `tests/replikator-mutations.test.mjs`.
+
+
+## Replikator Akt II (Paket 4: Sondenbefehle, Anomalien)
+- **Kartenboni nach dem Softcap:** `def.js postGain(g, kind)` = `mutGain x mapGain x cmdGain x anoGain` ist das `postMult` aller drei Gewinn-Layer; Faktoren > 1 auf Sternsysteme/Quantenkerne reifen mit der Laufzeit (`ripen()`, mutations.js). Neue Gewinnfaktoren dort einhängen, nie ins Layer-`mult`.
+- `games/replikator/commands.js`: `COMMANDS` = `def.spells` (Übertakten, Sonnenwind-Ernte, Tiefenscan), `cmdRate` (Pulsare, Sonnenhunger), `hooks.tripSpeed(g, dt)` (zeitgewichtet, in `mapTick`), Auto `auto_befehl` ruft `g.spellAutoRun()` (Engine: `spell.autoWhen(g)` hält Auto-Casts zurück; `Game.tick` zählt Zauber vor den Autos herunter). Sim: `player()` ruft dieselbe Funktion.
+- `games/replikator/anomalies.js` (`rep2.ano`): Quellen = Anomalie-Sektoren (`owed`) + alle 60-90 min (Seed-RNG), höchstens eine wartet, nichts verfällt; Beutel statt Würfel, `ANOMALIES` (Gezeitenwelle, Zeitriss, Strahl, Spiegel, Signal, Umkehr), `anoStart/anoChoose` (= `chooseAnomaly` in def.js, die Sim nutzt es), Effekte über `tripSpeed`, `tierMult`, `postGain`, `mutAddOffer` (mutations.js, Seltenheits-Garantie über `mut.rare`). Auto-Erkundung bewertet Anomalie-Sektoren (`mapObjective`, `T.anoSectorW`).
+- UI: `commands-view.js` (Leiste, Karten, Anomalie-Karte, `statusBanner` = `options.banner` der Standard-App) im Galaxie-Tab (`map-view.js`). Story: Kapitel `a2c` (`cmd_*`, `ano_*`, `sig_0..3`), Signalfragmente ohne Absender (STIMMEN.md).
+- `def.version = 5`, Migration 4 -> 5 (`migrateToAno`). Dev-Schalter `T.anoForce` (Typ-ID oder `'none'`), `runSim({ commands:false, anomalies:false })` isoliert Karte bzw. Mutationen (die älteren Pacing-Tests laufen so).
+- Messung: `node tools/commands-replikator.mjs`, `node tools/anomalies-replikator.mjs` (Tabellen in `docs/replikator-akt2.md`), Tests `tests/replikator-commands.test.mjs`, `tests/replikator-anomalies.test.mjs`, `tests/sim-replikator-commands.test.mjs` (Pacing, Story, „jeder Effekt ist spürbar“, Laufdauer).
+
