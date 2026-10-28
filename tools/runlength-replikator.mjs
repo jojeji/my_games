@@ -86,6 +86,33 @@ export function takeAct2Snapshots(start, counts = [0, 5, 10], { dt = 2, seed = 7
   return snaps;
 }
 
+/**
+ * Snapshots in galaxy `galaxy` (default 2: the first one after a Galaxiensprung) of the active sim (jumps on, Saatkern-Upgrades bought): after `counts` claimed sectors there
+ * (0 = right after the galaxy was picked, the v1 phases start over). `start` = 'fixture' | 'fresh' as in takeAct2Snapshots. Measure with measureLayer(snap, layer, lengths, { act2: true }).
+ */
+export function takeGalaxySnapshots(start, counts = [0, 5, 10], { galaxy = 2, dt = 2, seed = 7 } = {}) {
+  const snaps = [];
+  const fixture = new URL('../tests/fixtures/replikator-end-v1.json', import.meta.url).pathname;
+  runSim({
+    game: start === 'fixture' ? loadSaveFile(fixture, { seed }) : null,
+    hours: 40,
+    dt,
+    quiet: true,
+    act2: true,
+    jump: true,
+    seed,
+    until: (g) => {
+      const r = g.state.rep2;
+      if (!r.act2 || r.gal.n !== galaxy || !r.gal.type) return r.gal.n > galaxy;
+      for (const n of counts) {
+        if (r.map.claimed >= n && !snaps.some((x) => x.n === n)) snaps.push({ n, phase: { id: `${start}-g${galaxy}-${n}`, label: `Galaxie ${galaxy} (${r.gal.type}) ${start === 'fixture' ? 'Datei' : 'frisch'}, ${n} Sektoren` }, state: clone(g.state) });
+      }
+      return snaps.length === counts.length;
+    },
+  });
+  return snaps;
+}
+
 /** The layer a player works towards while running `layer`, and the gain at which it counts as reached. */
 const NEXT = { replication: ['expansion', 5], expansion: ['singularity', 8] };
 
