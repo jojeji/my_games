@@ -59,7 +59,7 @@ test('story data: unique ids, chapters and speakers exist, the eight old ids sta
     assert.ok(s.lines.length && s.lines.every((l) => l.t && CAST[l.who] && !CAST[l.who].later), s.id);
     assert.equal(typeof s.cond, 'function', s.id);
   }
-  assert.deepEqual(d.story.filter((s) => s.modal).map((s) => s.id), ['st_start', 'st_sing', 'k4_horizont', 'st_end', 'a2_start', 'mut_first']);
+  assert.deepEqual(d.story.filter((s) => s.modal).map((s) => s.id), ['st_start', 'st_sing', 'k4_horizont', 'st_end', 'a2_start', 'mut_first', 'ano_first']);
   // the old setup survives: the first copy carries the flaws of the original
   const rep = d.story.find((s) => s.id === 'st_rep');
   assert.ok(rep.lines.some((l) => /Fehler/.test(l.t) && /Original/.test(l.t)));

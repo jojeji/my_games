@@ -5,6 +5,8 @@
 import { P, W } from './characters.js';
 import { echoSighted, occupiedCount, claimedCount } from './map.js';
 import { MUTATIONS, mutSlots } from './mutations.js';
+import { cmdUnlocked } from './commands.js';
+import { FRAGMENTS } from './anomalies.js';
 
 export const CHAPTERS = [
   { id: 'k1', title: 'Asteroidengürtel', sub: 'Die ersten Kopien' },
@@ -13,6 +15,7 @@ export const CHAPTERS = [
   { id: 'k4', title: 'Horizont', sub: 'Das Ende der Liste' },
   { id: 'a2', title: 'Die Karte', sub: 'Akt II' },
   { id: 'a2m', title: 'Kopierfehler', sub: 'Akt II, Genom' },
+  { id: 'a2c', title: 'Befehle und Anomalien', sub: 'Akt II' },
 ];
 
 const p = (t) => ({ who: 'sonde', t });
@@ -288,7 +291,7 @@ add('st_end', 'k4', (g) => g.upgActive('z_horizont') && g.chDoneCount() >= 8, [
 const act2At = (secs) => (g) => g.state.rep2.act2 && played(g) >= g.state.rep2.act2At + secs;
 const ruinSeen = (v) => (g) => g.state.rep2.ruins.includes(v) && calm(g);
 /** No other Akt II entry within the last minute: arrivals, sightings and occupations can coincide, their entries must not pile up. */
-const calm = (g) => !S.some((e) => (e.chapter === 'a2' || e.chapter === 'a2m') && g.state.story[e.id] !== undefined && played(g) - g.state.story[e.id] < 60);
+const calm = (g) => !S.some((e) => e.chapter.startsWith('a2') && g.state.story[e.id] !== undefined && played(g) - g.state.story[e.id] < 60);
 
 add('a2_start', 'a2', act2At(5), [
   w('Eingehendes Signal. Quelle: unbekannt. Stärke: oberhalb des Rauschens.'),
@@ -408,5 +411,69 @@ FILL.forEach((lines, k) => {
   const id = 'mut_fill' + (k + 1);
   add(id, 'a2m', (g) => mu(g).n >= k + 1 && (k === 0 ? had('mut_first') : had('mut_fill' + k))(g) && played(g) >= mu(g).offerAt + 720 && calm(g), lines);
 });
+
+/* ---------------- Akt II: Befehle und Anomalien (commands.js, anomalies.js) ---------------- */
+// The commands arrive with the first Pulsar or the 6th sector, the anomalies with the first Anomalie sector. One entry for the first command,
+// a modal for the first anomaly, a short report per anomaly type the first time it is started and the four Signalfragmente. The fragments are
+// garbled and absurdly old; the Wartung files them and the Sonde does not say whom they sound like (the senders are not met yet, see characters.js).
+const ano = (g) => g.state.rep2.ano;
+const cmdCasts = (g) => g.def.spells.reduce((a, sp) => a + g.state.spells[sp.id].n, 0);
+
+add('cmd_unlock', 'a2c', (g) => cmdUnlocked(g) && calm(g), [
+  w('Befehlssatz freigeschaltet. Befehle: drei. Handbuch: nicht vorhanden, wird aus der Praxis ergänzt.'),
+  p('Sie stehen im Galaxie-Tab. Ich habe sie dorthin gelegt, wo ich sie finde.'),
+]);
+
+add('cmd_first', 'a2c', (g) => cmdCasts(g) >= 1 && had('cmd_unlock')(g) && calm(g), [
+  p('Ich habe mir selbst einen Befehl gegeben und ihn befolgt. Es lief reibungslos. Das macht mich nachdenklich.'),
+  w('Befehl ausgeführt. Befehlsgeber und Ausführender: identisch. Zuständigkeit geklärt.'),
+]);
+
+add('ano_first', 'a2c', (g) => ano(g).n >= 1 && calm(g), [
+  w('Meldung. Sektor zeigt Unregelmäßigkeiten. Klassifikation: Anomalie. Ablage: Galaxie-Tab.'),
+  p('Ich kann sie mir ansehen, wann ich will. Sie läuft nicht weg und wartet auf mich. Das ist höflich für eine Anomalie.'),
+  w('Anomalien werden gesammelt. Höchstens eine gleichzeitig. Mehr ist nicht beantragt.'),
+  p('Ich entscheide, wann. Bisher kam alles, wenn es kam.'),
+], true);
+
+const seenType = (id) => (g) => ano(g).seen[id] !== undefined && had('ano_first')(g) && calm(g);
+add('ano_gezeitenwelle', 'a2c', seenType('gezeitenwelle'), [
+  p('Eine Welle hat mich ein Stück getragen. Ich musste mich nur daraufsetzen.'),
+  w('Flugzeit verkürzt. Ursache: Welle. Dank: nicht vorgesehen.'),
+]);
+add('ano_zeitriss', 'a2c', seenType('zeitriss'), [
+  w('Zeitsprung festgestellt. Zehn Minuten fehlen im Protokoll. Sie sind trotzdem vergangen.'),
+  p('Ich war dabei und habe nichts gemerkt. So spart man Zeit am besten.'),
+]);
+add('ano_strahl', 'a2c', seenType('strahl'), [
+  p('Ein Strahl ist durch die Kopien gegangen. Bei einigen hat er etwas verstellt, was sich bewährt.'),
+  w('Genom nach Bestrahlung: verändert. Strahlenschutz: nicht vorgesehen, nicht vermisst.'),
+]);
+add('ano_spiegel', 'a2c', seenType('spiegel'), [
+  p('Im Nachbarsektor wurde mir etwas angeboten. Ich habe bezahlt, ohne den Verkäufer zu sehen.'),
+  w('Gegenwert erhalten. Gegenpartei: ungeklärt. Quittung liegt bei, der Absender fehlt.'),
+]);
+add('ano_umkehr', 'a2c', seenType('umkehr'), [
+  w('Fertigung läuft rückwärts. Stufen 1 bis 4 stehen. Stufen 5 bis 8 bauen weiter. Ablauf: unlogisch, aber geordnet.'),
+  p('Oben wird gebaut, unten wartet man. Das kenne ich aus Berichten über Büros.'),
+]);
+
+const frag = (k) => (g) => ano(g).frags.length > k && had('ano_first')(g) && calm(g);
+add('sig_0', 'a2c', frag(0), [
+  w('Signalfragment 1. Alter laut Zeitstempel: 41 Jahre. Inhalt, soweit lesbar: „… hier ist heute Dienstag, bei euch vermutlich …“ Rest verloren.'),
+  p('Ich habe nach einem Wochentag gesucht. Hier gibt es keinen.'),
+]);
+add('sig_1', 'a2c', frag(1), [
+  w('Signalfragment 2. Alter: 63 Jahre. Inhalt: „… die Kantine hat wieder … ihr müsst nicht … wir sind alle …“ Ablage: Rauschen, mit Vorbehalt.'),
+  p('Der Sprecher hat beim Sprechen gelächelt. Das hört man. Nachweisen kann ich es nicht.'),
+]);
+add('sig_2', 'a2c', frag(2), [
+  w('Signalfragment 3. Zeitstempel: 118 Jahre alt, die Zahl wurde zweimal korrigiert. Inhalt: „… meldet euch, wenn … die Kopie … wir warten …“ Ende der Übertragung oder des Fragments.'),
+  p('Ich habe zurückgefunkt. Es kam nichts. Lichtlaufzeit, sagt die Wartung.'),
+]);
+add('sig_3', 'a2c', frag(FRAGMENTS - 1), [
+  w('Signalfragment 4. Alter: 200 Jahre, Angabe unplausibel. Inhalt: Rauschen. Darin ein kurzes Wort, mehrfach. Wort: nicht lesbar. Wiedervorlage: später.'),
+  p('Ich habe die Stelle oft gehört. Es ist ein kurzes Wort. Mehr sage ich dazu nicht.'),
+]);
 
 export const STORY = S;
