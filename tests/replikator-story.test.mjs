@@ -29,6 +29,9 @@ test('Figuren: Sonde always, Wartungsroutine after st_start, Akt-II-Figuren not 
   g.state.chronicle.read.st_start = true;
   assert.ok(isMet(g, 'wartung'));
   assert.ok(!isMet(g, 'mission') && !isMet(g, 'echo'));
+  g.state.chronicle.shown.f_m1 = true;
+  assert.ok(isMet(g, 'mission'));
+  g.state.chronicle.shown.f_m1 = false;
   // the Echo is introduced by the first sighting (Akt II), the Missionsleitung is not met yet
   g.state.chronicle.shown.a2_echo = true;
   assert.ok(isMet(g, 'echo') && !isMet(g, 'mission'));
@@ -60,7 +63,7 @@ test('story data: unique ids, chapters and speakers exist, the eight old ids sta
     assert.ok(s.lines.length && s.lines.every((l) => l.t && CAST[l.who] && !CAST[l.who].later), s.id);
     assert.equal(typeof s.cond, 'function', s.id);
   }
-  assert.deepEqual(d.story.filter((s) => s.modal).map((s) => s.id), ['st_start', 'st_sing', 'k4_horizont', 'st_end', 'a2_start', 'mut_first', 'ano_first', 'jump_first']);
+  assert.deepEqual(d.story.filter((s) => s.modal).map((s) => s.id), ['st_start', 'st_sing', 'k4_horizont', 'st_end', 'a2_start', 'mut_first', 'ano_first', 'jump_first', 'e_hello', 'm_bake', 'end_merge', 'end_split', 'end_split2', 'end_merge2']);
   // the old setup survives: the first copy carries the flaws of the original
   const rep = d.story.find((s) => s.id === 'st_rep');
   assert.ok(rep.lines.some((l) => /Fehler/.test(l.t) && /Original/.test(l.t)));
@@ -85,8 +88,9 @@ test('names only via characters.js; no Bobiverse terms; house style rules for th
   }
   // the Missionsleitung and the Echo are Akt II: nobody mentions them in version 1
   assert.ok(!/Missionsleitung|Echo/.test(v1texts));
-  // ... and in Akt II the texts do not name them yet either: the Echo does not speak, the Missionsleitung comes later
-  assert.ok(!/Missionsleitung|Echo/.test(texts));
+  // ... and the older Akt II chapters do not name them either: they are met in the chapters a2f / a2e (Paket 6)
+  const old = g.def.story.filter((s) => s.chapter.startsWith('a2') && !['a2f', 'a2e'].includes(s.chapter)).flatMap((s) => s.lines.map((l) => resolve(g, l))).join('\n');
+  assert.ok(!/Missionsleitung|Echo/.test(old));
 });
 
 test('pacing (active sim): an entry at least every ~25 min until st_end, no pile-ups, one quiet hint for Akt II', () => {

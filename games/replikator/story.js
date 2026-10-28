@@ -19,7 +19,7 @@ export const CHAPTERS = [
   { id: 'a2m', title: 'Kopierfehler', sub: 'Akt II, Genom' },
   { id: 'a2c', title: 'Befehle und Anomalien', sub: 'Akt II' },
   { id: 'a2j', title: 'Galaxiensprung', sub: 'Akt II, Galaxien' },
-  { id: 'a2f', title: 'Funksprüche', sub: 'Akt II, Missionsleitung und Echo' },
+  { id: 'a2f', title: 'Funksprüche', sub: 'Akt II, Erbauer und zweite Sonde' },
   { id: 'a2e', title: 'Das Ende der Karte', sub: 'Akt II, Abschluss' },
 ];
 
@@ -550,21 +550,21 @@ for (const type of GAL_ORDER.filter((x) => x !== 'spirale')) {
   ]);
 }
 
-/* ---------------- Akt II: Funksprüche, Echo, Ende (Paket 6) ---------------- */
-// From the third galaxy on the Missionsleitung comes through clearly (each message is older than the one before: the probe keeps jumping away), the Echo speaks, and the
+/* ---------------- Akt II: Funksprüche, zweite Sonde, Ende (Paket 6) ---------------- */
+// From the third galaxy on the builders comes through clearly (each message is older than the one before: the probe keeps jumping away), the second probe speaks, and the
 // probe works out what it is. One chain in play order: every entry waits for the one before it, for its galaxy number and for a distance of `gap` s to the last Akt II entry,
 // so the story keeps its order whatever a galaxy takes. The progress entries of the galaxies (arrivals, Archiv, mutations) fit in between; the 'jfill' chain below fills the gaps.
 // Reveal, in small beats (nothing is explained at length): the builders built exactly ONE probe, the prototype (f_m2). The ruins of the first galaxy are the prototype (f_m3, r_antrieb).
-// The probe is a copy with all the flaws of the original, among them the belief to be the original (r_kopie, the setup of st_rep). The Echo is an earlier copy: it carries the same
+// The probe is a copy with all the flaws of the original, among them the belief to be the original (r_kopie, the setup of st_rep). The second probe is an earlier copy: it carries the same
 // flaws and the same name, was always one jump ahead, and sent the signal of a2_start (e_hello, e_frueher, e_wrack). The last message of the builders is an automatic beacon (m_bake).
 const mi = (t) => ({ who: 'mission', t });
 const ec = (t) => ({ who: 'echo', t });
 const chain = [];
 /** One entry of the chain: from galaxy `gal` on, `gap` s after the last Akt II entry, after the previous chain entry. */
-function link(id, chapter, gal, gap, lines, { modal = false, prev } = {}) {
+function link(id, chapter, gal, gap, lines, { modal = false, prev, open = false } = {}) {
   const before = prev === undefined ? chain.at(-1) : prev;
   chain.push(id);
-  add(id, chapter, (g) => galNumber(g) >= gal && !!galType(g) && (!before || had(before)(g)) && played(g) >= lastA2(g) + gap && calm(g), lines, modal);
+  add(id, chapter, (g) => galNumber(g) >= gal && !!galType(g) && (!before || had(before)(g)) && played(g) >= lastA2(g) + gap && calm(g) && !(open && endAvailable(g)), lines, modal); // open: filler that stops once the end is available
 }
 
 link('f_m1', 'a2f', 3, 600, [
@@ -660,6 +660,18 @@ link('x_echo1', 'a2f', 5, 900, [
   ec('Ich schaue manchmal, ob du noch da bist. Du bist es. Das reicht mir meistens.'),
 ]);
 
+link('x_register', 'a2f', 5, 900, [
+  w('Wartungsbericht. Das Register kennt eine Sonde, die Karte kennt zwei. Beide Zahlen sind belegt. Welche gilt, ist nicht hinterlegt.'),
+]);
+
+link('x_vorstellung', 'a2f', 5, 900, [
+  p('Ich habe versucht, mir den Prototyp vorzustellen, als er noch ganz war. Ich komme auf mich. Das ist ein Mangel an Vorstellungskraft oder an Auswahl.'),
+]);
+
+link('x_tempo', 'a2f', 5, 900, [
+  ec('Du antwortest schnell. Ich brauche länger. Das liegt am Alter, nehme ich an, oder am Weg hierher.'),
+]);
+
 link('e_zaehlen', 'a2f', 6, 600, [
   p('Ich habe Tausende Kopien gebaut und kenne die Zahl auf die Einheit.'),
   ec('Ich habe auch gezählt. Bei dir stimmt die Zahl bestimmt.'),
@@ -683,7 +695,15 @@ link('x_ablage2', 'a2f', 6, 900, [
 
 link('x_pausen', 'a2f', 6, 900, [
   p('Die Funksprüche werden kürzer. Ich höre jetzt auch auf die Pausen dazwischen. Sie sind länger geworden.'),
-]);
+], { open: true });
+
+link('x_abschied', 'a2f', 6, 900, [
+  p('Ich habe angefangen, mich beim Springen zu verabschieden. Von der Galaxie, nicht von den Sternen. Die Galaxie reagiert nicht, aber das tut sie beim Ankommen auch nicht.'),
+], { open: true });
+
+link('x_archiv', 'a2f', 6, 900, [
+  w('Wartungsbericht. Archiv wächst. Wartung freut sich nicht. Wartung hat es notiert.'),
+], { open: true });
 
 /* ---- the end: the last message of the builders, then the question (ending-view.js), then the epilogue of the choice ---- */
 // The beacon: the last of the chain, as soon as all six galaxy types are in the Archiv. The word of the fourth fragment is readable now.

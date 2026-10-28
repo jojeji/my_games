@@ -10,6 +10,7 @@ import { advance } from '../engine/core.js';
 import { runSim, loadSaveFile } from './simulate.mjs';
 import { lineText } from '../games/replikator/characters.js';
 import { CAST } from '../games/replikator/characters.js';
+import { endCount } from '../games/replikator/ending.js';
 
 const hms = (s) => {
   const h = Math.floor(s / 3600);
@@ -47,12 +48,13 @@ function printTranscript(timeline, g) {
 
 /**
  * Akt II transcript (map entries) of a sim run: node tools/story-replikator.mjs --act2 [--fixture file] [--seed N] [--jump [--galaxies 2]]
- * --jump plays on through the Galaxiensprung until the given galaxy (default 2) is complete and left.
+ * --jump plays on through the Galaxiensprung until the given galaxy (default 2) is complete and left; --end plays through the end of Akt II (both endings).
  */
-export function act2Run({ fixture = null, seed, jump = false, galaxies = 2 } = {}) {
+export function act2Run({ fixture = null, seed, jump = false, galaxies = 2, end = false, endPick } = {}) {
   const game = fixture ? loadSaveFile(fixture, { seed }) : null;
-  const until = jump ? (g) => g.state.rep2.gal.n > galaxies : (g) => g.state.rep2.map.claimed >= 12;
-  const r = runSim({ game, hours: (fixture ? 8 : 11.5 + 4) + (jump ? 5 * galaxies : 6), dt: 2, quiet: true, act2: true, seed, jump, until });
+  // end: play through the end of Akt II (both endings: the second opens 3 jumps after the first)
+  const until = end ? (g) => endCount(g) >= 2 : jump ? (g) => g.state.rep2.gal.n > galaxies : (g) => g.state.rep2.map.claimed >= 12;
+  const r = runSim({ game, hours: (fixture ? 8 : 11.5 + 4) + (end ? 40 : jump ? 5 * galaxies : 6), dt: 2, quiet: true, act2: true, seed, jump: jump || end, until, strategy: endPick ? { endPick } : {} });
   advance(r.game, 5);
   return r;
 }
@@ -61,7 +63,7 @@ function act2Transcript(args) {
   const arg = (k) => (args.indexOf('--' + k) >= 0 ? args[args.indexOf('--' + k) + 1] : null);
   const fx = arg('fixture');
   const seed = arg('seed') ? Number(arg('seed')) : undefined;
-  const r = act2Run({ fixture: fx, seed, jump: args.includes('--jump'), galaxies: arg('galaxies') ? Number(arg('galaxies')) : 2 });
+  const r = act2Run({ fixture: fx, seed, jump: args.includes('--jump'), end: args.includes('--end'), galaxies: arg('galaxies') ? Number(arg('galaxies')) : 2 });
   const g = r.game;
   const start = g.state.rep2.act2At;
   const list = g.storyList().filter((x) => x.def.chapter.startsWith('a2'));
