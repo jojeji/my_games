@@ -118,6 +118,12 @@ button.mut-card:active { background: color-mix(in srgb, var(--c) 18%, var(--surf
 .jump-intro p { margin: 0; }
 .jump-gal { color: var(--c); font-size: 17px; }
 .jump-seeds { font-weight: 700; }
+.jump-check { list-style: none; margin: 2px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.jump-check li { display: flex; gap: 8px; align-items: baseline; color: var(--muted); }
+.jump-check li[hidden] { display: none; }
+.jump-check li.ok { color: var(--text); }
+.jc-mark { flex: none; width: 1.2em; font-weight: 800; color: #ff7a7a; text-align: center; }
+.jump-check li.ok .jc-mark { color: #5ef2c0; }
 .arch-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .arch-row { display: flex; align-items: center; gap: 10px; min-height: 44px; opacity: 0.62; }
 .arch-row.done { opacity: 1; }
@@ -126,3 +132,18 @@ button.mut-card:active { background: color-mix(in srgb, var(--c) 18%, var(--surf
 .arch-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .arch-state { flex: none; font-size: 12px; color: var(--muted); }
 .arch-row.done .arch-state { color: var(--c); font-weight: 700; }
+
+/* Ende von Akt II (ending-view.js) */
+.end-choose { display: flex; flex-direction: column; gap: 10px; }
+.end-choose > p { margin: 0; }
+.end-ask { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--c) 55%, var(--border)); background: color-mix(in srgb, var(--c) 9%, var(--surface)); }
+.end-ask .avatar { flex: none; }
+.end-ask-name { color: var(--c); font-size: 13px; }
+.end-ask-text { margin: 2px 0 0; font-style: italic; }
+.end-card { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--c) 60%, var(--border)); background: color-mix(in srgb, var(--c) 9%, var(--surface)); }
+.end-card p { margin: 0; }
+.end-name { color: var(--c); font-size: 17px; }
+.end-short { font-weight: 700; }
+.end-confirm { display: flex; flex-direction: column; gap: 8px; }
+.end-confirm p { margin: 0; }
+.end-row.done .arch-state { color: var(--c); }

@@ -23,7 +23,7 @@ import { formatNumber as fmt, formatCompact, setNotation } from '../format.js';
  * @param {object} cfg.runtime  from engine/core.js
  * @param {object} cfg.options
  *   gameId, title, primary (currency id), chips (currency ids), generators { chain, label, intro?(ctx), details?(ctx) },
- *   layers [{ id, label, icon, intro?(ctx) -> { el, update } (card above the prestige panel), groups:[{id,title,research?,branches?,buyAll?:false (no "Alles kaufen" button)}], challenges?:true, visible?(g) }],
+ *   layers [{ id, label, short? (word on the segment of the folded "Ebenen" tab), icon, intro?(ctx) -> { el, update } (card above the prestige panel), groups:[{id,title,research?,branches?,buyAll?:false (no "Alles kaufen" button)}], challenges?:true, visible?(g) }],
  *   multParts?(g) -> [label, Decimal][], bonusText?(g), statRows?(g), tabIcons
  *   banner? (g) -> { text, ratio? } | null  - one slim status line under the header on every tab (time-limited effects: remaining time; ratio = 0..1 progress bar)
  *   extraTabs? [{ id, label, icon, visible?(g), dot?(g), build(ctx) -> { el, update } }]  - game specific tabs between the layer tabs and the Chronik/Erfolge tab
@@ -256,7 +256,10 @@ export function mountStandardApp({ root, runtime, options, offline }) {
   const layerSwitch = h('div', { class: 'segmented seg-full', role: 'tablist' });
   const layerSlot = h('div', { class: 'layer-slot' });
   const layerBtns = options.layers.map((lc) => {
-    const b = h('button', { class: 'seg', type: 'button', role: 'tab', text: lc.label || g.layerById[lc.id].name, onClick: () => { layerPick = lc.id; showPicked(); } });
+    // icon above a short word: four full layer names do not fit a 360 px phone (lc.short, default the label); the full name stays as the accessible name
+    const full = lc.label || g.layerById[lc.id].name;
+    const b = h('button', { class: 'seg seg-ico', type: 'button', role: 'tab', 'aria-label': full, onClick: () => { layerPick = lc.id; showPicked(); } },
+      svgIcon(ICONS[lc.icon] || ICONS.more, 'seg-icon'), h('span', { class: 'seg-text', text: lc.short || full }));
     layerSwitch.append(b);
     return { lc, b };
   });

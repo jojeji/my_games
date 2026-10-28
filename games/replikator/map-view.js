@@ -6,6 +6,7 @@ import { openModal } from '../../engine/ui/modal.js';
 import { buildCommands, buildAnomalyCard } from './commands-view.js';
 import { pulsarRate } from './commands.js';
 import { buildGalaxyCard, buildArchive, jumpTeaser } from './jump-view.js';
+import { buildEndings } from './ending-view.js';
 import { galType, galNumber, GALAXIES } from './galaxy.js';
 import { formatNumber as fmt, formatMult } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
@@ -285,6 +286,7 @@ export function buildGalaxyTab(ctx) {
   const cmd = buildCommands(g);
   const galCard = buildGalaxyCard(ctx);
   const archive = buildArchive(g);
+  const endings = buildEndings(g, (k) => ctx.onEnding && ctx.onEnding(k));
   const page = h('div', { class: 'stack' },
     ano.el, // a waiting / running anomaly: the thing to decide, on top
     cmd.barEl, // the quick buttons of the Sondenbefehle
@@ -299,6 +301,7 @@ export function buildGalaxyTab(ctx) {
     sectionTitle('Aktive Boni'),
     bonusBox,
     archive.el,
+    endings.el,
   );
 
   return {
@@ -308,6 +311,7 @@ export function buildGalaxyTab(ctx) {
       cmd.update();
       galCard.update();
       archive.update();
+      endings.update();
       paint();
       paintBonuses();
       const n = claimedCount(g);
@@ -325,8 +329,10 @@ export function buildGalaxyTab(ctx) {
       if (autoOpen && autoInput.checked !== g.state.auto.auto_map.on) autoInput.checked = g.state.auto.auto_map.on;
       txt(autoLocked, `Auto-Erkundung: ab ${T.mapAutoAt} erschlossenen Sektoren.`);
       const occ = occupiedCount(g);
-      setHidden(echoLine, occ === 0 && !mapCells(g).some((c) => c.echo && isVisible(mapCells(g), mapCells(g).indexOf(c))));
-      txt(echoLine, occ ? `Das Echo hält ${occ} ${occ === 1 ? 'weiteren Sektor' : 'weitere Sektoren'}. Pro ${T.mapEchoEvery} erschlossene Sektoren besetzt es einen.` : 'Das Echo ist in der Nähe.');
+      const mo = mapOf(g);
+      const merged = mapCells(g).filter((c) => c.merged).length;
+      setHidden(echoLine, mo.noEcho ? merged === 0 : occ === 0 && !mapCells(g).some((c) => c.echo && isVisible(mapCells(g), mapCells(g).indexOf(c))));
+      txt(echoLine, mo.noEcho ? `Die Echo-Sektoren gehören dir: ${merged} übernommen. Pro ${T.mapEchoEvery} erschlossene Sektoren kommt einer dazu.` : occ ? `Das Echo hält ${occ} ${occ === 1 ? 'weiteren Sektor' : 'weitere Sektoren'}. Pro ${T.mapEchoEvery} erschlossene Sektoren besetzt es einen.` : 'Das Echo ist in der Nähe.');
     },
   };
 }

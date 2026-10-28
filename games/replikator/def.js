@@ -428,6 +428,7 @@ export const def = {
       unlockWhen: (g) => jumpReady(g),
       available: (g) => jumpReady(g),
       formula: { threshold: T.jumpThreshold, exp: T.jumpExp }, // no softcap per run: the jump needs a completed galaxy, it cannot be done in micro-runs
+      unavailableText: 'Der Sprung öffnet, sobald die Galaxie abgeschlossen ist (Checkliste oben).',
       blurb: 'Verlasse die Galaxie und wähle eine neue. Alles bleibt zurück, bis auf Genom, Archiv, Befehle, Chronik und deine Saatkerne.',
     },
   ],

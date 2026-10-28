@@ -331,7 +331,8 @@ export function prestigePanel(g, layerId, ctx) {
       setDisabled(btn, !can);
       const basis = g.prestigeBasis(layerId);
       const target = g.prestigeBasisFor(layerId, gain.add(1));
-      txt(next, gain.gte(1) ? `Nächster Punkt bei ${fmt(target)} ${basisName} (jetzt ${fmt(basis)})` : `Benötigt ${fmt(g.prestigeBasisFor(layerId, 1))} ${basisName} (jetzt ${fmt(basis)})`);
+      if (l.available && l.unavailableText && !l.available(g)) txt(next, l.unavailableText); // the layer is closed for another reason than the basis amount: say that one
+      else txt(next, gain.gte(1) ? `Nächster Punkt bei ${fmt(target)} ${basisName} (jetzt ${fmt(basis)})` : `Benötigt ${fmt(g.prestigeBasisFor(layerId, 1))} ${basisName} (jetzt ${fmt(basis)})`);
       const lo = gain.gte(1) ? g.prestigeBasisFor(layerId, gain) : null;
       const lb = lo ? lo.log10() : 0;
       const hb = target.log10();

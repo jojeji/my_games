@@ -5,7 +5,7 @@ import { openModal } from '../../engine/ui/modal.js';
 import { progressBar } from '../../engine/ui/kit-views.js';
 import { formatNumber as fmt } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
-import { act2Active, claimedCount, echoSighted } from './map.js';
+import { act2Active, claimedCount, echoSighted, mapCells } from './map.js';
 import { GAL_ORDER, GALAXIES, galType, galNumber, galPending, galRuleLines, galBonusText, archiveDone, archiveCount } from './galaxy.js';
 import { galChoose, galaxyComplete } from './jump.js';
 
@@ -77,10 +77,23 @@ export function buildJumpIntro(ctx) {
   const title = h('b', { class: 'jump-gal', text: '' });
   const count = h('small', { class: 'muted' });
   const bar = progressBar();
-  const need = h('p', { class: 'small jump-need' });
+  // the conditions as a checklist: what is missing is visible at a glance, the Quantenkerne are the last item (they only matter once the galaxy is complete)
+  const items = [h('li', { class: 'jc-sectors' }), h('li', { class: 'jc-echo' }), h('li', { class: 'jc-cores' })];
+  const mark = (li, ok, text) => {
+    setCls(li, 'ok', ok);
+    li.replaceChildren(h('span', { class: 'jc-mark', 'aria-hidden': 'true', text: ok ? '✓' : '✗' }), h('span', { class: 'jc-text', text }), h('span', { class: 'sr-only', text: ok ? ' (erfüllt)' : ' (offen)' }));
+  };
+  const keys = ['', '', ''];
+  const setItem = (k, ok, text) => {
+    const key = (ok ? '1' : '0') + text;
+    if (keys[k] === key) return;
+    keys[k] = key;
+    mark(items[k], ok, text);
+  };
+  const list = h('ul', { class: 'jump-check', 'aria-label': 'Bedingungen für den Sprung' }, ...items);
   const bonus = h('p', { class: 'small muted' });
   const seeds = h('p', { class: 'small jump-seeds' });
-  const el = h('div', { class: 'card jump-intro' }, h('div', { class: 'p-head' }, title, count), bar.el, need, bonus, seeds);
+  const el = h('div', { class: 'card jump-intro' }, h('div', { class: 'p-head' }, title, count), bar.el, list, bonus, seeds);
   return {
     el,
     update() {
@@ -90,9 +103,13 @@ export function buildJumpIntro(ctx) {
       el.style.setProperty('--c', t ? GALAXIES[t].color : 'var(--accent)');
       txt(count, `${Math.min(n, T.jumpSectors)} / ${T.jumpSectors} Sektoren`);
       bar.set(Math.min(1, n / T.jumpSectors));
-      const sighted = echoSighted(g);
-      const done = galaxyComplete(g);
-      txt(need, done ? 'Die Galaxie ist abgeschlossen. Der Sprung ist offen.' : `Der Sprung öffnet mit ${T.jumpSectors} erschlossenen Sektoren und wenn du die Silhouette am Rand gesehen hast${sighted ? ' (gesehen)' : ' (noch nicht gesehen)'}.`);
+      setItem(0, n >= T.jumpSectors, `${T.jumpSectors} Sektoren erschlossen`);
+      const hasEcho = !!t && mapCells(g).some((c) => c.echo === 1);
+      setHidden(items[1], !!t && !hasEcho);
+      setItem(1, echoSighted(g), 'Silhouette am Kartenrand gesehen');
+      const need = Math.ceil(T.jumpThreshold);
+      const have = g.state.cur.cores.run;
+      setItem(2, g.prestigeGain('jump').gte(1), `Quantenkerne dieser Galaxie: mindestens ${need} (jetzt ${fmt(have)})`);
       txt(bonus, t && !archiveDone(g, t) ? `Abschluss bringt dauerhaft: ${galBonusText(t)}.` : t ? `Archiv: ${typeName(t)} ist abgeschlossen.` : '');
       setHidden(bonus, !t);
       txt(seeds, `Saatkerne: ${fmt(g.get('seeds'))}`);

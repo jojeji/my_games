@@ -14,6 +14,8 @@ import { anoPending, ANO_BY_ID } from './anomalies.js';
 import { mutUnlocked, mutPending } from './mutations.js';
 import { act2Active, claimable, canClaim, SECTOR } from './map.js';
 import { mountGalaxyChoice, buildJumpIntro } from './jump-view.js';
+import { mountEndingChoice } from './ending-view.js';
+import { ENDINGS } from './ending.js';
 import { GALAXIES, galBonusText } from './galaxy.js';
 
 const g = createReplikator();
@@ -59,6 +61,7 @@ const { app, ctx } = mountStandardApp({
       {
         id: 'replication',
         label: 'Replikation',
+        short: 'Replik.',
         icon: 'replication',
         visible: (game) => game.state.cur.matter.best.gte(TUNE.repThreshold / 30),
         groups: [{ id: 'replication', title: 'Blaupausen-Upgrades' }],
@@ -66,6 +69,7 @@ const { app, ctx } = mountStandardApp({
       {
         id: 'expansion',
         label: 'Expansion',
+        short: 'Expansion',
         icon: 'expansion',
         visible: (game) => game.state.cur.blueprints.total.gte(TUNE.expThreshold / 30),
         groups: [{ id: 'expansion', title: 'Expansions-Upgrades' }],
@@ -74,6 +78,7 @@ const { app, ctx } = mountStandardApp({
       {
         id: 'singularity',
         label: 'Singularität',
+        short: 'Singul.',
         icon: 'singularity',
         groups: [
           {
@@ -94,6 +99,7 @@ const { app, ctx } = mountStandardApp({
       {
         id: 'jump',
         label: 'Sprung',
+        short: 'Sprung',
         icon: 'jump',
         intro: buildJumpIntro,
         groups: [{ id: 'seed', title: 'Saatkern-Upgrades', sub: 'Bleiben über alle Galaxien', buyAll: false }],
@@ -104,6 +110,10 @@ const { app, ctx } = mountStandardApp({
 
 // Paket 5: the galaxy choice after a jump cannot be dismissed (and is stored in the save); toasts for the Archiv and the arrival
 ctx.galChoice = mountGalaxyChoice({ g, runtime, onPick: (type) => app.toast(GALAXIES[type].name + ' erreicht.', { kind: 'good', title: 'Neue Galaxie' }) });
+// Paket 6: the question at the end of Akt II (a dialog that cannot be dismissed), a toast when an ending is chosen
+const onEnding = (kind) => app.toast(ENDINGS[kind].bonusShort + '. Wirkt ab der nächsten Galaxie.', { kind: 'good', title: ENDINGS[kind].name });
+ctx.onEnding = onEnding;
+ctx.endingChoice = mountEndingChoice({ g, runtime, onPick: onEnding });
 runtime.on('archive', ({ type }) => app.toast(galBonusText(type), { kind: 'good', title: 'Archiv: ' + GALAXIES[type].name }));
 
 // arrival toasts only where no story entry tells the same news (the first sector, every Ruine, the first Echo occupation)

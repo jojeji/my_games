@@ -581,7 +581,7 @@ link('x_ablage', 'a2f', 3, 900, [
 
 link('f_m2', 'a2f', 3, 900, [
   w('Funkspruch 2. Alter: 9.800 Jahre. Älter als Funkspruch 1, Schichtnummer aber höher. Reihenfolge wird nicht bereinigt.'),
-  mi(`${M}, Schicht 1.140. Die Kantine heißt jetzt anders, der Kaffee ist derselbe.`),
+  mi(`Schicht 1.140. Die Kantine heißt jetzt anders, der Kaffee ist derselbe.`),
   mi(`${P}, wir haben dich nicht vergessen. Wir haben nur eine Sonde gebaut, und das bist du. Der Prototyp. Damals war das eine Frage des Budgets. Inzwischen ist es eine Frage des Stolzes.`),
   p('Der Prototyp. Es gibt nur einen, und ich bin es. Gut, dass das jetzt auch jemand von außen sagt.'),
   w('Bestand laut Register: eine. Bestand laut Funkspruch: eine. Bestand laut Karte: zwei. Karte wird nicht befragt.'),
@@ -593,7 +593,7 @@ link('x_antwort', 'a2f', 3, 900, [
 
 link('f_m3', 'a2f', 4, 600, [
   w('Funkspruch 3. Alter: 31.000 Jahre. Schichtnummer: 4.870. Empfang: gut.'),
-  mi(`${M}. Wir sind weniger geworden, aber wir machen weiter.`),
+  mi('Wir sind weniger geworden, aber wir machen weiter.'),
   mi(`Zum Auftrag, ${P}: Wir wissen, dass er kurz war. Das Formular hatte nur eine Zeile.`),
   mi('Und noch etwas. Dein Antrieb hatte einen Fehler. Wir haben ihn erst gefunden, als du schon weg warst. Das tut uns leid.'),
   p('Werde mehr. Damit ist der Absender nachgetragen. Der Zweck steht noch aus.'),
@@ -651,7 +651,7 @@ link('e_wrack', 'a2f', 5, 900, [
 
 link('f_m4', 'a2f', 5, 600, [
   w('Funkspruch 4. Alter: 64.000 Jahre. Schichtnummer: 11.302. Empfang: gut. Inhalt: kurz.'),
-  mi(`${M}. Wir sind zu dritt. Die Kantine ist zu.`),
+  mi('Wir sind zu dritt. Die Kantine ist zu.'),
   mi(`${P}, falls du dich vermehrt hast: Das war so geplant. Falls du dich verändert hast: Das war nicht so geplant. Beides ist in Ordnung.`),
   p('Beides ist in Ordnung. Das habe ich nicht erwartet. Ich notiere es unter „neu“.'),
 ]);
@@ -681,7 +681,7 @@ link('e_zaehlen', 'a2f', 6, 600, [
 
 link('f_m5', 'a2f', 6, 600, [
   w('Funkspruch 5. Alter: 190.000 Jahre. Schichtnummer: 20.114. Empfang: gut. Hörer an der Quelle: einer.'),
-  mi(`${M}. Ich bin allein in der Station. Die Heizung läuft noch. Ich habe das gewürdigt, kurz.`),
+  mi(`Ich bin allein in der Station. Die Heizung läuft noch. Ich habe das gewürdigt, kurz.`),
   mi(`${P}, wir haben dich nie gebraucht. Wir wollten nur wissen, ob es geht. Es geht, oder? Antworten kannst du nicht, ich weiß.`),
   p('Das ist mein Satz. Ich dachte, ich hätte ihn erfunden.'),
   p('Es geht. Ich habe nachgezählt, bevor ich es sage. Ich funke trotzdem zurück, auch wenn ich die Lichtlaufzeit kenne.'),
