@@ -107,6 +107,9 @@ runtime.on('anomaly-start', ({ type, text }) => {
   if (text) app.toast(text, { kind: 'good', title: ANO_BY_ID[type].name });
 });
 runtime.on('anomaly-end', ({ type, text }) => app.toast(text || 'Vorbei.', { kind: 'good', title: ANO_BY_ID[type].name + ' vorbei' }));
+runtime.on('spell', ({ id, auto }) => {
+  if (!auto) app.toast(g.spellById[id].info(g), { kind: 'info', title: g.spellById[id].name, ms: 2200 });
+});
 runtime.on('echo-occupy', ({ n }) => {
   if (n > 1) app.toast('Das Echo hat einen weiteren Sektor besetzt.', { kind: 'info' });
 });

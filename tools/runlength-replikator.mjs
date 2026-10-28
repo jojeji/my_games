@@ -71,7 +71,7 @@ const NEXT = { replication: ['expansion', 5], expansion: ['singularity', 8] };
  *  - tNext: seconds until the NEXT layer could be used with a decent gain (the layer the player is really working towards);
  *    null = not within `limit`.
  */
-export function measure(snap, layer, L, { window, limit, dt = 1 } = {}) {
+export function measure(snap, layer, L, { window, limit, dt = 1, act2 = false } = {}) {
   const g = gameFromSnapshot(snap);
   const cur = CURRENCY[layer];
   const c0 = g.state.cur[cur].total;
@@ -90,6 +90,7 @@ export function measure(snap, layer, L, { window, limit, dt = 1 } = {}) {
     dt,
     quiet: true,
     stopAtEnd: false,
+    act2, // Akt II: the sim player also casts the Sondenbefehle and starts anomalies while the runs of fixed length go on
     strategy: { fixed: { [layer]: L }, skip, noChallenges: true, autosOff: true },
     until: (gg, t) => {
       const n = gg.state.layers[layer].count;

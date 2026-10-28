@@ -9,6 +9,8 @@ import { runSim, loadSaveFile, SIM_SEED } from '../tools/simulate.mjs';
 import { measureCmd } from '../tools/commands-replikator.mjs';
 import { measureAno } from '../tools/anomalies-replikator.mjs';
 import { startSnapshot } from '../tools/mutations-replikator.mjs';
+import { measureLayer } from '../tools/runlength-replikator.mjs';
+import { parse, stringify } from '../engine/save.js';
 import { TUNE as T } from '../games/replikator/tune.js';
 
 const FIXTURE = new URL('./fixtures/replikator-end-v1.json', import.meta.url).pathname;
@@ -114,4 +116,25 @@ test('each anomaly is felt (fixture start, anomalies every 15 min of one type): 
   assert.ok(beam.qk > base.qk + 0.2 && beam.sys > base.sys + 0.2, `Strahl: the extra mutations lift the gains by +${(beam.qk - base.qk).toFixed(2)} decades Quantenkerne`);
   assert.ok(mirror.starts >= 3 && mirror.mut > base.mut && mirror.qk > base.qk + 0.3, `Spiegel: +${(mirror.qk - base.qk).toFixed(2)} decades Quantenkerne for half the Sternsysteme`);
   assert.ok(rev.starts >= 3 && rev.qk > base.qk + 0.1, `Umkehrfeld: +${(rev.qk - base.qk).toFixed(2)} decades Quantenkerne`);
+});
+
+test('run length: the sector bonuses after the softcap and the commands do not make short runs better (Expansion, state after 10 sectors)', () => {
+  const state = (map, act) => {
+    const st = parse(stringify(runs.fixture.game.state));
+    if (!map) for (const c of st.rep2.map.cells) if (c.type !== 'home') c.own = 0;
+    return { phase: { id: 'a2', label: 'Akt II' }, state: st, act };
+  };
+  const old = T.mapHoldReach;
+  T.mapHoldReach = 0; // no waiting for sectors: the run length alone
+  try {
+    const rate = (snap, act2) => measureLayer(snap, 'expansion', [120, 300, 1200], { dt: 2, window: 7200, limit: 7200, act2 });
+    const share = (r) => r.rows[0].rate / r.best.rate; // 2 min run against the best length
+    const plain = share(rate(state(false), false));
+    const withMap = share(rate(state(true), false));
+    const withCmd = share(rate(state(true), true));
+    assert.ok(withMap <= plain + 0.05, `map bonuses: 2 min at ${(withMap * 100).toFixed(0)} % (without map ${(plain * 100).toFixed(0)} %)`);
+    assert.ok(withCmd <= plain + 0.05 && withCmd < 0.4, `with commands: 2 min at ${(withCmd * 100).toFixed(0)} %`);
+  } finally {
+    T.mapHoldReach = old;
+  }
 });
