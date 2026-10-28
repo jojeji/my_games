@@ -242,23 +242,27 @@ test('adjacency: each claimed same-type neighbour adds +50 % to the effect expon
   // the gain multiplier uses the type's product; other kinds are untouched
   assert.ok(gainMult(g, 'blueprints').gt(T.mapBase.nebel));
   assert.ok(gainMult(g, 'systems').eq(1));
-  assert.ok(g.prestigeMult('replication').eq(gainMult(g, 'blueprints')));
   assert.ok(typeMult(g, 'nebel').eq(gainMult(g, 'blueprints')));
+  // the sector bonus works AFTER the softcap (layer.postMult), not inside the formula's multiplier
+  assert.ok(g.prestigeMult('replication').eq(1));
+  assert.ok(g.layerById.replication.postMult(g).gte(gainMult(g, 'blueprints').mul(0.999)), 'blueprints: map factor in postMult (no ripening for Blaupausen)');
 });
 
 test('effects feed the multiplier model: Sternhaufen -> Sternsysteme, Nebel -> Blaupausen, Schwarzes Loch -> Quantenkerne, Pulsar/Ruine/Anomalie -> labeled production parts', () => {
   const g = act2Game(4);
   const cells = g.state.rep2.map.cells;
-  const base = { rep: g.prestigeMult('replication'), exp: g.prestigeMult('expansion'), sing: g.prestigeMult('singularity') };
+  g.mutRef = true; // full factors (the Sternsystem / Quantenkern factors ripen with the run time otherwise)
+  const post = (id) => g.layerById[id].postMult(g);
+  const base = { rep: post('replication'), exp: post('expansion'), sing: post('singularity') };
   const label = (g) => globalParts(g).map(([l]) => l);
   assert.ok(!label(g).some((l) => ['Pulsare', 'Ruinen', 'Anomalien'].includes(l)), 'no map parts without sectors');
   cells.forEach((c, i) => {
     if (c.type !== 'home' && !c.echo) c.own = 1; // everything claimed, whatever the geometry
   });
   g.refresh();
-  assert.ok(g.prestigeMult('expansion').gt(base.exp));
-  assert.ok(g.prestigeMult('replication').gt(base.rep));
-  assert.ok(g.prestigeMult('singularity').gt(base.sing));
+  assert.ok(post('expansion').gt(base.exp));
+  assert.ok(post('replication').gt(base.rep));
+  assert.ok(post('singularity').gt(base.sing));
   assert.ok(['Pulsare', 'Ruinen', 'Anomalien'].every((l) => label(g).includes(l)));
   const total = globalParts(g).reduce((a, [, v]) => a.mul(v), D(1));
   assert.ok(g.cache.global.matter.eq(total), 'the global multiplier is the product of the labeled parts');

@@ -4,7 +4,7 @@ import { prestigeAuto } from '../../engine/kit/game.js';
 import { formatNumber as fmt, formatMult, formatPercent } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import { STORY, CHAPTERS } from './story.js';
-import { rep2State, migrateToRep2, productionParts, gainMult, autoClaim, claimedCount, act2Check, mapTick, holdSingularity } from './map.js';
+import { rep2State, migrateToRep2, productionParts, mapGain, autoClaim, claimedCount, act2Check, mapTick, holdSingularity } from './map.js';
 import { mutParts, mutGain, mutTier, mutCostDiv, mutBundle, mutAutoSlow, mutExtra, mutTick, mutChoose as chooseMutation, mutAutoRun, mutUnlocked, migrateToMut } from './mutations.js';
 
 /** Active level of an upgrade (0 while suppressed by a challenge). */
@@ -134,8 +134,16 @@ export function repObjective(g) {
   const wBp = bpBoostExp(g) + T.expExp * wSys;
   const lg = (id) => {
     let m = g.prestigeMult(id);
-    const post = g.layerById[id].postMult; // factors after the softcap (mutations): they count in full
-    if (post) m = m.mul(post(g));
+    const post = g.layerById[id].postMult; // factors after the softcap (mutations, map): they count in full (no ripening)
+    if (post) {
+      const keep = g.mutRef;
+      g.mutRef = true;
+      try {
+        m = m.mul(post(g));
+      } finally {
+        g.mutRef = keep;
+      }
+    }
     return m.m > 0 ? m.log10() : 0;
   };
   v += wBp * lg('replication') + wSys * lg('expansion');
@@ -155,6 +163,13 @@ export const mapAutoClaim = (g) => autoClaim(g, repObjective);
 export const mutObjective = (g) => repObjective(g) + mutExtra(g);
 export const mutChoose = (g) => chooseMutation(g, mutObjective);
 export const mutAutoGenom = (g) => mutAutoRun(g, mutObjective);
+
+/**
+ * Everything that multiplies a prestige gain AFTER the softcap (layer.postMult): sector bonuses of the map and mutations. Before the softcap a factor is cut
+ * to its square root and nobody feels it (docs/LESSONS.md). Factors above 1 on Sternsysteme / Quantenkerne ripen with the run time (mutations.js ripen):
+ * without that a stack of them makes short runs optimal.
+ */
+export const postGain = (g, kind) => mutGain(g, kind).mul(mapGain(g, kind));
 
 /** Auto-Singularität and the sim's player both wait for the next sector (map.js holdSingularity). */
 export const singularityHeld = (g) => holdSingularity(g);
@@ -260,14 +275,14 @@ export const def = {
       basis: 'matter',
       formula: { threshold: T.repThreshold, exp: T.repExp, softcap: T.repSoftcap },
       mult: (g) => {
-        let m = gainMult(g, 'blueprints');
+        let m = ONE; // the sector bonuses of the map work after the softcap (postMult)
         if (g.upgActive('logistik')) m = m.mul(pow(2, lvl(g, 'logistik')));
         if (g.chDone('c_ohne_bp')) m = m.mul(2);
         if (act(g, 'b_ernte')) m = m.mul(3);
         if (g.hasMs('ex20')) m = m.mul(2);
         return m;
       },
-      postMult: (g) => mutGain(g, 'blueprints'), // Mutationen wirken nach dem Softcap
+      postMult: (g) => postGain(g, 'blueprints'), // Mutationen und Kartenboni wirken nach dem Softcap
       blurb: 'Setze Materie und Generatoren zurück und erhalte Blaupausen.',
     },
     {
@@ -280,12 +295,12 @@ export const def = {
       basis: 'blueprints',
       formula: { threshold: T.expThreshold, exp: (g) => T.expExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.expSoftcap },
       mult: (g) => {
-        let m = gainMult(g, 'systems');
+        let m = ONE;
         if (g.chDone('c_zeitlupe')) m = m.mul(2);
         if (act(g, 'b_ernte')) m = m.mul(3);
         return m;
       },
-      postMult: (g) => mutGain(g, 'systems'),
+      postMult: (g) => postGain(g, 'systems'),
       blurb: 'Setze Replikation zurück und besiedle neue Sternsysteme.',
     },
     {
@@ -299,7 +314,7 @@ export const def = {
       unlockWhen: (g) => g.state.cur.systems.total.gte(T.singUnlock),
       formula: { threshold: T.singThreshold, exp: (g) => T.singExp + (act(g, 'b_entropie') ? 0.05 : 0), softcap: T.singSoftcap },
       mult: (g) => {
-        let m = gainMult(g, 'cores');
+        let m = ONE;
         if (g.chDone('c_gipfel')) m = m.mul(2);
         m = m.mul(pow(2, lvl(g, 'kernbau')));
         m = m.mul(pow(T.kernverdichterMult, lvl(g, 'kernverdichter')));
@@ -307,7 +322,7 @@ export const def = {
         if (g.hasMs('s5')) m = m.mul(1.5);
         return m;
       },
-      postMult: (g) => mutGain(g, 'cores'),
+      postMult: (g) => postGain(g, 'cores'),
       blurb: 'Setze alles zurück und verdichte die Galaxie zu Quantenkernen. Ab der 2. Singularität wächst der Gewinn mit jeder bisherigen.',
     },
   ],

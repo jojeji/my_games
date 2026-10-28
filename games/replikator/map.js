@@ -9,7 +9,7 @@
 import { D, ONE, Decimal } from '../../engine/decimal.js';
 import { newSeed, rngNext, rngRoll, rngInt, rngShuffle, toSeed } from '../../engine/kit/rng.js';
 import { TUNE as T } from './tune.js';
-import { mutState, mutReset, mutMapCost, mutTrip, mutAdj } from './mutations.js';
+import { mutState, mutReset, mutMapCost, mutTrip, mutAdj, ripen } from './mutations.js';
 
 /* ------------------------------------------------------------------ */
 /* Hex geometry                                                         */
@@ -366,6 +366,12 @@ export function gainMult(g, kind) {
   for (const t of SECTOR_ORDER) if (SECTOR[t].kind === kind) m = m.mul(typeMult(g, t));
   return m;
 }
+
+/**
+ * Gain factor of the map for a prestige currency, for layer.postMult (applied AFTER the softcap, def.js postGain). Factors above 1 ripen with the run time
+ * like those of the mutations (a stack of gain factors must not make short runs optimal).
+ */
+export const mapGain = (g, kind) => D(ripen(g, kind, gainMult(g, kind).toNumber()));
 
 /** What claiming sector i would do to its type's multiplier (also counts the boost it gives to same-type neighbours): { before, after }. */
 export function previewClaim(g, i) {

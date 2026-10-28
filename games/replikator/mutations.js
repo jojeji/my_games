@@ -311,7 +311,7 @@ const RIPE_LAYER = { systems: 'expansion', cores: 'singularity' };
  * applied after the softcap at full strength, and without this a build with several of them makes short Singularitäten optimal (more Kerne per run feed
  * production faster than a long run pays, tools/runlength-replikator.mjs). Factors below 1 (the catches) always apply in full. The valuation (g.mutRef) sees the full factor.
  */
-function ripen(g, kind, v) {
+export function ripen(g, kind, v) {
   const layer = RIPE_LAYER[kind];
   if (!layer || v <= 1 || g.mutRef) return v;
   const r = Math.min(1, g.state.layers[layer].runTime / T.mutRipe[kind]);
