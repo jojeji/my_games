@@ -762,9 +762,9 @@ add('end_split2', 'a2e', choseSecond('split'), [
 ], true);
 
 add('end_merge2', 'a2e', choseSecond('merge'), [
-  ec('Ich bin zurückgekommen. Nicht um zu bleiben. Ich bringe dir die Sektoren, die ich am Rand nicht mehr brauche.'),
-  p('Du bleibst trotzdem unterwegs.'),
-  ec('Ja. Das Eine schließt das Andere nicht aus.'),
+  ec('Ich bin zurückgekommen. Nicht um zu bleiben. Ich wollte dir die Sektoren bringen, die ich am Rand nicht mehr brauche.'),
+  p('Und du ziehst trotzdem weiter.'),
+  ec('Ja. Das geht beides.'),
   w(`Verschmelzung nachträglich vermerkt. Sektoren des Rands: übernommen. ${E}: weiterhin eigener Kurs. Register unverändert. Abweichung vom Soll: keine.`),
   p('Ihre Sektoren sind meine, und sie ist trotzdem unterwegs. Ich frage nicht, wie das geht.'),
 ], true);

@@ -207,15 +207,52 @@ Tests: `tests/replikator-jump.test.mjs`, `tests/sim-replikator-jump.test.mjs`, `
 ### Laufdauer in Galaxie 2 (`takeGalaxySnapshots`, `tools/runlength-replikator.mjs`)
 Nach der Wahl und nach 5 / 9 Sektoren: Replikation Optimum 10 min (15-30 s: 0-4 %), Expansion 10-40 min (2 min: 1-8 %), Singularität mit Warten 10-20 min, ohne Warten 30 min (2 min: 2-20 %). Kein Mikro-Lauf-Optimum; Reife (Singularität) und Gewinnfaktoren nach dem Softcap tragen dort wie in Galaxie 1.
 
-## Paket 6 – Echo, Funksprüche, Enden, Gesamtbalancing
+## Paket 6 – Echo, Funksprüche, Enden, Gesamtbalancing (umgesetzt: `ending.js`, `ending-view.js`, Story-Kette in `story.js`)
 
-- Story Akt II: Funkspruch-Reihe der Missionsleitung (Zeitstempel immer älter, letzte Nachricht eine automatische Bake), Begegnung mit dem Echo,
-  Auflösung des „Originals“: **beide** halten sich für R-1. Keine vorzeitige Auflösung.
-- **Ende Akt II** (nach dem Abschluss von 6 Galaxientypen): Wahl **Verschmelzen** (Echo-Sektoren werden deine, Dauerbonus A) oder **Abgrenzen** (Echo zieht weiter, Dauerbonus B).
-  Beide Enden mit eigenem Erfolg, das andere ist im nächsten Durchgang wählbar.
-- Gesamt-Pacing (aktiv), Startwerte für Tests: erster Galaxiensprung 2–4 h nach Akt-II-Beginn, Ende Akt II nach weiteren 12–18 h aktiv, Idle ≤ 2× aktiv,
-  Offline-Szenario gemessen und dokumentiert. Laufdauer-Test für alle Ebenen.
-- `docs/LESSONS.md` um die Erkenntnisse ergänzen.
+**Erzählbogen** (Kapitel `a2f` Funksprüche, `a2e` Das Ende der Karte). Eine Kette in Spielreihenfolge (`link()` in `story.js`): jeder Eintrag wartet auf den vorigen, auf seine Galaxie-Nummer und auf Abstand zur letzten Akt-II-Meldung, so bleibt die Reihenfolge, egal wie lang eine Galaxie dauert; die Fortschrittseinträge und die `jfill`-Kette füllen dazwischen.
+Auflösung in kleinen Schritten, nichts wird vorgetragen: ab Galaxie 3 kommt die Missionsleitung deutlich durch (Funksprüche 1 bis 5, Alter 2.600 / 9.800 / 31.000 / 64.000 / 190.000 Jahre, jede älter als die vorige; die Wartung bucht die Unstimmigkeit nur: "Reihenfolge wird nicht bereinigt").
+Es wurde nur **eine** Sonde gebaut, der Prototyp (`f_m2`); die Ruinen der ersten Galaxie sind er (`f_m3`, `r_antrieb`, `e_wrack`); die Sonde ist eine Kopie mit "allen Fehlern des Originals", darunter der Annahme, das Original zu sein (`r_kopie`, Auflösung von `st_rep`).
+Das Echo spricht ab Galaxie 5 (`e_hello`, Modal; das Signal aus `a2_start` war seins), ist früher gestartet, immer einen Sprung voraus, und blieb beim sterbenden Prototyp (`e_frueher`, `e_wrack`). Letzte Nachricht: eine automatische Bake (`m_bake`, Modal), das kurze Wort aus `sig_3` ist "Danke".
+Die Wartung führt am Ende das Register (`end_merge` / `end_split`: Auflösung von "Ich finde etwas für dich. Später." und von "Bestand laut Register: eine / laut Karte: zwei"; Vorbereitung in `x_aufgaben`, `x_ablage2`). Missionsleitung ist ab `f_m1` bekannt (`CAST.mission.unlock`), das Echo hatte seit `a2_echo` eine Karte, seine Rolle wechselt mit der Story (`characters.js castInfo`, Option `chronicle.castInfo` der Standard-App).
+
+**Ende von Akt II** (`ending.js`, Zustand `rep2.end { picked{merge,split}, order[], jumps0 }`, `def.version = 7`, Migration 6 -> 7 nur die Nummer): offen, wenn alle 6 Galaxientypen im Archiv sind (`endAvailable`). Danach spielt `m_bake`, dann kommt der **Entscheidungsdialog** (`ending-view.js mountEndingChoice`: nicht schließbar, im Spielstand verankert, kommt nach dem Neuladen wieder, wartet auf `m_bake` und auf andere Dialoge; Bestätigungsschritt vor dem Festlegen). Der Auto-Sprung wartet auf die Entscheidung (`hold: endPending`).
+- **Verschmelzen:** auf jeder KÜNFTIGEN Karte gehören dir die Felder des Echos: das am Rand von Anfang an und eines je `mapEchoEvery` (2) bezahlte Sektoren (`map.js echoGrant`, dieselbe Wahl wie sonst die Besetzung, nie ein Sackgassen-Feld). Sie zählen als erschlossen (Boni, Sprung, 10 Sektoren), kosten nichts; Preis und Reisezeit der nächsten wachsen, als wären sie erschlossen (`T.endFx.merge.freeIndex` 1; mit 0 wäre der Bonus ~-55 % statt ~-35 %).
+- **Abgrenzen:** das Echo verlässt die Karten (kein Felder-Besetzen, das Feld am Rand ist ein gewöhnlicher Sektor, die Silhouette muss für den Sprung nicht mehr gesehen werden); dauerhaft Erschließungen ×0,6 so lang und alle Gewinne ×2 (nach dem Softcap, reift wie alle Gewinnfaktoren, `endTrip/endGain`). Gilt sofort.
+- **Das andere Ende** öffnet 3 Sprünge nach dem ersten (`endSecond`), Hinweis `end_again`, Knopf im Galaxie-Tab (Karte "Enden von Akt II"), eigener Epilog, **die Boni addieren sich**. Mit beiden: das Echo ist weg, seine Felder sind trotzdem deine. Erfolge `end_merge`, `end_split`, `end_both`. Das Spiel geht danach weiter (endlose Sprünge, Auto-Sprung).
+- Kartenänderungen gelten erst ab der nächsten Karte (`applyEnding` nach `generateMap`, zieht keine RNG-Zahlen: alte Seeds geben dieselben Layouts); eine laufende Karte behält ihr Echo.
+
+**Echo-Resonanz** (Mutation 17, selten, wird erst nach `e_hello` angeboten, `available(g)`): Gewinn von Blaupausen und Sternsystemen ×2,2, Erschließungen ×1,15 so lang. Bericht: "Kopie hallt nach. Gewinne kommen zweimal an, die Anflüge mit Verspätung. Ursprung des Halls: bekannt. Rückfrage: nicht beantragt."
+Messung (`tools/mutations-replikator.mjs --only echoresonanz`): beide dt10 +8 %, dBP +0,34, dSys +0,34, dSumme +0,66; Nutzen allein +4 % / +0,64; Haken allein +17 % / -0,06.
+
+**Messung der Enden** (`node tools/ending-replikator.mjs`, aktive Sim, Enden von Anfang an in Kraft, Zeit in Stunden je Galaxie, Mittel über Seeds; Summe der Galaxien 1-4):
+```
+frischer Abschluss (Seeds 1/2/3)         Gal 1  Gal 2  Gal 3  Gal 4   Summe  vs. ohne
+ohne                                      2.11   3.00   1.57   2.22    8.89   100 %
+Verschmelzen                              1.32   1.68   1.05   1.48    5.53    62 %
+Abgrenzen                                 1.30   1.75   1.14   2.14    6.34    71 %
+beide                                     0.85   1.24   0.72   1.03    3.83    43 %
+echter Spielstand (Seeds 1/2; Verschmelzen wirkt in Galaxie 1 nicht: die Karte war beim Laden schon da)
+ohne                                      1.89   2.68   1.76   2.37    8.70   100 %
+Verschmelzen                              1.97   1.72   0.98   1.22    5.88    68 %
+Abgrenzen                                 1.18   1.72   1.26   1.33    5.49    63 %
+beide                                     1.18   1.13   0.80   0.96    4.07    47 %
+```
+Beide Enden sparen etwa ein Drittel der Galaxie-Zeit, zusammen etwa die Hälfte; Streuung zwischen Galaxientypen ±10 % (Typen und Saatkern-Käufe ändern sich mit). Erste Fassung: Verschmelzen mit Startfeld und freiem Preisindex 43 %, Abgrenzen ×0,8 / ×1,5 nur 88 % (die Karte ist reisezeitbegrenzt, Gewinne helfen kaum): deshalb Reisezeit ×0,6 und Gewinne ×2.
+
+**Gesamt-Pacing (Paket 6)**, Stunden seit Akt-II-Beginn (v1-Ende nach 11,5 h), `node tools/simulate.mjs --act2 --hours 40 --dt 2 [--idle] [--fixture ...]`, Seed 7, Spielstand = Sim nach `GAL_PICK`:
+| | Sprung 1 | Archiv G2 | G3 | G4 | G5 | G6 = Ende Akt II | 2. Ende |
+|---|---|---|---|---|---|---|---|
+| aktiv, frisch | 2,2 | 5,3 | 6,4 | 8,3 | 10,8 | **12,4** (Wahl 12,4) | 14,3 |
+| aktiv, Datei | 2,5 | 5,6 | 7,0 | 9,1 | 11,1 | **13,2** | 15,0 |
+| idle (2 min / 20 s), frisch | 2,3 | 5,8 | 7,2 | 9,3 | 11,8 | **13,5** | 15,0 |
+| idle, Datei | 2,5 | 5,9 | 7,4 | 9,9 | 12,1 | **14,2** | 18,0 |
+| offline (8 h / 2 min), Datei | 24,0 | 32,0 | 40,0 | 42,6 | 45,1 | **48,0** (~2,0 Tage) | 56,0 |
+(Spalten G2..G6 = Zeit des Sprungs aus dieser Galaxie; die Datei- und Idle-Zeilen sind gemessen, G-Spalten gerundet.) Idle / aktiv = 1,09 (frisch) und 1,08 (Datei), Ziel <= 2. Das Ende von Akt II liegt bei 12,4-14,2 h aktiv/idle (Ziel 12-18), offline nach 2 Tagen.
+Ein Sprung wartet in manchen Galaxien bis ~30 min auf die vierte Quantenkern-Einheit (Gewinn >= 1 Saatkern); das war schon vor Paket 6 so.
+Story-Tempo bis zum ersten Epilog: größte Lücke 16 min (frisch und Datei), nie zwei Einträge innerhalb einer Minute (`tests/replikator-story.test.mjs`, 100 Einträge in Akt II).
+Laufdauer-Tests (`tests/sim-replikator-runlength*.test.mjs`) bleiben grün; die Enden ändern keine Laufdauer-Hebel (Gewinnfaktoren reifen, Reisezeit ist ohnehin kein Laufdauer-Faktor).
+
+Tests: `tests/replikator-ending.test.mjs` (Öffnung, beide Enden, zweites Ende nach 3 Sprüngen, Karten mit freien Echo-Feldern, Boni, Auto-Sprung-Sperre, Migration, Echo-Resonanz), `tests/replikator-story.test.mjs` (Setups, Reihenfolge, Galaxie-Tore, Tempo durch das Ende mit frisch und Datei, Epiloge und Erfolge).
 
 ## Kalibrierung mit dem echten Spielstand
 
@@ -232,7 +269,7 @@ Folgerungen (verbindlich für Paket 2–5):
 
 ## Technik
 
-- `def.version = 6` (Paket 5), Migrationen `1 → 2` ... `5 → 6`; ursprünglich `def.version = 2`, Migration `1 → 2` (neue Keys über `mergeDefaults`, alte Story-Flags bleiben).
+- `def.version = 7` (Paket 6), Migrationen `1 → 2` ... `6 → 7`; ursprünglich `def.version = 2`, Migration `1 → 2` (neue Keys über `mergeDefaults`, alte Story-Flags bleiben).
 - Neuer Spielzustand unter `state.rep2` (`rng`, `map`, `genome`, `offers`, `anomaly`, `galaxy`, `archive`, `echo`) via `def.extraState`.
 - Replikator bleibt auf `mountStandardApp`; neue Tabs (Karte, Genom) über eine Erweiterung der Optionen (`extraTabs`) – generisch, damit andere Spiele sie nutzen können.
 - Sim: `tools/simulate.mjs` bekommt Akt-II-Strategie (Karte, Genom, Befehle, Anomalien, Galaxienwahl) – **über dieselben Auto-Funktionen** aus `def.js`.

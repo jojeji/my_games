@@ -439,11 +439,16 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const every = (a.every ?? 8) * 3600;
     const sess = a.session ?? 120;
     const fix = typeof a.fixture === 'string' ? loadSaveFile(a.fixture, { seed: a.seed ?? SIM_SEED }) : null;
-    const r = runSim({ game: fix, hours: a.hours ?? 24 * 14, dt: a.dt ?? 1, quiet: true, offline: { every, session: sess }, act2: !!a.act2 || !!fix, seed: a.seed ?? SIM_SEED });
+    const r = runSim({ game: fix, hours: a.hours ?? 24 * 14, dt: a.dt ?? 1, quiet: true, offline: { every, session: sess }, act2: !!a.act2 || !!fix, seed: a.seed ?? SIM_SEED, jump: !!a.jump, strategy: typeof a.end === 'string' ? { endPick: a.end === 'split' ? ['split', 'merge'] : ['merge', 'split'] } : {} });
     if (r.game.state.rep2.act2) {
       const claims = r.map.claims;
       const at = (n) => (claims[n - 1] ? `${hms(claims[n - 1].t - (r.map.start ?? 0))} (Besuch ${Math.floor((claims[n - 1].t - (r.map.start ?? 0)) / every) + 1})` : 'nicht erreicht');
       console.log(`Akt II offline: alle ${f(every / 3600)} h für ${sess} s einloggen. Sektoren 1 / 3 / 6 / 10: ${[1, 3, 6, 10].map(at).join(' | ')}; ${claims.length} Sektoren, ${r.checkIns} Besuche`);
+      if (a.jump) {
+        const rel = (x) => hms(x - (r.map.start ?? 0));
+        console.log('Galaxien (seit Akt II): ' + r.map.gals.map((x) => `${x.n}.${x.type} ${rel(x.start)}${x.archive != null ? ' Archiv ' + hms(x.archive) : ''}${x.jump != null ? ' Sprung ' + rel(x.jump) : ''}`).join(' | '));
+        console.log('Ende von Akt II: ' + (r.map.ends.length ? r.map.ends.map((e) => `${e.kind}${e.second ? ' (zweites)' : ''} nach ${rel(e.t)}`).join(' | ') : 'nicht erreicht'));
+      }
       process.exit(0);
     }
     console.log(`Offline-Szenario: alle ${f(every / 3600)} h für ${sess} s einloggen, dazwischen Offline-Catch-up (Limit ${f(r.game.offlineCapSeconds() / 3600)} h)`);
