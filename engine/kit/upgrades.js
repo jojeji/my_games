@@ -56,6 +56,7 @@ export const upgradeMethods = {
     const u = this.upgById[id];
     this.spend(u.currency, this.upgCost(id));
     this.state.upg[id] = this.upgLevel(id) + 1;
+    if (u.onBuy) u.onBuy(this, this.state.upg[id]); // optional: a one-time effect of the purchase itself (e.g. a grant)
     this.refresh();
     this.emit('upgrade', { id });
     return true;

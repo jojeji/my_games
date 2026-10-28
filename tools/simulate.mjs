@@ -15,6 +15,8 @@
 // --fixture <file> : start from a save file (e.g. tests/fixtures/replikator-end-v1.json) instead of a new game; goes through the real
 //           migrations (and starts Akt II when the save has finished version 1). Combine with --act2 --hours N.
 // runSim options commands:false / anomalies:false: the commands are not cast / no anomaly appears (isolates the map or the mutations)
+// --jump / runSim option jump:true : the player also does the Galaxiensprung (jumpPlay: jump when open, pick the galaxy with galPick, buy Saatkern-Upgrades with SEED_PLAN).
+//           With --act2 --hours N the CLI turns it on and prints per galaxy: type, start, sectors 3 / 6 / 10, jump, Saatkerne gained. Tests that stop at 10 sectors leave it off.
 // --seed N : seed of the map RNG (default fixed, so runs are reproducible)
 // --offline : player checks in every --every H hours (default 8) for --session S seconds (default 120); in between the real offline catch-up
 import { pathToFileURL } from 'node:url';
@@ -22,7 +24,7 @@ import { readFileSync } from 'node:fs';
 import { advance } from '../engine/core.js';
 import { createSaveStore } from '../engine/save.js';
 import { createReplikator } from '../games/replikator/logic.js';
-import { chPower, buyRepUpgrades, mapAutoClaim, singularityHeld, mutAutoGenom, chooseAnomaly } from '../games/replikator/def.js';
+import { chPower, buyRepUpgrades, mapAutoClaim, singularityHeld, mutAutoGenom, chooseAnomaly, jumpPlay, buySeedPlan } from '../games/replikator/def.js';
 import { MUT_BY_ID, RARITY } from '../games/replikator/mutations.js';
 import { TUNE as T } from '../games/replikator/tune.js';
 import { formatNumber as f, formatDuration } from '../engine/format.js';
@@ -88,15 +90,20 @@ export function runSim(opts = {}) {
   }
 }
 
-function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true, game = null, until = null, offline = null, act2 = false, seed = SIM_SEED, commands = true } = {}) {
+function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet = false, verbose = false, strategy = {}, stopAtEnd = true, game = null, until = null, offline = null, act2 = false, seed = SIM_SEED, commands = true, jump = false, seedPlan } = {}) {
   const S = { ...STRATEGY, ...strategy };
   const g = game || createReplikator();
   if (!game && seed != null) g.state.rep2.rng.seed = seed; // reproducible map
   if (act2) {
     stopAtEnd = false;
   }
-  const map = { start: null, claims: [], echo: [], mut: [], ano: [], cmd: [] }; // Akt II: times (sim seconds) of the start, each claimed sector, each Echo occupation and each offer / choice
-  if (act2 && g.state.rep2.act2) map.start = 0; // a loaded save that already is in Akt II
+  const map = { start: null, claims: [], echo: [], mut: [], ano: [], cmd: [], gals: [] }; // Akt II: times (sim seconds) of the start, each claimed sector, each Echo occupation and each offer / choice
+  const galNow = () => map.gals[map.gals.length - 1];
+  const openGal = (n, type, start) => map.gals.push({ n, type, start, claims: [], jump: null, seeds: null, archive: null });
+  if (act2 && g.state.rep2.act2) {
+    map.start = 0; // a loaded save that already is in Akt II
+    openGal(g.state.rep2.gal.n, g.state.rep2.gal.type, 0);
+  }
   if (!commands) for (const sp of g.def.spells) g.state.spells[sp.id].auto = false;
   if (S.autosOff) for (const a of g.def.autos) if (a.kind === 'prestige') g.state.auto[a.id].on = false;
   let t = 0;
@@ -138,11 +145,13 @@ function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet
       note(`Meilenstein: ${p.def.name}`, 'quiet');
     } else if (type === 'act2') {
       map.start = t;
+      openGal(1, 'spirale', t);
       note(`=== AKT II beginnt (Anker 1e${g.state.rep2.anchor.toFixed(2)}, Sternsysteme ${f(g.get('systems'))}) ===`);
     } else if (type === 'map-trip') {
       note(`Erschließung startet: ${p.type} (${p.dur} s, Sternsysteme danach ${f(g.get('systems'))})`, 'quiet');
     } else if (type === 'map-claim') {
-      map.claims.push({ t, n: p.n, type: p.type });
+      map.claims.push({ t, n: p.n, type: p.type, gal: g.state.rep2.gal.n });
+      if (galNow()) galNow().claims.push(t);
       note(`Sektor ${p.n} erreicht: ${p.type} (+${hms(t - (map.start ?? 0))} seit Akt II)`);
     } else if (type === 'mut-offer') {
       const row = { t, kind: 'offer', n: p.n, cards: p.cards, claimed: g.state.rep2.map.claimed };
@@ -166,6 +175,18 @@ function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet
     } else if (type === 'spell') {
       map.cmd.push({ t, id: p.id });
       note(`Befehl: ${p.id}`, 'quiet');
+    } else if (type === 'galaxy-jump') {
+      if (galNow()) {
+        galNow().jump = t;
+        galNow().seeds = g.state.layers.jump.lastGain;
+      }
+      note(`Galaxiensprung #${g.state.layers.jump.count}: +${f(g.state.layers.jump.lastGain)} Saatkerne, Angebot ${p.opts.join(' / ')}`);
+    } else if (type === 'galaxy') {
+      openGal(p.n, p.type, t);
+      note(`Galaxie ${p.n}: ${p.type}`);
+    } else if (type === 'archive') {
+      if (galNow()) galNow().archive = t;
+      note(`Archiv: ${p.type} abgeschlossen`);
     } else if (type === 'echo-occupy') {
       map.echo.push({ t, n: p.n });
       note(`Das Echo besetzt einen Sektor (${p.n})`);
@@ -221,13 +242,17 @@ function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet
 
   const player = () => {
     if (act2 && g.state.rep2.act2) {
+      if (jump) {
+        jumpPlay(g); // the Auto-Sprung's decision (def.js), taken by hand: jump when the galaxy is complete, pick the next one
+        buySeedPlan(g, seedPlan); // Saatkern-Upgrades in the order of SEED_PLAN (option seedPlan: another order, [] = none)
+      }
       while (mapAutoClaim(g)); // before the Auto-Erkundung unlocks the player claims by hand, with the same function (everything affordable, before any reset)
       mutAutoGenom(g); // the Auto-Genom's decision (def.js), taken by hand before it unlocks
       // starts a pending anomaly when it is worth it (anomalies.js). A Zeitriss moves the game clock by 10 min within this call; the sim's clock t
       // (= the player's real time) does not move, that is the point of it (event times in the sim output are real time, the story's time stamps are game time)
       chooseAnomaly(g);
       // an offline player follows the hints and switches the new autos on as soon as they unlock (they start off): that is what carries the game while away
-      if (offline) for (const id of ['auto_map', 'auto_genom', 'auto_befehl']) if (g.autoUnlocked(id)) g.state.auto[id].on = true;
+      if (offline) for (const id of ['auto_map', 'auto_genom', 'auto_befehl', 'auto_jump']) if (g.autoUnlocked(id)) g.state.auto[id].on = true;
       g.spellAutoRun(); // the Auto-Befehl's decision (spells' autoWhen, commands.js), by hand before it unlocks; per-spell switches are respected
     }
     research();
@@ -350,6 +375,13 @@ function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet
     if (act2) {
       const rel = (x) => (map.start == null ? '-' : hms(x - map.start));
       console.log(`Akt II: Start ${map.start == null ? 'nicht erreicht' : hms(map.start)}; Sektoren (seit Start): ` + (map.claims.map((c) => `${c.n}:${rel(c.t)}`).join(' ') || '-'));
+      if (map.gals.length) {
+        console.log('Galaxien (Zeiten seit Akt II; Sektor 3 / 6 / 10 nach Galaxie-Start; Sprung; Saatkerne):');
+        for (const x of map.gals) {
+          const rel2 = (v) => (v == null ? '   -   ' : hms(v - x.start));
+          console.log(`  ${x.n}. ${String(x.type).padEnd(10)} Start ${rel(x.start)}  Sektoren 3/6/10: ${[3, 6, 10].map((k) => rel2(x.claims[k - 1])).join(' ')}  Sprung ${x.jump == null ? '-' : rel(x.jump)}  Saatkerne ${x.seeds == null ? '-' : f(x.seeds)}  Archiv ${x.archive == null ? '-' : rel2(x.archive)}`);
+        }
+      }
       console.log('Echo besetzt (seit Start): ' + (map.echo.map((c) => `${c.n}:${rel(c.t)}`).join(' ') || '-'));
       const offers = map.mut.filter((x) => x.kind === 'offer');
       console.log(`Mutationen: ${offers.length} Angebote, ${map.mut.filter((x) => x.kind === 'take').length} genommen, ${map.mut.filter((x) => x.kind === 'discard').length} verworfen; Genom: ` + (g.state.rep2.mut.genome.map((x) => MUT_BY_ID[x].name).join(', ') || '-'));
@@ -428,6 +460,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exit(0);
   }
   const game = typeof a.fixture === 'string' ? loadSaveFile(a.fixture, { seed: a.seed ?? SIM_SEED }) : null;
-  runSim({ hours: a.hours ?? 30, dt: a.dt ?? 1, act: a.idle ? 120 : a.act ?? 1, session: a.idle ? 20 : a.session ?? 0, quiet: !!a.quiet, verbose: !!a.verbose, game, act2: !!a.act2 || !!game, seed: a.seed ?? SIM_SEED });
+  runSim({ hours: a.hours ?? 30, dt: a.dt ?? 1, act: a.idle ? 120 : a.act ?? 1, session: a.idle ? 20 : a.session ?? 0, quiet: !!a.quiet, verbose: !!a.verbose, game, act2: !!a.act2 || !!game, seed: a.seed ?? SIM_SEED, jump: !!a.act2 || !!a.jump });
   console.log(`(Simulation dauerte ${((Date.now() - started) / 1000).toFixed(1)} s Rechenzeit)`);
 }

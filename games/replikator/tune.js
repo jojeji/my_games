@@ -126,19 +126,20 @@ export const TUNE = {
   // Akt II - Galaxiensprung (games/replikator/galaxy.js, jump.js). Layer 4: Saatkerne = floor((Quantenkerne dieser Galaxie / jumpThreshold) ^ jumpExp); a small exponent keeps a long
   // save (many Quantenkerne) and a fresh finish close together (docs/replikator-akt2.md). No softcap per run: the jump needs jumpSectors sectors, so it cannot be done in micro-runs.
   jumpSectors: 10, // claimed sectors of the current galaxy (and the Echo seen) = the galaxy is "completed" (Archiv) and the jump is open
-  jumpThreshold: 100,
-  jumpExp: 0.4,
+  jumpThreshold: 4,
+  jumpExp: 0.25,
   jumpAutoTypes: 3, // Auto-Sprung unlocks with this many completed galaxy types
   // Sector price level of galaxies >= 2 (the first galaxy measures it from the save, see mapAnchorSlope): anchor = galAnchor + galAnchorStep * (n - 2)
   galAnchor: 0.75,
   galAnchorStep: 0,
+  galTripBase: 1.6, // Erschliessungen in galaxies >= 2 take this much longer (farther away); the Archiv and the Saatkern-Upgrades bring it down again
   // Galaxy types: rules while you are in one (galaxy.js GALAXIES) and the permanent Archiv bonus of the first completion of each type
   galFx: {
     zwerg: { maxTier: 6, thrDiv: 100, sys: 0.5, trip: 0.5 },
     elliptisch: { growthPow: 1.5, sys: 3 },
     kollision: { period: 600, lo: 0.5, hi: 4 },
     leerraum: { offers: 2 },
-    quasar: { prod: 1000, autoExp: 3 },
+    quasar: { prod: 1000, autoExp: 3, autoWait: 1200 }, // the generator autobuyers wait for autoExp Expansions in the galaxy or autoWait s (so an absent player is not stuck at the start)
   },
   galArchive: {
     spirale: { trip: 0.92 },

@@ -70,7 +70,7 @@ export const GALAXIES = {
     name: 'Quasar',
     color: '#ff7eb6',
     desc: 'Ein Kern, der alles überstrahlt. Die Produktion ist absurd, die Automaten brauchen Anlauf.',
-    rules: (f) => [`Produktion ×${n1(f.prod)}`, `Generator-Autokäufer erst ab ${f.autoExp} Expansionen in dieser Galaxie`],
+    rules: (f) => [`Produktion ×${n1(f.prod)}`, `Generator-Autokäufer laufen erst nach ${f.autoExp} Expansionen in dieser Galaxie (oder ${n1(f.autoWait / 60)} Minuten)`],
     bonus: (a) => `Produktion ×${n1(a.prod)}, Quantenkern-Gewinn ×${n1(a.cores)} in jeder Galaxie`,
   },
 };
@@ -147,8 +147,8 @@ const seedLvl = (g, id) => g.upgLevel(id);
 /* Effects                                                              */
 /* ------------------------------------------------------------------ */
 
-/** Factor on the Erschliessung time: Zwerggalaxie, Archiv (Spirale), Saatkern-Upgrade Antriebsarchiv. */
-export const galTrip = (g) => galRule(g, 'trip', 1) * archiveProd(g, 'trip') * Math.pow(T.seedFx.flug, seedLvl(g, 'sk_flug'));
+/** Factor on the Erschliessung time: galaxies >= 2 are farther away (galTripBase), Zwerggalaxie, Archiv (Spirale), Saatkern-Upgrade Antriebsarchiv. */
+export const galTrip = (g) => (act2(g) && G(g).n >= 2 ? T.galTripBase : 1) * galRule(g, 'trip', 1) * archiveProd(g, 'trip') * Math.pow(T.seedFx.flug, seedLvl(g, 'sk_flug'));
 /** Factor on the recharge speed of the Sondenbefehle (Archiv Kollisionszone, Saatkern-Upgrade Befehlsspeicher). */
 export const galCmdRate = (g) => archiveProd(g, 'cmd') * Math.pow(T.seedFx.befehl, seedLvl(g, 'sk_befehl'));
 /** Factor on the Mutationsangebote per time (Leerraum, Archiv Leerraum). */
@@ -165,10 +165,11 @@ export const galMaxTier = (g) => galRule(g, 'maxTier', 8);
 export const galGrowthPow = (g) => galRule(g, 'growthPow', 1);
 /** No Sternsystem boost on production (Leerraum). */
 export const galNoSysBoost = (g) => isType(g, 'leerraum');
-/** Quasar: do the generator autobuyers work yet? */
+/** Quasar: do the generator autobuyers work yet? After `autoExp` Expansions in the galaxy, or `autoWait` s after it began (an absent player must not be stuck at the start). */
 export function galAutosOk(g) {
   const need = galRule(g, 'autoExp', 0);
-  return !need || g.state.layers.expansion.count - G(g).exp0 >= need;
+  if (!need) return true;
+  return g.state.layers.expansion.count - G(g).exp0 >= need || g.state.time.played - G(g).at >= galRule(g, 'autoWait', 0);
 }
 
 /**
