@@ -11,7 +11,7 @@ import {
   migrateToJump, galProdParts, galGain, galNoSysBoost, galCostDiv, galGrowthPow, galMaxTier, galThrDiv, galAutosOk, archiveCount,
 } from './galaxy.js';
 import { jumpReady, galaxyCheck, galJump, galAutoChoose } from './jump.js';
-import { endGain, endPending, migrateToEnd } from './ending.js';
+import { endGain, endPending, endHas, migrateToEnd } from './ending.js';
 import { mutParts, mutGain, mutTier, mutCostDiv, mutBundle, mutAutoSlow, mutExtra, mutTick, mutChoose as chooseMutation, mutAutoRun, mutUnlocked, migrateToMut } from './mutations.js';
 
 /** Active level of an upgrade (0 while suppressed by a challenge). */
@@ -1053,6 +1053,9 @@ function buildAchievements() {
   );
   add('time1', 'Dranbleiber', 'Spiele insgesamt 1 Stunde.', (g) => g.state.time.played >= 3600);
   add('time10', 'Langstrecke', 'Spiele insgesamt 10 Stunden.', (g) => g.state.time.played >= 36000);
+  add('end_merge', 'Zwei in Einem', 'Wähle am Ende von Akt II das Verschmelzen.', (g) => endHas(g, 'merge'));
+  add('end_split', 'Eigene Wege', 'Wähle am Ende von Akt II das Abgrenzen.', (g) => endHas(g, 'split'));
+  add('end_both', 'Beide Seiten', 'Erlebe beide Enden von Akt II.', (g) => endHas(g, 'merge') && endHas(g, 'split'));
   add('lazy', 'Faulpelz', 'Schalte alle Generator-Autokäufer frei.', (g) => g.def.autos.filter((a) => a.kind === 'gen').every((a) => g.autoUnlocked(a.id)));
   return A;
 }

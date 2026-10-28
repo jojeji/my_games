@@ -55,7 +55,7 @@ export function act2Run({ fixture = null, seed, jump = false, galaxies = 2, end 
   // end: play through the end of Akt II (both endings: the second opens 3 jumps after the first)
   const until = end ? (g) => endCount(g) >= 2 : jump ? (g) => g.state.rep2.gal.n > galaxies : (g) => g.state.rep2.map.claimed >= 12;
   const r = runSim({ game, hours: (fixture ? 8 : 11.5 + 4) + (end ? 40 : jump ? 5 * galaxies : 6), dt: 2, quiet: true, act2: true, seed, jump: jump || end, until, strategy: endPick ? { endPick } : {} });
-  advance(r.game, 5);
+  advance(r.game, end ? 200 : 5); // the epilogues wait for a calm minute
   return r;
 }
 

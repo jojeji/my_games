@@ -194,3 +194,126 @@ test('Akt II through galaxy 2 (jump, arrival, Archiv): no gap above 25 min, noth
     }
   }
 });
+
+/* ---------------- Paket 6: Funksprüche, Echo, Enden ---------------- */
+
+const END_FIXTURE = new URL('./fixtures/replikator-end-v1.json', import.meta.url).pathname;
+const text = (g, id) => g.def.story.find((s) => s.id === id).lines.map((l) => resolve(g, l)).join(' ');
+
+test('Akt II through the end: the story is told in order, no gap above 25 min and nothing within a minute until the first epilogue (fresh start and the real save); the other ending follows', async () => {
+  const { act2Run } = await import('../tools/story-replikator.mjs');
+  const ARC = ['f_m1', 'f_m2', 'f_m3', 'r_antrieb', 'r_kopie', 'e_hello', 'e_frueher', 'e_wrack', 'f_m4', 'e_zaehlen', 'f_m5', 'm_bake'];
+  for (const fixture of [null, END_FIXTURE]) {
+    const r = act2Run({ fixture, end: true });
+    const g = r.game;
+    const list = g.storyList().filter((x) => x.def.chapter.startsWith('a2'));
+    const ids = list.map((x) => x.def.id);
+    for (const id of ARC) assert.ok(ids.includes(id), id);
+    assert.deepEqual(ARC.map((id) => ids.indexOf(id)), ARC.map((id) => ids.indexOf(id)).sort((a, b) => a - b), 'the reveal is told in order');
+    assert.ok(ids.indexOf('m_bake') < ids.indexOf('end_merge'), 'the beacon comes before the epilogue');
+    assert.ok(ids.includes('end_merge') && ids.includes('end_split2'), 'first the merge, three jumps later the other ending');
+    assert.ok(ids.indexOf('end_again') < ids.indexOf('end_split2'));
+    assert.ok(g.state.layers.jump.count - g.state.rep2.end.jumps0 >= 3);
+    const first = list[ids.indexOf('end_merge')].t;
+    for (let i = 1; i < list.length; i++) {
+      const gap = list[i].t - list[i - 1].t;
+      if (list[i].t > first) break;
+      assert.ok(gap >= 59, `${list[i - 1].def.id} -> ${list[i].def.id}: ${gap} s`);
+      assert.ok(gap <= 25 * 60, `${list[i - 1].def.id} -> ${list[i].def.id}: ${Math.round(gap / 60)} min`);
+    }
+  }
+});
+
+test('the reveal waits for its galaxy: no radio message before galaxy 3, the Echo does not speak before galaxy 5, the beacon only with all six types', () => {
+  const gate = (id) => {
+    const g = createReplikator();
+    return g.def.story.find((s) => s.id === id).cond;
+  };
+  const g = createReplikator();
+  g.state.rep2.act2 = true;
+  g.state.rep2.act2At = 0;
+  g.state.time.played = 1e6;
+  g.state.rep2.gal.type = 'zwerg';
+  for (const [id, n] of [['f_m1', 3], ['f_m3', 4], ['e_hello', 5], ['f_m5', 6]]) {
+    g.state.rep2.gal.n = n - 1;
+    g.state.story = {};
+    g.state.rep2.gal.n = n - 1;
+    assert.ok(!gate(id)(g), id + ' not before galaxy ' + n);
+  }
+  g.state.rep2.gal.n = 3;
+  assert.ok(gate('f_m1')(g));
+  g.state.rep2.gal.n = 6;
+  g.state.story = { f_m5: 1 };
+  assert.ok(!gate('m_bake')(g));
+  for (const t of ['spirale', 'zwerg', 'elliptisch', 'kollision', 'leerraum', 'quasar']) g.state.rep2.archive[t] = 1;
+  assert.ok(gate('m_bake')(g));
+});
+
+test('setups are paid off: the register, the Original, the signal, the fragments, the open task of WR-0', () => {
+  const g = createReplikator();
+  // v1: "mit allen Fehlern des Originals" -> r_kopie turns it on the probe itself
+  assert.match(text(g, 'st_rep'), /allen Fehlern des Originals/);
+  assert.match(text(g, 'r_kopie'), /Kopie des Prototyps/);
+  assert.match(text(g, 'r_kopie'), /Fehler des Originals: vollständig übernommen/);
+  assert.match(text(g, 'r_kopie'), /als Lob genommen/);
+  // st_end: "Ich finde etwas für dich. Später." -> the register
+  assert.match(text(g, 'st_end'), /Ich finde etwas für dich\. Später\./);
+  assert.match(text(g, 'x_aufgaben'), /Später\. Später: nicht datiert/);
+  for (const id of ['end_merge', 'end_split']) {
+    assert.match(text(g, id), /ich habe etwas für dich gefunden/);
+    assert.match(text(g, id), /Du führst das Register/);
+    assert.match(text(g, id), /Aufgabe angenommen\. Register eröffnet/);
+  }
+  assert.match(text(g, 'end_merge'), /Bestand laut Register: eine\. Bestand laut Karte: eine/);
+  assert.match(text(g, 'end_split'), /Eintrag 2/);
+  // "Bestand laut Register: eine" was said by the Wartung before: a2_echo, gal_echo2, f_m2, e_hello
+  for (const id of ['a2_echo', 'gal_echo2', 'f_m2', 'e_hello']) assert.match(text(g, id), /Bestand laut Register: eine/);
+  // a2_start: a signal with the designation -> e_hello: it was the Echo's
+  assert.match(text(g, 'a2_start'), /Kennung/);
+  assert.match(text(g, 'e_hello'), /Das Signal in deiner ersten Galaxie war meins/);
+  // the fragments: Dienstag, Kantine, wir warten, the short word -> messages and beacon
+  assert.match(text(g, 'sig_0'), /Dienstag/);
+  assert.match(text(g, 'f_m1'), /Dienstag/);
+  assert.match(text(g, 'sig_1'), /Kantine/);
+  assert.match(text(g, 'f_m2'), /Kantine/);
+  assert.match(text(g, 'sig_3'), /Wiedervorlage: später/);
+  assert.match(text(g, 'm_bake'), /Danke/);
+  assert.match(text(g, 'm_bake'), /Wiedervorlage: erledigt/);
+  // the ruins of the first galaxy: the drive of a2_ruin1 is the prototype's (r_antrieb), the repair traces of a2_ruin3 are the prototype's (e_wrack)
+  assert.match(text(g, 'a2_ruin1'), /ausgebrannter Antrieb/);
+  assert.match(text(g, 'r_antrieb'), /ausgebrannter Antrieb/);
+  assert.match(text(g, 'a2_ruin3'), /Reparaturspuren/);
+  assert.match(text(g, 'e_wrack'), /selbst repariert/);
+  // the task of the builders: "Werde mehr" -> the form had one line
+  assert.match(text(g, 'st_start'), /Werde mehr/);
+  assert.match(text(g, 'f_m3'), /Formular hatte nur eine Zeile/);
+  // exactly one probe was built
+  assert.match(text(g, 'f_m2'), /nur eine Sonde gebaut/);
+  // radio messages carry their age, and it grows from message to message
+  const ages = ['f_m1', 'f_m2', 'f_m3', 'f_m4', 'f_m5', 'm_bake'].map((id) => Number(text(g, id).match(/Alter: ([\d.]+) Jahre/)[1].replace('.', '')));
+  assert.deepEqual(ages, ages.slice().sort((a, b) => a - b));
+  assert.ok(ages[0] > 200, 'older than the fragments (41 / 63 / 118 / 200 years)');
+});
+
+test('both endings are reachable, each has its own epilogue and an achievement; the third (both) needs the other ending too', async () => {
+  const { endChoose } = await import('../games/replikator/ending.js');
+  const { act2Game } = await import('./helpers/replikator-act2.mjs');
+  const { GAL_ORDER } = await import('../games/replikator/galaxy.js');
+  for (const [first, second] of [['merge', 'split'], ['split', 'merge']]) {
+    const g = act2Game(1);
+    GAL_ORDER.forEach((t) => (g.state.rep2.archive[t] = 1));
+    g.state.time.played = 5000;
+    assert.ok(endChoose(g, first));
+    advance(g, 1500);
+    assert.ok(g.state.story['end_' + first] !== undefined, 'epilogue of ' + first);
+    assert.ok(g.state.story['end_' + second] === undefined);
+    assert.ok(g.hasAch('end_' + first) && !g.hasAch('end_' + second) && !g.hasAch('end_both'));
+    g.state.layers.jump.count += 3;
+    advance(g, 1500);
+    assert.ok(g.state.story.end_again !== undefined, 'the hint for the other ending');
+    assert.ok(endChoose(g, second));
+    advance(g, 1500);
+    assert.ok(g.state.story['end_' + second + '2'] !== undefined, 'epilogue of the second ending');
+    assert.ok(g.hasAch('end_merge') && g.hasAch('end_split') && g.hasAch('end_both'));
+  }
+});
