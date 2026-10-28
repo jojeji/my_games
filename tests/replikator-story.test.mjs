@@ -171,3 +171,22 @@ test('migration keeps a partly played v1 save sensible: seen entries read, unsee
   assert.equal(out.chronicle.backfill, true);
   assert.deepEqual(g.migrations[1]({}).chronicle.read, {}, 'a save without story data survives');
 });
+
+test('Akt II through galaxy 2 (jump, arrival, Archiv): no gap above 25 min, nothing within a minute, both starts', async () => {
+  const { act2Run } = await import('../tools/story-replikator.mjs');
+  for (const fixture of [null, new URL('./fixtures/replikator-end-v1.json', import.meta.url).pathname]) {
+    const r = act2Run({ fixture, jump: true, galaxies: 2 });
+    const g = r.game;
+    const list = g.storyList().filter((x) => x.def.chapter.startsWith('a2'));
+    const ids = list.map((x) => x.def.id);
+    for (const id of ['jump_open', 'jump_first', 'gal_echo2']) assert.ok(ids.includes(id), id);
+    assert.ok(ids.some((id) => id.startsWith('gal_') && id !== 'gal_echo2'), 'an arrival entry');
+    assert.ok(ids.some((id) => id.startsWith('arch_')), 'an Archiv entry for the second galaxy');
+    assert.ok(ids.indexOf('jump_open') < ids.indexOf('jump_first'));
+    for (let i = 1; i < list.length; i++) {
+      const gap = list[i].t - list[i - 1].t;
+      assert.ok(gap >= 59, `${list[i - 1].def.id} -> ${list[i].def.id}: ${gap} s`);
+      assert.ok(gap <= 25 * 60, `${list[i - 1].def.id} -> ${list[i].def.id}: ${Math.round(gap / 60)} min`);
+    }
+  }
+});

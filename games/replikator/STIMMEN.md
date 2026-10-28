@@ -55,3 +55,8 @@ In Version 1 reden die Sonde und die Wartungsroutine. Von den Erbauern spricht d
 - **Anomalien:** Die Wartung meldet sachlich („Klassifikation: Anomalie. Ablage: Galaxie-Tab“), die Sonde nimmt es als höfliche Zumutung. Pro Typ höchstens zwei kurze Zeilen beim ersten Start.
 - **Signalfragmente** legt die Wartung ab: das **Alter** steht in jedem Fragment („41 Jahre“, „63 Jahre“, „118 Jahre“, „200 Jahre, Angabe unplausibel“) und wächst, der Inhalt ist verstümmelt („…“, „nicht lesbar“).
   Es ist **kein Absender genannt**, die Sonde sagt nicht, wen sie hört. Die Missionsleitung bleibt `later`; was in den Fragmenten steht (Dienstag, Kantine, „wir warten“, ein kurzes Wort), muss später in ihren Funksprüchen wiederkommen.
+
+## Nachtrag Paket 5: Galaxiensprung
+- **Der Sprung** ist ein Aufbruch, kein Abschied mit Pathos: Die Sonde zählt auf, was bleibt („ein sehr ordentliches Lager“), die Wartung bucht es („Erinnerung wird nicht geprüft“). Das Letzte, was sie sieht, ist die Silhouette am Rand der Karte.
+- **Die Silhouette** heißt im Text nie Echo (Test: Akt-II-Texte nennen weder Echo noch Missionsleitung). In der zweiten Galaxie steht sie wieder da: „Sie hat nicht auf mich gewartet. Sie war schon da.“ Keine Erklärung, keine Auflösung.
+- **Galaxien** bekommen je eine Ankunft aus Beobachtung (Sonde) und Fachsatz (Wartung), dazu eine Archiv-Zeile mit dem Bonus aus `tune.js`. Zahlen stehen nur in der Archiv-Zeile, nie in der Beobachtung.

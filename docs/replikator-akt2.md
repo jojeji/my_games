@@ -155,20 +155,57 @@ Szenario `node tools/simulate.mjs --offline --fixture tests/fixtures/replikator-
 VORHER (Auto-Erkundung ab 6 Sektoren): 1 Sektor pro Besuch, Sektor 3 nach 16 h, 6 nach 40 h, 10 nach 72 h. NACHHER (`mapAutoAt` 2, Auto startet weiter aus, Hinweis-Toast beim Freischalten): 3 Sektoren nach 16 h (Besuch 3, der Spieler schaltet die Auto bei Besuch 3 ein), 6 nach 17 h, 10 nach 19 h.
 Gewählt, weil es die einfachste Lösung ist: keine neue Mechanik (eine Route aus mehreren Erschließungen müsste die Preise im Voraus bezahlen), nur ein früherer Freischaltpunkt; die ersten zwei Sektoren bleiben Handarbeit. Tests: `tests/sim-replikator-offline-akt2.test.mjs`.
 
-## Paket 5 – Ebene 4: Galaxiensprung
+## Paket 5 – Ebene 4: Galaxiensprung (umgesetzt: `galaxy.js`, `jump.js`, `jump-view.js`)
 
-- Layer 4 `jump`, Name **Galaxiensprung**, Verb **Springen**, Währung **Saatkerne**, Basis `cores` (Quantenkerne im Lauf).
-  Setzt Ebene 0–3 inkl. Forschung und Karte zurück (Mutationen bleiben). Gewinn `floor(mult * (cores/threshold)^exp)`, **kein Softcap pro Lauf**.
-- **Galaxienwahl:** Nach dem Sprung werden 2 Galaxien zur Auswahl angeboten (Seed-RNG). Typen mit eigenen Regeln (über `g.rule()` bzw. Hooks):
-  - Spirale (Standard, erste Galaxie)
-  - Zwerggalaxie: nur 6 Stufen, Prestige-Schwellen ÷100, Sternsystem-Gewinn ×0,5 – schnell
-  - Elliptisch: Kostenwachstum ×1,5, Sternsystem-Gewinn ×3
-  - Kollisionszone: Produktion schwankt im 10-min-Takt (×0,5 … ×4, deterministisch über Spielzeit)
-  - Leerraum: kein Sternsystem-Bonus, Mutationsangebote ×2
-  - Quasar: Produktion ×1000, Generator-Autokäufer erst ab 3 Expansionen
-- **Galaxien-Archiv:** erster Abschluss jedes Typs (Bedingung pro Galaxie, z. B. 12 Sektoren) gibt einen Dauerbonus und +1 Genom-Platz bei bestimmten Typen.
-- **Saatkern-Upgrades** (neue Gruppe, Layer 4): Startbonus (Forschung behalten, Challenges behalten, Start-Quantenkerne), Kartenradius 3 ab Galaxie 4, Befehls-Stärke, Anomalie-Häufigkeit.
-- Beschleunigung: Jeder Sprung muss den nächsten Durchlauf spürbar verkürzen (Ziel: Galaxie 2 ≤ 40 % der v1-Zeit, danach weiter fallend).
+**Ablauf.** Offen, wenn die Galaxie *abgeschlossen* ist: 10 erschlossene Sektoren und die Silhouette am Rand gesehen (`jumpReady`). Das schließt zugleich den Galaxie-**Typ** im Archiv ab (einmal pro Typ, `galaxyCheck`).
+Der Sprung ist das Engine-Prestige von Layer 4 (`def.layers[jump]`, Währung **Saatkerne**, Basis `cores.run`, Gewinn `floor((Quantenkerne dieser Galaxie / 4)^0,25)`, kein Softcap pro Lauf: der Sprung braucht eine fertige Galaxie, Mikro-Läufe sind unmöglich).
+Danach (`afterReset -> galJump`): Karte weg, zwei Galaxien zur Wahl (`gal.choice` im Spielstand, Dialog ohne Schließen-Knopf, kommt nach dem Neuladen wieder), nach der Wahl neue Karte mit neuem Seed, fester Preisanker `galAnchor`, das Echo sitzt wieder am Rand.
+Auto-Sprung und Sim wählen mit `galPick` (nicht abgeschlossener Typ zuerst, dann feste Reihenfolge).
+
+**Was überlebt** (Entscheidung): Genom/Mutationen, Akt II, Chronik, Befehle, Archiv, Saatkerne + Upgrades, Challenge-Abschlüsse (und ihre Belohnungen), Meilensteine, Erfolge, Ebenen-Zähler, Lebensdauer-Summen (`cores.total` = Quantenkern-Bonus bleibt).
+**Was verschwindet:** Materie, Blaupausen, Sternsysteme, Quantenkerne, Generatoren, alle Blaupausen-/Expansions-Upgrades und die Forschung, Karte und Anomalie-Sektoren (laufende Anomalie endet, eine wartende bleibt). Die Meilenstein-„Behalten“-Regeln (`keepEx1/keepAll/keepEx`) gelten nur für Ebene 2/3; der Sprung behält nur, was ein Saatkern-Upgrade kauft.
+Freigeschaltete Autos (Erkundung/Befehl/Genom) bleiben an den Sektor-Rekord (`gal.best`, `bestClaimed`) gebunden, ebenso die Genom-Plätze aus 6/10 Sektoren.
+
+**Galaxientypen** (Regeln in `tune.js galFx`, Archiv-Bonus in `galArchive`; Texte werden daraus gebaut):
+| Typ | Regel | Archiv-Bonus (dauerhaft) |
+|---|---|---|
+| Spirale (Galaxie 1) | keine | Erschließung ×0,92 |
+| Zwerggalaxie | 6 Stufen, Schwellen ÷100, Sternsystem-Gewinn ×0,5, Erschließung ×0,5 | Generatorkosten ÷10 |
+| Elliptisch | Kostenwachstum ×1,5, Sternsystem-Gewinn ×3 (nach dem Softcap, reift) | Sternsystem-Gewinn ×1,5 |
+| Kollisionszone | Produktion 10-min-Takt ×0,5…×4 (`collisionFactor`, Mittel über den Tick: `game.tickDt`, offline exakt) | +1 Genom-Platz, Befehle ×1,25 |
+| Leerraum | kein Sternsystem-Produktionsbonus, Angebote ×2 | +1 Genom-Platz, Angebote ×1,25 |
+| Quasar | Produktion ×1000, Generator-Autos erst nach 3 Expansionen **oder 20 min** | Produktion ×10, Quantenkern-Gewinn ×1,5 |
+Galaxien ab der 2. brauchen ×1,6 Reisezeit (`galTripBase`, „weiter weg“); Archiv und Upgrades holen es zurück. Das Angebot (zwei Typen, nie der verlassene, neue zuerst) zieht der Seed `gal.rng`.
+Abweichung vom Entwurf: Quasar-Autos haben einen Zeit-Rückfall (20 min), sonst blieb der Offline-Spieler dort 4-15 h hängen (gemessen). Kartenradius 3 ab Galaxie 4: **nicht gebaut** (kein Nutzen für die 10-Sektoren-Bedingung, Zellen wären bei 360 px nur ~46 px breit).
+
+**Saatkern-Upgrades** (Gruppe `seed`, Tab Ebenen > Sprung, kein „Alles kaufen“, bewusst **kein Autokäufer**: es sind die Entscheidungen des Sprungs; die Sim kauft nach `SEED_PLAN`):
+Bauplan-Archiv 2 (BP-Upgrades bleiben), Sternenarchiv 5 (Expansions-Upgrades, braucht Bauplan), Forschungsspeicher 9 (Forschung, braucht Bauplan), Kernsaat 2/4/8 (Start 20/200/2000 QK, sofort und je Galaxie, als Geschenk), Sternensaat 2/4/9 (1e4/1e5/1e6 Sternsysteme),
+Antriebsarchiv 3/5/9/15 (Erschließung ×0,88 je Stufe), Befehlsspeicher 3/6/11 (×1,3 Nachladen), Anomalie-Sog 3/6/11 (×1,4 Häufigkeit), Fruchtbare Saat 4/8/14/25 (Gewinne ×1,25, nach dem Softcap, reift).
+**Auto-Sprung** (`auto_jump`, Prestige-Auto, startet aus, nach 3 abgeschlossenen Typen): springt und wählt über dieselbe Funktion wie die Sim (`jumpPlay`).
+
+**Story** (Kapitel `a2j`): `jump_open` (Spirale fertig), `jump_first` (Modal nach der Wahl: Aufbruch, die Silhouette als Letztes, WR-0 bucht), 6 Ankünfte `gal_<typ>`, `gal_echo2` (die Silhouette steht wieder da: „Sie hat nicht auf mich gewartet. Sie war schon da.“), 5 Archiv-Zeilen `arch_<typ>` (Bonus aus `tune.js`),
+10 Beobachtungen `jfill1..10` (je 16 min nach dem letzten Akt-II-Eintrag). Echo und Missionsleitung werden nicht benannt („die Silhouette“); keine Auflösung (Paket 6).
+
+**UI.** Segment „Sprung“ im Ebenen-Tab (Karte mit Galaxie, Fortschritt x/10, Archiv-Bonus des Typs, Saatkerne; Prestige-Panel; Upgrades), Chip SK im Kopf, Galaxie-Tab: Galaxie-Karte (Typ, Regeln) + Teaser „Galaxiensprung x von 10“ + Archiv-Liste (6 Typen). Auswahl-Dialog mit zwei Karten (Regeln, Archiv-Bonus, neu/abgeschlossen), geprüft bei 360×740 und 390×844 (scrollt, kein Überlauf).
+Engine: `game.tickDt`, `upgrade.onBuy`, `upgradeList(buyAllLabel:null)` / Layer-Option `intro`, Icon `jump`.
+
+**Spielstand:** `def.version = 6`, Migration 5 -> 6 (`migrateToJump`: Seed des Angebots aus dem Karten-Seed, Sektor-Rekord aus der Karte). Die Fixture lädt sauber (Galaxie 1, Spirale, nichts offen) und bekommt den Spirale-Abschluss beim ersten Tick.
+
+### Messung (aktive Sim, Seed 7, dt 2; Stunden)
+Zeit bis zum 10. Sektor je Galaxie (Reihenfolge der Sim: neue Typen zuerst, `GAL_PICK`), Saatkerne je Sprung:
+| | G1 Spirale | G2 | G3 | G4 | G5 | G6 | Akt II Ende (6 Typen) |
+|---|---|---|---|---|---|---|---|
+| frisch (aktiv) | 2,17 | 3,09 Ellipt. | 1,16 Zwerg | 1,83 Quasar | 2,04 Leerr. | 1,58 Koll. | 12,9 h |
+| echte Datei (aktiv) | 2,50 | 3,09 Ellipt. | 1,44 Zwerg | 2,10 Quasar | 1,97 Leerr. | 2,10 Koll. | 13-14 h |
+| idle (2 min / 20 s) | 2,32 | 3,52 | 1,39 | 2,08 | 1,95 | 1,70 | 13,5 h |
+| offline (8 h / 2 min, Datei) | 19,1 | 4,55 | 1,27 | 2,08 | 2,55 | 2,34 | 47,5 h (~2 Tage) |
+Saatkerne je Sprung 6-50 (Spirale 6-13, Datei und frisch nah beieinander). Ohne jedes Saatkern-Upgrade (Ablation) werden G4/G5 3,2 h statt 1,8-2,0 h, das Archiv bleibt über 26 h offen: die Upgrades tragen ~35 % der Beschleunigung.
+G2 liegt bei ~25 % der v1-Zeit (12,2 h aktiv), das Verhältnis frisch/Datei ist 1,0-1,2 (Sprung 1: 0,87). Nach dem 6. Typ spielt die Sim weiter; Galaxien werden dann bis unter 1 h schnell (mehr Saatkerne, Genom).
+Offline: die Autos (Erkundung, Befehl, Genom, Sprung) tragen das Spiel, ab Galaxie 2 ist der Offline-Spieler so schnell wie der aktive (Quasar ohne Zeit-Rückfall: 4-15 h). Galaxie 1 braucht wie vorher ~19 h, weil die Autos erst bei 2/9/10 Sektoren freischalten.
+Tests: `tests/replikator-jump.test.mjs`, `tests/sim-replikator-jump.test.mjs`, `tests/sim-replikator-runlength-galaxy.test.mjs`, Story-Tempo in `tests/replikator-story.test.mjs`.
+
+### Laufdauer in Galaxie 2 (`takeGalaxySnapshots`, `tools/runlength-replikator.mjs`)
+Nach der Wahl und nach 5 / 9 Sektoren: Replikation Optimum 10 min (15-30 s: 0-4 %), Expansion 10-40 min (2 min: 1-8 %), Singularität mit Warten 10-20 min, ohne Warten 30 min (2 min: 2-20 %). Kein Mikro-Lauf-Optimum; Reife (Singularität) und Gewinnfaktoren nach dem Softcap tragen dort wie in Galaxie 1.
 
 ## Paket 6 – Echo, Funksprüche, Enden, Gesamtbalancing
 
@@ -195,7 +232,7 @@ Folgerungen (verbindlich für Paket 2–5):
 
 ## Technik
 
-- `def.version = 5` (Paket 4), Migrationen `1 → 2`, `2 → 3`, `3 → 4`, `4 → 5`; ursprünglich `def.version = 2`, Migration `1 → 2` (neue Keys über `mergeDefaults`, alte Story-Flags bleiben).
+- `def.version = 6` (Paket 5), Migrationen `1 → 2` ... `5 → 6`; ursprünglich `def.version = 2`, Migration `1 → 2` (neue Keys über `mergeDefaults`, alte Story-Flags bleiben).
 - Neuer Spielzustand unter `state.rep2` (`rng`, `map`, `genome`, `offers`, `anomaly`, `galaxy`, `archive`, `echo`) via `def.extraState`.
 - Replikator bleibt auf `mountStandardApp`; neue Tabs (Karte, Genom) über eine Erweiterung der Optionen (`extraTabs`) – generisch, damit andere Spiele sie nutzen können.
 - Sim: `tools/simulate.mjs` bekommt Akt-II-Strategie (Karte, Genom, Befehle, Anomalien, Galaxienwahl) – **über dieselben Auto-Funktionen** aus `def.js`.
