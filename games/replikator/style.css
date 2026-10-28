@@ -81,3 +81,21 @@ button.mut-card:active { background: color-mix(in srgb, var(--c) 18%, var(--surf
 .mut-report { margin: 8px 0 0; font-style: italic; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 380px) { .mut-slots { grid-template-columns: 1fr; } }
+
+/* Paket 4: Sondenbefehle und Anomalien (commands-view.js) */
+.cmd-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cmd-bar .spell-btn { min-height: 56px; }
+.cmd-rate { margin: 0; }
+.ano-card { display: flex; flex-direction: column; gap: 6px; border-left: 5px solid var(--accent2); background: color-mix(in srgb, var(--accent2) 9%, var(--surface)); }
+.ano-card.running { border-left-color: var(--good); background: color-mix(in srgb, var(--good) 8%, var(--surface)); }
+.ano-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.ano-name { font-size: 17px; }
+.ano-chip { font-size: 11px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; color: var(--accent2); }
+.ano-card.running .ano-chip { color: var(--good); }
+.ano-card p { margin: 0; overflow-wrap: anywhere; }
+.ano-line { font-size: 14px; }
+.ano-risk { color: var(--bad); }
+.ano-left { font-size: 16px; font-weight: 700; }
+.ano-why { color: var(--muted); }
+.ano-wrap { gap: 6px; }
+.ano-last { margin: 0; }

@@ -25,6 +25,7 @@ import { formatNumber as fmt, formatCompact, setNotation } from '../format.js';
  *   gameId, title, primary (currency id), chips (currency ids), generators { chain, label, intro?(ctx), details?(ctx) },
  *   layers [{ id, label, icon, groups:[{id,title,research?,branches?}], challenges?:true, visible?(g) }],
  *   multParts?(g) -> [label, Decimal][], bonusText?(g), statRows?(g), tabIcons
+ *   banner? (g) -> { text, ratio? } | null  - one slim status line under the header on every tab (time-limited effects: remaining time; ratio = 0..1 progress bar)
  *   extraTabs? [{ id, label, icon, visible?(g), dot?(g), build(ctx) -> { el, update } }]  - game specific tabs between the layer tabs and the Chronik/Erfolge tab
  *   maxTabs? (default 6)  - the bottom bar never shows more tabs than this: when it would, the layer tabs fold into ONE tab "Ebenen"
  *     (segmented switch on top, one layer view at a time; needs at least two visible layer tabs)
@@ -103,7 +104,10 @@ export function mountStandardApp({ root, runtime, options, offline }) {
       const chText = h('span', { class: 'chal-banner-text' });
       const chBar = progressBar();
       const chBanner = h('div', { class: 'chal-banner', hidden: true }, chText, chBar.el);
-      const el = h('div', { class: 'hdr-inner' }, top, chipRow, chBanner);
+      const stText = h('span', { class: 'chal-banner-text' });
+      const stBar = progressBar();
+      const stBanner = h('div', { class: 'chal-banner status-banner', hidden: true, 'aria-live': 'off' }, stText, stBar.el);
+      const el = h('div', { class: 'hdr-inner' }, top, chipRow, chBanner, stBanner);
       const layersDesc = [...g.def.layers].reverse();
       return {
         el,
@@ -137,6 +141,12 @@ export function mountStandardApp({ root, runtime, options, offline }) {
             txt(btnText, label);
             btn.title = target.verb;
             setDisabled(btn, !g.canPrestige(target.id));
+          }
+          const st = options.banner ? options.banner(g) : null;
+          setHidden(stBanner, !st);
+          if (st) {
+            txt(stText, st.text);
+            stBar.set(st.ratio ?? 0);
           }
           const ch = g.chActive();
           setHidden(chBanner, !ch);

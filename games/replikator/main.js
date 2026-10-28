@@ -9,6 +9,8 @@ import { registerServiceWorker } from '../../engine/pwa.js';
 import { formatPercent } from '../../engine/format.js';
 import { buildGalaxyTab } from './map-view.js';
 import { buildGenomeTab } from './genome-view.js';
+import { statusBanner } from './commands-view.js';
+import { anoPending, ANO_BY_ID } from './anomalies.js';
 import { mutUnlocked, mutPending } from './mutations.js';
 import { act2Active, claimable, canClaim, SECTOR } from './map.js';
 
@@ -29,6 +31,7 @@ const { app } = mountStandardApp({
     generators: { chain: 'matter', label: 'Generatoren' },
     multParts: globalParts,
     chronicle: { cast: CAST, figures: metCast, lineText, defaultWho: 'sonde' }, // Chronik tab, story modals and bubbles (story.js)
+    banner: statusBanner, // running Sondenbefehl / Anomalie with the time left, on every tab
     bonusText: (game) => `Erfolgs-Bonus: +${formatPercent(0.02 * game.achCount(), 0)} auf alle Produktion`,
     // Akt II: the Galaxie tab appears when the map exists; a dot says a sector is affordable
     extraTabs: [
@@ -37,7 +40,7 @@ const { app } = mountStandardApp({
         label: 'Galaxie',
         icon: 'galaxy',
         visible: (game) => act2Active(game),
-        dot: (game) => claimable(game).some((i) => canClaim(game, i).ok),
+        dot: (game) => !!anoPending(game) || claimable(game).some((i) => canClaim(game, i).ok),
         build: buildGalaxyTab,
       },
       // Paket 3: the Genom tab appears with the first mutation offer (3 sectors); a dot says an offer waits
@@ -96,6 +99,14 @@ runtime.on('map-claim', ({ type, n }) => {
 runtime.on('mut-offer', ({ n }) => {
   if (n > 1 && !g.autoActive('auto_genom')) app.toast('Im Genom-Tab wartet ein neues Mutationsangebot.', { kind: 'info', title: 'Kopierfehler' });
 });
+// Paket 4: a new anomaly waits in the Galaxie tab (the first one has its story dialog), the end of a rule change says what it brought
+runtime.on('anomaly', ({ type, n }) => {
+  if (n > 1) app.toast(`${ANO_BY_ID[type].name} wartet im Galaxie-Tab.`, { kind: 'info', title: 'Anomalie' });
+});
+runtime.on('anomaly-start', ({ type, text }) => {
+  if (text) app.toast(text, { kind: 'good', title: ANO_BY_ID[type].name });
+});
+runtime.on('anomaly-end', ({ type, text }) => app.toast(text || 'Vorbei.', { kind: 'good', title: ANO_BY_ID[type].name + ' vorbei' }));
 runtime.on('echo-occupy', ({ n }) => {
   if (n > 1) app.toast('Das Echo hat einen weiteren Sektor besetzt.', { kind: 'info' });
 });

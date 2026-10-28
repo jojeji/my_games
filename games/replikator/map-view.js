@@ -3,6 +3,7 @@
 import { h, txt, setCls, setAttr, setHidden } from '../../engine/ui/dom.js';
 import { sectionTitle } from '../../engine/ui/kit-views.js';
 import { openModal } from '../../engine/ui/modal.js';
+import { buildCommands, buildAnomalyCard } from './commands-view.js';
 import { formatNumber as fmt, formatMult } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import {
@@ -276,11 +277,16 @@ export function buildGalaxyTab(ctx) {
   const autoLocked = h('p', { class: 'muted small center', hidden: true });
 
   const wrap = h('div', { class: 'gal-wrap' }, root);
+  const ano = buildAnomalyCard(g);
+  const cmd = buildCommands(g);
   const page = h('div', { class: 'stack' },
-    wrap, // the map first: story bubbles rise from the bottom and should not cover it
+    ano.el, // a waiting / running anomaly: the thing to decide, on top
+    cmd.barEl, // the quick buttons of the Sondenbefehle
+    wrap, // the map before the long texts: story bubbles rise from the bottom and should not cover it
     h('div', { class: 'card gal-head' }, tripLine, statLine, costLine, echoLine),
     h('p', { class: 'muted small center gal-hint', text: 'Sektor antippen: Typ, Effekt, Kosten und Dauer. Erschließen geht nur neben eigenem Gebiet, immer nur einen Sektor gleichzeitig.' }),
     legend,
+    cmd.detailEl,
     autoRow,
     autoLocked,
     sectionTitle('Aktive Boni'),
@@ -290,6 +296,8 @@ export function buildGalaxyTab(ctx) {
   return {
     el: page,
     update() {
+      ano.update();
+      cmd.update();
       paint();
       paintBonuses();
       const n = claimedCount(g);
