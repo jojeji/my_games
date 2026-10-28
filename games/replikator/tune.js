@@ -209,6 +209,7 @@ export const TUNE = {
     ueberschuss: { gain: 2.5, prod: 0.6, mapCost: 1.7 },
     chimaere: { perSlot: 1.5, gainSlot: 1.3, offers: 0.5 },
     sonnenhunger: { cmd: 2, bp: 0.5 },
+    echoresonanz: { gain: 2.2, trip: 1.15 }, // only offered after the Echo has spoken (mutations.js ECHO_SPEAKS)
   },
 };
 

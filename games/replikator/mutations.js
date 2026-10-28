@@ -23,6 +23,10 @@ export const RARITY = {
 };
 export const RARITY_ORDER = ['gewoehnlich', 'selten', 'glueck'];
 
+/** The story entry in which the Echo speaks for the first time (story.js): from then on Echo-Resonanz can be offered. */
+export const ECHO_SPEAKS = 'e_hello';
+export const echoSpoke = (g) => g.state.story[ECHO_SPEAKS] !== undefined && g.state.story[ECHO_SPEAKS] !== false;
+
 /** German number for texts: 2.5 -> "2,5", 10 -> "10". */
 const n = (x) => String(+Number(x).toFixed(2)).replace('.', ',');
 const pct = (x) => n(Math.round(x * 100)) + ' %';
@@ -222,6 +226,18 @@ export const MUTATIONS = [
     report: 'Kopie besteht aus mehreren Kopien. Alle Kopien melden dasselbe. Meldungen kommen seltener.',
   },
   {
+    id: 'echoresonanz',
+    name: 'Echo-Resonanz',
+    rarity: 'selten',
+    available: (g) => echoSpoke(g), // only offered once the Echo has spoken (story entry ECHO_SPEAKS)
+    benefit: () => `Gewinn von Blaupausen und Sternsystemen ×${n(fx('echoresonanz').gain)}`,
+    catch: () => trip(fx('echoresonanz').trip),
+    gain: { blueprints: () => fx('echoresonanz').gain, systems: () => fx('echoresonanz').gain },
+    trip: () => fx('echoresonanz').trip,
+    split: { benefit: { gain: 1 }, catch: { trip: 1 } },
+    report: 'Kopie hallt nach. Gewinne kommen zweimal an, die Anflüge mit Verspätung. Ursprung des Halls: bekannt. Rückfrage: nicht beantragt.',
+  },
+  {
     id: 'sonnenhunger',
     name: 'Sonnenhunger',
     rarity: 'selten',
@@ -400,11 +416,11 @@ export function mutNextIn(g) {
 export const mutPending = (g) => (mutUnlocked(g) ? MU(g).queue : 0);
 
 /** Draw the cards of one offer from mut.rng (consumes it). Pure in (seed, genome, n). */
-export function drawCards(m, genomeIds) {
+export function drawCards(m, genomeIds, ok = () => true) {
   const cards = [];
   const rng = m.rng;
   for (let k = 0; k < T.mutCards; k++) {
-    const free = MUTATIONS.filter((x) => !genomeIds.includes(x.id) && !cards.includes(x.id));
+    const free = MUTATIONS.filter((x) => !genomeIds.includes(x.id) && !cards.includes(x.id) && ok(x));
     if (!free.length) break;
     const w = RARITY_ORDER.map((r) => (free.some((x) => x.rarity === r) ? T.mutRarity[r] : 0));
     const sum = w.reduce((a, b) => a + b, 0);
@@ -424,11 +440,11 @@ export function drawCards(m, genomeIds) {
 }
 
 /** Make sure one of the cards is at least `need` ('selten' | 'glueck'): the last card is swapped for one of that rarity from the free mutations (RNG: m.rng). */
-function guaranteeRarity(m, cards, need) {
+function guaranteeRarity(m, cards, need, ok = () => true) {
   const rank = (id) => RARITY_ORDER.indexOf(MUT_BY_ID[id].rarity);
   const want = RARITY_ORDER.indexOf(need);
   if (cards.some((id) => rank(id) >= want)) return cards;
-  const free = MUTATIONS.filter((x) => !m.genome.includes(x.id) && !cards.includes(x.id) && RARITY_ORDER.indexOf(x.rarity) >= want);
+  const free = MUTATIONS.filter((x) => !m.genome.includes(x.id) && !cards.includes(x.id) && RARITY_ORDER.indexOf(x.rarity) >= want && ok(x));
   if (!free.length) return cards;
   const out = cards.slice();
   out[out.length - 1] = free[Math.floor(rngRoll(m.rng) * free.length)].id;
@@ -460,10 +476,11 @@ function ensureOffer(g) {
   const m = MU(g);
   if (m.queue <= 0 || m.offer) return;
   m.n += 1;
-  m.offer = { cards: drawCards(m, m.genome) };
+  const ok = (x) => !x.available || x.available(g);
+  m.offer = { cards: drawCards(m, m.genome, ok) };
   const need = m.rare && m.rare[m.n];
   if (need) {
-    m.offer.cards = guaranteeRarity(m, m.offer.cards, need);
+    m.offer.cards = guaranteeRarity(m, m.offer.cards, need, ok);
     delete m.rare[m.n];
   }
   m.offerAt = Math.max(0.001, g.state.time.played);

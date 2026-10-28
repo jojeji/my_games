@@ -22,12 +22,12 @@ const setRun = (g, o) => {
 };
 const cast = (g, id) => g.spellCast(id);
 
-test('three commands exist as engine spells with duration / cooldown from tune.js, and the count of mutations is 16 with Sonnenhunger', () => {
+test('three commands exist as engine spells with duration / cooldown from tune.js, and the count of mutations is 17 with Sonnenhunger and Echo-Resonanz', () => {
   const g = createReplikator();
   assert.deepEqual(g.def.spells.map((s) => s.id), ['uebertakten', 'sonnenwind', 'tiefenscan']);
   assert.equal(g.spellById.uebertakten.duration(g), T.uebertakten.dur);
   assert.equal(g.spellById.sonnenwind.duration(g), 0);
-  assert.equal(MUTATIONS.length, 16);
+  assert.equal(MUTATIONS.length, 17);
   assert.ok(MUTATIONS.some((m) => m.id === 'sonnenhunger' && m.rarity === 'selten' && m.report.length > 20));
   for (const s of COMMANDS) assert.ok(s.name && s.desc && s.lockText && s.info(act2Game(2)), s.id);
 });

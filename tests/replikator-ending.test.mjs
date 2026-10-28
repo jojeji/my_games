@@ -227,3 +227,50 @@ test('save: version 7, the migration 6 -> 7 changes nothing but the number; the 
   assert.equal(g.version, 7);
   assert.equal(typeof g.migrations[6], 'function');
 });
+
+/* ---------------- Echo-Resonanz ---------------- */
+import { MUT_BY_ID, mutTick, mutGainParts, mutTrip, ECHO_SPEAKS, echoSpoke, mutAddOffer } from '../games/replikator/mutations.js';
+
+test('Echo-Resonanz: a rare mutation that is only offered after the Echo has spoken; gains of Blaupausen and Sternsysteme up, trips slower', () => {
+  const m = MUT_BY_ID.echoresonanz;
+  assert.ok(m && m.rarity === 'selten' && m.report.length > 30 && m.benefit() && m.catch());
+  const draws = (g, n) => {
+    const seen = new Set();
+    for (let k = 0; k < n; k++) {
+      g.state.rep2.mut.offer = null;
+      g.state.rep2.mut.queue = 1;
+      g.state.rep2.mut.genome = [];
+      mutTick(g, 0);
+      for (const id of g.state.rep2.mut.offer.cards) seen.add(id);
+    }
+    return seen;
+  };
+  const g = act2Game(3);
+  assert.ok(!echoSpoke(g));
+  assert.ok(!draws(g, 400).has('echoresonanz'), 'never before the Echo has spoken');
+  g.state.story[ECHO_SPEAKS] = 1234;
+  assert.ok(echoSpoke(g));
+  assert.ok(draws(g, 400).has('echoresonanz'), 'offered afterwards');
+  // effect: both gains x gain (ripe), travel time x trip
+  g.state.rep2.mut.genome = ['echoresonanz'];
+  g.state.layers.expansion.runTime = 1e6;
+  g.mutRef = true;
+  g.refresh();
+  const parts = mutGainParts(g, 'systems');
+  assert.equal(parts.length, 1);
+  assert.equal(parts[0][1].toNumber(), T.mutFx.echoresonanz.gain);
+  assert.equal(mutGainParts(g, 'blueprints')[0][1].toNumber(), T.mutFx.echoresonanz.gain);
+  assert.equal(mutGainParts(g, 'cores').length, 0);
+  assert.equal(mutTrip(g), T.mutFx.echoresonanz.trip);
+});
+
+test('an extra offer (Kosmischer Strahl, Spiegel) also respects the availability of Echo-Resonanz', () => {
+  const g = act2Game(3);
+  for (let k = 0; k < 60; k++) {
+    g.state.rep2.mut.offer = null;
+    g.state.rep2.mut.queue = 0;
+    g.state.rep2.mut.genome = [];
+    mutAddOffer(g, 'selten');
+    assert.ok(!g.state.rep2.mut.offer.cards.includes('echoresonanz'));
+  }
+});
