@@ -226,6 +226,8 @@ function runSimInner({ hours = 30, dt = 1, act: actEvery = 1, session = 0, quiet
       // starts a pending anomaly when it is worth it (anomalies.js). A Zeitriss moves the game clock by 10 min within this call; the sim's clock t
       // (= the player's real time) does not move, that is the point of it (event times in the sim output are real time, the story's time stamps are game time)
       chooseAnomaly(g);
+      // an offline player follows the hints and switches the new autos on as soon as they unlock (they start off): that is what carries the game while away
+      if (offline) for (const id of ['auto_map', 'auto_genom', 'auto_befehl']) if (g.autoUnlocked(id)) g.state.auto[id].on = true;
       g.spellAutoRun(); // the Auto-Befehl's decision (spells' autoWhen, commands.js), by hand before it unlocks; per-spell switches are respected
     }
     research();
@@ -394,7 +396,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     // player checks in every N hours (default 8) for M seconds (default 120); in between the real offline catch-up runs
     const every = (a.every ?? 8) * 3600;
     const sess = a.session ?? 120;
-    const r = runSim({ hours: a.hours ?? 24 * 14, dt: a.dt ?? 1, quiet: true, offline: { every, session: sess } });
+    const fix = typeof a.fixture === 'string' ? loadSaveFile(a.fixture, { seed: a.seed ?? SIM_SEED }) : null;
+    const r = runSim({ game: fix, hours: a.hours ?? 24 * 14, dt: a.dt ?? 1, quiet: true, offline: { every, session: sess }, act2: !!a.act2 || !!fix, seed: a.seed ?? SIM_SEED });
+    if (r.game.state.rep2.act2) {
+      const claims = r.map.claims;
+      const at = (n) => (claims[n - 1] ? `${hms(claims[n - 1].t - (r.map.start ?? 0))} (Besuch ${Math.floor((claims[n - 1].t - (r.map.start ?? 0)) / every) + 1})` : 'nicht erreicht');
+      console.log(`Akt II offline: alle ${f(every / 3600)} h für ${sess} s einloggen. Sektoren 1 / 3 / 6 / 10: ${[1, 3, 6, 10].map(at).join(' | ')}; ${claims.length} Sektoren, ${r.checkIns} Besuche`);
+      process.exit(0);
+    }
     console.log(`Offline-Szenario: alle ${f(every / 3600)} h für ${sess} s einloggen, dazwischen Offline-Catch-up (Limit ${f(r.game.offlineCapSeconds() / 3600)} h)`);
     for (const id of ['replication', 'expansion', 'singularity']) {
       const fi = r.firsts[id];

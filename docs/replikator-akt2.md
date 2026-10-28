@@ -137,9 +137,23 @@ Wirkung: Sternsysteme gesamt in 4 h aus der Datei ~ +1 Dekade, Quantenkerne +0,3
 - **Spielstand:** `def.version = 5`, Migration 4 -> 5 (`migrateToAno`: Seed aus dem Karten-Seed; `rep2.cmd`, `rep2.ano`, `state.spells` kommen über `mergeDefaults`). Die Fixture lädt sauber, startet Akt II und hat nichts offen.
 
 ### Pacing mit Befehlen und Anomalien
-Zeit bis 10 Sektoren (aktive Sim, Minuten seit Akt-II-Beginn, Seeds 1 / 2 / 3 / 7 / 9): nur die Karte (Befehle und Anomalien aus) frisch 121 / 119 / 148 / 149 / 143, Datei 121 / 157 / 145 / 143 / 144 (Verhältnis 0,76-1,04);
-mit allem frisch 78 / 90 / 87 / 90 / 88, Datei 75 / 92 / 84 / 102 / 90 (Verhältnis 0,88-1,04). Mit den Beschleunigern ist die Reisezeit nicht mehr die einzige Drossel: ab Sektor 8 begrenzen die Sektorpreise (Sternsysteme), daher bewegt dort Sonnenwind-Ernte / Spiegelangebot etwas.
-Der Wert von 2-4 h gilt für die Karte allein (`tests/sim-replikator-act2-map.test.mjs`); mit allem sind 1,3-1,7 h erwartet (`tests/sim-replikator-commands.test.mjs`: 55 min bis 85 % der reinen Reisezeit).
+Entscheidung: die Pacing-Tests laufen **mit allem** (Befehle, Anomalien, Mutationen), Ziel ~2 h bis 10 Sektoren (1,5-3 h). Dafür `mapTripBase` 240 -> 360 s (Wachstum 1,25 unverändert).
+Zeit bis 10 Sektoren (aktive Sim, Minuten seit Akt-II-Beginn, Seeds 1 / 2 / 3 / 7 / 9): mit allem frisch 119 / 112 / 149 / 130 / 133, Datei 110 / 117 / 143 / 150 / 124 (Verhältnis 0,87-1,08); erster Sektor nach 9 (frisch) bzw. 6 min (Datei).
+Nur die Karte (Info, `runSim({ commands:false, anomalies:false })`): frisch 176 / 165 / 212 / 207 / 195, Datei 173 / 169 / 209 / 210 / 207.
+Mit den Beschleunigern ist die Reisezeit nicht mehr die einzige Drossel: ab Sektor 8 begrenzen die Sektorpreise (Sternsysteme), daher bewegen dort Sonnenwind-Ernte und Spiegelangebot etwas.
+
+### Laufdauer in Akt II (Folgearbeit nach Paket 4)
+Gemessen mit `takeAct2Snapshots` / `measureLayer` (`tools/runlength-replikator.mjs`): Quantenkerne/s je fester Singularitäts-Laufdauer, Snapshots Datei und frisch bei 0 / 5 / 10 Sektoren, Warten auf Sektoren (`holdSingularity`) aus und an.
+VORHER (Prozent des Besten): 2-min-Läufe waren in fast allen Phasen das Optimum (Datei 0/5/10: 100 / 100 / 100 %, 10-min-Läufe nur 33-57 %; frisch 0: 2 min = 100 %). Ursache: der Softcap pro Lauf (`singSoftcap`) kappt lange Läufe, viele kurze schlagen einen langen.
+Fix wie bei Merlin: **Reife-Faktor auf den Quantenkern-Gewinn nach dem Softcap** (`def.js singRipeness`, `tune.js singRipe`): min(1, Laufzeit / 900 s)^2 (Untergrenze 0,02), nur in Akt II (Version 1 war gesund, Pacing und Story hängen daran), die Bewertung sieht den vollen Wert.
+NACHHER: Optimum 20-30 min (Datei) bzw. 30 min (frisch), 2-min-Läufe 1-12 % (Warten aus; Datei mit Warten an 24-40 %, dort hält die Karte feste kurze Läufe zurück), 10-min-Läufe 12-80 %. Expansion in Akt II war schon gesund (Optimum 20-40 min, 2 min 5-14 %).
+Die in-game Auto-Singularität (Modus „Faktor 0,25“ aus dem Spielstand) läuft damit in 16-61-min-Läufen; eine einmalige Anpassung per `onLoad` war nicht nötig.
+Tests: `tests/sim-replikator-runlength-akt2.test.mjs`.
+
+### Offline-Spieler in Akt II (Folgearbeit nach Paket 4)
+Szenario `node tools/simulate.mjs --offline --fixture tests/fixtures/replikator-end-v1.json --hours 400` (alle 8 h für 2 min, dazwischen echter Offline-Catch-up; der Spieler schaltet neue Autos nach dem Hinweis ein).
+VORHER (Auto-Erkundung ab 6 Sektoren): 1 Sektor pro Besuch, Sektor 3 nach 16 h, 6 nach 40 h, 10 nach 72 h. NACHHER (`mapAutoAt` 2, Auto startet weiter aus, Hinweis-Toast beim Freischalten): 3 Sektoren nach 16 h (Besuch 3, der Spieler schaltet die Auto bei Besuch 3 ein), 6 nach 17 h, 10 nach 19 h.
+Gewählt, weil es die einfachste Lösung ist: keine neue Mechanik (eine Route aus mehreren Erschließungen müsste die Preise im Voraus bezahlen), nur ein früherer Freischaltpunkt; die ersten zwei Sektoren bleiben Handarbeit. Tests: `tests/sim-replikator-offline-akt2.test.mjs`.
 
 ## Paket 5 – Ebene 4: Galaxiensprung
 
@@ -269,3 +283,5 @@ Bei den Anomalien sind Gezeitenwelle und Zeitriss der Zeit-Hebel (3,4-3,6 min je
 das Umkehrfeld zahlt +0,03 Dekaden Quantenkerne je Start für 3 % Kartenzeit, das Signalfragment ist absichtlich klein (x1,08, vier Stück x1,36) und trägt die Story.
 Sonnenhunger: Nutzen -17 % Kartenzeit, Haken -0,30 Dekaden Blaupausen, zusammen -15 % und +0,22 Dekaden Summe.
 Laufdauer: Kartenboni und Befehle machen kurze Expansions-Läufe nicht besser (Test in `tests/sim-replikator-commands.test.mjs`). **Vorbestehend und offen:** im Spielzustand nach 10 Sektoren (echter Spielstand, auch im Commit vor Paket 4 gemessen) ist ein 2-min-Singularitätslauf bei abgeschaltetem Warten auf Sektoren das Optimum (Quantenkerne/s); in den v1-Phasen (`sing1`) trat das nicht auf.
+
+Hinweis zu den Tabellen oben: gemessen vor der Singularitäts-Reife und vor `mapTripBase` 360. Die Quantenkern-Spalte ist seither grob: in einem 3,5-h-Fenster fallen nur 1-3 Singularitäten (Läufe von 1-2 h), ein einzelner Lauf verschiebt die Summe um eine Dekade. Aussagekräftig bleiben Kartenzeit und Sternsysteme; die Tests vergleichen nur diese.

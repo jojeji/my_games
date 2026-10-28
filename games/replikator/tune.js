@@ -82,7 +82,7 @@ export const TUNE = {
   mapCostOffset: 4.5,
   mapCostStep: 0.27,
   // Erschliessung (travel time): seconds = mapTripBase * mapTripGrow^n for the (n+1)th sector, one at a time, runs offline too
-  mapTripBase: 240,
+  mapTripBase: 360,
   mapTripGrow: 1.25,
   // The Singularität (auto and sim player) waits while the next sector costs <= mapHoldReach * Sternsysteme stock, at most mapHoldMax s of run time
   mapHoldReach: 20,
@@ -90,7 +90,7 @@ export const TUNE = {
   mapEchoEvery: 2, // the Echo takes one free cell per this many claimed sectors
   mapAdjStep: 0.5, // + this share of the effect exponent per same-type claimed neighbour ...
   mapAdjMax: 3, // ... at most this many neighbours count
-  mapAutoAt: 6, // Auto-Erkundung unlocks with this many claimed sectors
+  mapAutoAt: 2, // Auto-Erkundung unlocks with this many claimed sectors (offline player: without it ~1 sector per visit, 10 sectors took 3 days at one visit per 8 h)
   // Type mix of the 17 claimable cells and how many layouts are tried (the one with most same-type neighbours wins)
   mapMix: { haufen: 4, nebel: 3, pulsar: 3, loch: 2, ruine: 3, anomalie: 2 },
   mapTries: 8,

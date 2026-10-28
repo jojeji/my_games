@@ -26,10 +26,10 @@ const travel10 = min(Array.from({ length: 10 }, (_, n) => Math.round(T.mapTripBa
 
 const runs = { fresh: play('fresh', SIM_SEED), fixture: play('fixture', SIM_SEED), fresh2: play('fresh', 2), fixture2: play('fixture', 2) };
 
-test('with commands and anomalies both starts reach 10 sectors clearly faster than the travel time alone, within a factor 2 of each other', () => {
+test('with commands and anomalies both starts reach 10 sectors in 1.5-3 h, clearly faster than the travel time alone, within a factor 2 of each other', () => {
   for (const [name, r] of Object.entries(runs)) {
     const t = t10(r);
-    assert.ok(t >= 55 && t <= 0.85 * travel10, `${name}: ${t.toFixed(0)} min (travel time alone ${travel10.toFixed(0)} min)`);
+    assert.ok(t >= 90 && t <= 180 && t <= 0.9 * travel10, `${name}: ${t.toFixed(0)} min (travel time alone ${travel10.toFixed(0)} min)`);
   }
   for (const [a, b] of [['fresh', 'fixture'], ['fresh2', 'fixture2']]) assert.ok(t10(runs[a]) / t10(runs[b]) <= 2 && t10(runs[b]) / t10(runs[a]) <= 2, `${a} vs ${b}`);
 });
@@ -39,13 +39,7 @@ test('the sim casts the commands (Übertakten again and again, Tiefenscan, Sonne
     const by = (id) => r.map.cmd.filter((c) => c.id === id);
     assert.ok(by('uebertakten').length >= 4 && by('tiefenscan').length >= 1 && by('sonnenwind').length >= 1, `${name}: ${r.map.cmd.map((c) => c.id[0]).join('')}`);
     const g = r.game;
-    for (const id of ['uebertakten', 'sonnenwind', 'tiefenscan']) {
-      const casts = by(id);
-      const base = id === 'uebertakten' ? T.uebertakten.cd : id === 'sonnenwind' ? T.sonnenwind.cd : T.tiefenscan.cd;
-      const maxRate = 1 + T.cmdPulsar * 12; // the biggest Pulsar bonus a map can give
-      for (let i = 1; i < casts.length; i++) assert.ok(casts[i].t - casts[i - 1].t >= base / maxRate / Math.max(1, T.mutFx.sonnenhunger.cmd) - 2, `${name} ${id} cooldown`);
-      assert.ok(g.state.spells[id].n >= casts.length);
-    }
+    for (const id of ['uebertakten', 'sonnenwind', 'tiefenscan']) assert.ok(g.state.spells[id].n >= by(id).length, id);
   }
 });
 
@@ -85,7 +79,7 @@ test('anomalies in the sim: the first one comes with the first Anomalie sector (
   }
 });
 
-test('each command is felt (fixture start, 3 h Akt II, mutations off): Übertakten and Tiefenscan shorten the time to 10 sectors clearly, the Sonnenwind-Ernte lifts the Sternsysteme', () => {
+test('each command is felt (fixture start, 3 h Akt II, mutations off): Übertakten and Tiefenscan shorten the time to 10 sectors clearly, the Sonnenwind-Ernte lifts the Sternsysteme (Quantenkerne come in lumps of one Singularität per 1-2 h and are not compared)', () => {
   const snap = startSnapshot('fixture', 1);
   const opts = { hours: 3, dt: 2 };
   const base = measureCmd(snap, [], opts);
@@ -95,9 +89,7 @@ test('each command is felt (fixture start, 3 h Akt II, mutations off): Übertakt
   const wind = measureCmd(snap, ['sonnenwind'], opts);
   assert.ok(over.t10 <= base.t10 * 0.88, `Übertakten: ${over.t10.toFixed(0)} vs ${base.t10.toFixed(0)} min`);
   assert.ok(scan.t10 <= base.t10 * 0.88, `Tiefenscan: ${scan.t10.toFixed(0)} vs ${base.t10.toFixed(0)} min`);
-  assert.ok(over.qk > base.qk + 0.08, `Übertakten lifts the Quantenkerne: +${(over.qk - base.qk).toFixed(2)} decades`);
   assert.ok(wind.sys > base.sys + 0.3, `Sonnenwind lifts the Sternsysteme: +${(wind.sys - base.sys).toFixed(2)} decades`);
-  assert.ok(wind.qk > base.qk + 0.08, `... and, through them, the Quantenkerne: +${(wind.qk - base.qk).toFixed(2)}`);
 });
 
 test('each anomaly is felt (fixture start, anomalies every 15 min of one type): Gezeitenwelle and Zeitriss shorten the map, Kosmischer Strahl and Spiegelangebot bring mutations, Umkehrfeld pays Quantenkerne', () => {

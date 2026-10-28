@@ -8,7 +8,7 @@ import { TUNE as T } from '../games/replikator/tune.js';
 import { MUTATIONS } from '../games/replikator/mutations.js';
 
 const stop = (n) => (g) => g.state.rep2.map.claimed >= n;
-const alone = { commands: false, anomalies: false }; // Paket 3 alone (the commands and anomalies have tests/sim-replikator-commands.test.mjs)
+const alone = {}; // with everything on, as played
 const fresh = runSim({ hours: 11.5 + 8, dt: 2, quiet: true, act2: true, until: stop(10), ...alone });
 const fixture = runSim({ game: loadSaveFile(new URL('./fixtures/replikator-end-v1.json', import.meta.url).pathname), hours: 8, dt: 2, quiet: true, act2: true, until: stop(10), ...alone });
 const runs = { fresh, fixture };
@@ -57,8 +57,8 @@ test('Akt II story: the mutation thread closes the gap (<= 25 min until the 10th
   }
 });
 
-test('map pacing with mutations: both starts reach 10 sectors in 2-5 h and within a factor 2 of each other', () => {
+test('map pacing with mutations: both starts reach 10 sectors in 1.5-3 h and within a factor 2 of each other', () => {
   const t = (r) => (r.map.claims[9].t - r.map.start) / 60;
-  for (const r of [fresh, fixture]) assert.ok(t(r) >= 120 && t(r) <= 300, 'minutes: ' + t(r));
+  for (const r of [fresh, fixture]) assert.ok(t(r) >= 90 && t(r) <= 180, 'minutes: ' + t(r));
   assert.ok(t(fresh) / t(fixture) <= 2 && t(fixture) / t(fresh) <= 2);
 });
