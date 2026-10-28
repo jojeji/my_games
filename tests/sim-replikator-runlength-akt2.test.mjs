@@ -24,7 +24,7 @@ const withHold = (hold, fn) => {
 for (const [name, hold] of [['hold on (as played)', 20], ['hold off', 0]]) {
   test(`Singularität in Akt II, ${name}: Quantenkerne/s peak at 10 min or longer, 2-min runs stay far behind`, () => {
     for (const s of snaps) {
-      const r = withHold(hold, () => measureLayer(s, 'singularity', [120, 600, 1800], { dt: 2, act2: true, window: 7200, limit: 7200 }));
+      const r = withHold(hold, () => measureLayer(s, 'singularity', [120, 600, 1200], { dt: 2, act2: true, window: 10800, limit: 10800 }));
       assert.ok(r.best.L >= 600, `${s.phase.label}: optimum ${r.best.L} s`);
       assert.ok(pct(r, 120) < 55, `${s.phase.label}: 2 min at ${pct(r, 120).toFixed(0)} %`);
     }
