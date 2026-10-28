@@ -298,7 +298,6 @@ export function buildGalaxyTab(ctx) {
     autoLocked,
     sectionTitle('Aktive Boni'),
     bonusBox,
-    sectionTitle('Galaxien-Archiv'),
     archive.el,
   );
 
