@@ -101,3 +101,28 @@ button.mut-card:active { background: color-mix(in srgb, var(--c) 18%, var(--surf
 .ano-why { color: var(--muted); }
 .ano-wrap { gap: 6px; }
 .ano-last { margin: 0; }
+
+/* ---- Paket 5: Galaxiensprung ---- */
+.gal-jump { margin: 0; color: var(--accent); }
+.gal-card { border-color: color-mix(in srgb, var(--c) 55%, var(--border)); }
+.gal-card-name { color: var(--c); font-size: 17px; }
+.gal-rules { margin: 2px 0 0; padding-left: 18px; list-style: disc; display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; }
+.gal-choose { display: flex; flex-direction: column; gap: 10px; }
+.gal-choose > p { margin: 0; }
+.gal-choice { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--c) 60%, var(--border)); background: color-mix(in srgb, var(--c) 9%, var(--surface)); }
+.gal-choice p { margin: 0; }
+.gal-choice-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gal-choice-name { color: var(--c); font-size: 18px; }
+.gal-choice-bonus { color: var(--text); }
+.jump-intro { border-color: color-mix(in srgb, var(--c) 55%, var(--border)); display: flex; flex-direction: column; gap: 6px; }
+.jump-intro p { margin: 0; }
+.jump-gal { color: var(--c); font-size: 17px; }
+.jump-seeds { font-weight: 700; }
+.arch-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.arch-row { display: flex; align-items: center; gap: 10px; min-height: 44px; opacity: 0.62; }
+.arch-row.done { opacity: 1; }
+.arch-dot { flex: none; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--c); background: transparent; }
+.arch-row.done .arch-dot { background: var(--c); }
+.arch-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.arch-state { flex: none; font-size: 12px; color: var(--muted); }
+.arch-row.done .arch-state { color: var(--c); font-weight: 700; }

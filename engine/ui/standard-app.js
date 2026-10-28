@@ -23,7 +23,7 @@ import { formatNumber as fmt, formatCompact, setNotation } from '../format.js';
  * @param {object} cfg.runtime  from engine/core.js
  * @param {object} cfg.options
  *   gameId, title, primary (currency id), chips (currency ids), generators { chain, label, intro?(ctx), details?(ctx) },
- *   layers [{ id, label, icon, groups:[{id,title,research?,branches?,buyAll?:false (no "Alles kaufen" button)}], challenges?:true, visible?(g) }],
+ *   layers [{ id, label, icon, intro?(ctx) -> { el, update } (card above the prestige panel), groups:[{id,title,research?,branches?,buyAll?:false (no "Alles kaufen" button)}], challenges?:true, visible?(g) }],
  *   multParts?(g) -> [label, Decimal][], bonusText?(g), statRows?(g), tabIcons
  *   banner? (g) -> { text, ratio? } | null  - one slim status line under the header on every tab (time-limited effects: remaining time; ratio = 0..1 progress bar)
  *   extraTabs? [{ id, label, icon, visible?(g), dot?(g), build(ctx) -> { el, update } }]  - game specific tabs between the layer tabs and the Chronik/Erfolge tab
@@ -223,6 +223,7 @@ export function mountStandardApp({ root, runtime, options, offline }) {
       parts.push(view);
       stack.append(wrap || view.el);
     };
+    if (lc.intro) add(lc.intro(ctx)); // optional card above the prestige panel (game specific)
     add(prestigePanel(g, lc.id, ctx));
     const ms = milestoneList(g, lc.id);
     if (g.def.milestones.some((m) => m.layer === lc.id)) {

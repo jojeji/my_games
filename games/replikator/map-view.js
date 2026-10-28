@@ -5,6 +5,8 @@ import { sectionTitle } from '../../engine/ui/kit-views.js';
 import { openModal } from '../../engine/ui/modal.js';
 import { buildCommands, buildAnomalyCard } from './commands-view.js';
 import { pulsarRate } from './commands.js';
+import { buildGalaxyCard, buildArchive, jumpTeaser } from './jump-view.js';
+import { galType, galNumber, GALAXIES } from './galaxy.js';
 import { formatNumber as fmt, formatMult } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import {
@@ -76,6 +78,7 @@ export function buildGalaxyTab(ctx) {
   const tripLine = h('p', { class: 'gal-trip', hidden: true });
   const costLine = h('p', { class: 'gal-cost muted small' });
   const echoLine = h('p', { class: 'gal-echo muted small', hidden: true });
+  const jumpLine = h('p', { class: 'gal-jump small' });
 
   /* ---------------- the SVG map ---------------- */
   const root = el('svg', { class: 'gal-map', role: 'group', 'aria-label': 'Galaxiekarte', preserveAspectRatio: 'xMidYMid meet' });
@@ -280,11 +283,14 @@ export function buildGalaxyTab(ctx) {
   const wrap = h('div', { class: 'gal-wrap' }, root);
   const ano = buildAnomalyCard(g);
   const cmd = buildCommands(g);
+  const galCard = buildGalaxyCard(ctx);
+  const archive = buildArchive(g);
   const page = h('div', { class: 'stack' },
     ano.el, // a waiting / running anomaly: the thing to decide, on top
     cmd.barEl, // the quick buttons of the Sondenbefehle
     wrap, // the map before the long texts: story bubbles rise from the bottom and should not cover it
-    h('div', { class: 'card gal-head' }, tripLine, statLine, costLine, echoLine),
+    h('div', { class: 'card gal-head' }, tripLine, statLine, costLine, echoLine, jumpLine),
+    galCard.el,
     h('p', { class: 'muted small center gal-hint', text: 'Sektor antippen: Typ, Effekt, Kosten und Dauer. Erschließen geht nur neben eigenem Gebiet, immer nur einen Sektor gleichzeitig.' }),
     legend,
     cmd.detailEl,
@@ -292,6 +298,8 @@ export function buildGalaxyTab(ctx) {
     autoLocked,
     sectionTitle('Aktive Boni'),
     bonusBox,
+    sectionTitle('Galaxien-Archiv'),
+    archive.el,
   );
 
   return {
@@ -299,11 +307,15 @@ export function buildGalaxyTab(ctx) {
     update() {
       ano.update();
       cmd.update();
+      galCard.update();
+      archive.update();
       paint();
       paintBonuses();
       const n = claimedCount(g);
       const free = mapCells(g).filter((c) => !c.own && !c.echo).length;
-      txt(statLine, `Galaxie 1 · ${n} Sektoren erschlossen`);
+      const gt = galType(g);
+      txt(statLine, `Galaxie ${galNumber(g)}${gt ? ' (' + GALAXIES[gt].name + ')' : ''} · ${n} Sektoren erschlossen`);
+      txt(jumpLine, jumpTeaser(g));
       const trip = tripOf(g);
       setHidden(tripLine, !trip);
       if (trip) txt(tripLine, `Erschließung läuft: ${SECTOR[mapCells(g)[trip.i].type].name}, noch ${mmss(trip.left)}`);

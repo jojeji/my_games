@@ -13,13 +13,15 @@ import { statusBanner } from './commands-view.js';
 import { anoPending, ANO_BY_ID } from './anomalies.js';
 import { mutUnlocked, mutPending } from './mutations.js';
 import { act2Active, claimable, canClaim, SECTOR } from './map.js';
+import { mountGalaxyChoice, buildJumpIntro } from './jump-view.js';
+import { GALAXIES, galBonusText } from './galaxy.js';
 
 const g = createReplikator();
 const runtime = createRuntime(g);
 const offline = runtime.load(); // may return an offline-progress summary
 runtime.start();
 
-const { app } = mountStandardApp({
+const { app, ctx } = mountStandardApp({
   root: document.getElementById('app'),
   runtime,
   offline,
@@ -27,7 +29,7 @@ const { app } = mountStandardApp({
     gameId: 'replikator',
     title: 'Replikator',
     primary: 'matter',
-    chips: ['blueprints', 'systems', 'cores'],
+    chips: ['blueprints', 'systems', 'cores', 'seeds'],
     generators: { chain: 'matter', label: 'Generatoren' },
     multParts: globalParts,
     chronicle: { cast: CAST, figures: metCast, lineText, defaultWho: 'sonde' }, // Chronik tab, story modals and bubbles (story.js)
@@ -88,9 +90,21 @@ const { app } = mountStandardApp({
           },
         ],
       },
+      // Paket 5: Ebene 4. Appears when the first galaxy is complete (layer.unlockWhen); the Saatkern-Upgrades are choices, so no "buy everything" button
+      {
+        id: 'jump',
+        label: 'Sprung',
+        icon: 'jump',
+        intro: buildJumpIntro,
+        groups: [{ id: 'seed', title: 'Saatkern-Upgrades', sub: 'Bleiben über alle Galaxien', buyAll: false }],
+      },
     ],
   },
 });
+
+// Paket 5: the galaxy choice after a jump cannot be dismissed (and is stored in the save); toasts for the Archiv and the arrival
+ctx.galChoice = mountGalaxyChoice({ g, runtime, onPick: (type) => app.toast(GALAXIES[type].name + ' erreicht.', { kind: 'good', title: 'Neue Galaxie' }) });
+runtime.on('archive', ({ type }) => app.toast(galBonusText(type), { kind: 'good', title: 'Archiv: ' + GALAXIES[type].name }));
 
 // arrival toasts only where no story entry tells the same news (the first sector, every Ruine, the first Echo occupation)
 runtime.on('map-claim', ({ type, n }) => {
