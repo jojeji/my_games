@@ -40,6 +40,7 @@ const fx = (id) => T.mutFx[id];
  *   trip         factor on the Erschliessung time
  *   offers       factor on the offer rate (2 = twice as often)
  *   adj          added to the neighbour bonus step of the map
+ *   cmd          factor on the recharge speed of the Sondenbefehle (commands.js)
  * `report` = the one line WR-0 files the first time the mutation is taken (Chronik entry, story.js). No names in it (characters.js).
  */
 const allGain = (fn) => ({ blueprints: fn, systems: fn, cores: fn });
@@ -219,6 +220,17 @@ export const MUTATIONS = [
     split: { benefit: { perSlot: 1, gainSlot: 1 }, catch: { offers: 1 } },
     report: 'Kopie besteht aus mehreren Kopien. Alle Kopien melden dasselbe. Meldungen kommen seltener.',
   },
+  {
+    id: 'sonnenhunger',
+    name: 'Sonnenhunger',
+    rarity: 'selten',
+    benefit: () => `Sondenbefehle laden ${n(fx('sonnenhunger').cmd)}× so schnell`,
+    catch: () => `Blaupausen-Gewinn ×${n(fx('sonnenhunger').bp)}`,
+    cmd: () => fx('sonnenhunger').cmd,
+    gain: { blueprints: () => fx('sonnenhunger').bp },
+    split: { benefit: { cmd: 1 }, catch: { bp: 1 } },
+    report: 'Kopie verbraucht Befehle schneller, als sie nachgeladen werden. Nachladen läuft jetzt schneller. Blaupausen bleiben dafür liegen. Hunger vermerkt.',
+  },
 ];
 /** Which tune.js numbers belong to the benefit and which to the catch, with their neutral values (tools/mutations-replikator.mjs measures each side alone). */
 export const MUT_SPLIT = Object.fromEntries(MUTATIONS.map((m) => [m.id, m.split]));
@@ -244,6 +256,7 @@ export function mutState() {
     offerAt: 0, // play time the offer on the table was drawn (story pacing)
     luckyAt: 0, // play time the first Glücksfehler showed up in an offer (0 = none yet)
     bonusSlots: 0, // extra genome slots from outside (galaxy archive, later)
+    rare: {}, // offer number -> minimum rarity ('selten' | 'glueck') guaranteed in that offer (Anomalien: Kosmischer Strahl, Spiegelangebot)
     rng: { seed: newSeed() },
   };
 }
@@ -348,9 +361,10 @@ export const mutMapCost = (g) => product(g, 'mapCost');
 export const mutTrip = (g) => product(g, 'trip');
 export const mutOfferRate = (g) => product(g, 'offers');
 export const mutAdj = (g) => total(g, 'adj');
+export const mutCmdRate = (g) => product(g, 'cmd');
 
 /**
- * Terms for effects repObjective (def.js) cannot see, in log10 units like the objective: offer rate, trip time, sector price and the offline
+ * Terms for effects repObjective (def.js) cannot see, in log10 units like the objective: offer rate, trip time, sector price, command recharge and the offline
  * share of Nachtschwärmer (the objective sees its online factor; here the offline benefit is added at `mutOfflineShare`).
  */
 export function mutExtra(g) {
@@ -359,6 +373,7 @@ export function mutExtra(g) {
   v += T.mutOfferW * lg(mutOfferRate(g));
   v -= T.mutTripW * lg(mutTrip(g));
   v -= T.mutMapCostW * lg(mutMapCost(g));
+  v += T.mutCmdW * lg(mutCmdRate(g));
   if (hasMut(g, 'nachtschwaermer')) {
     const f = fx('nachtschwaermer');
     v += T.mutOfflineShare * T.mutGainW * (lg(f.off) - lg(f.on));
@@ -405,12 +420,49 @@ export function drawCards(m, genomeIds) {
   return cards;
 }
 
+/** Make sure one of the cards is at least `need` ('selten' | 'glueck'): the last card is swapped for one of that rarity from the free mutations (RNG: m.rng). */
+function guaranteeRarity(m, cards, need) {
+  const rank = (id) => RARITY_ORDER.indexOf(MUT_BY_ID[id].rarity);
+  const want = RARITY_ORDER.indexOf(need);
+  if (cards.some((id) => rank(id) >= want)) return cards;
+  const free = MUTATIONS.filter((x) => !m.genome.includes(x.id) && !cards.includes(x.id) && RARITY_ORDER.indexOf(x.rarity) >= want);
+  if (!free.length) return cards;
+  const out = cards.slice();
+  out[out.length - 1] = free[Math.floor(rngRoll(m.rng) * free.length)].id;
+  return out;
+}
+
+/**
+ * An extra offer on top of the usual stream (Anomalien): it joins the queue and the offer drawn for it has at least one card of rarity `need`.
+ * The queue may go one above mutQueueMax (the charge stops then, as usual). Returns false while the Genom is locked.
+ */
+export function mutAddOffer(g, need = 'selten') {
+  const m = MU(g);
+  if (!mutUnlocked(g)) return false;
+  if (!m.started) {
+    m.started = true;
+    m.charge = 0;
+  }
+  const undrawn = m.queue - (m.offer ? 1 : 0);
+  m.rare = m.rare || {};
+  m.rare[m.n + undrawn + 1] = need;
+  m.queue += 1;
+  ensureOffer(g);
+  g.emit('mut-bonus', { need });
+  return true;
+}
+
 /** Make the head of the queue concrete (the offer on the table). */
 function ensureOffer(g) {
   const m = MU(g);
   if (m.queue <= 0 || m.offer) return;
   m.n += 1;
   m.offer = { cards: drawCards(m, m.genome) };
+  const need = m.rare && m.rare[m.n];
+  if (need) {
+    m.offer.cards = guaranteeRarity(m, m.offer.cards, need);
+    delete m.rare[m.n];
+  }
   m.offerAt = Math.max(0.001, g.state.time.played);
   if (!m.luckyAt && m.offer.cards.some((id) => MUT_BY_ID[id].rarity === 'glueck')) m.luckyAt = g.state.time.played;
   g.plog('mut', `Angebot ${m.n}: ${m.offer.cards.join(', ')}`);

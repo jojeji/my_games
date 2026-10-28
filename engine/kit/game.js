@@ -169,8 +169,10 @@ export class Game {
     if (this.def.producers) this.produceProducers(dt);
     if (this.def.tap) this.tapTick(dt);
     this.hook('onTick', dt);
-    this.runAutos(dt);
+    // spells count down BEFORE the autos run: an auto-cast then keeps its full duration (after the cast tick the effect starts with the next one);
+    // with the large steps of the offline catch-up a cast that is counted down in the same tick would never have an effect
     if (this.def.spells) this.spellsTick(dt);
+    this.runAutos(dt);
     this.slow += dt;
     if (this.slow >= 0.25) {
       this.slow = 0;

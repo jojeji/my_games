@@ -4,7 +4,9 @@ import { prestigeAuto } from '../../engine/kit/game.js';
 import { formatNumber as fmt, formatMult, formatPercent } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 import { STORY, CHAPTERS } from './story.js';
-import { rep2State, migrateToRep2, productionParts, mapGain, autoClaim, claimedCount, act2Check, mapTick, holdSingularity } from './map.js';
+import { rep2State, migrateToRep2, productionParts, mapGain, autoClaim, claimedCount, ownedOfType, act2Check, mapTick, holdSingularity } from './map.js';
+import { anoTick, anoTripSpeed, anoTierMult, anoGain, anoChoose, migrateToAno } from './anomalies.js';
+import { COMMANDS, cmdTick, cmdTripSpeed, cmdGain, cmdUnlocked } from './commands.js';
 import { mutParts, mutGain, mutTier, mutCostDiv, mutBundle, mutAutoSlow, mutExtra, mutTick, mutChoose as chooseMutation, mutAutoRun, mutUnlocked, migrateToMut } from './mutations.js';
 
 /** Active level of an upgrade (0 while suppressed by a challenge). */
@@ -72,7 +74,7 @@ export function tierMult(g, i) {
   if (i <= 3 && g.chDone('c_enge')) m = m.mul(1.5);
   if (i <= 3 && act(g, 'kolonien')) m = m.mul(2);
   if (i >= 4 && act(g, 'dysonnetz')) m = m.mul(2);
-  return m.mul(mutTier(g, i));
+  return m.mul(mutTier(g, i)).mul(anoTierMult(g, i));
 }
 
 export function startMatter(g) {
@@ -155,7 +157,10 @@ export function repObjective(g) {
 export const buyRepUpgrades = (g, group) => g.upgBuyBest(group, repObjective);
 
 /** Akt II: claim the best affordable sector (value = rise of repObjective). The Auto-Erkundung AND the sim's player call exactly this. */
-export const mapAutoClaim = (g) => autoClaim(g, repObjective);
+export const mapObjective = (g) => repObjective(g) + T.anoSectorW * ownedOfType(g, 'anomalie'); // an Anomalie sector brings an anomaly (anomalies.js)
+export const mapAutoClaim = (g) => autoClaim(g, mapObjective);
+/** Akt II: start the pending anomaly when it is worth it (anomalies.js anoWorth). The sim's player calls exactly this; a later auto would too. */
+export const chooseAnomaly = (g) => anoChoose(g);
 /**
  * Akt II: strength for valuing a mutation card = repObjective plus the effects it cannot see (offer rate, trip time, sector price, Nachtschwärmer's offline
  * share, see mutations.js mutExtra). The Auto-Genom AND the sim's player call mutChoose / mutAutoRun, which value every way to take a card with this.
@@ -169,7 +174,7 @@ export const mutAutoGenom = (g) => mutAutoRun(g, mutObjective);
  * to its square root and nobody feels it (docs/LESSONS.md). Factors above 1 on Sternsysteme / Quantenkerne ripen with the run time (mutations.js ripen):
  * without that a stack of them makes short runs optimal.
  */
-export const postGain = (g, kind) => mutGain(g, kind).mul(mapGain(g, kind));
+export const postGain = (g, kind) => mutGain(g, kind).mul(mapGain(g, kind)).mul(cmdGain(g, kind)).mul(anoGain(g, kind));
 
 /** Auto-Singularität and the sim's player both wait for the next sector (map.js holdSingularity). */
 export const singularityHeld = (g) => holdSingularity(g);
@@ -218,7 +223,7 @@ const autoGens = tierNames.map((n, i) => ({
 export const def = {
   id: 'replikator',
   title: 'Replikator',
-  version: 4,
+  version: 5,
 
   // v1 -> v2: the one-line story became a Chronik (chronicle.read / chronicle.shown). Entries a v1 save has already seen count as read AND shown,
   // so nobody gets old modals or bubbles again. `backfill` makes hooks.onLoad record the new entries whose condition is already true silently
@@ -236,9 +241,14 @@ export const def = {
     2: migrateToRep2,
     // v3 -> v4: Mutationen (state.rep2.mut via mergeDefaults; the offer stream gets a seed derived from the map seed)
     3: migrateToMut,
+    // v4 -> v5: Sondenbefehle (state.spells, rep2.cmd) und Anomalien (rep2.ano, Seed aus dem Karten-Seed)
+    4: migrateToAno,
   },
 
   extraState: rep2State,
+
+  // Akt II: Sondenbefehle (commands.js); the bar and the cards are in the Galaxie tab (map-view.js)
+  spells: COMMANDS,
 
   currencies: [
     { id: 'matter', name: 'Materie', layer: 0, start: 10 },
@@ -654,6 +664,20 @@ export const def = {
       },
     },
     {
+      id: 'auto_befehl',
+      name: 'Auto-Befehl',
+      desc: 'Wirkt bereite Sondenbefehle, sobald sie sich lohnen: Übertakten und Tiefenscan während einer Erschließung, die Sonnenwind-Ernte, wenn eine Expansion etwas bringt. Auch in deiner Abwesenheit. Pro Befehl einstellbar.',
+      group: 'befehl',
+      where: 'Galaxie-Tab (und Generatoren-Tab, Automatisierung)',
+      kind: 'misc',
+      defaults: { on: false },
+      unlock: (g) => cmdUnlocked(g) && claimedCount(g) >= T.cmdAutoAt,
+      interval: () => 1,
+      run: (g) => {
+        g.spellAutoRun();
+      },
+    },
+    {
       id: 'auto_genom',
       name: 'Auto-Genom',
       desc: 'Prüft jedes Angebot: nimmt die Mutation mit dem größten Zuwachs (bei vollem Genom tauscht er die schwächste aus) oder verwirft das Angebot, wenn keine hilft.',
@@ -780,6 +804,7 @@ export const def = {
     },
     genGlobalMult: (g) => globalParts(g).reduce((acc, [, v]) => acc.mul(v), ONE),
     genTierMult: (g, chain, i) => tierMult(g, i),
+    tripSpeed: (g, dt) => cmdTripSpeed(g, dt) * anoTripSpeed(g, dt),
     genRate0: (g, chain, rate) => {
       const p = g.rule('prodPow', 1);
       return p === 1 || rate.lt(1) ? rate : rate.pow(p);
@@ -797,6 +822,8 @@ export const def = {
     onTick: (g, dt) => {
       act2Check(g);
       mapTick(g, dt);
+      cmdTick(g);
+      anoTick(g, dt);
       mutTick(g, dt);
       const c = g.chActive();
       const st = g.state.auto.auto_chal;

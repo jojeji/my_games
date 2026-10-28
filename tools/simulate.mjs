@@ -21,7 +21,7 @@ import { readFileSync } from 'node:fs';
 import { advance } from '../engine/core.js';
 import { createSaveStore } from '../engine/save.js';
 import { createReplikator } from '../games/replikator/logic.js';
-import { chPower, buyRepUpgrades, mapAutoClaim, singularityHeld, mutAutoGenom } from '../games/replikator/def.js';
+import { chPower, buyRepUpgrades, mapAutoClaim, singularityHeld, mutAutoGenom, chooseAnomaly } from '../games/replikator/def.js';
 import { MUT_BY_ID, RARITY } from '../games/replikator/mutations.js';
 import { TUNE as T } from '../games/replikator/tune.js';
 import { formatNumber as f, formatDuration } from '../engine/format.js';
@@ -80,7 +80,7 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
   if (act2) {
     stopAtEnd = false;
   }
-  const map = { start: null, claims: [], echo: [], mut: [] }; // Akt II: times (sim seconds) of the start, each claimed sector, each Echo occupation and each offer / choice
+  const map = { start: null, claims: [], echo: [], mut: [], ano: [], cmd: [] }; // Akt II: times (sim seconds) of the start, each claimed sector, each Echo occupation and each offer / choice
   if (act2 && g.state.rep2.act2) map.start = 0; // a loaded save that already is in Akt II
   if (S.autosOff) for (const a of g.def.autos) if (a.kind === 'prestige') g.state.auto[a.id].on = false;
   let t = 0;
@@ -138,6 +138,18 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
     } else if (type === 'mut-discard') {
       map.mut.push({ t, kind: 'discard' });
       note('  -> verworfen', 'quiet');
+    } else if (type === 'anomaly') {
+      map.ano.push({ t, kind: 'new', type: p.type, src: p.src });
+      note(`Anomalie erscheint: ${p.type} (${p.src})`, 'quiet');
+    } else if (type === 'anomaly-start') {
+      map.ano.push({ t, kind: 'start', type: p.type, text: p.text });
+      note(`  -> gestartet: ${p.type}${p.text ? ' (' + p.text + ')' : ''}`, 'quiet');
+    } else if (type === 'anomaly-end') {
+      map.ano.push({ t, kind: 'end', type: p.type, text: p.text });
+      note(`  -> beendet: ${p.type}${p.text ? ' (' + p.text + ')' : ''}`, 'quiet');
+    } else if (type === 'spell') {
+      map.cmd.push({ t, id: p.id });
+      note(`Befehl: ${p.id}`, 'quiet');
     } else if (type === 'echo-occupy') {
       map.echo.push({ t, n: p.n });
       note(`Das Echo besetzt einen Sektor (${p.n})`);
@@ -195,6 +207,10 @@ export function runSim({ hours = 30, dt = 1, act: actEvery = 1, session = 0, qui
     if (act2 && g.state.rep2.act2) {
       while (mapAutoClaim(g)); // before the Auto-Erkundung unlocks the player claims by hand, with the same function (everything affordable, before any reset)
       mutAutoGenom(g); // the Auto-Genom's decision (def.js), taken by hand before it unlocks
+      // starts a pending anomaly when it is worth it (anomalies.js). A Zeitriss moves the game clock by 10 min within this call; the sim's clock t
+      // (= the player's real time) does not move, that is the point of it (event times in the sim output are real time, the story's time stamps are game time)
+      chooseAnomaly(g);
+      g.spellAutoRun(); // the Auto-Befehl's decision (spells' autoWhen, commands.js), by hand before it unlocks; per-spell switches are respected
     }
     research();
     buyRepUpgrades(g, 'expansion'); // the same value-based buying as the in-game autobuyers (def.js)

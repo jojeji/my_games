@@ -9,6 +9,8 @@
 import { D, ONE, Decimal } from '../../engine/decimal.js';
 import { newSeed, rngNext, rngRoll, rngInt, rngShuffle, toSeed } from '../../engine/kit/rng.js';
 import { TUNE as T } from './tune.js';
+import { cmdState } from './commands.js';
+import { anoState, anoReset } from './anomalies.js';
 import { mutState, mutReset, mutMapCost, mutTrip, mutAdj, ripen } from './mutations.js';
 
 /* ------------------------------------------------------------------ */
@@ -60,10 +62,10 @@ export const SECTOR = {
   home: { name: 'Heimat', short: 'H', color: '#38d6f2', desc: 'Dein Ausgangspunkt. Von hier aus wächst das Gebiet.' },
   haufen: { name: 'Sternhaufen', short: 'S', color: '#f2c14e', kind: 'systems', effect: 'Sternsystem-Gewinn', desc: 'Dichter Sternhaufen. Mehr Sterne pro Expansion.' },
   nebel: { name: 'Nebel', short: 'N', color: '#ff7eb6', kind: 'blueprints', effect: 'Blaupausen-Gewinn', desc: 'Gaswolke voller Rohstoffe. Mehr Blaupausen pro Replikation.' },
-  pulsar: { name: 'Pulsar', short: 'P', color: '#5ef2c0', kind: 'prod', effect: 'Produktion', desc: 'Schneller Taktgeber. Die gesamte Produktion steigt. Später laden hier auch Befehle schneller.' },
+  pulsar: { name: 'Pulsar', short: 'P', color: '#5ef2c0', kind: 'prod', effect: 'Produktion', desc: 'Schneller Taktgeber. Die gesamte Produktion steigt und Sondenbefehle laden schneller nach.' },
   loch: { name: 'Schwarzes Loch', short: 'L', color: '#c9c9ff', kind: 'cores', effect: 'Quantenkern-Gewinn', desc: 'Sehr dicht, sehr still. Mehr Quantenkerne pro Singularität.' },
   ruine: { name: 'Ruine', short: 'R', color: '#c3a57a', kind: 'prod', effect: 'Produktion', desc: 'Überreste von etwas Altem. Einmalig ein Eintrag in der Chronik, dauerhaft ein kleiner Bonus.' },
-  anomalie: { name: 'Anomalie', short: 'A', color: '#ff8a4c', kind: 'prod', effect: 'Produktion', desc: 'Hier stimmt etwas nicht. Die Anomalien selbst folgen später, bis dahin gibt es einen kleinen Bonus.' },
+  anomalie: { name: 'Anomalie', short: 'A', color: '#ff8a4c', kind: 'prod', effect: 'Produktion', desc: 'Hier stimmt etwas nicht. Bei der Ankunft entsteht eine Anomalie, die auf dich wartet. Dazu ein kleiner Produktionsbonus.' },
   echo: { name: 'Echo', short: 'E', color: '#9b8cff', desc: 'Besetzt. Nicht erschließbar.' },
 };
 /** Order of the effect types in lists. */
@@ -85,6 +87,8 @@ export function rep2State() {
       ruins: [], // variants of the claimed Ruinen in claim order (story entries)
       map: { radius: 0, seed: 0, claimed: 0, occupied: 0, trip: null, cells: [] }, // trip: { i, left, dur } while an Erschliessung runs
       mut: mutState(), // Mutationen (mutations.js), from Akt II on
+      cmd: cmdState(), // Sondenbefehle (commands.js): unlock flag
+      ano: anoState(), // Anomalien (anomalies.js)
     },
   };
 }
@@ -250,9 +254,37 @@ export function arrive(g) {
 export function mapTick(g, dt) {
   const r = g.state.rep2;
   if (!r.act2 || !r.map.trip) return;
-  r.map.trip.left -= dt;
+  // hooks.tripSpeed: time-limited effects (Übertakten, Gezeitenwelle) make the probe fly faster; dt may be a large offline step
+  const speed = g.hooks.tripSpeed ? g.hooks.tripSpeed(g, dt) : 1;
+  r.map.trip.left -= dt * speed;
   if (r.map.trip.left <= 0) arrive(g);
 }
+
+/** Cut `secs` off the running Erschliessung (Tiefenscan, Zeitriss). Returns the seconds really saved. */
+export function trimTrip(g, secs) {
+  const trip = tripOf(g);
+  if (!trip || !(secs > 0)) return 0;
+  const cut = Math.min(secs, Math.max(0, trip.left));
+  trip.left -= cut;
+  return cut;
+}
+
+/** Reveal the `n` fogged cells nearest to own territory (the `seen` flag, Tiefenscan). Returns the indices revealed. */
+export function revealFog(g, n) {
+  if (!act2Active(g)) return [];
+  const cells = mapCells(g);
+  const ownCells = cells.filter((c) => c.own);
+  const dist = (c) => Math.min(...ownCells.map((o) => hexDist(c, o)));
+  const fogged = cells.map((c, i) => i).filter((i) => !cells[i].own && !isVisible(cells, i));
+  fogged.sort((a, b) => dist(cells[a]) - dist(cells[b]) || a - b);
+  const take = fogged.slice(0, n);
+  for (const i of take) cells[i].seen = 1;
+  if (take.length) g.refresh();
+  return take;
+}
+
+/** Number of claimed sectors of one type. */
+export const ownedOfType = (g, type) => (act2Active(g) ? mapCells(g).filter((c) => c.own && c.type === type).length : 0);
 
 /**
  * Should the Singularität wait? It wipes the Sternsysteme stock: while sectors are left and the next one costs at most `mapHoldReach` times
@@ -466,6 +498,7 @@ export function act2Check(g) {
   r.anchor = T.mapAnchorFixed != null ? T.mapAnchorFixed : best.m > 0 ? Math.max(0, T.mapAnchorSlope * best.log10()) : 0;
   r.map = generateMap(r.rng);
   mutReset(g);
+  anoReset(g);
   g.plog('map', `Akt II beginnt, Anker 1e${r.anchor.toFixed(2)}`);
   g.emit('act2', {});
   return true;

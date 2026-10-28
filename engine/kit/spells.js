@@ -7,6 +7,7 @@
 //   cooldown(g) -> seconds (counted from the cast),
 //   cast?(g)  -> instant effect, called when the spell is cast,
 //   info?(g)  -> string with the current numbers (shown in the details)
+//   autoWhen?(g) -> bool, extra condition for AUTO-casts only (a game can keep an auto from wasting a cast; manual casts are never blocked by it)
 // }]
 // Time-limited effects read `g.spellFrac(id, dt)` (share of the next dt during which the spell is active; works with
 // the large steps of offline catch-up) or `g.spellActive(id)`. A game-defined auto (kind 'misc') calls `g.spellAutoRun()`.
@@ -68,7 +69,7 @@ export const spellMethods = {
   spellAutoRun() {
     let n = 0;
     for (const sp of this.def.spells) {
-      if (this.state.spells[sp.id].auto && this.spellCast(sp.id, true)) n++;
+      if (this.state.spells[sp.id].auto && (!sp.autoWhen || sp.autoWhen(this)) && this.spellCast(sp.id, true)) n++;
     }
     return n;
   },

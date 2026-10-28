@@ -94,6 +94,32 @@ export const TUNE = {
   // Effect of ONE sector without neighbours (x per sector): gain of Sternsysteme / Blaupausen / Quantenkerne, production
   mapBase: { haufen: 2, nebel: 2, pulsar: 2, loch: 1.5, ruine: 1.15, anomalie: 1.1 },
 
+  // Akt II - Sondenbefehle (games/replikator/commands.js). Unlock: the first Pulsar sector or cmdUnlockAt claimed sectors. Every number was measured with
+  // tools/commands-replikator.mjs: the effects act on what limits Akt II (Erschliessung time, gains after the softcap), not on production (docs/LESSONS.md).
+  cmdUnlockAt: 6,
+  cmdAutoAt: 9, // Auto-Befehl unlocks with this many claimed sectors
+  cmdPulsar: 0.12, // commands recharge (1 + this x pulsar exponent) times as fast; the exponent counts every claimed Pulsar incl. its neighbour bonus
+  // Uebertakten: for `dur` s the Erschliessung runs `trip` times as fast and the prestige gains are x `gain` (after the softcap, ripening like all gain factors)
+  uebertakten: { dur: 45, cd: 300, trip: 3, gain: 1.5 },
+  // Sonnenwind-Ernte: instantly `share` x the Sternsysteme of the next Expansion (2: a smaller share lifts Sternsysteme but hardly the Quantenkerne behind them)
+  sonnenwind: { cd: 900, share: 2 },
+  // Tiefenscan: reveals the `reveal` nearest fogged cells and cuts `cut` x the duration of the running Erschliessung
+  tiefenscan: { cd: 1800, cut: 0.3, reveal: 5 },
+
+  // Akt II - Anomalien (games/replikator/anomalies.js): event cards that wait for the player. Sources: every Anomalie sector on arrival and one every
+  // anoEvery + [0, anoSpread) s of play time (60-90 min). The sim starts a pending one when it is worth it, at the latest after anoPatience s.
+  anoEvery: 3600,
+  anoSpread: 1800,
+  anoPatience: 1800,
+  anoForce: null, // dev / measurement only (tools/anomalies-replikator.mjs): a type id = every anomaly is this type, 'none' = no anomalies
+  anoMinLeft: 360, // Gezeitenwelle: start while an Erschliessung with at least this many s left is running
+  anoSignalGain: 1.08, // every Signalfragment: all prestige gains x this (4 fragments exist)
+  anoSectorW: 0.45, // the Auto-Erkundung values an Anomalie sector like this many decades of strength (it brings an anomaly)
+  gezeitenwelle: { dur: 300, trip: 3 },
+  zeitriss: { secs: 600 },
+  spiegel: { cost: 0.5 },
+  umkehr: { dur: 300, share: 1 },
+
   // Akt II - Mutationen (games/replikator/mutations.js). Offers charge by PLAY TIME (online and offline equally), never per replication:
   // per-replication charging would reward micro-replications (docs/LESSONS.md).
   mutUnlockAt: 3, // claimed sectors; the first offer is there at once
@@ -113,6 +139,7 @@ export const TUNE = {
   mutOfferW: 1.0, // per decade of offer rate
   mutTripW: 1.0, // per decade of Erschliessung time (a longer trip is worse)
   mutMapCostW: 0.5, // per decade of sector price
+  mutCmdW: 0.6, // per decade of Sondenbefehl recharge speed (Sonnenhunger; measured: x2 = -17 % time to 10 sectors)
   mutGainW: 1.0, // objective weight of a factor on ALL prestige gains (per decade)
   mutRipe: { systems: 300, cores: 1800 }, // run time (s) from which a gain factor > 1 on Sternsysteme / Quantenkerne works in full (linear before; keeps short runs from becoming optimal)
   mutOfflineShare: 0.6, // assumed share of play time spent offline (Nachtschwärmer)
@@ -133,6 +160,7 @@ export const TUNE = {
     glueckstreffer: { prod: 4, gain: 2.5, trip: 1.1 },
     ueberschuss: { gain: 2.5, prod: 0.6, mapCost: 1.7 },
     chimaere: { perSlot: 1.5, gainSlot: 1.3, offers: 0.5 },
+    sonnenhunger: { cmd: 2, bp: 0.5 },
   },
 };
 
