@@ -305,11 +305,24 @@ export function mutParts(g) {
   return out;
 }
 
+const RIPE_LAYER = { systems: 'expansion', cores: 'singularity' };
+/**
+ * A factor ABOVE 1 on the Sternsystem / Quantenkern gain ripens with the run time of that layer (full from `mutRipe[kind]` s on, linear before): gain factors are
+ * applied after the softcap at full strength, and without this a build with several of them makes short Singularitäten optimal (more Kerne per run feed
+ * production faster than a long run pays, tools/runlength-replikator.mjs). Factors below 1 (the catches) always apply in full. The valuation (g.mutRef) sees the full factor.
+ */
+function ripen(g, kind, v) {
+  const layer = RIPE_LAYER[kind];
+  if (!layer || v <= 1 || g.mutRef) return v;
+  const r = Math.min(1, g.state.layers[layer].runTime / T.mutRipe[kind]);
+  return 1 + (v - 1) * r;
+}
+
 /** Labeled factors on the gain of a prestige currency ('blueprints' | 'systems' | 'cores'): [[mutation name, factor]], only those that change something. */
 export function mutGainParts(g, kind) {
   const out = [];
   for (const m of genomeList(g)) {
-    const v = m.gain && m.gain[kind] ? m.gain[kind](g) : 1;
+    const v = m.gain && m.gain[kind] ? ripen(g, kind, m.gain[kind](g)) : 1;
     if (v !== 1) out.push([m.name, D(v)]);
   }
   return out;
