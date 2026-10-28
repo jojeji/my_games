@@ -17,7 +17,8 @@ const mem = () => {
   const m = new Map();
   return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k) };
 };
-const allText = (def) => def.story.flatMap((s) => s.lines.map((l) => l.t));
+const resolve = (g, l) => (typeof l.t === 'function' ? l.t(g) : l.t); // lines can be a function of the game (Archiv bonus texts)
+const allText = (g) => g.def.story.flatMap((s) => s.lines.map((l) => resolve(g, l)));
 
 test('Figuren: Sonde always, Wartungsroutine after st_start, Akt-II-Figuren not before their story entry', () => {
   const g = createReplikator();
@@ -59,7 +60,7 @@ test('story data: unique ids, chapters and speakers exist, the eight old ids sta
     assert.ok(s.lines.length && s.lines.every((l) => l.t && CAST[l.who] && !CAST[l.who].later), s.id);
     assert.equal(typeof s.cond, 'function', s.id);
   }
-  assert.deepEqual(d.story.filter((s) => s.modal).map((s) => s.id), ['st_start', 'st_sing', 'k4_horizont', 'st_end', 'a2_start', 'mut_first', 'ano_first']);
+  assert.deepEqual(d.story.filter((s) => s.modal).map((s) => s.id), ['st_start', 'st_sing', 'k4_horizont', 'st_end', 'a2_start', 'mut_first', 'ano_first', 'jump_first']);
   // the old setup survives: the first copy carries the flaws of the original
   const rep = d.story.find((s) => s.id === 'st_rep');
   assert.ok(rep.lines.some((l) => /Fehler/.test(l.t) && /Original/.test(l.t)));
@@ -69,12 +70,12 @@ test('names only via characters.js; no Bobiverse terms; house style rules for th
   const src = readFileSync(new URL('../games/replikator/story.js', import.meta.url), 'utf8');
   for (const c of Object.values(CAST)) assert.ok(!src.includes(c.name), 'hard-coded name ' + c.name);
   const g = createReplikator();
-  const texts = allText(g.def).join('\n');
-  const v1texts = g.def.story.filter(isV1).flatMap((s) => s.lines.map((l) => l.t)).join('\n');
+  const texts = allText(g).join('\n');
+  const v1texts = g.def.story.filter(isV1).flatMap((s) => s.lines.map((l) => resolve(g, l))).join('\n');
   assert.ok(texts.includes(P) && texts.includes(W), 'placeholders resolve to the cast names');
   for (const bad of ['Bob', 'GUPPI', 'Deltan', 'Anderen', 'Others', 'Replikant']) assert.ok(!new RegExp(bad).test(texts), bad);
   for (const s of g.def.story) {
-    const t = s.lines.map((l) => l.t).join(' ');
+    const t = s.lines.map((l) => resolve(g, l)).join(' ');
     assert.ok(!/nicht [^.]*, sondern/i.test(t), 'nicht X, sondern Y: ' + s.id);
     assert.ok(!/irgendwie|Es ist, als ob|In einer Welt/i.test(t), s.id);
     assert.ok((t.match(/ – | - |—/g) || []).length <= 1, 'dashes: ' + s.id);

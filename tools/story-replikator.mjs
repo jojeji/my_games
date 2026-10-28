@@ -45,13 +45,23 @@ function printTranscript(timeline, g) {
   }
 }
 
-/** Akt II transcript (map entries) of a sim run: node tools/story-replikator.mjs --act2 [--fixture file] [--seed N] */
-function act2Transcript(args) {
-  const fx = args.indexOf('--fixture') >= 0 ? args[args.indexOf('--fixture') + 1] : null;
-  const seed = args.indexOf('--seed') >= 0 ? Number(args[args.indexOf('--seed') + 1]) : undefined;
-  const game = fx ? loadSaveFile(fx, { seed }) : null;
-  const r = runSim({ game, hours: fx ? 10 : 11.5 + 10, dt: 2, quiet: true, act2: true, seed, until: (g) => g.state.rep2.map.claimed >= 12 });
+/**
+ * Akt II transcript (map entries) of a sim run: node tools/story-replikator.mjs --act2 [--fixture file] [--seed N] [--jump [--galaxies 2]]
+ * --jump plays on through the Galaxiensprung until the given galaxy (default 2) is complete and left.
+ */
+export function act2Run({ fixture = null, seed, jump = false, galaxies = 2 } = {}) {
+  const game = fixture ? loadSaveFile(fixture, { seed }) : null;
+  const until = jump ? (g) => g.state.rep2.gal.n > galaxies : (g) => g.state.rep2.map.claimed >= 12;
+  const r = runSim({ game, hours: (fixture ? 8 : 11.5 + 4) + (jump ? 5 * galaxies : 6), dt: 2, quiet: true, act2: true, seed, jump, until });
   advance(r.game, 5);
+  return r;
+}
+
+function act2Transcript(args) {
+  const arg = (k) => (args.indexOf('--' + k) >= 0 ? args[args.indexOf('--' + k) + 1] : null);
+  const fx = arg('fixture');
+  const seed = arg('seed') ? Number(arg('seed')) : undefined;
+  const r = act2Run({ fixture: fx, seed, jump: args.includes('--jump'), galaxies: arg('galaxies') ? Number(arg('galaxies')) : 2 });
   const g = r.game;
   const start = g.state.rep2.act2At;
   const list = g.storyList().filter((x) => x.def.chapter.startsWith('a2'));

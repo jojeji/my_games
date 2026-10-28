@@ -7,6 +7,7 @@ import { echoSighted, occupiedCount, claimedCount } from './map.js';
 import { MUTATIONS, mutSlots } from './mutations.js';
 import { cmdUnlocked } from './commands.js';
 import { FRAGMENTS } from './anomalies.js';
+import { GAL_ORDER, GALAXIES, galType, galNumber, archiveDone, galBonusText } from './galaxy.js';
 
 export const CHAPTERS = [
   { id: 'k1', title: 'Asteroidengürtel', sub: 'Die ersten Kopien' },
@@ -16,6 +17,7 @@ export const CHAPTERS = [
   { id: 'a2', title: 'Die Karte', sub: 'Akt II' },
   { id: 'a2m', title: 'Kopierfehler', sub: 'Akt II, Genom' },
   { id: 'a2c', title: 'Befehle und Anomalien', sub: 'Akt II' },
+  { id: 'a2j', title: 'Galaxiensprung', sub: 'Akt II, Galaxien' },
 ];
 
 const p = (t) => ({ who: 'sonde', t });
@@ -475,5 +477,90 @@ add('sig_3', 'a2c', frag(FRAGMENTS - 1), [
   w('Signalfragment 4. Alter: 200 Jahre, Angabe unplausibel. Inhalt: Rauschen. Darin ein kurzes Wort, mehrfach. Wort: nicht lesbar. Wiedervorlage: später.'),
   p('Ich habe die Stelle oft gehört. Es ist ein kurzes Wort. Mehr sage ich dazu nicht.'),
 ]);
+
+/* ---------------- Akt II: Galaxiensprung (jump.js, galaxy.js) ---------------- */
+// The first galaxy is complete (open for the jump), the jump itself (a modal, after the pick), one short entry for each galaxy type on arrival, the Silhouette again
+// in the second galaxy, one line for each further type that is completed (the bonus text comes from tune.js), and a chain of observations ('jfill') that keeps the
+// transcript from going quiet for long in the galaxies after the first. Names of the second probe and of the builders stay out of the texts (see STIMMEN.md): "die Silhouette".
+const gal = (g) => g.state.rep2.gal;
+
+add('jump_open', 'a2j', (g) => archiveDone(g, 'spirale') && calm(g), [ // the Archiv entry stays true (the completion itself is gone as soon as the jump is made)
+  w('Bestand: zehn Sektoren. Galaxie wird als abgeschlossen geführt. Ablage: Archiv.'),
+  p('Ich sehe nach, wohin man von hier aus kommt. Es gibt einen Weg, er heißt Sprung.'),
+  w('Sprung vermerkt. Rückkehr: nicht vorgesehen. Gepäck: Saatkerne.'),
+]);
+
+add('jump_first', 'a2j', (g) => g.state.layers.jump.count >= 1 && !gal(g).choice && had('jump_open')(g) && calm(g), [
+  p('Ich breche auf. Hinter mir bleibt alles stehen: zehn Sektoren, ein paar Kopien, ein sehr ordentliches Lager.'),
+  w('Abgang der Sonde aus Galaxie 1. Zurückgelassen: Bestand, Anlagen, Forschung. Mitgeführt: Saatkerne, Genom, Erinnerung. Erinnerung wird nicht geprüft.'),
+  p('Das Letzte, was ich von der Galaxie sehe, ist der Nachbarsektor. Die Silhouette steht noch da. Sie bewegt sich nicht. Ich auch nicht, eine Weile.'),
+  w('Sprung abgeschlossen. Ankunft: wie geplant. Plan: gab es.'),
+], true);
+
+const arrival = (type, lines) => add('gal_' + type, 'a2j', (g) => galNumber(g) >= 2 && galType(g) === type && had('jump_first')(g) && calm(g), lines);
+arrival('zwerg', [
+  p('Eine Zwerggalaxie. Die Wege sind kurz, die Vorräte auch. Ich darf nur sechs Stufen bauen und finde das übersichtlich.'),
+  w('Zuständigkeitsbereich verkleinert. Personal unverändert.'),
+]);
+arrival('elliptisch', [
+  p('Eine elliptische Galaxie. Alte Sterne, dicht gepackt, träge. Alles kostet mehr, und alles trägt mehr. Ich bin eine Sonde, ich habe Zeit.'),
+  w('Wartungsbericht. Materialpreise steigen. Sternsysteme ergiebig. Ursache: Alter.'),
+]);
+arrival('kollision', [
+  p('Zwei Galaxien gehen ineinander auf. Die Produktion schwankt, mal fast nichts, mal viel zu viel. Ich rechne mit dem Durchschnitt und freue mich über den Rest.'),
+  w('Schwankung im Takt von zehn Minuten festgestellt. Takt ist verlässlich. Verlässlichkeit ist ungewohnt.'),
+]);
+arrival('leerraum', [
+  p('Leerraum. Zwischen den Sternen ist hier erstaunlich wenig. Sternsysteme tragen nichts bei. Dafür ist Platz, und in Platz passen Fehler.'),
+  w('Platzangebot: erheblich. Auslastung: gering. Genom: aufnahmebereit.'),
+]);
+arrival('quasar', [
+  p('Ein Quasar. Im Kern brennt etwas, das alles überstrahlt. Meine Produktion ist lächerlich hoch. Ich bleibe sachlich.'),
+  w('Automaten brauchen Anlauf. Sie wurden informiert. Sie wurden nicht gefragt.'),
+]);
+arrival('spirale', [
+  p('Wieder eine Spirale. Sie sieht aus wie die erste. Ich habe sie anders eingerichtet, aus Gewohnheit.'),
+  w('Abgleich mit Galaxie 1: Ähnlichkeit hoch. Unterschiede: Ablage.'),
+]);
+
+// the second galaxy, the same silhouette at the edge of the map: it was there before the probe arrived
+add('gal_echo2', 'a2j', (g) => galNumber(g) >= 2 && !!galType(g) && echoSighted(g) && had('jump_first')(g) && calm(g), [
+  p('Da steht sie wieder, am Rand der Karte, in derselben Haltung. Ich bin eine ganze Galaxie weitergesprungen. Sie hat nicht auf mich gewartet. Sie war schon da.'),
+  w('Objekt erfasst. Klassifikation: Sonde. Bestand laut Register: eine. Bestand laut Karte: eine, schon wieder.'),
+]);
+
+// the first completion of each further type (Archiv): the bonus line is built from tune.js
+const archLines = {
+  zwerg: p('Die kleine Galaxie ist fertig. Ich habe sie bis in den letzten Winkel aufgeräumt. Viele Winkel waren es nicht.'),
+  elliptisch: p('Die alte Galaxie ist fertig. Sie war zäh, und sie hat sich gelohnt. Beides steht im Protokoll.'),
+  kollision: p('Die Kollisionszone ist fertig. Ich weiß jetzt, wie sich Durchschnitt anfühlt. Er schwankt.'),
+  leerraum: p('Der Leerraum ist fertig. Ich habe ihn gefüllt, so gut es ging. Es ging.'),
+  quasar: p('Der Quasar ist fertig. Danach kam mir alles andere dunkel vor. Das legt sich.'),
+};
+for (const type of GAL_ORDER.filter((x) => x !== 'spirale')) {
+  add('arch_' + type, 'a2j', (g) => archiveDone(g, type) && had('jump_first')(g) && calm(g), [
+    archLines[type],
+    { who: 'wartung', t: (g) => `Archiv: ${GALAXIES[type].name} abgeschlossen. Dauerhaft: ${galBonusText(type)}.` },
+  ]);
+}
+
+// observations for the galaxies after the first: one after the other, each when nothing Akt II has been said for ~16 minutes (the progress entries come first)
+const JFILL = [
+  [p('Ich baue wieder von vorn. Das Wissen ist noch da, nur die Anlagen nicht. Die erste Bohrdrohne hat mich begrüßt, als hätte sie gewartet.')],
+  [w('Wartungsbericht. Bestand neu angelegt. Bestand alt: zurückgelassen. Abgleich: entfällt.')],
+  [p('Die Saatkerne liegen im Speicher und tun nichts, bis ich entscheide. Das ist das Angenehmste an ihnen.')],
+  [w('Hinweis. Galaxie unbekannt, Verfahren bekannt. Verfahren wird angewandt.')],
+  [p('Ich führe eine Liste der Galaxien, in denen ich war. Sie ist kurz. Ich ergänze sie gern.')],
+  [w('Archiv: Eintrag offen. Zuständig: Sonde. Frist: keine. Bitte um Frist.')],
+  [p('Beim Bauen zähle ich nicht mehr mit. Die Zahlen stimmen immer noch, sie sind nur kleiner als früher.')],
+  [w('Sonde spricht beim Arbeiten leise. Inhalt: Zahlen. Kein Handlungsbedarf.')],
+  [p('Von hier aus sieht man die letzte Galaxie nicht mehr. Ich weiß, wo sie war. Für ein Protokoll reicht das.')],
+  [w('Wartungsroutine hat eine Stunde lang nichts gemeldet. Das wird gemeldet.')],
+];
+const lastA2 = (g) => S.reduce((m, e) => (e.chapter.startsWith('a2') && g.state.story[e.id] !== undefined && g.state.story[e.id] !== false ? Math.max(m, g.state.story[e.id]) : m), 0);
+JFILL.forEach((lines, k) => {
+  const id = 'jfill' + (k + 1);
+  add(id, 'a2j', (g) => galNumber(g) >= 2 && !!galType(g) && had('jump_first')(g) && (k === 0 || had('jfill' + k)(g)) && played(g) >= lastA2(g) + 960 && calm(g), lines);
+});
 
 export const STORY = S;
