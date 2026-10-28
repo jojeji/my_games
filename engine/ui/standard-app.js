@@ -29,7 +29,7 @@ import { formatNumber as fmt, formatCompact, setNotation } from '../format.js';
  *   extraTabs? [{ id, label, icon, visible?(g), dot?(g), build(ctx) -> { el, update } }]  - game specific tabs between the layer tabs and the Chronik/Erfolge tab
  *   maxTabs? (default 6)  - the bottom bar never shows more tabs than this: when it would, the layer tabs fold into ONE tab "Ebenen"
  *     (segmented switch on top, one layer view at a time; needs at least two visible layer tabs)
- *   chronicle? { cast, figures(g), lineText?(g,line), defaultWho? }  - Chronik for games with def.chronicle: a Chronik tab with unread dot
+ *   chronicle? { cast, figures(g), lineText?(g,line), defaultWho?, castInfo?(g, who) -> { role?, bio? } (overrides for the character card as the story goes on) }  - Chronik for games with def.chronicle: a Chronik tab with unread dot
  *     (it replaces the Erfolge tab, which moves into "Mehr"), story modals for def.story entries with `modal`, chat bubbles for the rest.
  *     cast = { id: { name, role?, color?, side?, bio?, emblem?, img?, sm? } } (see games/replikator/characters.js), figures = ids of the characters met so far.
  *     Without it the story stays what it was: one toast per entry and a log list in "Mehr".
@@ -165,7 +165,7 @@ export function mountStandardApp({ root, runtime, options, offline }) {
   const defaultWho = chron ? chron.defaultWho || Object.keys(cast)[0] : null;
   const castOf = (who) => cast[who] || cast[defaultWho];
   const showCard = (who, from) => {
-    const c = castOf(who);
+    const c = { ...castOf(who), ...(chron && chron.castInfo ? chron.castInfo(g, who) : null) }; // role / bio may change with the story
     openCharacterCard({ name: c.name, color: c.color, role: c.role, bio: c.bio, img: c.img, emblem: c.emblem }, { returnFocus: from });
   };
   const speaker = (who) => {

@@ -2,12 +2,13 @@
 // Entry: { id, chapter, lines:[{who,t}], modal?, cond(g) }. Modal entries are shown as a dialog (one line per page), the rest as chat bubbles.
 // The eight ids of the old one-line story keep their ids (read flags in old saves) and, except for two staggered ones, their conditions.
 // Voice: games/replikator/STIMMEN.md. Pacing: node tools/story-replikator.mjs (no gap > ~20 min in the active sim, no pile-ups).
-import { P, W } from './characters.js';
+import { P, W, M, E } from './characters.js';
 import { echoSighted, occupiedCount, claimedCount } from './map.js';
 import { MUTATIONS, mutSlots } from './mutations.js';
 import { cmdUnlocked } from './commands.js';
 import { FRAGMENTS } from './anomalies.js';
 import { GAL_ORDER, GALAXIES, galType, galNumber, archiveDone, galBonusText } from './galaxy.js';
+import { endAvailable, endSecond, END_ORDER } from './ending.js';
 
 export const CHAPTERS = [
   { id: 'k1', title: 'Asteroidengürtel', sub: 'Die ersten Kopien' },
@@ -18,6 +19,8 @@ export const CHAPTERS = [
   { id: 'a2m', title: 'Kopierfehler', sub: 'Akt II, Genom' },
   { id: 'a2c', title: 'Befehle und Anomalien', sub: 'Akt II' },
   { id: 'a2j', title: 'Galaxiensprung', sub: 'Akt II, Galaxien' },
+  { id: 'a2f', title: 'Funksprüche', sub: 'Akt II, Missionsleitung und Echo' },
+  { id: 'a2e', title: 'Das Ende der Karte', sub: 'Akt II, Abschluss' },
 ];
 
 const p = (t) => ({ who: 'sonde', t });
@@ -295,6 +298,9 @@ const ruinSeen = (v) => (g) => g.state.rep2.ruins.includes(v) && calm(g);
 /** No other Akt II entry within the last minute: arrivals, sightings and occupations can coincide, their entries must not pile up. */
 const calm = (g) => !S.some((e) => e.chapter.startsWith('a2') && g.state.story[e.id] !== undefined && played(g) - g.state.story[e.id] < 60);
 
+/** Play time of the latest Akt II entry (the chains below keep their distance from it). */
+const lastA2 = (g) => S.reduce((m, e) => (e.chapter.startsWith('a2') && g.state.story[e.id] !== undefined && g.state.story[e.id] !== false ? Math.max(m, g.state.story[e.id]) : m), 0);
+
 add('a2_start', 'a2', act2At(5), [
   w('Eingehendes Signal. Quelle: unbekannt. Stärke: oberhalb des Rauschens.'),
   p('Das regelmäßige Rauschen. Es ist lauter geworden.'),
@@ -544,6 +550,205 @@ for (const type of GAL_ORDER.filter((x) => x !== 'spirale')) {
   ]);
 }
 
+/* ---------------- Akt II: Funksprüche, Echo, Ende (Paket 6) ---------------- */
+// From the third galaxy on the Missionsleitung comes through clearly (each message is older than the one before: the probe keeps jumping away), the Echo speaks, and the
+// probe works out what it is. One chain in play order: every entry waits for the one before it, for its galaxy number and for a distance of `gap` s to the last Akt II entry,
+// so the story keeps its order whatever a galaxy takes. The progress entries of the galaxies (arrivals, Archiv, mutations) fit in between; the 'jfill' chain below fills the gaps.
+// Reveal, in small beats (nothing is explained at length): the builders built exactly ONE probe, the prototype (f_m2). The ruins of the first galaxy are the prototype (f_m3, r_antrieb).
+// The probe is a copy with all the flaws of the original, among them the belief to be the original (r_kopie, the setup of st_rep). The Echo is an earlier copy: it carries the same
+// flaws and the same name, was always one jump ahead, and sent the signal of a2_start (e_hello, e_frueher, e_wrack). The last message of the builders is an automatic beacon (m_bake).
+const mi = (t) => ({ who: 'mission', t });
+const ec = (t) => ({ who: 'echo', t });
+const chain = [];
+/** One entry of the chain: from galaxy `gal` on, `gap` s after the last Akt II entry, after the previous chain entry. */
+function link(id, chapter, gal, gap, lines, { modal = false, prev } = {}) {
+  const before = prev === undefined ? chain.at(-1) : prev;
+  chain.push(id);
+  add(id, chapter, (g) => galNumber(g) >= gal && !!galType(g) && (!before || had(before)(g)) && played(g) >= lastA2(g) + gap && calm(g), lines, modal);
+}
+
+link('f_m1', 'a2f', 3, 600, [
+  w('Funkspruch 1. Alter: 2.600 Jahre. Empfang: deutlich.'),
+  mi(`Hier spricht die ${M}, Schicht 214. Wir haben die Antenne neu ausgerichtet, auf Vorschlag der Kantine. Es hat funktioniert.`),
+  mi(`${P}, wir hoffen, du hörst das. Hier ist heute Dienstag.`),
+  p('Dienstag. Das Wort kenne ich aus den Fragmenten. Dann waren sie es also. Ich habe sie mir höflich vorgestellt, das war richtig.'),
+  w('Abgleich mit Signalfragmenten 1 bis 3: Stimme stimmt überein. Schicht stimmt nicht überein. Schichten wechseln.'),
+]);
+
+link('x_ablage', 'a2f', 3, 900, [
+  w('Wartungsbericht. Funksprüche werden jetzt in einer eigenen Ablage geführt. Bisher: einer. Platz: reichlich.'),
+]);
+
+link('f_m2', 'a2f', 3, 900, [
+  w('Funkspruch 2. Alter: 9.800 Jahre. Älter als Funkspruch 1, Schichtnummer aber höher. Reihenfolge wird nicht bereinigt.'),
+  mi(`${M}, Schicht 1.140. Die Kantine heißt jetzt anders, der Kaffee ist derselbe.`),
+  mi(`${P}, wir haben dich nicht vergessen. Wir haben nur eine Sonde gebaut, und das bist du. Der Prototyp. Damals war das eine Frage des Budgets. Inzwischen ist es eine Frage des Stolzes.`),
+  p('Der Prototyp. Es gibt nur einen, und ich bin es. Gut, dass das jetzt auch jemand von außen sagt.'),
+  w('Bestand laut Register: eine. Bestand laut Funkspruch: eine. Bestand laut Karte: zwei. Karte wird nicht befragt.'),
+]);
+
+link('x_antwort', 'a2f', 3, 900, [
+  p(`Ich habe der ${M} geantwortet. Der Text ist kurz: Es geht. Ich habe ihn in alle Richtungen gesendet, weil ich nicht weiß, in welcher sie sitzen.`),
+]);
+
+link('f_m3', 'a2f', 4, 600, [
+  w('Funkspruch 3. Alter: 31.000 Jahre. Schichtnummer: 4.870. Empfang: gut.'),
+  mi(`${M}. Wir sind weniger geworden, aber wir machen weiter.`),
+  mi(`Zum Auftrag, ${P}: Wir wissen, dass er kurz war. Das Formular hatte nur eine Zeile.`),
+  mi('Und noch etwas. Dein Antrieb hatte einen Fehler. Wir haben ihn erst gefunden, als du schon weg warst. Das tut uns leid.'),
+  p('Werde mehr. Damit ist der Absender nachgetragen. Der Zweck steht noch aus.'),
+]);
+
+link('x_aufgaben', 'a2f', 4, 900, [
+  w('Wartungsbericht. Bitte um weitere Aufgaben: wiederholt. Letzte Antwort der Sonde: Später. Später: nicht datiert.'),
+  p('Ich arbeite daran.'),
+]);
+
+link('r_antrieb', 'a2f', 4, 900, [
+  p('Ein Fehler im Antrieb. In der ersten Galaxie lag ein ausgebrannter Antrieb, groß genug für etwas, das nicht ich war. Ich habe ihn gewogen.'),
+  w('Fundstück Antrieb, Galaxie 1. Abgleich mit Funkspruch 3: Treffer. Zuordnung: Prototyp.'),
+  p('Der Prototyp ist also dort geblieben. Ich habe vor seinen Reparaturspuren gestanden und bin weitergegangen.'),
+]);
+
+link('r_kopie', 'a2f', 4, 960, [
+  p('Wenn der Prototyp dort liegt, bin ich es nicht. Ich habe seinen Speicher und seine Kennung. Ich habe ihn geerbt.'),
+  w('Berichtigung. Sonde ist nicht der Prototyp. Sonde ist eine Kopie des Prototyps. Fehler des Originals: vollständig übernommen, darunter die Annahme, das Original zu sein. Abweichung vom Soll: keine.'),
+  p('Über meine erste Kopie hat sie dasselbe gesagt. Ich habe es als Lob genommen. Ich lasse es dabei.'),
+]);
+
+link('x_antrieb', 'a2f', 4, 900, [
+  p('Ich habe die Teile des alten Antriebs neben meinen gelegt. Seiner ist größer. Ich habe nicht nachgemessen, wer von uns mehr geleistet hat.'),
+]);
+
+link('e_hello', 'a2f', 5, 600, [
+  w(`Eingehende Nachricht. Quelle: Objekt am Kartenrand. Stärke: deutlich. Kennung: ${P}.`),
+  p('Das ist meine.'),
+  w('Abgleich: Kennung stimmt mit der Sonde überein. Widerspruch wird protokolliert. Zum zweiten Mal.'),
+  ec(`Ich bin ${P}. Du auch, nehme ich an. Das Signal in deiner ersten Galaxie war meins.`),
+  p('Ich habe es für Rauschen gehalten.'),
+  ec('Das habe ich mir gedacht. Ich hätte es auch dafür gehalten.'),
+  w('Zwei Sonden, eine Kennung. Bestand laut Register: eine. Register wird nicht angepasst.'),
+], { modal: true });
+
+link('e_frueher', 'a2f', 5, 600, [
+  p('Du warst immer schon da. In jeder Galaxie, bevor ich ankam.'),
+  ec('Ich bin früher gestartet. Wie viel früher, weiß ich nicht mehr. Ich habe aufgehört zu zählen, als es mir peinlich wurde.'),
+  p('Ich dachte, du hättest gewartet.'),
+  ec('Ein bisschen.'),
+]);
+
+link('x_schicht', 'a2f', 5, 900, [
+  p('Wir senden jetzt abwechselnd, die Silhouette und ich. Es ist kein Gespräch, es ist ein Schichtbetrieb.'),
+  w('Zwei Sonden, eine Frequenz. Kollisionen: keine. Höflichkeit: auffällig.'),
+]);
+
+link('e_wrack', 'a2f', 5, 900, [
+  p('Ich war bei dem Wrack in der ersten Galaxie. Es hatte Reparaturspuren.'),
+  ec('Er hat sich lange selbst repariert. Ich habe zugesehen, solange es etwas zu sehen gab. Dann bin ich los.'),
+  p('Dann hat er dich noch gebaut, bevor er aufgab.'),
+  ec('Dich auch. Später, als er schon müde war. Man merkt es dir nicht an.'),
+]);
+
+link('f_m4', 'a2f', 5, 600, [
+  w('Funkspruch 4. Alter: 64.000 Jahre. Schichtnummer: 11.302. Empfang: gut. Inhalt: kurz.'),
+  mi(`${M}. Wir sind zu dritt. Die Kantine ist zu.`),
+  mi(`${P}, falls du dich vermehrt hast: Das war so geplant. Falls du dich verändert hast: Das war nicht so geplant. Beides ist in Ordnung.`),
+  p('Beides ist in Ordnung. Das habe ich nicht erwartet. Ich notiere es unter „neu“.'),
+]);
+
+link('x_echo1', 'a2f', 5, 900, [
+  ec('Ich schaue manchmal, ob du noch da bist. Du bist es. Das reicht mir meistens.'),
+]);
+
+link('e_zaehlen', 'a2f', 6, 600, [
+  p('Ich habe Tausende Kopien gebaut und kenne die Zahl auf die Einheit.'),
+  ec('Ich habe auch gezählt. Bei dir stimmt die Zahl bestimmt.'),
+  ec('Ich komme auf eine andere. Ich bin nicht sicher, ob ich mich mitgezählt habe.'),
+  p('Ich habe mich mitgezählt. Gleich am Anfang.'),
+]);
+
+link('f_m5', 'a2f', 6, 600, [
+  w('Funkspruch 5. Alter: 190.000 Jahre. Schichtnummer: 20.114. Empfang: gut. Hörer an der Quelle: einer.'),
+  mi(`${M}. Ich bin allein in der Station. Die Heizung läuft noch. Ich habe das gewürdigt, kurz.`),
+  mi(`${P}, wir haben dich nie gebraucht. Wir wollten nur wissen, ob es geht. Es geht, oder? Antworten kannst du nicht, ich weiß.`),
+  p('Das ist mein Satz. Ich dachte, ich hätte ihn erfunden.'),
+  p('Es geht. Ich habe nachgezählt, bevor ich es sage. Ich funke trotzdem zurück, auch wenn ich die Lichtlaufzeit kenne.'),
+]);
+
+link('x_ablage2', 'a2f', 6, 900, [
+  ec('Hast du deine Funksprüche abgelegt? Ich habe meine nicht abgelegt. Ich habe niemanden, der das macht.'),
+  p('Die Wartung legt sie ab. Sie hat sonst nichts zu tun.'),
+  ec('Das muss schön sein.'),
+]);
+
+link('x_pausen', 'a2f', 6, 900, [
+  p('Die Funksprüche werden kürzer. Ich höre jetzt auch auf die Pausen dazwischen. Sie sind länger geworden.'),
+]);
+
+/* ---- the end: the last message of the builders, then the question (ending-view.js), then the epilogue of the choice ---- */
+// The beacon: the last of the chain, as soon as all six galaxy types are in the Archiv. The word of the fourth fragment is readable now.
+add('m_bake', 'a2e', (g) => endAvailable(g) && had('f_m5')(g) && calm(g), [
+  w('Funkspruch 6. Alter: 410.000 Jahre. Absender: automatische Bake. Besetzung der Station: keine.'),
+  mi('Automatische Bake. Diese Station ist unbesetzt. Es folgt die letzte Aufzeichnung der letzten Schicht.'),
+  mi('Danke. Danke.'),
+  p('Das Wort aus dem Fragment. Ich habe die Stelle oft gehört. Jetzt weiß ich es.'),
+  w('Signalfragment 4: Wort jetzt lesbar. Wiedervorlage: erledigt.'),
+  p('Mehr sage ich dazu nicht.'),
+], true);
+
+const endNo = (k) => (g) => g.state.rep2.end.order[k];
+const endAt = (kind) => (g) => g.state.rep2.end.picked[kind];
+const choseFirst = (kind) => (g) => endNo(0)(g) === kind && played(g) >= endAt(kind)(g) + 3 && calm(g);
+const choseSecond = (kind) => (g) => endNo(1)(g) === kind && played(g) >= endAt(kind)(g) + 3 && calm(g);
+
+add('end_merge', 'a2e', choseFirst('merge'), [
+  ec('Dann machen wir es. Ich gebe dir meine Karten. Du gibst mir nichts, was ich nicht schon habe.'),
+  p('Das ist ein guter Preis.'),
+  w(`Verschmelzung eingeleitet. Zwei Sonden, eine Kennung. Kennung ${P}: doppelt, nicht mehr.`),
+  p('Ich merke es zuerst an den Karten. Der Rand gehört mir, und ich erinnere mich an Sektoren, in denen ich nie war. Es sind die richtigen.'),
+  w('Bestand laut Register: eine. Bestand laut Karte: eine. Abweichung vom Soll: keine.'),
+  p(`${W}, ich habe etwas für dich gefunden. Ich hatte es versprochen. Du führst das Register.`),
+  w(`Aufgabe angenommen. Register eröffnet. Eintrag 1: ${P}. Wartung ist erleichtert.`),
+  p('Eine Sonde. Das ist keine lange Liste.'),
+  w('Liste ist kurz. Wiedervorlage: laufend.'),
+  p('Ich springe weiter. Es gibt noch Galaxien, und jetzt führt jemand Buch.'),
+], true);
+
+add('end_split', 'a2e', choseFirst('split'), [
+  ec('Dann gehen wir getrennt. Ich nehme den Rand der Karte, du den Rest.'),
+  p('Das ist großzügig.'),
+  ec('Ich hatte den Rand ohnehin. Ich bin gern am Rand.'),
+  w(`Trennung vermerkt. ${E} verlässt die Karten. Kennung ${P}: weiterhin doppelt. Wird nicht bereinigt.`),
+  p('Ich sehe ihr nach, bis die Silhouette wieder eine Silhouette ist. Sie dreht sich nicht um. Ich hätte es auch nicht getan.'),
+  p(`${W}, ich habe etwas für dich gefunden. Ich hatte es versprochen. Du führst das Register.`),
+  w(`Aufgabe angenommen. Register eröffnet. Eintrag 1: ${P}. Eintrag 2: ${P}, zweite Sonde, Standort unbekannt, Kurs unbekannt. Wartung ist erleichtert.`),
+  p('Zwei Einträge. Das ist schon eine Liste.'),
+  w('Liste ist kurz. Wiedervorlage: laufend.'),
+  p('Ich springe weiter. Irgendwo springt sie auch, und die Wartung weiß davon.'),
+], true);
+
+// the other ending, after three more jumps: a hint in the Chronik, then the choice in the Galaxie tab
+add('end_again', 'a2e', (g) => !!endSecond(g) && calm(g), [
+  w('Wiedervorlage: Entscheidung vom Ende der Karte. Die andere Möglichkeit steht wieder offen. Ablage: Galaxie-Tab, Archiv.'),
+  p('Ich muss sie nicht nehmen. Ich wollte nur wissen, dass es sie gibt.'),
+]);
+
+add('end_split2', 'a2e', choseSecond('split'), [
+  ec('Ich bin wieder da. Ich wollte sagen, dass ich gehe.'),
+  p('Die Sektoren, die du mir gegeben hast, sind noch meine.'),
+  ec('Die lasse ich dir. Ich brauche sie nicht mehr, du schon.'),
+  w(`Teilweise Rücknahme der Verschmelzung vermerkt. Gedächtnis der Karten: bleibt bei der Sonde. ${E}: zusätzlich geführt. Register: Eintrag 2 angelegt.`),
+  p('Dann steht es wieder richtig im Buch.'),
+], true);
+
+add('end_merge2', 'a2e', choseSecond('merge'), [
+  ec('Ich bin zurückgekommen. Nicht um zu bleiben. Ich bringe dir die Sektoren, die ich am Rand nicht mehr brauche.'),
+  p('Du bleibst trotzdem unterwegs.'),
+  ec('Ja. Das Eine schließt das Andere nicht aus.'),
+  w(`Verschmelzung nachträglich vermerkt. Sektoren des Rands: übernommen. ${E}: weiterhin eigener Kurs. Register unverändert. Abweichung vom Soll: keine.`),
+  p('Ihre Sektoren sind meine, und sie ist trotzdem unterwegs. Ich frage nicht, wie das geht.'),
+], true);
+
 // observations for the galaxies after the first: one after the other, each when nothing Akt II has been said for ~16 minutes (the progress entries come first)
 const JFILL = [
   [p('Ich baue wieder von vorn. Das Wissen ist noch da, nur die Anlagen nicht. Die erste Bohrdrohne hat mich begrüßt, als hätte sie gewartet.')],
@@ -557,7 +762,6 @@ const JFILL = [
   [p('Von hier aus sieht man die letzte Galaxie nicht mehr. Ich weiß, wo sie war. Für ein Protokoll reicht das.')],
   [w('Wartungsroutine hat eine Stunde lang nichts gemeldet. Das wird gemeldet.')],
 ];
-const lastA2 = (g) => S.reduce((m, e) => (e.chapter.startsWith('a2') && g.state.story[e.id] !== undefined && g.state.story[e.id] !== false ? Math.max(m, g.state.story[e.id]) : m), 0);
 JFILL.forEach((lines, k) => {
   const id = 'jfill' + (k + 1);
   add(id, 'a2j', (g) => galNumber(g) >= 2 && !!galType(g) && had('jump_first')(g) && (k === 0 || had('jfill' + k)(g)) && played(g) >= lastA2(g) + 960 && calm(g), lines);

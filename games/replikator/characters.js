@@ -13,11 +13,11 @@ export const CAST = {
     bio: 'Läuft im Hintergrund und schreibt Berichte über die Sonde. Gewissenhaft, wörtlich und hilflos. Jeder Bericht endet auf eine Verfügung. Hat keinen Schraubenschlüssel, aber Zeit.',
     emblem: '<circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M6 6l2.1 2.1M15.9 15.9L18 18M18 6l-2.1 2.1M8.1 15.9L6 18"/>',
   },
-  // Akt II: defined now so the voice and the look are fixed, but never shown in version 1 (`later`: no story entry introduces them yet).
+  // Akt II: met with the first clear radio message (f_m1). Never in version 1.
   mission: {
     id: 'mission', name: 'Missionsleitung', role: 'Die Erbauer', color: '#ff8f6b', side: 'right', // warm coral
-    later: true,
-    bio: 'Die Erbauer der Sonde. Melden sich per Funk, mit Lichtlaufzeit. Warm und gesprächig, über die Jahre immer kürzer.',
+    unlock: 'f_m1',
+    bio: 'Die Erbauer der Sonde. Sie melden sich per Funk, mit Lichtlaufzeit, in Schichten, die immer weniger werden. Warm und gesprächig, über die Jahre immer kürzer. Über jeder Nachricht steht, wie alt sie ist.',
     emblem: '<circle cx="6" cy="18" r="1.6"/><path d="M6 12a6 6 0 0 1 6 6M6 6a12 12 0 0 1 12 12"/>',
   },
   // Akt II: appears in the Figuren row once the first sighting (a2_echo) was shown. Role and bio stay spoiler-free until the story says more.
@@ -39,6 +39,22 @@ export function isMet(g, who) {
 }
 /** Cast ids visible in the "Figuren" row, in display order. */
 export const metCast = (g) => Object.keys(CAST).filter((id) => isMet(g, id));
+
+/**
+ * Role and bio that change with the story (Akt II): the Echo is "Unbekannte Silhouette" until it speaks (e_hello), then a second R-1, and after the ending it says where it went.
+ * Returns the fields to put over the cast entry (the UI card), or {}.
+ */
+export function castInfo(g, who) {
+  if (who !== 'echo') return {};
+  const st = g.state.story;
+  const spoke = st.e_hello !== undefined && st.e_hello !== false;
+  const end = g.state.rep2 && g.state.rep2.end ? g.state.rep2.end.order : [];
+  if (end.includes('merge') && end.includes('split')) return { role: 'Zweite R-1, beides', bio: 'Hat sich der Sonde angeschlossen und geht doch ihren eigenen Weg. Die Wartung führt sie als Eintrag 2, die Karte führt sie nicht mehr.' };
+  if (end.includes('merge')) return { role: 'Zweite R-1, jetzt Teil der Sonde', bio: 'Früher gestartet, immer schon da. Hat der Sonde ihre Karten gegeben und nichts verlangt, was die Sonde nicht schon hatte.' };
+  if (end.includes('split')) return { role: 'Zweite R-1, unterwegs', bio: 'Früher gestartet, immer schon da. Hat den Rand der Karte genommen und ist weitergezogen. Die Wartung führt sie als Eintrag 2.' };
+  if (spoke) return { role: 'Zweite R-1', bio: 'Trägt dieselbe Kennung und dieselben Fehler. Früher gestartet, deshalb immer schon da. Sagt wenig, hat gezählt und ist sich nicht sicher, ob sie sich mitgezählt hat.' };
+  return {};
+}
 
 /** Placeholders for story texts. */
 export const P = CAST.sonde.name;

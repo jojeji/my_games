@@ -2,7 +2,7 @@
 import { createReplikator } from './logic.js';
 import { globalParts } from './def.js';
 import { TUNE } from './tune.js';
-import { CAST, metCast, lineText } from './characters.js';
+import { CAST, metCast, lineText, castInfo } from './characters.js';
 import { createRuntime } from '../../engine/core.js';
 import { mountStandardApp } from '../../engine/ui/standard-app.js';
 import { registerServiceWorker } from '../../engine/pwa.js';
@@ -32,7 +32,7 @@ const { app, ctx } = mountStandardApp({
     chips: ['blueprints', 'systems', 'cores', 'seeds'],
     generators: { chain: 'matter', label: 'Generatoren' },
     multParts: globalParts,
-    chronicle: { cast: CAST, figures: metCast, lineText, defaultWho: 'sonde' }, // Chronik tab, story modals and bubbles (story.js)
+    chronicle: { cast: CAST, figures: metCast, lineText, castInfo, defaultWho: 'sonde' }, // Chronik tab, story modals and bubbles (story.js)
     banner: statusBanner, // running Sondenbefehl / Anomalie with the time left, on every tab
     bonusText: (game) => `Erfolgs-Bonus: +${formatPercent(0.02 * game.achCount(), 0)} auf alle Produktion`,
     // Akt II: the Galaxie tab appears when the map exists; a dot says a sector is affordable
