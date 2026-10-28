@@ -164,3 +164,51 @@ Folgerungen (verbindlich für Paket 2–5):
 - Sim: `tools/simulate.mjs` bekommt Akt-II-Strategie (Karte, Genom, Befehle, Anomalien, Galaxienwahl) – **über dieselben Auto-Funktionen** aus `def.js`.
 - Neue Pacing-Tests `tests/sim-replikator-akt2*.test.mjs`. Bestehende Tests bleiben grün.
 - Nach Dateiänderungen `node tools/update-precache.mjs`, vor jedem Push `npm test`.
+
+## Messung der Mutationen (Rebalance, `tools/mutations-replikator.mjs`)
+
+Jede Mutation allein im Genom (keine Angebote), aktive Sim, Start frisch UND echter v1-Spielstand, Seeds 1-3, 3,5 h Akt II. `dt10` = Zeit bis 10 Sektoren, `dBP/dSys/dQK` = Faktor auf den Gewinn
+einer Replikation / Expansion / Singularität im selben Spielstand in Dekaden (nach den Softcaps, voller Faktor), `dSumme` = Sternsysteme + Quantenkerne gesamt. Nutzen = Haken neutralisiert, Haken = Nutzen neutralisiert.
+Wichtig: Die Karte ist Reisezeit-begrenzt (Summe der Reisen ~133 min von ~136-176), deshalb bewegt nur die **Erschließungsdauer** `dt10` stark; Wirtschaftsfaktoren zeigen sich in den Gewinn-Dekaden
+(und zuverlässig nur als ~-5 % bei dt10). Nachtschwärmer (Nutzen nur offline) wurde mit `--offline --hours 30` gemessen: Nutzen dSumme +0,24, Haken -0,05, beide +0,11. Fehlerfreudig/Chimäre: Angebotsrate (Intervall 25 min / 2,5 bzw. x2) rechnerisch,
+Chimäre mit 4 besetzten Plätzen. Geduldig: Haken (Start des Laufs) im Referenzstand nicht sichtbar, dort Nutzen = voller Faktor.
+
+### VORHER (Commit 2c93e7f, Faktoren vor dem Softcap)
+```
+Mutation        beide  dt10    dBP  dSys   dQK  dSumme| Nutzen dt10    dBP  dSys   dQK  dSumme| Haken  dt10    dBP  dSys   dQK  dSumme|
+hyperaktiv         -2 %  +0.00 +0.00 +0.00  +0.16       |    -2 %  +0.00 +0.00 +0.00  +0.16       |    +0 %  +0.00 +0.00 +0.00  +0.00       |
+gigantismus        -3 %  +0.00 +0.00 +0.00  +0.15       |    -4 %  +0.00 +0.00 +0.00  +0.22       |    +6 %  +0.00 +0.00 +0.00  -0.12       |
+sparsam            +5 %  +0.00 +0.00 +0.00  -0.20       |    -4 %  +0.00 +0.00 +0.00  +0.14       |   +14 %  +0.00 +0.00 +0.00  -0.33       |
+nostalgisch        +4 %  +0.20 -0.08 +0.00  -0.07       |    -3 %  +0.20 +0.00 +0.00  +0.10       |    +6 %  +0.00 -0.08 +0.00  -0.19       |
+schwarmgeist       +9 %  +0.00 +0.00 +0.00  -0.12       |    +2 %  +0.00 +0.00 +0.00  +0.09       |   +11 %  +0.00 +0.00 +0.00  -0.20       |
+geduldig           -0 %  +0.04 +0.00 +0.00  +0.12       | Nutzen    +1 %  +0.09 +0.00 +0.00  +0.13       | Haken    +0 %  -0.07 +0.00 +0.00  +0.04       |
+fehlerfreudig      +1 %  +0.00 +0.00 +0.00  +0.03       |    +0 %  +0.00 +0.00 +0.00  +0.00       |    +1 %  +0.00 +0.00 +0.00  +0.03       |
+gruendlich        +42 %  +0.00 +0.00 +0.12  -0.17       |    +1 %  +0.00 +0.00 +0.12  +0.08       |   +42 %  +0.00 +0.00 +0.00  -0.19       |
+nachtschwaermer    -5 %  +0.00 +0.00 +0.00  +0.07       |    +0 %  +0.00 +0.00 +0.00  +0.00       |    -5 %  +0.00 +0.00 +0.00  +0.07       |
+mosaik             -3 %  +0.05 +0.08 +0.00  +0.24       |    -4 %  +0.05 +0.08 +0.00  +0.21       |    +0 %  +0.00 +0.00 +0.00  -0.06       |
+kolonialist        -6 %  -0.09 +0.24 +0.00  +0.35       |    -6 %  +0.00 +0.24 +0.00  +0.37       |    +1 %  -0.09 +0.00 +0.00  -0.10       |
+buendelfieber      -5 %  +0.00 +0.00 +0.00  +0.31       |    -5 %  +0.00 +0.00 +0.00  +0.27       |    -2 %  +0.00 +0.00 +0.00  +0.07       |
+glueckstreffer     -3 %  +0.00 +0.00 -0.12  +0.10       |    -4 %  +0.00 +0.00 +0.00  +0.21       |    -5 %  +0.00 +0.00 -0.12  -0.05       |
+ueberschuss        -4 %  +0.13 +0.15 +0.12  +0.40       |    -5 %  +0.13 +0.15 +0.12  +0.40       |    -1 %  +0.00 +0.00 +0.00  -0.01       |
+chimaere           -1 %  +0.00 +0.00 +0.00  +0.02       |    -1 %  +0.00 +0.00 +0.00  +0.02       |    +0 %  +0.00 +0.00 +0.00  +0.00       |
+```
+
+### NACHHER
+```
+Mutation        beide  dt10    dBP  dSys   dQK  dSumme| Nutzen dt10    dBP  dSys   dQK  dSumme| Haken  dt10    dBP  dSys   dQK  dSumme|
+hyperaktiv        -13 %  -0.08 -0.10 -0.10  -0.13       |   -22 %  +0.00 +0.00 +0.00  +0.21       |    +9 %  -0.08 -0.10 -0.10  -0.20       |
+gigantismus        +6 %  +0.00 +0.40 +0.00  +0.54       |    -5 %  +0.00 +0.40 +0.00  +0.65       |   +11 %  +0.00 +0.00 +0.00  -0.13       |
+sparsam            -5 %  -0.18 +0.00 +0.00  -0.06       |    -6 %  +0.00 +0.00 +0.00  +0.23       |   +11 %  -0.18 +0.00 +0.00  -0.41       |
+nostalgisch        -3 %  +0.45 -0.15 +0.00  +0.09       |    -4 %  +0.45 +0.00 +0.00  +0.27       |    +9 %  +0.00 -0.15 +0.00  -0.25       |
+schwarmgeist       -5 %  +0.00 +0.20 +0.00  +0.43       |    -5 %  +0.00 +0.20 +0.00  +0.40       |    +9 %  +0.00 +0.00 +0.00  -0.11       |
+geduldig           -1 %  +0.50 +0.00 +0.00  +0.16       |    -5 %  +0.50 +0.00 +0.00  +0.20       |    +2 %  +0.00 +0.00 +0.00  -0.05       |
+fehlerfreudig      -5 %  +0.00 +0.00 -0.15  -0.02       |    +0 %  +0.00 +0.00 +0.00  +0.00       |    -5 %  +0.00 +0.00 -0.15  -0.02       |
+gruendlich        +13 %  +0.00 +0.00 +0.48  +0.05       |    -1 %  +0.00 +0.00 +0.48  +0.20       |    +9 %  +0.00 +0.00 +0.00  -0.12       |
+nachtschwaermer    -0 %  -0.06 -0.07 -0.07  -0.18       |    +0 %  +0.00 +0.00 +0.00  +0.00       |    -0 %  -0.06 -0.07 -0.07  -0.18       |
+mosaik             +4 %  +0.18 +0.28 +0.00  +0.52       |    -5 %  +0.18 +0.28 +0.00  +0.51       |    +7 %  +0.00 +0.00 +0.00  -0.07       |
+kolonialist        +4 %  -0.25 +0.48 +0.00  +0.55       |    -5 %  +0.00 +0.48 +0.00  +0.69       |   +12 %  -0.25 +0.00 +0.00  -0.15       |
+buendelfieber     -15 %  +0.00 -0.22 +0.00  +0.08       |   -24 %  +0.00 +0.00 +0.00  +0.37       |   +24 %  +0.00 -0.22 +0.00  -0.34       |
+glueckstreffer     +4 %  +0.33 +0.40 +0.40  +0.89       |    -5 %  +0.33 +0.40 +0.40  +0.93       |    +7 %  +0.00 +0.00 +0.00  -0.07       |
+ueberschuss        -4 %  +0.33 +0.40 +0.40  +0.91       |    -5 %  +0.33 +0.40 +0.40  +0.91       |   +16 %  +0.00 +0.00 +0.00  -0.25       |
+chimaere           -5 %  +0.38 +0.46 +0.46  +1.07       |    -5 %  +0.38 +0.46 +0.46  +1.07       |    +0 %  +0.00 +0.00 +0.00  +0.00       |
+```

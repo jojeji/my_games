@@ -111,3 +111,7 @@ Vocabulary: `games/psst/GLOSSARY.md`; decision: `docs/adr/0002-*`. The single-ph
 - Auto-Genom (`auto_genom`, startet aus): `mutChoose(g)`/`mutAutoGenom(g)` in def.js (`mutObjective` = `repObjective` + `mutExtra`), dieselbe Funktion ruft die Sim. Engine: `game.offlineNow` (true im Offline-Catch-up).
 - UI: `genome-view.js` als `extraTabs`-Eintrag „Genom“ (max. 6 Tabs, bei 360 px geprüft). Story: Kapitel `a2m` in `story.js` (`mut_*`, Modal `mut_first`, Berichte aus `MUTATIONS[].report`, `mut_fill1..8`).
 - Tools/Tests: `node tools/simulate.mjs --act2 --verbose` druckt Angebote und Entscheidungen; `tests/replikator-mutations.test.mjs`, `tests/sim-replikator-mutations.test.mjs`, `tests/sim-replikator-mutation-runlength.test.mjs`.
+
+## Replikator Akt II: Mutationen-Rebalance
+- Gewinn-Faktoren der Mutationen stehen in `layer.postMult` (nach dem Softcap), Faktoren > 1 auf Sternsysteme/Quantenkerne reifen mit der Laufzeit (`ripen`, `mutRipe` in tune.js); `mutGainParts(g,kind)` = beschriftete Faktoren (Genom-Tab zeigt sie). Reisedauer (`trip`), Sektorpreis (`mapCost`) sind die Fortschrittshebel der Karte.
+- Messung: `node tools/mutations-replikator.mjs [--only id] [--offline --hours 30]` (Tabelle vorher/nachher in `docs/replikator-akt2.md`); Test `every mutation alone changes something that moves progress` in `tests/replikator-mutations.test.mjs`.
