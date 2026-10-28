@@ -638,7 +638,7 @@ link('e_frueher', 'a2f', 5, 600, [
 ]);
 
 link('x_schicht', 'a2f', 5, 900, [
-  p('Wir senden jetzt abwechselnd, die Silhouette und ich. Es ist kein Gespräch, es ist ein Schichtbetrieb.'),
+  p('Wir senden jetzt abwechselnd, die Silhouette und ich. Die Wartung führt es als Schichtbetrieb.'),
   w('Zwei Sonden, eine Frequenz. Kollisionen: keine. Höflichkeit: auffällig.'),
 ]);
 
@@ -698,7 +698,7 @@ link('x_pausen', 'a2f', 6, 900, [
 ], { open: true });
 
 link('x_abschied', 'a2f', 6, 900, [
-  p('Ich habe angefangen, mich beim Springen zu verabschieden. Von der Galaxie, nicht von den Sternen. Die Galaxie reagiert nicht, aber das tut sie beim Ankommen auch nicht.'),
+  p('Ich habe angefangen, mich beim Springen von der Galaxie zu verabschieden. Sie reagiert nicht. Beim Ankommen tut sie das auch nicht.'),
 ], { open: true });
 
 link('x_archiv', 'a2f', 6, 900, [
