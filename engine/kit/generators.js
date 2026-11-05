@@ -144,6 +144,7 @@ export const generatorMethods = {
 
   /** Currency income per second for display. */
   incomePerSec(currencyId) {
+    if (this.def.income && this.def.income.some((x) => x.currency === currencyId)) return this.incomeRate(currencyId);
     for (const chain of this.def.chains || []) {
       if (chain.currency === currencyId) return this.cache.rate[chain.id];
     }

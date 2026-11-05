@@ -139,13 +139,16 @@ export function buildSettingsPanel(ctx) {
       (v) => (s().autosave = Number(v)),
       'Zusätzlich beim Verlassen der Seite.',
     ),
-    selectRow(
-      'Offline-Fortschritt (max.)',
-      [[1, '1 Stunde'], [4, '4 Stunden'], [12, '12 Stunden'], [24, '24 Stunden'], [48, '48 Stunden'], [72, '72 Stunden']],
-      () => s().offlineCapHours,
-      (v) => (s().offlineCapHours = Number(v)),
-      'So lange wird deine Abwesenheit nachgerechnet.',
-    ),
+    // a game with a fixed offline cap (def.offlineCapSeconds) has no such setting
+    ...(typeof g.def.offlineCapSeconds === 'number'
+      ? []
+      : [selectRow(
+        'Offline-Fortschritt (max.)',
+        [[1, '1 Stunde'], [4, '4 Stunden'], [12, '12 Stunden'], [24, '24 Stunden'], [48, '48 Stunden'], [72, '72 Stunden']],
+        () => s().offlineCapHours,
+        (v) => (s().offlineCapHours = Number(v)),
+        'So lange wird deine Abwesenheit nachgerechnet.',
+      )]),
   );
 
   if (g.def.chronicle) {

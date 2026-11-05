@@ -35,9 +35,14 @@ export const challengeMethods = {
     return D(c.goal.amount);
   },
 
+  /** Progress value towards the goal: the run total of goal.currency, or goal.fn(g) (a game-computed value). */
+  chValue(c) {
+    return c.goal.fn ? D(c.goal.fn(this)) : this.state.cur[c.goal.currency].run;
+  },
+
   /** Progress 0..1 on a log scale towards the goal (for the progress bar). */
   chProgress(c) {
-    const have = this.state.cur[c.goal.currency].run;
+    const have = this.chValue(c);
     const goal = this.chGoal(c);
     if (have.lte(1)) return 0;
     return Math.max(0, Math.min(1, have.log10() / goal.log10()));
@@ -82,7 +87,7 @@ export const challengeMethods = {
   chCheckGoal() {
     const c = this.chActive();
     if (!c) return false;
-    if (this.state.cur[c.goal.currency].run.lt(this.chGoal(c))) return false;
+    if (this.chValue(c).lt(this.chGoal(c))) return false;
     this.state.challenge.done[c.id] = (this.state.challenge.done[c.id] || 0) + 1;
     this.state.challenge.active = null;
     this.resetBelow(c.resetLayer);

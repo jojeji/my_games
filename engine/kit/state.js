@@ -22,6 +22,7 @@ export function createState(def, now = Date.now()) {
   const confirm = {};
   for (const l of def.layers || []) {
     layers[l.id] = { count: 0, runTime: 0, fastest: 0, bestGain: ZERO, lastGain: ZERO, lastTime: 0, unlocked: false };
+    if (l.static) layers[l.id].units = 0; // static layers: units owned (cost scale), see Game.staticGain
     confirm[l.id] = true;
   }
 
@@ -43,6 +44,8 @@ export function createState(def, now = Date.now()) {
     for (const sp of def.spells) extra.spells[sp.id] = { t: 0, cd: 0, n: 0, auto: sp.autoDefault ?? true };
   }
   if (def.tap) extra.tap = { charges: def.tap.start ?? 0, n: 0 };
+  if (def.forks) extra.fork = Object.fromEntries(def.forks.map((f) => [f.id, null])); // chosen option per fork (engine/kit/forks.js)
+  if (def.rechoose) extra.upgAt = {}; // exclusive upgrades: layer count when bought (can be re-chosen after the next prestige of that layer)
   if (def.chronicle) extra.chronicle = { read: {}, shown: {} };
   if (def.extraState) Object.assign(extra, def.extraState(def));
 

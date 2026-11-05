@@ -56,9 +56,32 @@ export const upgradeMethods = {
     const u = this.upgById[id];
     this.spend(u.currency, this.upgCost(id));
     this.state.upg[id] = this.upgLevel(id) + 1;
+    if (this.state.upgAt && u.excl) this.state.upgAt[id] = this.state.layers[u.node].count; // see upgCanRechoose
     if (u.onBuy) u.onBuy(this, this.state.upg[id]); // optional: a one-time effect of the purchase itself (e.g. a grant)
     this.refresh();
     this.emit('upgrade', { id });
+    return true;
+  },
+
+  /**
+   * Exclusive (`excl`) upgrades of a game with def.rechoose can be taken back for a full refund once the layer they belong to
+   * (`u.node`, a layer id) has been prestiged since the purchase: "umwählbar beim nächsten Prestige dieser Ebene".
+   */
+  upgCanRechoose(id) {
+    const u = this.upgById[id];
+    const at = this.state.upgAt?.[id];
+    if (!u.excl || this.upgLevel(id) < 1 || at === undefined) return false;
+    return this.state.layers[u.node].count > at;
+  },
+
+  upgRechoose(id) {
+    if (!this.upgCanRechoose(id)) return false;
+    const u = this.upgById[id];
+    this.grant(u.currency, D(typeof u.cost === 'function' ? u.cost(this.upgLevel(id) - 1, this) : u.cost));
+    delete this.state.upg[id];
+    delete this.state.upgAt[id];
+    this.refresh();
+    this.emit('rechoose', { id });
     return true;
   },
 

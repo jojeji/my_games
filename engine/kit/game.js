@@ -13,6 +13,8 @@ import { spellMethods } from './spells.js';
 import { tapMethods } from './tap.js';
 import { storyMethods } from './story.js';
 import { playlogMethods } from './playlog.js';
+import { incomeMethods } from './income.js';
+import { forkMethods } from './forks.js';
 
 const byId = (arr = []) => Object.fromEntries(arr.map((x) => [x.id, x]));
 
@@ -100,6 +102,8 @@ export class Game {
   }
 
   offlineCapSeconds() {
+    // def.offlineCapSeconds (number): a fixed cap that neither the settings nor upgrades change (Myzel: 3 h)
+    if (typeof this.def.offlineCapSeconds === 'number') return this.def.offlineCapSeconds;
     const bonus = this.hooks.offlineCapBonusHours ? this.hooks.offlineCapBonusHours(this) : 0;
     return Math.max(0, (this.state.settings.offlineCapHours + bonus) * 3600);
   }
@@ -170,6 +174,7 @@ export class Game {
     this.produce(dt);
     if (this.def.producers) this.produceProducers(dt);
     if (this.def.tap) this.tapTick(dt);
+    if (this.def.income) this.produceIncome(dt);
     this.hook('onTick', dt);
     // spells count down BEFORE the autos run: an auto-cast then keeps its full duration (after the cast tick the effect starts with the next one);
     // with the large steps of the offline catch-up a cast that is counted down in the same tick would never have an effect
@@ -236,7 +241,8 @@ export class Game {
 
   /** Metric the layer's gain is computed from (run total of its basis currency). */
   prestigeBasis(id) {
-    return this.state.cur[this.layerById[id].basis].run;
+    const l = this.layerById[id];
+    return l.basisFn ? D(l.basisFn(this)) : this.state.cur[l.basis].run; // basisFn(g): a game-computed basis (e.g. "H earned since the last reset of this row")
   }
 
   prestigeMult(id) {
@@ -251,6 +257,7 @@ export class Game {
    */
   prestigeGain(id) {
     const l = this.layerById[id];
+    if (l.static) return this.staticGain(id);
     const b = this.prestigeBasis(id);
     const f = l.formula;
     const exp = typeof f.exp === 'function' ? f.exp(this) : f.exp;
@@ -272,13 +279,48 @@ export class Game {
 
   /** formula.threshold may be a number or a function of the game (e.g. depends on the current era). */
   prestigeThreshold(id) {
-    const t = this.layerById[id].formula.threshold;
+    const l = this.layerById[id];
+    if (l.static) return this.staticCost(id, this.state.layers[id].units);
+    const t = l.formula.threshold;
     return D(typeof t === 'function' ? t(this) : t);
+  }
+
+  /**
+   * STATIC layers (l.static = { base, grow } or { cost(k, g) }): every unit costs `base * grow^k` of the basis amount (k = units owned so far,
+   * `state.layers[id].units`); a prestige pays for as many units as the basis affords at once (gain = units, "max" mode). Units are never
+   * spent (upgrades spend the currency, the cost scale and effects use `units`) and are wiped by a reset of a higher row.
+   */
+  staticCost(id, k) {
+    const st = this.layerById[id].static;
+    if (st.cost) return D(st.cost(k, this));
+    const base = typeof st.base === 'function' ? st.base(this) : st.base;
+    const grow = typeof st.grow === 'function' ? st.grow(this) : st.grow;
+    return D(base).mul(D(grow).pow(Math.pow(k, st.exp ?? 1))); // static.exp > 1 makes the climb steeper and steeper
+  }
+
+  staticGain(id) {
+    const l = this.layerById[id];
+    const st = l.static;
+    const k = this.state.layers[id].units;
+    const b = this.prestigeBasis(id);
+    const c0 = this.staticCost(id, k);
+    if (b.lt(c0)) return ZERO;
+    let n = 1;
+    if (!st.cost) {
+      // units affordable at once: the largest index j with cost(j) <= basis (the basis is the amount in hand, not a sum), minus the ones owned
+      const base = typeof st.base === 'function' ? st.base(this) : st.base;
+      const grow = typeof st.grow === 'function' ? st.grow(this) : st.grow;
+      const j = Math.pow(Math.max(0, b.div(base).log10() / D(grow).log10() + 1e-9), 1 / (st.exp ?? 1));
+      n = Math.max(1, Math.floor(j + 1e-9) + 1 - k);
+    } else while (n < 1000 && b.gte(this.staticCost(id, k + n))) n++;
+    if (st.maxGain) n = Math.min(n, st.maxGain(this));
+    return D(n);
   }
 
   /** Basis value at which the gain would reach `gain` (inverse of the formula). */
   prestigeBasisFor(id, gain) {
     const l = this.layerById[id];
+    if (l.static) return this.staticCost(id, this.state.layers[id].units + Math.max(0, Math.round(D(gain).toNumber()) - 1));
     const f = l.formula;
     const exp = typeof f.exp === 'function' ? f.exp(this) : f.exp;
     let want = D(gain);
@@ -324,7 +366,10 @@ export class Game {
       }
     }
     for (const l of this.def.layers || []) {
-      if (l.layer < layerIdx) s.layers[l.id].runTime = 0;
+      if (l.layer < layerIdx) {
+        s.layers[l.id].runTime = 0;
+        if (l.static) s.layers[l.id].units = 0;
+      }
     }
     for (const a of this.def.autos || []) s.auto[a.id].t = 0;
   }
@@ -345,8 +390,10 @@ export class Game {
     if (gain.gt(ls.bestGain)) ls.bestGain = gain;
     this.resetBelow(l.layer);
     ls.runTime = 0;
+    if (l.static) ls.units += gain.toNumber();
     this.add(l.currency, gain);
     this.hook('afterReset', l.layer);
+    this.hook('onPrestige', id, gain); // after the reward is in (afterReset runs for any reset of the row, e.g. challenges, without a gain)
     this.refresh();
     this.emit('prestige', { id, gain });
     return gain;
@@ -427,6 +474,6 @@ export function prestigeAuto({ id, layer, name, desc, unlock, interval, group, w
   };
 }
 
-Object.assign(Game.prototype, generatorMethods, upgradeMethods, challengeMethods, producerMethods, spellMethods, tapMethods, storyMethods, playlogMethods);
+Object.assign(Game.prototype, generatorMethods, upgradeMethods, challengeMethods, producerMethods, spellMethods, tapMethods, storyMethods, playlogMethods, incomeMethods, forkMethods);
 
 export { Decimal };
