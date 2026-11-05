@@ -383,6 +383,7 @@ export class Game {
     const l = this.layerById[id];
     const ls = this.state.layers[id];
     const gain = this.prestigeGain(id);
+    this.hook('beforePrestige', id, gain); // the state before the reset (a game can record what the run earned)
     ls.count += 1;
     ls.lastGain = gain;
     ls.lastTime = ls.runTime;

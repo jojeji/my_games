@@ -119,7 +119,7 @@ function prestigeInfo(ctx, layerId) {
       const basis = g.prestigeBasis(layerId);
       const basisName = l.static || layerId === 'f' ? (layerId === 'f' ? 'Hyphen' : 'Nährstoffe (gesamt)') : 'Nährstoffe';
       if (l.available && l.unavailableText && !l.available(g)) {
-        txt(next, l.unavailableText);
+        txt(next, typeof l.unavailableText === 'function' ? l.unavailableText(g) : l.unavailableText);
         bar.set(0);
       } else if (l.static) {
         const cost = g.prestigeBasisFor(layerId, gain.gte(1) ? gain.add(1) : 1);
@@ -195,7 +195,7 @@ function challengeBlock(ctx) {
         if (!open) continue;
         const done = g.chDone(c.id);
         const isActive = active?.id === c.id;
-        txt(goalLine, `Ziel: ${fmt(g.chGoal(c))} Hyphen in einem Lauf`);
+        txt(goalLine, c.goal.line(g));
         txt(status, done ? 'Geschafft' : isActive ? 'Läuft' : 'Offen');
         setCls(card, 'owned', done);
         setCls(card, 'active', isActive);
@@ -203,7 +203,7 @@ function challengeBlock(ctx) {
         setHidden(prog, done || !isActive);
         if (isActive) {
           bar.set(g.chProgress(c));
-          txt(prog, `${fmt(g.chValue(c))} / ${fmt(g.chGoal(c))} Hyphen`);
+          txt(prog, c.goal.text(g));
         } else bar.set(0);
         const lk = !done && !isActive && !g.chAvailable(c.id);
         txt(lock, lk && c.lockText ? 'Gesperrt: ' + c.lockText : '');
@@ -224,7 +224,7 @@ function rainCard(ctx) {
   const btn = h('button', { class: 'btn btn-primary', type: 'button', text: 'Regenschauer auslösen', onClick: () => doRain(ctx) });
   const el = h('div', { class: 'card rain-card' },
     h('div', { class: 'p-head' }, h('b', { text: 'Regenschauer' }), h('span', { class: 'pips' }, ...pips)),
-    h('p', { class: 'muted', text: `Jeder Schauer lässt das Netz ${Math.round(T.rainSecs / 60)} Minuten lang schneller wachsen (Nährstoffe und Zucker ×${T.rainMult}). Eine Ladung kommt alle ${Math.round(T.rainEvery / 60)} Minuten Spielzeit, auch wenn du weg bist, höchstens ${T.rainMax}. Mehrere Schauer addieren ihre Zeit.` }),
+    h('p', { class: 'muted', text: `Jeder Schauer lässt das Netz ${Math.round(T.rainSecs / 60)} Minuten lang schneller wachsen (Nährstoffe und Zucker ×${fmt(T.rainMult)}). Eine Ladung kommt alle ${Math.round(T.rainEvery / 60)} Minuten Spielzeit, auch wenn du weg bist, höchstens ${T.rainMax}. Mehrere Schauer addieren ihre Zeit.` }),
     status, btn);
   return {
     el,
@@ -232,14 +232,14 @@ function rainCard(ctx) {
       const c = rainCharges(g);
       pips.forEach((p, i) => setCls(p, 'full', i < c));
       const r = g.state.myz.rain;
-      txt(status, r.t > 0 ? `Es regnet: noch ${formatDuration(r.t)} (×${rainMult(g)}).` : c >= T.rainMax ? 'Alle Ladungen sind voll.' : `Nächste Ladung in ${formatDuration(rainNextIn(g))}.`);
+      txt(status, r.t > 0 ? `Es regnet: noch ${formatDuration(r.t)} (×${fmt(rainMult(g))}).` : c >= T.rainMax ? 'Alle Ladungen sind voll.' : `Nächste Ladung in ${formatDuration(rainNextIn(g))}.`);
       setDisabled(btn, c < 1);
     },
   };
 }
 export function doRain(ctx) {
   const { g, toast } = ctx;
-  if (rainCast(g)) toast(`Wachstumsschub: ×${rainMult(g)} für ${Math.round(T.rainSecs / 60)} Minuten.`, { kind: 'good', ms: 1800, title: 'Regenschauer' });
+  if (rainCast(g)) toast(`Wachstumsschub: ×${fmt(rainMult(g))} für ${Math.round(T.rainSecs / 60)} Minuten.`, { kind: 'good', ms: 1800, title: 'Regenschauer' });
   else toast(`Nächste Ladung in ${formatDuration(rainNextIn(g))}.`, { kind: 'info', ms: 1800, title: 'Regenschauer' });
 }
 

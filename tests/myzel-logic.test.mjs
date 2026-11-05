@@ -206,6 +206,10 @@ test('Fruchtkörper: needs units of the chosen branch, resets the branch but kee
   g.state.layers.f.runTime = T.ripeF1; // ripe
   g.slowChecks();
   assert.equal(g.canPrestige('f'), true);
+  g.state.layers.f.runTime = 3600;
+  assert.equal(g.canPrestige('f'), false, 'the first Fruchtkörper needs a day');
+  g.state.layers.f.runTime = T.ripeF1;
+  assert.equal(g.canPrestige('f'), true);
   assert.equal(g.chAvailable('durre'), false); // challenges open with the first Fruchtkörper
   g.grant('h', D(1e9));
   g.upgBuy('h11');
@@ -275,20 +279,31 @@ test('challenges: Dürre roots the core production but not the branch, Frost fre
   g.chExit();
 });
 
-test('challenge goal: Hyphen earned since the start of the challenge run; reward stays, challenge ends', () => {
+test('challenge goal: hold out the time AND earn the Hyphen share; the reward stays, the challenge ends', () => {
   const g = forkReady();
   g.forkChoose('a', 's');
   g.state.layers.f.count = 1;
+  g.state.myz.hRef = 100;
   assert.ok(g.chEnter('durre'));
-  const goal = g.chGoal(g.chDef('durre'));
-  assert.equal(g.chValue(g.chDef('durre')).toNumber(), 0);
-  g.state.cur.h.total = g.state.cur.h.total.add(goal.sub(1));
+  const c = g.chDef('durre');
+  const hyphen = T.chS[0] * Math.max(T.fReq / 1000, 100);
+  assert.equal(g.chValue(c).toNumber(), 0);
+  g.state.cur.h.total = g.state.cur.h.total.add(hyphen * 2);
+  assert.equal(g.chCheckGoal(), false, 'the Hyphen alone are not enough: time is not up');
+  g.state.time.played += T.chTime[0] / 2;
+  assert.ok(Math.abs(g.chProgress(c) - 0.5) < 0.01, 'half the time: ' + g.chProgress(c));
   assert.equal(g.chCheckGoal(), false);
-  g.state.cur.h.total = g.state.cur.h.total.add(2);
+  g.state.time.played += T.chTime[0];
   assert.equal(g.chCheckGoal(), true);
   assert.equal(g.chDone('durre'), true);
   assert.equal(g.chActive(), null);
   assert.ok(nParts(g).some(([l]) => /Dürre/.test(l)), 'reward counts');
+  // the other way round: time is up but nothing earned
+  g.state.layers.f.count = 2;
+  assert.ok(g.chEnter('frost'));
+  g.state.time.played += 10 * T.chTime[1];
+  assert.equal(g.chCheckGoal(), false);
+  assert.match(g.chDef('frost').goal.text(g), /Hyphen .* Zeit/);
 });
 
 test('Regenschauer: starts with a charge, +1 per 45 min of play (online and offline), at most 3, a tap adds 3 min of x boost, never automatic', () => {

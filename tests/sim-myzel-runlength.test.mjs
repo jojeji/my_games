@@ -8,7 +8,7 @@ import { takeSnapshots, measureLayer, HORIZON } from '../tools/runlength-myzel.m
 import { TUNE as T } from '../games/myzel/tune.js';
 
 for (const fork of ['s', 'm']) {
-  test(`run length, fork ${fork}: Hyphen peaks at 2-4 min, branch has no micro-run optimum, Fruchtkörper needs hours`, () => {
+  test(`run length, fork ${fork}: Hyphen peaks at 2-4 min, branch has no micro-run optimum, Fruchtkörper are gated to 6 h`, () => {
     const snaps = takeSnapshots({ fork });
     assert.ok(snaps.h && snaps.b && snaps.f, 'snapshots: ' + Object.keys(snaps));
     for (const phase of ['h', 'b']) {
@@ -26,11 +26,10 @@ for (const fork of ['s', 'm']) {
     const b = measureLayer(snaps.b, 'b', [60, 180, 600, 2400, 9600], { horizon: HORIZON.b, dt: 5 });
     const powerOf = (L) => b.rows.find((x) => x.L === L).logN;
     assert.ok(powerOf(60) <= powerOf(2400) + 0.3, `branch: 1 min cycles reach ${powerOf(60).toFixed(1)}, 40 min cycles ${powerOf(2400).toFixed(1)} (log10 N/s)`);
-    // Fruchtkörper: the optimum is hours, 15-30 min runs earn nothing (the gain is below 1: they have not ripened)
-    const f = measureLayer(snaps.f, 'f', [900, 1800, 3600, 7200, 14400], { horizon: HORIZON.f, dt: 10 });
-    const fr = (L) => f.rows.find((x) => x.L === L).rate;
-    assert.ok(f.best.L >= 3600 && f.bestN.L >= 3600, `Fruchtkörper: best run ${f.best.L} s (end power: ${f.bestN.L} s)`);
-    assert.ok(fr(900) <= 0.05 * f.best.rate, `Fruchtkörper: 15 min runs at ${((fr(900) / f.best.rate) * 100).toFixed(0)} %`);
-    assert.ok(fr(1800) <= 0.1 * f.best.rate, `Fruchtkörper: 30 min runs at ${((fr(1800) / f.best.rate) * 100).toFixed(0)} %`);
+    // Fruchtkörper: the minimum run (fMinRun, 6 h) is the floor; the best run is exactly that floor (growth after the content of Paket 1 is
+    // fast, so waiting longer costs a lot), nothing shorter exists
+    const f = measureLayer(snaps.f, 'f', [21600, 28800, 43200, 86400], { horizon: HORIZON.f, dt: 10 });
+    assert.equal(f.best.L, T.fMinRun, `Fruchtkörper: best run ${f.best.L} s`);
+    assert.ok(f.rows.find((x) => x.L === 86400).rate < 0.2 * f.best.rate, 'a 24 h run should be clearly worse');
   });
 }

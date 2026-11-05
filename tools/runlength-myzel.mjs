@@ -18,10 +18,10 @@ import { nRate } from '../games/myzel/def.js';
 export const LENGTHS = {
   h: [10, 30, 60, 120, 180, 300, 600, 1200],
   b: [60, 180, 300, 600, 1200, 2400, 4800, 9600],
-  f: [900, 1800, 3600, 7200, 14400, 28800],
+  f: [21600, 28800, 43200, 86400], // the minimum run is 6 h (fMinRun): shorter lengths are the same as 6 h
 };
 // window per layer (seconds), the same for every run length of that layer
-export const HORIZON = { h: 3600, b: 19200, f: 57600 };
+export const HORIZON = { h: 3600, b: 19200, f: 172800 };
 
 const clone = (state) => parse(stringify(state));
 export const gameFromSnapshot = (snap) => {

@@ -41,8 +41,9 @@ export const challengeMethods = {
     return c.goal.fn ? D(c.goal.fn(this)) : this.state.cur[c.goal.currency].run;
   },
 
-  /** Progress 0..1 on a log scale towards the goal (for the progress bar). */
+  /** Progress 0..1 (for the progress bar): goal.progress(g) when the game computes it, else a log scale towards the goal. */
   chProgress(c) {
+    if (c.goal.progress) return Math.max(0, Math.min(1, c.goal.progress(this)));
     const have = this.chValue(c);
     const goal = this.chGoal(c);
     if (have.lte(1)) return 0;

@@ -48,11 +48,11 @@ export function mountMyzel({ root, runtime, offline }) {
           const r = g.state.myz.rain;
           setCls(rainBtn, 'active', r.t > 0);
           setCls(rainBtn, 'ready', c >= 1);
-          txt(sub, r.t > 0 ? `×${rainMult(g)} · ${formatDuration(r.t)}` : c >= 1 ? 'Schauer' : `in ${formatDuration(rainNextIn(g))}`);
+          txt(sub, r.t > 0 ? `×${fmt(rainMult(g))} · ${formatDuration(r.t)}` : c >= 1 ? 'Schauer' : `in ${formatDuration(rainNextIn(g))}`);
           const ch = g.chActive();
           setHidden(banner, !ch);
           if (ch) {
-            txt(bannerText, `${ch.name}: ${fmt(g.chValue(ch))} / ${fmt(g.chGoal(ch))} Hyphen`);
+            txt(bannerText, `${ch.name}: ${ch.goal.text(g)}`);
             bannerBar.set(g.chProgress(ch));
           }
           const hh = el.parentElement ? el.parentElement.offsetHeight : 0;

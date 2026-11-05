@@ -2,7 +2,7 @@
 // Paket 1: layers n (Nährstoffe), h (Hyphen), s | m (Gabel A: Sporen | Mykorrhiza), f (Fruchtkörper + Challenges), Regenschauer.
 import { D, ONE, ZERO } from '../../engine/decimal.js';
 import { prestigeAuto } from '../../engine/kit/game.js';
-import { formatNumber } from '../../engine/format.js';
+import { formatNumber, formatDuration } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
 
 const has = (g, id) => g.upgLevel(id) > 0;
@@ -226,14 +226,14 @@ const milestones = [
   mile('s_keep1', 's', uc('s', 1), '1 Spore', 'Ab der nächsten Sporenwolke bleibt die erste Reihe der Hyphen-Upgrades erhalten.'),
   mile('s_keep2', 's', uc('s', 3), '3 Sporen', 'Auch die zweite Reihe bleibt erhalten (ab dem nächsten Mal).'),
   mile('s_keep3', 's', uc('s', 5), '5 Sporen', 'Alle Hyphen-Upgrades bleiben erhalten (ab dem nächsten Mal).'),
-  mile('s_flut', 's', uc('s', 7), '7 Sporen', 'Sporenflut: Nährstoffe ×2.'),
+  mile('s_flut', 's', uc('s', T.sFlutAt), `${T.sFlutAt} Sporen`, 'Sporenflut: Nährstoffe ×2.'),
   mile('m_keep1', 'm', uc('m', 1), '1 Mykorrhiza', 'Ab dem nächsten Verdichten bleibt die erste Reihe der Hyphen-Upgrades erhalten.'),
   mile('m_keep2', 'm', uc('m', 3), '3 Mykorrhiza', 'Auch die zweite Reihe bleibt erhalten (ab dem nächsten Mal).'),
   mile('m_keep3', 'm', uc('m', 5), '5 Mykorrhiza', 'Alle Hyphen-Upgrades bleiben erhalten (ab dem nächsten Mal).'),
-  mile('m_netz', 'm', uc('m', 7), '7 Mykorrhiza', 'Myzelnetz: Zucker-Erzeugung ×2.'),
+  mile('m_netz', 'm', uc('m', T.mNetzAt), `${T.mNetzAt} Mykorrhiza`, 'Myzelnetz: Zucker-Erzeugung ×2.'),
   mile('f_buy', 'f', lc('f', 1), '1 Fruchtkörper', 'Die Challenges sind offen. Hyphen-Upgrades können automatisch gekauft werden.'),
   mile('f_auto', 'f', lc('f', 2), '2 Fruchtkörper', 'Die Ausbreitung kann automatisch laufen.'),
-  mile('f_wolke', 'f', lc('f', 3), '3 Fruchtkörper', `Wolkenbruch: Regenschauer wirken ×${T.rainMult2} statt ×${T.rainMult}.`),
+  mile('f_wolke', 'f', lc('f', 3), '3 Fruchtkörper', `Wolkenbruch: Regenschauer wirken ×${c(T.rainMult2)} statt ×${c(T.rainMult)}.`),
   mile('f_keepb', 'f', lc('f', 4), '4 Fruchtkörper', 'Die Upgrades von Sporen und Mykorrhiza bleiben beim Bilden von Fruchtkörpern erhalten.'),
 ];
 
@@ -241,24 +241,39 @@ const milestones = [
 /* challenges                                                           */
 /* ------------------------------------------------------------------ */
 
-/** Challenge goal: a share of the Hyphen the NEXT Fruchtkörper would need (so it grows with the player, no wall and no free pass). */
-const chGoal = (i) => (g) => T.chS[i] * T.fReq * Math.pow(1 + g.state.cur.f.total.toNumber(), 2);
+/** Hyphen of one ripe Ausbreitung at the current strength (what the player would earn per 2 minutes without a restriction). */
+export const hRipeGain = (g) => hGainMult(g) * Math.pow((nRate(g) * T.ripeSecs) / T.hReq, T.hExp);
 const hf = (g) => g.state.cur.h.total.sub(g.state.myz.hAtF);
 const fOpen = (g) => g.state.layers.f.count >= 1;
+/**
+ * A challenge is a timed detour with a sanity goal: hold out `chTime` seconds under the restriction AND earn a share of the Hyphen the player
+ * made per ripe Ausbreitung when the last Fruchtkörper was formed. The time makes the duration predictable (the power of the player changes by
+ * orders of magnitude between two Fruchtkörper, a pure Hyphen goal was a wall for the weak and a free pass for the strong), the Hyphen goal keeps it honest.
+ */
+export const chHyphenGoal = (i) => (g) => T.chS[i] * Math.max(T.fReq / 1000, g.state.myz.hRef);
+const chFrac = (i) => (g) => Math.min(1, hf(g).toNumber() / chHyphenGoal(i)(g), g.chRunTime() / T.chTime[i]);
+const chGoalDef = (i) => ({
+  currency: 'h',
+  amount: 1,
+  fn: chFrac(i),
+  progress: chFrac(i),
+  text: (g) => `Hyphen ${formatNumber(hf(g))} / ${formatNumber(chHyphenGoal(i)(g))} · Zeit ${formatDuration(g.chRunTime())} / ${formatDuration(T.chTime[i])}`,
+  line: (g) => `Ziel: ${formatDuration(T.chTime[i])} durchhalten und ${formatNumber(chHyphenGoal(i)(g))} Hyphen sammeln`,
+});
 const challenges = [
   {
     id: 'durre', name: 'Dürre', resetLayer: 3, rules: { nPow: T.chDurrePow },
-    desc: `Die Nährstoff-Produktion wird gestaucht (Exponent ${c(T.chDurrePow)}). Sporen und Zucker wirken weiter.`, goal: { currency: 'h', amount: chGoal(0), fn: hf },
+    desc: `Die Nährstoff-Produktion wird gestaucht (Exponent ${c(T.chDurrePow)}). Sporen und Zucker wirken weiter.`, goal: chGoalDef(0),
     reward: 'Nährstoffe dauerhaft ×3.', unlock: fOpen, lockText: '1 Fruchtkörper',
   },
   {
     id: 'frost', name: 'Frost', resetLayer: 3, rules: { noH: true },
-    desc: 'Die Hyphen-Upgrades sind eingefroren.', goal: { currency: 'h', amount: chGoal(1), fn: hf },
+    desc: 'Die Hyphen-Upgrades sind eingefroren.', goal: chGoalDef(1),
     reward: 'Hyphen-Gewinn dauerhaft ×2.', unlock: (g) => g.chDone('durre'), lockText: 'Dürre überstanden',
   },
   {
     id: 'kahl', name: 'Kahlschlag', resetLayer: 3, rules: { noFork: true },
-    desc: 'Sporen und Mykorrhiza ruhen: keine Wirkung, keine neuen.', goal: { currency: 'h', amount: chGoal(2), fn: hf },
+    desc: 'Sporen und Mykorrhiza ruhen: keine Wirkung, keine neuen.', goal: chGoalDef(2),
     reward: 'Sporen und Zucker dauerhaft stärker (Sporen ×1,3, Zucker ×1,5).', unlock: (g) => g.chDone('frost'), lockText: 'Frost überstanden',
   },
 ];
@@ -278,7 +293,10 @@ const autos = [
 
 const sUnitsOk = (g) => units(g, 's') >= T.fUnitsS;
 const mUnitsOk = (g) => units(g, 'm') >= T.fUnitsM;
-export const fAvailable = (g) => (g.forkIs('a', 's') && sUnitsOk(g)) || (g.forkIs('a', 'm') && mUnitsOk(g));
+export const fUnitsReached = (g) => (g.forkIs('a', 's') && sUnitsOk(g)) || (g.forkIs('a', 'm') && mUnitsOk(g));
+/** The Fruchtkörper take time: a run must be at least this old (the very first one a day). Makes the cadence independent of how often the player visits. */
+export const fMinRun = (g) => (g.state.layers.f.count === 0 ? T.fMinRun1 : T.fMinRun);
+export const fAvailable = (g) => fUnitsReached(g) && g.state.layers.f.runTime >= fMinRun(g);
 
 export const def = {
   id: 'myzel',
@@ -339,8 +357,8 @@ export const def = {
       basisFn: hf,
       formula: { threshold: T.fReq, exp: T.fExp }, mult: () => 1, postMult: fRipeness,
       available: fAvailable,
-      unlockWhen: fAvailable,
-      unavailableText: `Verlangt ${T.fUnitsS} Sporen oder ${T.fUnitsM} Mykorrhiza.`,
+      unlockWhen: fUnitsReached,
+      unavailableText: (g) => (fUnitsReached(g) ? `Der Pilz muss reifen: noch ${formatDuration(fMinRun(g) - g.state.layers.f.runTime)}.` : `Verlangt ${T.fUnitsS} Sporen oder ${T.fUnitsM} Mykorrhiza.`),
       blurb: `Setzt Nährstoffe, Hyphen, Sporen, Mykorrhiza und Zucker zurück. Die Hyphen-Upgrades und Meilensteine bleiben. Fruchtkörper reifen: nach ${Math.round(T.ripeF / 3600)} Stunden Laufzeit ist der volle Gewinn erreicht (beim ersten Mal dauert es länger).`,
     },
   ],
@@ -350,7 +368,7 @@ export const def = {
   challengesUnlocked: fOpen,
   achievements: [],
   autos,
-  extraState: () => ({ myz: { rain: { charges: T.rainStart, t: 0, n: 0 }, nAt: ZERO, hAtF: ZERO } }),
+  extraState: () => ({ myz: { rain: { charges: T.rainStart, t: 0, n: 0 }, nAt: ZERO, hAtF: ZERO, hRef: 0 } }),
   settingsDefaults: { confirm: { h: false, s: true, m: true, f: true } },
   hooks: {
     upgradeDisabled: (g, u) => (u.node === 'h' && g.rule('noH', false)) || ((u.node === 's' || u.node === 'm') && !branchOn(g)),
@@ -362,6 +380,9 @@ export const def = {
     // the Nährstoffe earned before the choice do not count towards the first unit (no windfall of several units at once)
     onFork: (g, id, opt) => {
       if (opt) g.state.myz.nAt = g.state.cur.n.total;
+    },
+    beforePrestige: (g, id) => {
+      if (id === 'f') g.state.myz.hRef = hRipeGain(g);
     },
     afterReset: (g, L) => {
       const m = g.state.myz;
