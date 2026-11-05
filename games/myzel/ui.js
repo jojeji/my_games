@@ -20,7 +20,10 @@ export function mountMyzel({ root, runtime, offline }) {
   const ctx = { runtime, g };
   setNotation(g.state.settings.notation);
 
-  ctx.askFork = () => openForkDialog(ctx);
+  ctx.askFork = () => {
+    ctx.forkAsked = true; // dismissing the dialog is an answer: the node keeps glowing, the dialog does not come back by itself
+    return openForkDialog(ctx);
+  };
 
   /* ---------------- header ---------------- */
   const header = {
