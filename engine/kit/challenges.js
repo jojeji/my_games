@@ -31,8 +31,9 @@ export const challengeMethods = {
     return fallback;
   },
 
+  /** Goal value; goal.amount may be a function of the game (a goal that grows with the player's progress). */
   chGoal(c) {
-    return D(c.goal.amount);
+    return D(typeof c.goal.amount === 'function' ? c.goal.amount(this) : c.goal.amount);
   },
 
   /** Progress value towards the goal: the run total of goal.currency, or goal.fn(g) (a game-computed value). */

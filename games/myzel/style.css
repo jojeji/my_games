@@ -1,0 +1,131 @@
+/* Myzel theme: forest floor (dark), mycelium cream, bioluminescent green. Overrides the shared variables of engine.css. */
+:root {
+  --bg: #0b100c;
+  --bg2: #16201a;
+  --surface: #18211b;
+  --surface2: #232f27;
+  --border: #33443a;
+  --text: #f1ecdc;
+  --muted: #9aa793;
+  --accent: #4ff2b0;
+  --accent-ink: #032015;
+  --accent2: #d9c9a3;
+  --good: #7ee787;
+  --warn: #e8c26a;
+  --bad: #f2877b;
+  --hdr-h: 68px;
+}
+
+/* ---------- header: Nährstoffe left, Regenschauer right (one row, ~10 % of a phone screen) ---------- */
+.hdr-top { gap: 12px; }
+.hdr-val { font-size: 26px; }
+.rain-btn {
+  display: inline-flex; align-items: center; gap: 8px; flex: none; min-height: 48px; padding: 4px 12px 4px 10px;
+  border-radius: 14px; background: var(--surface); border: 1px solid var(--border); color: var(--text); cursor: pointer;
+}
+.rain-btn:active { transform: scale(0.97); }
+.rain-ico { display: inline-flex; color: var(--muted); }
+.rain-ico .icon { width: 26px; height: 26px; }
+.rain-body { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; line-height: 1; }
+.pips { display: inline-flex; gap: 5px; }
+.pip { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--muted); background: transparent; display: inline-block; }
+.pip.full { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 70%, transparent); }
+.rain-sub { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.rain-btn.ready { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); }
+.rain-btn.ready .rain-ico { color: var(--accent); }
+.rain-btn.active { background: color-mix(in srgb, var(--accent) 20%, var(--surface)); border-color: var(--accent); }
+.rain-btn.active .rain-ico { color: var(--accent); animation: sway 1.6s ease-in-out infinite; }
+.rain-btn.active .rain-sub { color: var(--accent); }
+@keyframes sway { 50% { transform: translateY(2px); } }
+
+/* ---------- Netz tab: the tree ---------- */
+.tree { display: flex; flex-direction: column; gap: 6px; }
+.tree-intro { text-align: center; }
+.tree-wrap { width: 100%; max-width: 420px; margin: 0 auto; }
+.tree-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tree-edge { fill: none; stroke: var(--border); stroke-width: 2; stroke-dasharray: 3 5; }
+.tree-edge.on { stroke: color-mix(in srgb, var(--accent2) 80%, var(--border)); stroke-dasharray: none; stroke-width: 2.5; }
+.tree-or { fill: var(--border); font-size: 12px; font-style: italic; }
+.tree-or.on { fill: var(--accent); }
+.tree-node { cursor: pointer; outline: none; }
+.tree-body { fill: var(--surface); stroke: var(--accent2); stroke-width: 2; }
+.tree-letter { fill: var(--text); font-size: 24px; font-weight: 800; }
+.tree-stock { fill: var(--accent2); font-size: 11px; font-weight: 600; }
+.tree-label { fill: var(--muted); font-size: 12px; }
+.tree-ring { fill: none; stroke: var(--accent); stroke-width: 2.5; opacity: 0; }
+.tree-node.glow .tree-ring { opacity: 1; animation: glow 1.8s ease-in-out infinite; filter: drop-shadow(0 0 6px var(--accent)); }
+@keyframes glow { 50% { opacity: 0.35; } }
+.tree-dot { fill: var(--accent); stroke: var(--bg); stroke-width: 2; display: none; }
+.tree-dot.show { display: block; }
+.tree-node[data-kind='hidden'] .tree-body, .tree-node[data-kind='teaser'] .tree-body { fill: none; stroke: var(--border); stroke-dasharray: 4 5; }
+.tree-node[data-kind='hidden'] .tree-letter, .tree-node[data-kind='teaser'] .tree-letter { fill: var(--muted); font-weight: 600; }
+.tree-node[data-kind='teaser'] { opacity: 0.55; }
+.tree-node[data-kind='closed'] .tree-body { fill: none; stroke: var(--border); stroke-dasharray: 2 4; }
+.tree-node[data-kind='closed'] .tree-letter, .tree-node[data-kind='closed'] .tree-label { fill: var(--muted); }
+.tree-node[data-kind='choose'] .tree-body { stroke: var(--accent); }
+.tree-node:focus-visible .tree-body { stroke: var(--accent); stroke-width: 3; }
+@media (prefers-reduced-motion: reduce) { .tree-node.glow .tree-ring, .rain-btn.active .rain-ico { animation: none; } }
+
+/* ---------- layer view (full screen below the header) ---------- */
+body.lv-open { overflow: hidden; }
+.lv {
+  position: fixed; left: 0; right: 0; bottom: 0; top: var(--hdr-h); z-index: 40; display: flex; flex-direction: column;
+  background: var(--bg); background-image: radial-gradient(900px 400px at 50% -10%, var(--bg2), var(--bg));
+}
+.lv-top { display: flex; align-items: center; gap: 8px; padding: 6px var(--pad-r) 6px var(--pad-l); border-bottom: 1px solid var(--border); flex: none; max-width: var(--col); width: 100%; margin: 0 auto; }
+.lv-back { min-height: 44px; padding: 6px 12px; font-size: 16px; }
+.lv-title { font-size: 20px; }
+.lv-body { flex: 1; min-height: 0; display: flex; flex-direction: column; width: 100%; max-width: var(--col); margin: 0 auto; }
+.lv-node { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.lv-node[hidden] { display: none; }
+.lv-scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 12px var(--pad-r) 20px var(--pad-l); display: flex; flex-direction: column; gap: 14px; }
+.lv-foot {
+  flex: none; padding: 8px var(--pad-r) calc(8px + env(safe-area-inset-bottom)) var(--pad-l); background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+.lv-pbtn { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; line-height: 1.2; padding: 0 12px; }
+.lv-sec { display: flex; flex-direction: column; gap: 10px; }
+.lv-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lv-all { min-height: 44px; padding: 4px 12px; font-size: 14px; }
+.lv-res { display: flex; flex-direction: column; gap: 2px; }
+.lv-stock { font-size: 34px; letter-spacing: -0.01em; line-height: 1.1; }
+.lv-sub { display: flex; flex-direction: column; gap: 1px; }
+.lv-sub-line { font-size: 13px; color: var(--muted); }
+
+/* upgrade cards: two columns, also at 360 px */
+.ugrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.uc { display: flex; flex-direction: column; gap: 4px; padding: 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); min-width: 0; }
+.uc.owned { border-color: color-mix(in srgb, var(--good) 50%, var(--border)); background: color-mix(in srgb, var(--good) 6%, var(--surface)); }
+.uc.locked { opacity: 0.6; }
+.uc.off { opacity: 0.5; }
+.uc-head { display: flex; flex-direction: column; gap: 1px; }
+.uc-name { font-size: 14px; line-height: 1.2; overflow-wrap: anywhere; }
+.uc-tag { font-size: 10px; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.05em; }
+.uc-desc { font-size: 12px; line-height: 1.3; color: #cdd6c4; flex: 1; }
+.uc-cur { font-size: 12px; font-weight: 600; color: var(--muted); }
+.uc-cur.is-owned { color: var(--accent); }
+.uc-note { font-size: 11px; color: var(--warn); line-height: 1.25; }
+.uc-buy { min-height: 44px; font-size: 13px; padding: 4px 6px; flex-direction: row; margin-top: 2px; }
+.uc-again { min-height: 44px; font-size: 13px; padding: 4px 6px; }
+
+.ms-list { display: flex; flex-direction: column; gap: 10px; }
+.ms { display: flex; gap: 10px; align-items: flex-start; opacity: 0.55; }
+.ms.done { opacity: 1; }
+.ms div { display: flex; flex-direction: column; }
+.ms small { color: var(--muted); font-size: 12px; }
+.ms-mark { flex: none; width: 14px; height: 14px; margin-top: 3px; border-radius: 50%; border: 1.5px solid var(--muted); }
+.ms.done .ms-mark { background: var(--good); border-color: var(--good); }
+
+.rain-card { display: flex; flex-direction: column; gap: 8px; }
+.rain-card .pips { gap: 7px; }
+.rain-card .pip { width: 14px; height: 14px; }
+
+/* fork dialog */
+.fork-opt { display: flex; flex-direction: column; gap: 6px; padding: 12px; }
+.fork-name { font-size: 18px; }
+.fork-pros { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: #cdd6c4; }
+.fork-pros li::before { content: '· '; color: var(--accent); }
+.offline-lead { font-size: 18px; }
+
+/* toasts rise above the sticky prestige button while a layer view is open */
+body.lv-open .toasts { bottom: calc(env(safe-area-inset-bottom) + 92px); }

@@ -15,6 +15,7 @@ import { createMyzel } from '../games/myzel/logic.js';
 import { buyNode, rainCast } from '../games/myzel/def.js';
 import { TUNE as T } from '../games/myzel/tune.js';
 import { createRuntime } from '../engine/core.js';
+import { D } from '../engine/decimal.js';
 import { rngRoll, rngInt } from '../engine/kit/rng.js';
 import { formatDuration, formatNumber as f } from '../engine/format.js';
 
@@ -62,18 +63,15 @@ export function act(g, S, state) {
     g.prestige(node);
     buyAll();
   }
-  // Fruchtkörper
+  // Fruchtkörper (+ the next challenge, started in the fresh state right after it: the run restarts anyway)
   if (g.canPrestige('f')) {
     const gain = g.prestigeGain('f');
     if (gain.gte(Math.max(1, S.fMinFrac * g.state.cur.f.total.toNumber()))) {
       buyAll();
       g.prestige('f');
       buyNode(g, 'f');
+      if (S.challenges && !g.chActive()) for (const c of g.def.challenges) if (g.chAvailable(c.id)) { g.chEnter(c.id); break; }
     }
-  }
-  // challenges: start the next one in a fresh state (right after a reset of row 3)
-  if (S.challenges && !g.chActive() && g.state.layers.f.count >= 1 && g.state.cur.h.total.sub(g.state.myz.hAtF).lt(1)) {
-    for (const c of g.def.challenges) if (g.chAvailable(c.id)) { g.chEnter(c.id); break; }
   }
 }
 
@@ -97,7 +95,8 @@ export function makeSim(strategy = {}, { game = null } = {}) {
     const ev = { t, visit: ctx.visit, type, id: p?.id };
     if (type === 'prestige') {
       const l = g.layerById[p.id];
-      const before = g.state.cur[l.currency].total.sub(p.gain);
+      // the layer's stock: units of a static layer (they are wiped by the row above), else everything earned so far
+      const before = l.static ? D(g.state.layers[p.id].units).sub(p.gain) : g.state.cur[l.currency].total.sub(p.gain);
       ev.gain = p.gain;
       ev.big = p.gain.gte(before.mul(0.1)) && p.gain.gte(1);
       ev.manual = ctx.inVisit;
@@ -162,7 +161,7 @@ export function runSchedule(schedule, strategy = {}, { game = null, hook = null 
     if (v.at > ctx.t) absence(ctx, v.at - ctx.t);
     ctx.visit = i;
     const from = ctx.events.length;
-    const rec = { i, at: v.at, offlineEvents: ctx.events.filter((e) => e.visit === i).length };
+    const rec = { i, at: v.at, gap: i ? v.at - (schedule[i - 1].at + schedule[i - 1].len) : 0 };
     playVisit(ctx, v.len);
     rec.events = ctx.events.filter((e) => e.visit === i);
     rec.progress = rec.events.some((e) => NEW_KINDS.has(e.type) || (e.type === 'prestige' && e.big));
@@ -219,7 +218,8 @@ export function progressMetric(ctx, { until = Infinity } = {}) {
     run = v.isNew ? 0 : run + 1;
     worst = Math.max(worst, run);
   }
-  return { visits: vs.length, withProgress: withProg, ratio: vs.length ? withProg / vs.length : 0, worstNewGap: worst, list: vs };
+  const morning = vs.filter((v) => v.gap >= 6 * 3600); // the first visit after the night
+  return { visits: vs.length, withProgress: withProg, ratio: vs.length ? withProg / vs.length : 0, worstNewGap: worst, morning, list: vs };
 }
 
 export function runPendler({ days = 4, seed = 1, fork = 's', rain = true, stopAtContent = true, visitLen = 180, strategy = {} } = {}) {

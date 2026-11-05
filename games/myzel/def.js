@@ -60,31 +60,46 @@ export function rainNextIn(g) {
 /* production                                                           */
 /* ------------------------------------------------------------------ */
 
-const sPerUnit = (g) => (T.sPer + 0.4 * has(g, 's12') + 0.5 * has(g, 's22a')) * (has(g, 'f13') ? 1.15 : 1) * (chDone(g, 'kahl') ? 1.3 : 1);
+// o = level overrides for the "Dann ..." preview of an unbought upgrade
+const sA = (g, o = {}) => (T.sA + 0.3 * (o.s12 ?? has(g, 's12')) + 0.4 * (o.s22a ?? has(g, 's22a'))) * (has(g, 'f13') ? 1.15 : 1) * (chDone(g, 'kahl') ? 1.3 : 1);
+/** N multiplier of the Spores: (1 + a * Sporen) ^ sPow. Mild in the long run (no ^units explosion across resets), strong for the first ones. */
+export const sMult = (g, o) => Math.pow(1 + sA(g, o) * units(g, 's'), T.sPow);
 const sCostFactor = (g) => (has(g, 's11') ? 1 / 1.5 : 1) * (has(g, 's22b') ? 1 / 1.4 : 1);
-const zExpo = (g) => T.zExp + 0.05 * has(g, 'm12') + 0.05 * has(g, 'm22b');
+const zExpo = (g, o = {}) => T.zExp + 0.05 * (o.m12 ?? has(g, 'm12')) + 0.05 * (o.m22b ?? has(g, 'm22b'));
 
-/** Labeled multipliers of the N production (without Zucker, shower and the Dürre exponent), for the details dialog and the objective. */
-export function nParts(g) {
+/** Labeled multipliers of the N production that come from the Hyphen layer, the upgrades and the Fruchtkörper (the part Dürre takes the root of). */
+export function coreParts(g) {
   const hr = Hr(g);
   const p = [['Hyphen-Geflecht', Math.pow(1 + hr, T.hBoostExp)]];
   const add = (label, v) => v !== 1 && p.push([label, v]);
   for (const u of g.def.upgrades) if (u.fx === 'n' && g.upgLevel(u.id) > 0) add(u.name, g.upgEffect(u.id));
   if (ms(g, 'h_dicht')) add('Meilenstein Dichte Fäden', 1.5);
-  if (spOn(g)) add('Sporen', Math.pow(sPerUnit(g), units(g, 's')));
   if (chDone(g, 'durre')) add('Dürre überstanden', 3);
-  if (ms(g, 's_flut') && spOn(g)) add('Sporenflut', 2);
   return p;
 }
 
+/** The multipliers of the chosen branch (Sporen, Zucker): they keep working in Dürre. */
+export function branchParts(g, o = {}) {
+  const p = [];
+  if (spOn(g)) {
+    p.push(['Sporen', sMult(g)]);
+    if (ms(g, 's_flut')) p.push(['Sporenflut', 2]);
+  }
+  if (!o.noZ && myOn(g)) p.push(['Zucker', Math.pow(1 + g.state.cur.z.run.toNumber() + (o.zExtra || 0), zExpo(g))]);
+  return p.filter(([, v]) => v !== 1);
+}
+
+/** All labeled N multipliers (the Dürre exponent applies to the core only). */
+export const nParts = (g) => [...coreParts(g), ...branchParts(g)];
+
 /** N per second as a plain number. o.noZ: without the sugar boost (base for the sugar production), o.zExtra: sugar added (objective). */
 export function nRate(g, o = {}) {
-  let r = T.nBase;
-  for (const [, v] of nParts(g)) r *= v;
-  if (!o.noZ && myOn(g)) r *= Math.pow(1 + g.state.cur.z.run.toNumber() + (o.zExtra || 0), zExpo(g));
+  let core = T.nBase;
+  for (const [, v] of coreParts(g)) core *= v;
   const pw = g.rule('nPow', 1);
-  if (pw !== 1) r = Math.pow(r, pw);
-  return r;
+  if (pw !== 1) core = Math.pow(core, pw);
+  for (const [, v] of branchParts(g, o)) core *= v;
+  return core;
 }
 
 /** Zucker per second (Mykorrhiza). */
@@ -115,6 +130,10 @@ export const ripeness = (g) => Math.max(0.01, Math.pow(Math.min(1, g.state.layer
  * Value of the state for the autobuyers (and the sim, which calls the same functions): ln of the Hyphen gain of a run, plus
  * what the upgrades of the fork layers are worth (cheaper Spores, sugar that will have been made within an hour).
  */
+/** 'Reife' of the Fruchtkörper: the gain of a run grows with its age (concave gain + cheap resets would make many short runs the best way to farm them). */
+export const fRipeSecs = (g) => (g.state.layers.f.count === 0 ? T.ripeF1 : T.ripeF);
+export const fRipeness = (g) => Math.max(0.02, Math.pow(Math.min(1, g.state.layers.f.runTime / fRipeSecs(g)), T.ripeFExp));
+
 export function objective(g) {
   const zExtra = myOn(g) ? zRate(g) * T.zHorizon : 0;
   let v = T.hExp * Math.log(Math.max(nRate(g, { zExtra }), 1e-9)) + Math.log(hGainMult(g));
@@ -134,10 +153,11 @@ const up = (node, o) => ({ node, group: node, layer: { h: 1, s: 2, m: 2, f: 3 }[
 const cs = (node) => ({ h: T.costScaleH, s: T.costScaleS, m: T.costScaleM, f: T.costScaleF })[node];
 const cost = (node, c) => () => Math.ceil(c * cs(node));
 
-// which H upgrades survive a reset of the rows above: the milestones of the chosen branch (s_*/m_*) and of the Fruchtkörper
+// which H upgrades survive a reset of the rows above: all of them survive a reset of row 3 (Fruchtkörper, challenges: the Hyphen net stays),
+// those of a reset of row 2 depend on the milestones of the chosen branch (s_*/m_*)
 const rowOf = (id) => Number(id[1]);
 const keepH = (id) => (g, L) => {
-  if (L >= 3) return ms(g, 'f_keep');
+  if (L >= 3) return true;
   if (L !== 2) return false;
   const r = rowOf(id);
   const b = g.forkChoice('a');
@@ -159,24 +179,25 @@ const hUpgrades = [
   hUp({ id: 'h33', fx: 'h', name: 'Hyphen-Dichte', desc: 'Hyphen-Gewinn ×2,5.', cost: 4000, requires: ['h23'], effect: (l) => (l ? 2.5 : 1), fmt: fe }),
 ];
 
-const sUp = (o) => up('s', { cost: cost('s', o.cost), ...o });
+const keepBranch = (g, L) => L >= 3 && ms(g, 'f_keepb'); // the branch upgrades survive a Fruchtkörper from 4 on
+const sUp = (o) => up('s', { cost: cost('s', o.cost), keep: keepBranch, ...o });
 const sUpgrades = [
   sUp({ id: 's11', name: 'Keimruhe', desc: 'Sporen kosten ÷1,5.', cost: 1, effect: (l) => (l ? 1 / 1.5 : 1), fmt: (e) => '÷' + formatNumber(1 / e) }),
-  sUp({ id: 's12', name: 'Sporenfahne', desc: 'Jede Spore wirkt stärker: Basis +0,4.', cost: 2, requires: ['s11'], effect: (l, g) => (l ? sPerUnit(g) : T.sPer), fmt: (e) => 'Basis ' + formatNumber(e) }),
+  sUp({ id: 's12', name: 'Sporenfahne', desc: 'Jede Spore wirkt stärker (+0,3).', cost: 2, requires: ['s11'], effect: (l, g) => sMult(g, { s12: l }), fmt: (e) => 'Sporen ×' + formatNumber(e) }),
   sUp({ id: 's13', fx: 'n', name: 'Windbestäubung', desc: 'Nährstoffe ×(1 + Sporen)^0,5.', cost: 3, requires: ['s12'], effect: (l, g) => (l ? Math.pow(1 + units(g, 's'), 0.5) : 1), fmt: fe }),
   sUp({ id: 's21', fx: 'h', name: 'Dichter Flor', desc: 'Hyphen-Gewinn ×(1 + Sporen)^0,5.', cost: 4, requires: ['s11'], effect: (l, g) => (l ? Math.pow(1 + units(g, 's'), 0.5) : 1), fmt: fe }),
-  sUp({ id: 's22a', name: 'Sprengkraft', desc: 'Jede Spore wirkt stärker: Basis +0,5. Schließt „Streuung“ aus.', cost: 6, requires: ['s21'], excl: ['s22b'], effect: (l, g) => (l ? sPerUnit(g) : T.sPer), fmt: (e) => 'Basis ' + formatNumber(e) }),
+  sUp({ id: 's22a', name: 'Sprengkraft', desc: 'Jede Spore wirkt stärker (+0,4). Schließt „Streuung“ aus.', cost: 6, requires: ['s21'], excl: ['s22b'], effect: (l, g) => sMult(g, { s22a: l }), fmt: (e) => 'Sporen ×' + formatNumber(e) }),
   sUp({ id: 's22b', name: 'Streuung', desc: 'Sporen kosten ÷1,4. Schließt „Sprengkraft“ aus.', cost: 6, requires: ['s21'], excl: ['s22a'], effect: (l) => (l ? 1 / 1.4 : 1), fmt: (e) => '÷' + formatNumber(1 / e) }),
 ];
 
-const mUp = (o) => up('m', { cost: cost('m', o.cost), ...o });
+const mUp = (o) => up('m', { cost: cost('m', o.cost), keep: keepBranch, ...o });
 const mUpgrades = [
   mUp({ id: 'm11', name: 'Zuckerrohr', desc: 'Zucker-Erzeugung ×2.', cost: 200, effect: (l) => (l ? 2 : 1), fmt: fe }),
-  mUp({ id: 'm12', name: 'Wurzelkuss', desc: 'Zucker verstärkt Nährstoffe stärker (Exponent +0,05).', cost: 800, requires: ['m11'], effect: (l, g) => (l ? zExpo(g) : T.zExp), fmt: (e) => '^' + formatNumber(e) }),
+  mUp({ id: 'm12', name: 'Wurzelkuss', desc: 'Zucker verstärkt Nährstoffe stärker (Exponent +0,05).', cost: 800, requires: ['m11'], effect: (l, g) => zExpo(g, { m12: l }), fmt: (e) => 'Exponent ' + formatNumber(e) }),
   mUp({ id: 'm13', fx: 'n', name: 'Leitbündel', desc: 'Nährstoffe ×(1 + Mykorrhiza)^0,4.', cost: 3000, requires: ['m12'], effect: (l, g) => (l ? Math.pow(1 + units(g, 'm'), 0.4) : 1), fmt: fe }),
   mUp({ id: 'm21', name: 'Symbiose', desc: 'Zucker-Erzeugung ×(1 + Hyphen)^0,1.', cost: 1500, requires: ['m11'], effect: (l, g) => (l ? Math.pow(1 + Hr(g), T.pH31b) : 1), fmt: fe }),
   mUp({ id: 'm22a', name: 'Tiefenwurzeln', desc: 'Zucker-Erzeugung ×3. Schließt „Feinwurzeln“ aus.', cost: 8000, requires: ['m21'], excl: ['m22b'], effect: (l) => (l ? 3 : 1), fmt: fe }),
-  mUp({ id: 'm22b', name: 'Feinwurzeln', desc: 'Zucker verstärkt Nährstoffe stärker (Exponent +0,05). Schließt „Tiefenwurzeln“ aus.', cost: 8000, requires: ['m21'], excl: ['m22a'], effect: (l, g) => (l ? zExpo(g) : T.zExp), fmt: (e) => '^' + formatNumber(e) }),
+  mUp({ id: 'm22b', name: 'Feinwurzeln', desc: 'Zucker verstärkt Nährstoffe stärker (Exponent +0,05). Schließt „Tiefenwurzeln“ aus.', cost: 8000, requires: ['m21'], excl: ['m22a'], effect: (l, g) => zExpo(g, { m22b: l }), fmt: (e) => 'Exponent ' + formatNumber(e) }),
 ];
 
 const fUp = (o) => up('f', { cost: cost('f', o.cost), ...o });
@@ -202,40 +223,42 @@ const milestones = [
   mile('h_dicht', 'h', lc('h', 3), '3 Ausbreitungen', 'Dichte Fäden: Nährstoffe ×1,5.'),
   mile('h_flaeche', 'h', lc('h', 10), '10 Ausbreitungen', 'Flächendeckend: Hyphen-Gewinn ×1,25.'),
   // Sporen: the first ones keep Hyphen upgrades through the cheap reset
-  mile('s_keep1', 's', uc('s', 1), '1 Spore', 'Die erste Reihe der Hyphen-Upgrades bleibt bei einer Sporenwolke erhalten.'),
-  mile('s_keep2', 's', uc('s', 3), '3 Sporen', 'Auch die zweite Reihe bleibt erhalten.'),
-  mile('s_keep3', 's', uc('s', 5), '5 Sporen', 'Alle Hyphen-Upgrades bleiben erhalten.'),
+  mile('s_keep1', 's', uc('s', 1), '1 Spore', 'Ab der nächsten Sporenwolke bleibt die erste Reihe der Hyphen-Upgrades erhalten.'),
+  mile('s_keep2', 's', uc('s', 3), '3 Sporen', 'Auch die zweite Reihe bleibt erhalten (ab dem nächsten Mal).'),
+  mile('s_keep3', 's', uc('s', 5), '5 Sporen', 'Alle Hyphen-Upgrades bleiben erhalten (ab dem nächsten Mal).'),
   mile('s_flut', 's', uc('s', 7), '7 Sporen', 'Sporenflut: Nährstoffe ×2.'),
-  mile('m_keep1', 'm', uc('m', 1), '1 Mykorrhiza', 'Die erste Reihe der Hyphen-Upgrades bleibt bei einem Schub erhalten.'),
-  mile('m_keep2', 'm', uc('m', 3), '3 Mykorrhiza', 'Auch die zweite Reihe bleibt erhalten.'),
-  mile('m_keep3', 'm', uc('m', 5), '5 Mykorrhiza', 'Alle Hyphen-Upgrades bleiben erhalten.'),
+  mile('m_keep1', 'm', uc('m', 1), '1 Mykorrhiza', 'Ab dem nächsten Verdichten bleibt die erste Reihe der Hyphen-Upgrades erhalten.'),
+  mile('m_keep2', 'm', uc('m', 3), '3 Mykorrhiza', 'Auch die zweite Reihe bleibt erhalten (ab dem nächsten Mal).'),
+  mile('m_keep3', 'm', uc('m', 5), '5 Mykorrhiza', 'Alle Hyphen-Upgrades bleiben erhalten (ab dem nächsten Mal).'),
   mile('m_netz', 'm', uc('m', 7), '7 Mykorrhiza', 'Myzelnetz: Zucker-Erzeugung ×2.'),
-  mile('f_keep', 'f', lc('f', 1), '1 Fruchtkörper', 'Hyphen-Upgrades bleiben beim Bilden von Fruchtkörpern erhalten. Die Challenges sind offen.'),
-  mile('f_buy', 'f', lc('f', 2), '2 Fruchtkörper', 'Hyphen-Upgrades können automatisch gekauft werden.'),
-  mile('f_auto', 'f', lc('f', 3), '3 Fruchtkörper', 'Die Ausbreitung kann automatisch laufen.'),
-  mile('f_wolke', 'f', lc('f', 4), '4 Fruchtkörper', `Wolkenbruch: Regenschauer wirken ×${T.rainMult2} statt ×${T.rainMult}.`),
+  mile('f_buy', 'f', lc('f', 1), '1 Fruchtkörper', 'Die Challenges sind offen. Hyphen-Upgrades können automatisch gekauft werden.'),
+  mile('f_auto', 'f', lc('f', 2), '2 Fruchtkörper', 'Die Ausbreitung kann automatisch laufen.'),
+  mile('f_wolke', 'f', lc('f', 3), '3 Fruchtkörper', `Wolkenbruch: Regenschauer wirken ×${T.rainMult2} statt ×${T.rainMult}.`),
+  mile('f_keepb', 'f', lc('f', 4), '4 Fruchtkörper', 'Die Upgrades von Sporen und Mykorrhiza bleiben beim Bilden von Fruchtkörpern erhalten.'),
 ];
 
 /* ------------------------------------------------------------------ */
 /* challenges                                                           */
 /* ------------------------------------------------------------------ */
 
+/** Challenge goal: a share of the Hyphen the NEXT Fruchtkörper would need (so it grows with the player, no wall and no free pass). */
+const chGoal = (i) => (g) => T.chS[i] * T.fReq * Math.pow(1 + g.state.cur.f.total.toNumber(), 2);
 const hf = (g) => g.state.cur.h.total.sub(g.state.myz.hAtF);
 const fOpen = (g) => g.state.layers.f.count >= 1;
 const challenges = [
   {
     id: 'durre', name: 'Dürre', resetLayer: 3, rules: { nPow: T.chDurrePow },
-    desc: 'Die Nährstoff-Produktion wird zur Wurzel (^0,5).', goal: { currency: 'h', amount: T.chK[0] * T.fReq, fn: hf },
+    desc: `Die Nährstoff-Produktion wird gestaucht (Exponent ${c(T.chDurrePow)}). Sporen und Zucker wirken weiter.`, goal: { currency: 'h', amount: chGoal(0), fn: hf },
     reward: 'Nährstoffe dauerhaft ×3.', unlock: fOpen, lockText: '1 Fruchtkörper',
   },
   {
     id: 'frost', name: 'Frost', resetLayer: 3, rules: { noH: true },
-    desc: 'Die Hyphen-Upgrades sind eingefroren.', goal: { currency: 'h', amount: T.chK[1] * T.fReq, fn: hf },
+    desc: 'Die Hyphen-Upgrades sind eingefroren.', goal: { currency: 'h', amount: chGoal(1), fn: hf },
     reward: 'Hyphen-Gewinn dauerhaft ×2.', unlock: (g) => g.chDone('durre'), lockText: 'Dürre überstanden',
   },
   {
     id: 'kahl', name: 'Kahlschlag', resetLayer: 3, rules: { noFork: true },
-    desc: 'Sporen und Mykorrhiza ruhen: keine Wirkung, keine neuen.', goal: { currency: 'h', amount: T.chK[2] * T.fReq, fn: hf },
+    desc: 'Sporen und Mykorrhiza ruhen: keine Wirkung, keine neuen.', goal: { currency: 'h', amount: chGoal(2), fn: hf },
     reward: 'Sporen und Zucker dauerhaft stärker (Sporen ×1,3, Zucker ×1,5).', unlock: (g) => g.chDone('frost'), lockText: 'Frost überstanden',
   },
 ];
@@ -245,8 +268,8 @@ const challenges = [
 /* ------------------------------------------------------------------ */
 
 const autos = [
-  { id: 'auto_hbuy', name: 'Hyphen-Upgrades automatisch kaufen', desc: 'Kauft das Upgrade mit dem besten Nutzen.', kind: 'upg', group: 'h', where: 'Hyphen-Ebene', unlock: (g) => ms(g, 'f_buy'), interval: () => 2, run: (g) => buyNode(g, 'h') },
-  prestigeAuto({ id: 'auto_h', layer: 'h', name: 'Automatisch ausbreiten', desc: 'Breitet sich aus, sobald die Bedingung erfüllt ist.', where: 'Hyphen-Ebene', unlock: (g) => ms(g, 'f_auto'), interval: () => 1, mode: 'time', value: T.autoHTime, minGain: 1, modes: ['time', 'amount', 'mult'] }),
+  { id: 'auto_hbuy', name: 'Hyphen-Upgrades automatisch kaufen', desc: 'Kauft das Upgrade mit dem besten Nutzen.', kind: 'upg', group: 'h', where: 'Hyphen-Knoten', unlock: (g) => ms(g, 'f_buy'), interval: () => 2, run: (g) => buyNode(g, 'h') },
+  prestigeAuto({ id: 'auto_h', layer: 'h', name: 'Automatisch ausbreiten', desc: 'Breitet sich aus, sobald die Bedingung erfüllt ist.', where: 'Hyphen-Knoten', unlock: (g) => ms(g, 'f_auto'), interval: () => 1, mode: 'time', value: T.autoHTime, minGain: 1, modes: ['time', 'amount', 'mult'] }),
 ];
 
 /* ------------------------------------------------------------------ */
@@ -314,11 +337,11 @@ export const def = {
     {
       id: 'f', name: 'Fruchtkörper', plural: 'Fruchtkörper', verb: 'Fruchtkörper bilden', layer: 3, currency: 'f', basis: 'h',
       basisFn: hf,
-      formula: { threshold: T.fReq, exp: T.fExp }, mult: () => 1,
+      formula: { threshold: T.fReq, exp: T.fExp }, mult: () => 1, postMult: fRipeness,
       available: fAvailable,
       unlockWhen: fAvailable,
       unavailableText: `Verlangt ${T.fUnitsS} Sporen oder ${T.fUnitsM} Mykorrhiza.`,
-      blurb: 'Setzt alles darunter zurück (Hyphen, Sporen, Mykorrhiza, Zucker). Die Meilensteine behältst du.',
+      blurb: `Setzt Nährstoffe, Hyphen, Sporen, Mykorrhiza und Zucker zurück. Die Hyphen-Upgrades und Meilensteine bleiben. Fruchtkörper reifen: nach ${Math.round(T.ripeF / 3600)} Stunden Laufzeit ist der volle Gewinn erreicht (beim ersten Mal dauert es länger).`,
     },
   ],
   upgrades,
@@ -335,6 +358,10 @@ export const def = {
       const r = g.state.myz.rain;
       if (r.t > 0) r.t = Math.max(0, r.t - dt);
       if (r.charges < T.rainMax) r.charges = Math.min(T.rainMax, r.charges + dt / T.rainEvery);
+    },
+    // the Nährstoffe earned before the choice do not count towards the first unit (no windfall of several units at once)
+    onFork: (g, id, opt) => {
+      if (opt) g.state.myz.nAt = g.state.cur.n.total;
     },
     afterReset: (g, L) => {
       const m = g.state.myz;

@@ -5,12 +5,12 @@ import { confirmDialog, openModal } from '../../engine/ui/modal.js';
 import { progressBar, autoSwitch, autoConfigRow, doPrestige } from '../../engine/ui/kit-views.js';
 import { formatNumber as fmt, formatDuration, formatPercent } from '../../engine/format.js';
 import { nodeById } from './nodes.js';
-import { nParts, hGainParts, zRate, rainCast, rainCharges, rainNextIn, rainMult, ripeness } from './def.js';
+import { nParts, hGainParts, zRate, rainCast, rainCharges, rainNextIn, rainMult, ripeness, fRipeness } from './def.js';
 import { TUNE as T } from './tune.js';
 
 const UNIT = { s: 'Spore', m: 'Einheit' };
 const cname = (g, id) => g.currencyById[id].name;
-const PRESTIGE_VERB = { h: 'Ausbreiten', s: 'Sporen freisetzen', m: 'Netz verdichten', f: 'Fruchtkörper bilden' };
+const PRESTIGE_VERB = { h: 'Ausbreiten', s: 'Freisetzen', m: 'Verdichten', f: 'Fruchten' };
 
 /** "Alles kaufen" for the player: cheapest first, never a side of an exclusive pair (that is a choice). */
 export function buyAllPlain(g, node) {
@@ -132,7 +132,7 @@ function prestigeInfo(ctx, layerId) {
         const hi = target.log10();
         bar.set(hi > lo ? (Math.max(basis.log10(), 0) - lo) / (hi - lo) : 0);
       }
-      txt(stats, ls.count ? `Durchläufe: ${ls.count} · Letzter Gewinn: +${fmt(ls.lastGain)} nach ${formatDuration(ls.lastTime)}` : layerId === 'h' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(ripeness(g), 0)}` : '');
+      txt(stats, ls.count ? `Durchläufe: ${ls.count} · Letzter Gewinn: +${fmt(ls.lastGain)} nach ${formatDuration(ls.lastTime)}` : layerId === 'h' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(ripeness(g), 0)}` : layerId === 'f' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(fRipeness(g), 0)}` : '');
       setHidden(stats, !stats.textContent);
     },
   };
@@ -167,11 +167,12 @@ function challengeBlock(ctx) {
     const bar = progressBar();
     const prog = h('small', { class: 'muted num' });
     const lock = h('p', { class: 'uc-note' });
+    const goalLine = h('p', { class: 'chal-goal' });
     const btn = h('button', { class: 'btn', type: 'button' });
     const el = h('div', { class: 'card chal' },
       h('div', { class: 'upg-head' }, h('b', { text: c.name }), status),
       h('p', { class: 'upg-desc', text: c.desc }),
-      h('p', { class: 'chal-goal', text: `Ziel: ${fmt(c.goal.amount)} Hyphen in einem Lauf` }),
+      goalLine,
       h('p', { class: 'chal-reward', text: 'Belohnung: ' + c.reward }),
       bar.el, prog, lock, btn);
     btn.addEventListener('click', async () => {
@@ -179,7 +180,7 @@ function challengeBlock(ctx) {
         if (await confirmDialog('Challenge aufgeben? Der Lauf wird zurückgesetzt, ohne Belohnung.', { ok: 'Aufgeben', danger: true })) g.chExit();
       } else if (await confirmDialog(`„${c.name}“ starten? ${c.desc} Alles unterhalb der Fruchtkörper wird zurückgesetzt.`, { ok: 'Starten' })) g.chEnter(c.id);
     });
-    return { c, el, status, bar, prog, lock, btn };
+    return { c, el, status, bar, prog, lock, btn, goalLine };
   });
   const el = h('section', { class: 'lv-sec' }, h('h3', { class: 'section-title', text: 'Challenges' }), locked, intro, ...cards.map((x) => x.el));
   return {
@@ -189,11 +190,12 @@ function challengeBlock(ctx) {
       setHidden(locked, open);
       setHidden(intro, !open);
       const active = g.chActive();
-      for (const { c, el: card, status, bar, prog, lock, btn } of cards) {
+      for (const { c, el: card, status, bar, prog, lock, btn, goalLine } of cards) {
         setHidden(card, !open);
         if (!open) continue;
         const done = g.chDone(c.id);
         const isActive = active?.id === c.id;
+        txt(goalLine, `Ziel: ${fmt(g.chGoal(c))} Hyphen in einem Lauf`);
         txt(status, done ? 'Geschafft' : isActive ? 'Läuft' : 'Offen');
         setCls(card, 'owned', done);
         setCls(card, 'active', isActive);
@@ -201,7 +203,7 @@ function challengeBlock(ctx) {
         setHidden(prog, done || !isActive);
         if (isActive) {
           bar.set(g.chProgress(c));
-          txt(prog, `${fmt(g.chValue(c))} / ${fmt(c.goal.amount)} Hyphen`);
+          txt(prog, `${fmt(g.chValue(c))} / ${fmt(g.chGoal(c))} Hyphen`);
         } else bar.set(0);
         const lk = !done && !isActive && !g.chAvailable(c.id);
         txt(lock, lk && c.lockText ? 'Gesperrt: ' + c.lockText : '');
@@ -356,7 +358,7 @@ function buildNodeView(ctx, id) {
         const verb = PRESTIGE_VERB[n.layer] || l.verb;
         if (g.prestigeBlocked(n.layer)) txt(footBtn, 'In der Challenge gesperrt');
         else if (g.canPrestige(n.layer)) txt(footBtn, `${verb} · +${fmt(gain)} ${l.static ? (gain.eq(1) ? UNIT[n.layer] || 'Einheit' : l.plural) : cname(g, l.currency)}`);
-        else txt(footBtn, `${verb} · noch nicht möglich`);
+        else txt(footBtn, `${verb} · noch nicht`);
         setDisabled(footBtn, !g.canPrestige(n.layer));
       },
     });

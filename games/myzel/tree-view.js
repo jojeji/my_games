@@ -33,13 +33,14 @@ export function buildTree(ctx) {
     svg.append(p);
     return { a, b, p };
   });
-  const fork = (row, label) => {
-    const t = el('text', { x: W / 2, y: TOP + row * ROW_H - R - 8, class: 'tree-fork-label', 'text-anchor': 'middle' });
-    t.textContent = label;
+  const forkText = (row) => {
+    const t = el('text', { x: W / 2, y: TOP + row * ROW_H + 5, class: 'tree-or', 'text-anchor': 'middle' });
+    t.textContent = 'oder';
     svg.append(t);
     return t;
   };
-  const forkLabelA = fork(2, 'Gabelung');
+  const orA = forkText(2);
+  forkText(4);
 
   const nodes = NODES.map((n) => {
     const x = px(n);
@@ -87,7 +88,7 @@ export function buildTree(ctx) {
         const kb = infos[e.b].kind;
         setCls(e.p, 'on', (ka === 'open' || ka === 'choose') && kb === 'open');
       }
-      txt(forkLabelA, infos.s.kind === 'choose' ? 'Wähle einen Weg' : 'Gabelung');
+      setCls(orA, 'on', infos.s.kind === 'choose');
     },
   };
 }

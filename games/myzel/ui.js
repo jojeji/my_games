@@ -52,7 +52,7 @@ export function mountMyzel({ root, runtime, offline }) {
           const ch = g.chActive();
           setHidden(banner, !ch);
           if (ch) {
-            txt(bannerText, `${ch.name}: ${fmt(g.chValue(ch))} / ${fmt(ch.goal.amount)} Hyphen`);
+            txt(bannerText, `${ch.name}: ${fmt(g.chValue(ch))} / ${fmt(g.chGoal(ch))} Hyphen`);
             bannerBar.set(g.chProgress(ch));
           }
           const hh = el.parentElement ? el.parentElement.offsetHeight : 0;
@@ -136,7 +136,7 @@ export function mountMyzel({ root, runtime, offline }) {
   runtime.on('layer-unlocked', ({ id }) => toast(`${g.layerById[id].name} ist jetzt offen.`, { kind: 'good', title: 'Neu im Netz' }));
   runtime.on('fork-chosen', ({ opt }) => toast(g.forkDef('a').options.find((o) => o.id === opt).blurb, { kind: 'good', title: 'Gewählt', ms: 5000 }));
   runtime.on('prestige', ({ id, gain }) => id !== 'h' && toast(`+${fmt(gain)} ${g.currencyById[g.layerById[id].currency].name}`, { kind: 'good', title: g.layerById[id].name, ms: 2200 }));
-  announceAutoUnlocks({ runtime, toast, offline, whereOf: () => 'Hyphen-Ebene' });
+  announceAutoUnlocks({ runtime, toast, offline, whereOf: () => 'Hyphen-Knoten' });
 
   runtime.on('offline', (s) => showOfflineSummary(g, s));
   if (offline && offline.seconds >= 60) showOfflineSummary(g, offline);

@@ -121,6 +121,9 @@ export async function hardReset(ctx) {
   location.reload();
 }
 
+/** A game with a fixed offline cap (def.offlineCapSeconds) has no offline setting. */
+export const offlineSettingVisible = (g) => typeof g.def.offlineCapSeconds !== 'number';
+
 /** @param {{runtime:object, g:object, toast:Function, layerLabels?:Object<string,string>}} ctx */
 export function buildSettingsPanel(ctx) {
   const { g, runtime } = ctx;
@@ -140,7 +143,7 @@ export function buildSettingsPanel(ctx) {
       'Zusätzlich beim Verlassen der Seite.',
     ),
     // a game with a fixed offline cap (def.offlineCapSeconds) has no such setting
-    ...(typeof g.def.offlineCapSeconds === 'number'
+    ...(!offlineSettingVisible(g)
       ? []
       : [selectRow(
         'Offline-Fortschritt (max.)',
