@@ -23,6 +23,7 @@ export const STRATEGY = {
   fork: 's', // 's' | 'm' (fork A)
   forkB: 'l', // 'l' | 'z' (fork B)
   rain: true, // taps the Regenschauer
+  autos: true, // switches the autos on at the next visit after the hint (false: a player who ignores them)
   actEvery: 5, // the bot acts every this many seconds of a visit
   deepEvery: 3, // ... but looks at the deep layers (many candidates, slow) only every this many actions
   hRun: T.ripeSecs, // manual Hyphen prestige when the run is at least this old (the auto-Hyphen default is T.autoHTime)
@@ -47,7 +48,7 @@ const NODES_OF = (g) => ['h', 's', 'm', 'f', 'l', 'z', 'w'].filter((n) => !'sm'.
 export function act(g, S, state) {
   // autos start off: the player switches them on once the hint toast has told them where (here: at the next visit)
   if (state.visitStart) {
-    for (const a of g.def.autos) if (g.autoUnlocked(a.id)) g.state.auto[a.id].on = true;
+    if (S.autos) for (const a of g.def.autos) if (g.autoUnlocked(a.id)) g.state.auto[a.id].on = true;
     state.visitStart = false;
     state.zersDone = false;
   }

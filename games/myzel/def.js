@@ -406,14 +406,16 @@ const WLADDER = [
   ['w21', 'Moosteppich', 'f', 1.5, 30, ['w11'], 1, 4],
   ['w13', 'Hexenpfad', 'ring', 1.3, 40, ['w12'], 2, 2.5],
   ['w22', 'Farnwald', 'lump', 1.3, 80, ['w21'], 2, 5],
-  ['w23', 'Lichtung', 'w', 1.5, 150, ['w13', 'w22'], 3, 3],
-  ['w31', 'Urwald', 'ring', 1.5, 300, ['w23'], 4, 2],
+  ['w23', 'Lichtung', 'w', 1.5, 150, ['w13', 'w22'], 3, 3, ['w24']],
+  ['w24', 'Eichenhain', 'f', 1.5, 150, ['w13', 'w22'], 3, 3, ['w23']],
+  ['w31', 'Urwald', 'ring', 1.5, 300, [], 4, 2, null, ['w23', 'w24']],
 ];
 const WKIND = { w: 'Waldfäden-Gewinn', f: 'Fruchtkörper-Gewinn', inc: 'Flechten- und Fäulnis-Erzeugung', lump: 'Flechten- und Fäulnis-Gewinn', ring: 'Ringkosten ÷' };
 const WFX = {};
-const wLadder = WLADDER.map(([id, name, kind, factor, cst, req, atCount, atHours]) => {
+const wLadder = WLADDER.map(([id, name, kind, factor, cst, req, atCount, atHours, excl, any]) => {
   WFX[id] = [kind, factor];
-  return up('w', { id, name, cost: () => cst, desc: kind === 'ring' ? `Ringkosten ÷${c(factor)}.` : `${WKIND[kind]} ×${c(factor)}.`, requires: req, require: (g) => cnt(g, 'w') >= atCount && g.state.layers.w.runTime >= atHours * 3600,
+  const exclText = excl ? ` Schließt „${WLADDER.find((r) => r[0] === excl[0])[1]}“ aus.` : '';
+  return up('w', { id, name, cost: () => cst, desc: (kind === 'ring' ? `Ringkosten ÷${c(factor)}.` : `${WKIND[kind]} ×${c(factor)}.`) + exclText, requires: req, requiresAny: any, excl, require: (g) => cnt(g, 'w') >= atCount && g.state.layers.w.runTime >= atHours * 3600,
     reqText: (g) => (cnt(g, 'w') < atCount ? `Erscheint nach ${atCount} ${atCount === 1 ? 'Waldnetz' : 'Waldnetzen'}.` : `Erscheint im Lauf, noch ${formatDuration(Math.max(0, atHours * 3600 - g.state.layers.w.runTime))}.`),
     effect: (l) => (l ? factor : 1), fmt: fe });
 });

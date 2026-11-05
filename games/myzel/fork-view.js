@@ -5,12 +5,12 @@ import { openModal } from '../../engine/ui/modal.js';
 const PROS = {
   s: ['Aktiv: jede Spore vervielfacht die Nährstoffe', 'Billiger Reset, du bestimmst den Takt', 'Für alle, die oft hereinschauen'],
   m: ['Ruhig: jede Einheit erzeugt Zucker', 'Auch wenn du fort bist (bis 3 Stunden)', 'Für alle, die selten hereinschauen'],
-  l: ['Ein kleines Räderwerk: Alge und Licht erzeugen Flechten', 'Jede Stufe, die du kaufst, arbeitet weiter', 'Für alle, die gern aufbauen'],
-  z: ['Zersetzen: was im Vorrat liegt, fault zu Humus', 'Humus macht alles danach fruchtbarer', 'Für alle, die gern entscheiden, was weg darf'],
+  l: ['Alge und Licht erzeugen Flechten', 'Jede Stufe arbeitet weiter', 'Für alle, die gern aufbauen'],
+  z: ['Zersetzen: Vorrat fault zu Humus', 'Humus macht alles fruchtbarer', 'Für alle, die gern entscheiden'],
 };
 const TEXT = {
   a: { title: 'Wohin wächst das Netz?', lead: 'Das Netz gabelt sich. Wohin soll es zuerst wachsen? Der andere Weg bleibt zu, bis der Wald ihn öffnet.', foot: 'Umwählen geht später im Knoten, kostet aber den Ast.' },
-  b: { title: 'Und tiefer?', lead: 'Unter den Fruchtkörpern gabelt sich das Netz noch einmal. Flechte oder Fäulnis? Der andere Weg öffnet sich später, wenn das Waldnetz steht, und er verträgt sich mit dem ersten.', foot: 'Umwählen geht später im Knoten, kostet aber den Ast und alles darüber (Nährstoffe bis Fruchtkörper).' },
+  b: { title: 'Und tiefer?', lead: 'Unter den Fruchtkörpern gabelt sich das Netz noch einmal. Der andere Weg öffnet sich später mit dem Waldnetz und verträgt sich mit dem ersten.', foot: 'Umwählen geht später im Knoten, kostet aber den Ast und alles darüber.' },
 };
 
 /** Opens the dialog of fork `fork` ('a' | 'b'). Returns the modal handle. onChoose(opt) runs after a confirmed choice. */
