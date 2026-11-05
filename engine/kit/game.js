@@ -389,11 +389,11 @@ export class Game {
     ls.lastTime = ls.runTime;
     if (!ls.fastest || ls.runTime < ls.fastest) ls.fastest = ls.runTime;
     if (gain.gt(ls.bestGain)) ls.bestGain = gain;
-    this.resetBelow(l.layer);
+    if (!l.noReset) this.resetBelow(l.layer); // layer.noReset: a prestige that only awards (a goal layer, e.g. Myzel's Hexenring)
     ls.runTime = 0;
     if (l.static) ls.units += gain.toNumber();
     this.add(l.currency, gain);
-    this.hook('afterReset', l.layer);
+    if (!l.noReset) this.hook('afterReset', l.layer);
     this.hook('onPrestige', id, gain); // after the reward is in (afterReset runs for any reset of the row, e.g. challenges, without a gain)
     this.refresh();
     this.emit('prestige', { id, gain });

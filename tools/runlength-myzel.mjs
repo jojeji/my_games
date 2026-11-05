@@ -12,8 +12,8 @@ import { createMyzel } from '../games/myzel/logic.js';
 import { buyNode } from '../games/myzel/def.js';
 import { parse, stringify } from '../engine/save.js';
 import { TUNE as T } from '../games/myzel/tune.js';
-import { pendlerSchedule, runSchedule } from './simulate-myzel.mjs';
-import { nRate } from '../games/myzel/def.js';
+import { pendlerSchedule, runSchedule, makeSim, act } from './simulate-myzel.mjs';
+import { nRate, bMinRun, wMinRun } from '../games/myzel/def.js';
 
 export const LENGTHS = {
   h: [10, 30, 60, 120, 180, 300, 600, 1200],
@@ -31,14 +31,20 @@ export const gameFromSnapshot = (snap) => {
 };
 
 /** Snapshots { phase: 'h'|'b'|'f', fork, t, state } at the end of a visit: H phase (2nd visit), branch phase (2 visits after the fork), F phase (1 visit after the F layer opened). */
-export function takeSnapshots({ fork = 's', seed = 1, days = 3 } = {}) {
+export function takeSnapshots({ fork = 's', forkB = 'l', seed = 1, days = 3, deep = false } = {}) {
   const snaps = {};
   let forkAt = null;
   let fAt = null;
-  runSchedule(pendlerSchedule({ days, seed }), { fork }, {
+  runSchedule(pendlerSchedule({ days: deep ? 7 : days, seed }), { fork, forkB }, {
     hook: (ctx, rec) => {
       const g = ctx.g;
-      const take = (phase) => (snaps[phase] = { phase, fork, t: ctx.t, state: clone(g.state) });
+      const take = (phase) => (snaps[phase] = { phase, fork, forkB, t: ctx.t, state: clone(g.state) });
+      if (deep) {
+        // right after a prestige of the layer (its run is young): Flechte / Fäulnis (3rd run) and Waldnetz (2nd run)
+        if (!snaps.d && g.state.layers[forkB].count >= 3 && g.state.layers[forkB].runTime < 3600) take('d');
+        if (!snaps.w && g.state.layers.w.count >= 2 && g.state.layers.w.runTime < 3600) take('w');
+        return !(snaps.d && snaps.w);
+      }
       if (!snaps.h && rec.i === 3) take('h');
       if (g.forkChoice('a') && forkAt === null) forkAt = rec.i;
       if (forkAt !== null && !snaps.b && rec.i >= forkAt + 2) take('b');
@@ -105,6 +111,33 @@ export function measure(snap, layer, L, { horizon = 3600, dt = 2, rain = false }
   return { L, rate: gain / el, logN: Math.log10(Math.max(1, nRate(g))), gain };
 }
 
+/**
+ * Deep layers (Paket 2): from a snapshot right after a prestige of the layer, play a fixed run length `mult x gate` (the gate is the shortest
+ * possible run: the time gate) and measure the gain per second over the horizon. layer 'd' = the fork-B layer (own currency, lumps AND income,
+ * and the Waldfäden it feeds), layer 'w' = Waldnetz (Waldfäden). The other deep layers follow their gate; autos are off, the bot plays by hand.
+ */
+export function measureDeep(snap, layer, mult, { horizon = 40 * 3600, dt = 5 } = {}) {
+  const g = gameFromSnapshot(snap);
+  for (const a of g.def.autos) if (g.state.auto[a.id]) g.state.auto[a.id].on = false;
+  const b = g.forkChoice('b');
+  const cur = b === 'l' ? 'l' : 'fa';
+  const gate = layer === 'w' ? wMinRun(g) : bMinRun(g);
+  const L = gate * mult;
+  const hold = layer === 'w' ? { w: L, l: gate, z: gate } : { [b]: L, w: Infinity };
+  const ctx = makeSim({ fork: g.forkChoice('a'), forkB: b, rain: false, hold, noRing: true }, { game: g });
+  ctx.inVisit = true;
+  ctx.state.visitStart = false;
+  const c0 = g.state.cur[cur].total.toNumber();
+  const w0 = g.state.cur.w.total.toNumber();
+  const n0 = g.state.layers[layer === 'w' ? 'w' : b].count;
+  for (let t = 0; t < horizon; t += dt) {
+    if (t % 5 < dt) act(g, ctx.S, ctx.state);
+    g.tick(dt);
+  }
+  const runs = g.state.layers[layer === 'w' ? 'w' : b].count - n0;
+  return { L, mult, runs, ownPerH: (g.state.cur[cur].total.toNumber() - c0) / (horizon / 3600), wPerH: (g.state.cur.w.total.toNumber() - w0) / (horizon / 3600) };
+}
+
 export function measureLayer(snap, layer, lengths = LENGTHS[layer], opt = {}) {
   const rows = lengths.map((L) => measure(snap, layer, L, opt));
   let best = rows[0];
@@ -132,6 +165,20 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const i = argv.indexOf('--' + k);
     return i >= 0 && argv[i + 1] ? argv[i + 1] : d;
   };
+  if (argv.includes('--deep')) {
+    // Paket 2: Flechte / Fäulnis and Waldnetz at 1 / 1,5 / 2 / 3 x their time gate
+    for (const [fork, forkB] of [['s', 'l'], ['m', 'z']]) {
+      const snaps = takeSnapshots({ fork, forkB, deep: true });
+      console.log(`=== Gabeln ${fork}${forkB} ===`);
+      for (const [layer, hours] of [['d', 40], ['w', 60]]) {
+        const rows = [1, 1.5, 2, 3].map((m) => measureDeep(snaps[layer], layer, m, { horizon: hours * 3600 }));
+        const best = Math.max(...rows.map((r) => (layer === 'w' ? r.wPerH : r.ownPerH)));
+        console.log(`${layer === 'w' ? 'Waldnetz' : forkB === 'l' ? 'Flechte' : 'Fäulnis'}: Lauf = ` + rows.map((r) => `${r.mult}x Gate (${(r.L / 3600).toFixed(1)} h)`).join(' | '));
+        console.log('  ' + (layer === 'w' ? 'Waldfäden/h' : 'eigene Währung/h') + '  : ' + rows.map((r) => (((layer === 'w' ? r.wPerH : r.ownPerH) / best) * 100).toFixed(0) + ' %').join(' | ') + '   (Läufe: ' + rows.map((r) => r.runs).join('/') + ')');
+      }
+    }
+    process.exit(0);
+  }
   const forks = arg('fork', 's,m').split(',');
   const layers = arg('layers', 'h,b,f').split(',');
   const horizonArg = arg('horizon', null);

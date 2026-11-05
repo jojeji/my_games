@@ -5,12 +5,15 @@ import { confirmDialog, openModal } from '../../engine/ui/modal.js';
 import { progressBar, autoSwitch, autoConfigRow, doPrestige } from '../../engine/ui/kit-views.js';
 import { formatNumber as fmt, formatDuration, formatPercent } from '../../engine/format.js';
 import { nodeById } from './nodes.js';
-import { nParts, hGainParts, zRate, rainCast, rainCharges, rainNextIn, rainMult, ripeness, fRipeness } from './def.js';
+import { holdRepeat } from '../../engine/ui/hold.js';
+import { nParts, hGainParts, zRate, rainCast, rainCharges, rainNextIn, rainMult, ripeness, fRipeness, fMinRun, fGainParts, wGainParts, lRate, faRate, humus, humusGain, substrate, zersetzen, ringCost, ended, jrMul, bMinRun, wMinRun, lGainMult, zGainMult, gateMul } from './def.js';
+import { ENDING, NACHSPIEL } from './ending.js';
 import { TUNE as T } from './tune.js';
 
-const UNIT = { s: 'Spore', m: 'Einheit' };
+const UNIT = { s: 'Spore', m: 'Einheit', r: 'Ring' };
 const cname = (g, id) => g.currencyById[id].name;
-const PRESTIGE_VERB = { h: 'Ausbreiten', s: 'Freisetzen', m: 'Verdichten', f: 'Fruchten' };
+const BASIS_NAME = { h: 'Nährstoffe', s: 'Nährstoffe (gesamt)', m: 'Nährstoffe (gesamt)', f: 'Hyphen', l: 'Fruchtkörper (neu gebildet)', z: 'Fruchtkörper (neu gebildet)', w: 'Flechten und Fäulnis (neu)', r: 'Waldfäden (insgesamt)' };
+const PRESTIGE_VERB = { h: 'Ausbreiten', s: 'Freisetzen', m: 'Verdichten', f: 'Fruchten', l: 'Wachsen lassen', z: 'Faulen lassen', w: 'Verbinden', r: 'Ring schließen' };
 
 /** "Alles kaufen" for the player: cheapest first, never a side of an exclusive pair (that is a choice). */
 export function buyAllPlain(g, node) {
@@ -19,7 +22,7 @@ export function buyAllPlain(g, node) {
     let best = null;
     let bc = null;
     for (const u of g.def.upgrades) {
-      if (u.node !== node || u.excl || !g.upgCanBuy(u.id)) continue;
+      if (u.node !== node || u.excl || g.upgMax(u) > 1 || !g.upgCanBuy(u.id)) continue;
       const c = g.upgCost(u.id);
       if (!best || c.lt(bc)) {
         best = u;
@@ -60,7 +63,12 @@ function upgradeCard(ctx, id) {
       setCls(cur, 'is-owned', owned);
       let n = '';
       if (!owned && excluded) n = 'Gesperrt: der andere Weg ist gewählt.';
-      else if (!owned && !reqOk) n = 'Benötigt: ' + (u.requires || []).map((r) => g.upgById[r].name).join(', ');
+      else if (!owned && !reqOk) {
+        const missing = (u.requires || []).filter((r) => g.upgLevel(r) < 1);
+        if (missing.length) n = 'Benötigt: ' + missing.map((r) => g.upgById[r].name).join(', ');
+        else if (u.requiresAny && !u.requiresAny.some((r) => g.upgLevel(r) > 0)) n = 'Benötigt: ' + u.requiresAny.map((r) => g.upgById[r].name).join(' oder ');
+        else n = u.reqText ? u.reqText(g) : 'Noch nicht freigeschaltet.';
+      }
       else if (disabled) n = 'Ruht in dieser Challenge.';
       txt(note, n);
       setHidden(note, !n);
@@ -77,19 +85,55 @@ function upgradeCard(ctx, id) {
   };
 }
 
+/** A buyable (many levels, hold the button to buy repeatedly): one full-width row. */
+function buyableCard(ctx, id) {
+  const { g } = ctx;
+  const u = g.upgById[id];
+  const name = h('b', { class: 'bc-name', text: u.name });
+  const lvl = h('span', { class: 'bc-lvl num' });
+  const desc = h('p', { class: 'bc-desc', text: u.desc });
+  const cur = h('p', { class: 'bc-cur' });
+  const buyTop = h('span', { class: 'buy-top' });
+  const buyCost = h('span', { class: 'buy-cost num' });
+  const buy = h('button', { class: 'btn btn-buy bc-buy', type: 'button' }, buyTop, buyCost);
+  holdRepeat(buy, () => g.upgBuy(id));
+  const el = h('div', { class: 'bc' }, h('div', { class: 'bc-main' }, h('div', { class: 'bc-head' }, name, lvl), desc, cur), buy);
+  return {
+    el,
+    update() {
+      const level = g.upgLevel(id);
+      txt(lvl, level ? 'Stufe ' + level : '');
+      const max = g.upgMax(u);
+      const full = level >= max;
+      txt(cur, (level ? 'Aktuell ' : 'Dann ') + u.fmt(u.effect(level || 1, g), level || 1, g));
+      setCls(cur, 'is-owned', level > 0);
+      setHidden(buy, full);
+      if (!full) {
+        txt(buyTop, level ? 'Stufe ' + (level + 1) : 'Kaufen');
+        txt(buyCost, fmt(g.upgCost(id)) + ' ' + cname(g, u.currency));
+        setDisabled(buy, !g.upgCanBuy(id));
+      }
+      setHidden(el, !g.upgVisible(u));
+    },
+  };
+}
+
 function upgradeGrid(ctx, node, title, hint) {
   const { g } = ctx;
-  const cards = g.def.upgrades.filter((u) => u.node === node).map((u) => upgradeCard(ctx, u.id));
+  const buyables = g.def.upgrades.filter((u) => u.node === node && g.upgMax(u) > 1).map((u) => buyableCard(ctx, u.id));
+  const cards = g.def.upgrades.filter((u) => u.node === node && !(g.upgMax(u) > 1)).map((u) => upgradeCard(ctx, u.id));
   const all = h('button', { class: 'btn btn-ghost lv-all', type: 'button', text: 'Alles kaufen', onClick: () => buyAllPlain(g, node) });
   const el = h('section', { class: 'lv-sec' },
     h('div', { class: 'lv-sec-head' }, h('h3', { class: 'section-title', text: title }), all),
     hint ? h('p', { class: 'muted small', text: hint }) : null,
-    h('div', { class: 'ugrid' }, ...cards.map((c) => c.el)));
+    buyables.length ? h('div', { class: 'blist' }, ...buyables.map((c) => c.el)) : null,
+    cards.length ? h('div', { class: 'ugrid' }, ...cards.map((c) => c.el)) : null);
   return {
     el,
     update() {
+      buyables.forEach((c) => c.update());
       cards.forEach((c) => c.update());
-      setDisabled(all, !g.def.upgrades.some((u) => u.node === node && !u.excl && g.upgCanBuy(u.id)));
+      setDisabled(all, !g.def.upgrades.some((u) => u.node === node && !u.excl && g.upgMax(u) <= 1 && g.upgCanBuy(u.id)));
     },
   };
 }
@@ -117,10 +161,11 @@ function prestigeInfo(ctx, layerId) {
       const ls = g.state.layers[layerId];
       const gain = g.prestigeGain(layerId);
       const basis = g.prestigeBasis(layerId);
-      const basisName = l.static || layerId === 'f' ? (layerId === 'f' ? 'Hyphen' : 'Nährstoffe (gesamt)') : 'Nährstoffe';
+      const basisName = BASIS_NAME[layerId] || 'Nährstoffe';
       if (l.available && l.unavailableText && !l.available(g)) {
         txt(next, typeof l.unavailableText === 'function' ? l.unavailableText(g) : l.unavailableText);
-        bar.set(0);
+        const gate = layerId === 'l' || layerId === 'z' ? bMinRun(g) : layerId === 'w' ? wMinRun(g) : layerId === 'f' ? fMinRun(g) : 0;
+        bar.set(gate ? ls.runTime / gate : 0);
       } else if (l.static) {
         const cost = g.prestigeBasisFor(layerId, gain.gte(1) ? gain.add(1) : 1);
         txt(next, `${gain.gte(1) ? 'Danach' : 'Nächste'} ${UNIT[layerId] || 'Einheit'} bei ${fmt(cost)} ${basisName} (jetzt ${fmt(basis)})`);
@@ -132,7 +177,8 @@ function prestigeInfo(ctx, layerId) {
         const hi = target.log10();
         bar.set(hi > lo ? (Math.max(basis.log10(), 0) - lo) / (hi - lo) : 0);
       }
-      txt(stats, ls.count ? `Durchläufe: ${ls.count} · Letzter Gewinn: +${fmt(ls.lastGain)} nach ${formatDuration(ls.lastTime)}` : layerId === 'h' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(ripeness(g), 0)}` : layerId === 'f' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(fRipeness(g), 0)}` : '');
+      const gate = layerId === 'l' || layerId === 'z' ? bMinRun(g) : layerId === 'w' ? wMinRun(g) : 0;
+      txt(stats, gate ? `${ls.count ? `Durchläufe: ${ls.count} · ` : ''}Lauf: ${formatDuration(ls.runTime)} von ${formatDuration(gate)}${gateMul(g) < 1 ? ' (Kiefer)' : ''}` : ls.count ? `Durchläufe: ${ls.count} · Letzter Gewinn: +${fmt(ls.lastGain)} nach ${formatDuration(ls.lastTime)}` : layerId === 'h' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(ripeness(g), 0)}` : layerId === 'f' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(fRipeness(g), 0)}` : '');
       setHidden(stats, !stats.textContent);
     },
   };
@@ -264,20 +310,110 @@ function partsList(g, fn, title) {
 /* one node                                                             */
 /* ------------------------------------------------------------------ */
 
-function respecButton(ctx, id) {
+function respecButton(ctx, fork) {
   const { g } = ctx;
+  const text = {
+    a: 'Der Ast samt Upgrades und Meilensteinen wird auf 0 gesetzt, dazu Nährstoffe und Hyphen. Erstattet wird nichts. Danach wählst du neu.',
+    b: 'Der Ast samt Upgrades, Stufen und Meilensteinen wird auf 0 gesetzt, dazu alles darüber: Nährstoffe, Hyphen, Sporen, Mykorrhiza, Zucker und Fruchtkörper (Bestand). Erstattet wird nichts. Danach wählst du neu.',
+  }[fork];
   const btn = h('button', { class: 'btn btn-block btn-ghost', type: 'button', text: 'Gabelung neu wählen …' });
   btn.addEventListener('click', async () => {
-    const ok = await confirmDialog(
-      'Der Ast samt Upgrades und Meilensteinen wird auf 0 gesetzt, dazu Nährstoffe und Hyphen. Erstattet wird nichts. Danach wählst du neu.',
-      { title: 'Gabelung neu wählen', ok: 'Zurücksetzen', danger: true },
-    );
-    if (ok && g.forkRespec('a')) {
+    const ok = await confirmDialog(text, { title: 'Gabelung neu wählen', ok: 'Zurücksetzen', danger: true });
+    if (ok && g.forkRespec(fork)) {
       ctx.closeLayer();
-      ctx.askFork();
+      ctx.askFork(fork);
     }
   });
   return { el: h('section', { class: 'lv-sec' }, btn), update() {} };
+}
+
+/** "The other branch opens with the Waldnetz": a hint card in the branch views. */
+function secondBranchHint(ctx, fork) {
+  const { g } = ctx;
+  const note = h('p', { class: 'muted small second-note' });
+  const need = { a: 'w_a2', b: 'w_b2' }[fork];
+  return {
+    el: h('section', { class: 'lv-sec' }, note),
+    update() {
+      const open = g.forkSecondOpen(fork);
+      const m = g.msById[need];
+      txt(note, open ? 'Der zweite Ast ist offen: beide Äste wirken, und sie verstärken sich.' : `Der andere Ast öffnet sich mit dem Waldnetz (${m.name}).`);
+    },
+  };
+}
+
+/** Zersetzen: the stock rots into Humus (with a confirmation: Fruchtkörper, Sporen and Zucker in the stock are gone). */
+function zersetzenCard(ctx) {
+  const { g } = ctx;
+  const info = h('p', { class: 'muted' });
+  const preview = h('p', { class: 'zers-preview' });
+  const btn = h('button', { class: 'btn btn-primary btn-block', type: 'button', text: 'Zersetzen' });
+  btn.addEventListener('click', async () => {
+    const n = humusGain(g);
+    if (n < 1) return;
+    const ok = await confirmDialog(`Der Vorrat an Fruchtkörpern, Sporen und Zucker (${fmt(g.get('f'))} F, ${fmt(g.get('s'))} S, ${fmt(g.get('z'))} Z) fault zu Humus: +${fmt(n)} Humus. Ausgegebenes bleibt, was im Vorrat liegt, ist danach weg.`, { title: 'Zersetzen', ok: 'Zersetzen', danger: true });
+    if (ok && zersetzen(g)) ctx.toast(`+${fmt(n)} Humus`, { kind: 'good', ms: 1800, title: 'Zersetzt' });
+  });
+  const el = h('div', { class: 'card zers-card' }, h('b', { text: 'Zersetzen' }), info, preview, btn);
+  return {
+    el,
+    update() {
+      const n = humusGain(g);
+      txt(info, 'Was im Vorrat liegt (Fruchtkörper, Sporen, Zucker), fault zu Humus. Humus wird nicht ausgegeben: er verstärkt Fruchtkörper, Fäulnis und Erzeugung dauerhaft.');
+      txt(preview, n >= 1 ? `Jetzt zersetzen: +${fmt(n)} Humus (aus Substrat ${fmt(substrate(g))})` : 'Noch zu wenig im Vorrat.');
+      setDisabled(btn, n < 1);
+    },
+  };
+}
+
+/** The five rings and the Nachspiel. */
+function ringCard(ctx) {
+  const { g } = ctx;
+  const dots = Array.from({ length: T.rings }, () => h('i', { class: 'rdot' }));
+  const row = h('div', { class: 'rdots', 'aria-hidden': 'true' }, ...dots);
+  const count = h('b', { class: 'ring-count num' });
+  const next = h('p', { class: 'ring-next' });
+  const need = h('p', { class: 'muted small' });
+  const bar = progressBar();
+  const after = h('div', { class: 'ring-after card', hidden: true }, h('b', { text: NACHSPIEL.title }), h('p', { text: NACHSPIEL.text }));
+  const again = h('button', { class: 'btn btn-ghost btn-block', type: 'button', text: 'Ende noch einmal lesen', hidden: true, onClick: () => ctx.showEnding() });
+  const el = h('div', { class: 'card ring-card' }, h('div', { class: 'p-head' }, h('b', { text: 'Hexenringe' }), count), row, next, bar.el, need, after, again);
+  return {
+    el,
+    update() {
+      const k = g.state.layers.r.units;
+      const done = ended(g);
+      txt(count, `${k} / ${T.rings}${k > T.rings ? ' +' + (k - T.rings) : ''}`);
+      dots.forEach((d, i) => setCls(d, 'on', i < k));
+      const cost = ringCost(k, g);
+      const w = g.state.cur.w.total;
+      txt(next, `Ring ${k + 1} kostet ${fmt(cost)} Waldfäden (insgesamt, jetzt ${fmt(w)}).`);
+      bar.set(Math.min(1, w.toNumber() / cost));
+      const wc = g.state.layers.w.count;
+      const needW = k + T.ringW;
+      txt(need, wc >= needW ? 'Waldnetze reichen.' : `Dazu braucht der Wald ${needW} Waldnetze (jetzt ${wc}).`);
+      setHidden(after, !done);
+      setHidden(again, !done);
+    },
+  };
+}
+
+/** The Jahresringe: the net counts its age; a little steady bonus and a regular event. */
+function jahresringCard(ctx) {
+  const { g } = ctx;
+  const count = h('b', { class: 'num' });
+  const sub = h('p', { class: 'muted small' });
+  const el = h('div', { class: 'card', hidden: true }, h('div', { class: 'p-head' }, h('b', { text: 'Jahresringe' }), count), sub);
+  return {
+    el,
+    update() {
+      const m = g.state.myz;
+      setHidden(el, !m.jrAt);
+      txt(count, String(m.jr));
+      const left = Math.max(0, m.jrAt - g.state.time.played);
+      txt(sub, `Je älter das Netz, desto mehr trägt es: Fruchtkörper- und Waldfäden-Gewinn ×${fmt(jrMul(g))}. Der nächste Ring in ${formatDuration(left)} Spielzeit (auch wenn du weg bist, bis zur Grenze von 3 Stunden).`);
+    },
+  };
 }
 
 function buildNodeView(ctx, id) {
@@ -299,6 +435,8 @@ function buildNodeView(ctx, id) {
     }));
     add(partsList(g, (gg) => nParts(gg), 'Was die Nährstoffe vervielfacht'));
     add(rainCard(ctx));
+    add(milestoneBlock(ctx, 'n'));
+    add(jahresringCard(ctx));
     scroll.append(h('p', { class: 'muted small', text: 'Das Netz wächst höchstens 3 Stunden, während du weg bist. Danach wartet es.' }));
   } else if (id === 'h') {
     add(stockCard(ctx, {
@@ -322,7 +460,8 @@ function buildNodeView(ctx, id) {
     add(prestigeInfo(ctx, 's'));
     add(upgradeGrid(ctx, 's', 'Sporen-Upgrades', 'Bezahlt mit Sporen. Ausgegebene Sporen verstärken weiter, nur der Vorrat sinkt.'));
     add(milestoneBlock(ctx, 's'));
-    add(respecButton(ctx, 's'));
+    add(secondBranchHint(ctx, 'a'));
+    add(respecButton(ctx, 'a'));
   } else if (id === 'm') {
     add(stockCard(ctx, {
       title: 'Mykorrhiza',
@@ -332,7 +471,8 @@ function buildNodeView(ctx, id) {
     add(prestigeInfo(ctx, 'm'));
     add(upgradeGrid(ctx, 'm', 'Zucker-Upgrades', 'Bezahlt mit Zucker. Das Netz erzeugt ihn auch, wenn du nicht da bist.'));
     add(milestoneBlock(ctx, 'm'));
-    add(respecButton(ctx, 'm'));
+    add(secondBranchHint(ctx, 'a'));
+    add(respecButton(ctx, 'a'));
   } else if (id === 'f') {
     add(stockCard(ctx, {
       title: 'Fruchtkörper',
@@ -343,6 +483,53 @@ function buildNodeView(ctx, id) {
     add(challengeBlock(ctx));
     add(upgradeGrid(ctx, 'f', 'Fruchtkörper-Upgrades', 'Bezahlt mit Fruchtkörpern.'));
     add(milestoneBlock(ctx, 'f'));
+  } else if (id === 'l') {
+    add(stockCard(ctx, {
+      title: 'Flechten',
+      value: (gg) => fmt(gg.get('l')),
+      sub: [(gg) => `+${fmt(lRate(gg) * 3600)} pro Stunde (Algen)`, (gg) => `Fruchtkörper-Gewinn ×${fmt(fGainParts(gg).reduce((a, [, v]) => a * v, 1))} · Waldfäden-Gewinn ×${fmt(wGainParts(gg).reduce((a, [, v]) => a * v, 1))}`],
+    }));
+    add(prestigeInfo(ctx, 'l'));
+    add(upgradeGrid(ctx, 'l', 'Flechten-Upgrades', 'Bezahlt mit Flechten. Alge und Licht kannst du halten, um mehrere Stufen zu kaufen. Die Upgrades erscheinen mit den Durchläufen und innerhalb eines Laufs.'));
+    add(milestoneBlock(ctx, 'l'));
+    add(autoSwitch(g, 'auto_l', { label: 'Flechte automatisch wachsen lassen', hint: 'Sobald sie reif ist.' }));
+    add(autoSwitch(g, 'auto_bbuy', { label: 'Flechten- und Fäulnis-Upgrades automatisch kaufen', hint: 'Kauft, was am meisten bringt.' }));
+    add(secondBranchHint(ctx, 'b'));
+    add(respecButton(ctx, 'b'));
+  } else if (id === 'z') {
+    add(stockCard(ctx, {
+      title: 'Fäulnis',
+      value: (gg) => fmt(gg.get('fa')),
+      sub: [(gg) => `+${fmt(faRate(gg) * 3600)} pro Stunde (Totholz)`, (gg) => `Humus: ${fmt(humus(gg))} · Fruchtkörper-Gewinn ×${fmt(fGainParts(gg).reduce((a, [, v]) => a * v, 1))}`],
+    }));
+    add(zersetzenCard(ctx));
+    add(prestigeInfo(ctx, 'z'));
+    add(upgradeGrid(ctx, 'z', 'Fäulnis-Upgrades', 'Bezahlt mit Fäulnis. Totholz kannst du halten, um mehrere Stufen zu kaufen.'));
+    add(milestoneBlock(ctx, 'z'));
+    add(autoSwitch(g, 'auto_z', { label: 'Fäulnis automatisch wachsen lassen', hint: 'Sobald sie reif ist.' }));
+    add(autoSwitch(g, 'auto_zers', { label: 'Automatisch zersetzen', hint: 'Sobald der Humus um 10 % wüchse.' }));
+    add(autoSwitch(g, 'auto_bbuy', { label: 'Flechten- und Fäulnis-Upgrades automatisch kaufen', hint: 'Kauft, was am meisten bringt.' }));
+    add(secondBranchHint(ctx, 'b'));
+    add(respecButton(ctx, 'b'));
+  } else if (id === 'w') {
+    add(stockCard(ctx, {
+      title: 'Waldfäden',
+      value: (gg) => fmt(gg.get('w')),
+      sub: [(gg) => `Insgesamt: ${fmt(gg.state.cur.w.total)}`, (gg) => `Waldfäden-Gewinn ×${fmt(wGainParts(gg).reduce((a, [, v]) => a * v, 1))}`],
+    }));
+    add(prestigeInfo(ctx, 'w'));
+    add(upgradeGrid(ctx, 'w', 'Bäume und Pfade', 'Bezahlt mit Waldfäden. Jeder Baum wirkt anders; halte den Knopf, um mehrere Stufen zu kaufen.'));
+    add(milestoneBlock(ctx, 'w'));
+    add(autoSwitch(g, 'auto_wbuy', { label: 'Baum-Upgrades automatisch kaufen', hint: 'Kauft den nützlichsten Baum.' }));
+    add(autoSwitch(g, 'auto_w', { label: 'Waldnetz automatisch wachsen lassen', hint: 'Sobald es reif ist.' }));
+  } else if (id === 'r') {
+    add(stockCard(ctx, {
+      title: 'Hexenring',
+      value: (gg) => `${gg.state.layers.r.units} ${gg.state.layers.r.units === 1 ? 'Ring' : 'Ringe'}`,
+      sub: [(gg) => `Jeder Ring: alle tiefen Gewinne +${fmt(T.ringBonus * 100)} %`],
+    }));
+    add(ringCard(ctx));
+    add(milestoneBlock(ctx, 'r'));
   }
 
   // sticky prestige button

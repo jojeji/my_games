@@ -207,3 +207,32 @@ test('old games are unchanged: no fork/upgAt/units keys without the new features
   assert.equal('upgAt' in g.state, false);
   assert.equal('units' in g.state.layers.p, false);
 });
+
+test('layer.noReset: the prestige awards but wipes nothing (a goal layer like the Hexenring); every other layer still resets what is below it', () => {
+  const g = new Game(mini({
+    layers: [
+      { id: 'h', name: 'H', layer: 1, currency: 'h', basis: 'n', formula: { threshold: 100, exp: 0.5 } },
+      { id: 'c', name: 'C', layer: 3, currency: 'c', basis: 'h', basisFn: (g2) => g2.state.cur.h.total, formula: { threshold: 10, exp: 1 }, noReset: true },
+    ],
+    forks: [],
+    upgrades: [],
+    milestones: [],
+  }));
+  g.add('n', D(1e4));
+  g.state.layers.h.runTime = 50;
+  g.slowChecks();
+  assert.ok(g.prestige('h'));
+  const h0 = g.get('h');
+  g.add('n', D(500));
+  g.add('h', D(100));
+  g.state.layers.h.runTime = 77;
+  g.slowChecks();
+  const nBefore = g.get('n');
+  assert.ok(g.canPrestige('c'));
+  assert.ok(g.prestige('c'));
+  assert.equal(g.get('n').toString(), nBefore.toString(), 'the lower currencies stay');
+  assert.ok(g.get('h').gte(h0), 'Hyphen stays');
+  assert.equal(g.state.layers.h.runTime, 77, 'the run of the lower layer goes on');
+  assert.ok(g.get('c').gte(1));
+  assert.equal(g.state.layers.c.count, 1);
+});

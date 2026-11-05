@@ -8,12 +8,17 @@ export const NODES = [
   { id: 's', row: 2, col: -1, short: 'S', name: 'Sporen', layer: 's', fork: 'a' },
   { id: 'm', row: 2, col: 1, short: 'M', name: 'Mykorrhiza', layer: 'm', fork: 'a' },
   { id: 'f', row: 3, col: 0, short: 'F', name: 'Fruchtkörper', layer: 'f' },
-  // later packages: shown as silhouettes
-  { id: 'l', row: 4, col: -1, short: '?', name: 'Flechte', teaser: true, fork: 'b' },
-  { id: 'z', row: 4, col: 1, short: '?', name: 'Fäulnis', teaser: true, fork: 'b' },
-  { id: 'w', row: 5, col: 0, short: '?', name: 'Waldnetz', teaser: true },
-  { id: 'r', row: 6, col: 0, short: '?', name: 'Hexenring', teaser: true },
+  { id: 'l', row: 4, col: -1, short: 'L', name: 'Flechte', layer: 'l', fork: 'b' },
+  { id: 'z', row: 4, col: 1, short: 'Fä', name: 'Fäulnis', layer: 'z', fork: 'b' },
+  { id: 'w', row: 5, col: 0, short: 'W', name: 'Waldnetz', layer: 'w' },
+  { id: 'r', row: 6, col: 0, short: 'R', name: 'Hexenring', layer: 'r' },
 ];
+/** The currency a node shows as its stock. */
+const STOCK_CUR = { n: 'n', h: 'h', f: 'f', l: 'l', z: 'fa', w: 'w' };
+const FORK_HINT = {
+  a: 'Das Netz gabelt sich, sobald genug Hyphen gewachsen sind.',
+  b: 'Das Netz gabelt sich noch einmal, sobald genug Fruchtkörper gewachsen sind.',
+};
 export const EDGES = [['n', 'h'], ['h', 's'], ['h', 'm'], ['s', 'f'], ['m', 'f'], ['f', 'l'], ['f', 'z'], ['l', 'w'], ['z', 'w'], ['w', 'r']];
 export const nodeById = Object.fromEntries(NODES.map((n) => [n.id, n]));
 
@@ -31,7 +36,7 @@ export function hasBuyable(g, id) {
 export function nodeInfo(g, id) {
   const n = nodeById[id];
   if (n.teaser) return { kind: 'teaser', glow: false, dot: false, stock: '', hint: 'Tiefer unten wächst noch etwas.' };
-  const cur = (c) => g.state.cur[c].amount;
+  const cur = (c) => g.state.cur[STOCK_CUR[c]].amount;
   let kind = 'open';
   let hint = '';
   if (id === 'h') {
@@ -40,18 +45,22 @@ export function nodeInfo(g, id) {
     const choice = g.forkChoice(n.fork);
     if (choice === null) {
       kind = g.forkOffered(n.fork) ? 'choose' : 'hidden';
-      hint = kind === 'hidden' ? 'Das Netz gabelt sich, sobald genug Hyphen gewachsen sind.' : '';
+      hint = kind === 'hidden' ? FORK_HINT[n.fork] : '';
     } else if (!g.forkIs(n.fork, id)) {
       kind = 'closed';
       hint = 'Dieser Ast bleibt zu, bis das Waldnetz ihn öffnet.';
     }
   } else if (id === 'f') {
     if (!(g.layerUnlocked('f') || g.state.layers.f.count > 0)) { kind = 'hidden'; hint = 'Verlangt Sporen oder Mykorrhiza.'; }
+  } else if (id === 'w') {
+    if (!g.layerUnlocked('w')) { kind = 'hidden'; hint = 'Erst muss Flechte oder Fäulnis einmal gewachsen sein.'; }
+  } else if (id === 'r') {
+    if (!g.layerUnlocked('r')) { kind = 'hidden'; hint = 'Erst muss das Waldnetz einmal verbunden sein.'; }
   }
   const open = kind === 'open';
   let stock = '';
   if (open) {
-    if (id === 's' || id === 'm') stock = formatCompact(g.state.layers[id].units);
+    if (id === 's' || id === 'm' || id === 'r') stock = formatCompact(g.state.layers[id].units);
     else stock = formatCompact(cur(id));
   }
   return {

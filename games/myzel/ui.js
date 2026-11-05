@@ -2,6 +2,7 @@
 import { h, txt, setCls, setHidden, svgIcon } from '../../engine/ui/dom.js';
 import { mountApp } from '../../engine/ui/app.js';
 import { progressBar, sectionTitle } from '../../engine/ui/kit-views.js';
+import { confirmDialog, openModal } from '../../engine/ui/modal.js';
 import { buildSettingsPanel } from '../../engine/ui/settings.js';
 import { buildStatsPanel } from '../../engine/ui/stats.js';
 import { announceAutoUnlocks } from '../../engine/ui/auto-hints.js';
@@ -9,6 +10,8 @@ import { formatNumber as fmt, formatCompact, formatDuration, setNotation } from 
 import { buildTree } from './tree-view.js';
 import { createLayerOverlay, doRain } from './layer-view.js';
 import { openForkDialog } from './fork-view.js';
+import { ENDING } from './ending.js';
+import { ended, humus } from './def.js';
 import { showOfflineSummary } from './offline-view.js';
 import { rainCharges, rainMult, rainNextIn } from './def.js';
 import { TUNE as T } from './tune.js';
@@ -20,9 +23,20 @@ export function mountMyzel({ root, runtime, offline }) {
   const ctx = { runtime, g };
   setNotation(g.state.settings.notation);
 
-  ctx.askFork = () => {
-    ctx.forkAsked = true; // dismissing the dialog is an answer: the node keeps glowing, the dialog does not come back by itself
-    return openForkDialog(ctx);
+  ctx.forkAsked = { a: false, b: false };
+  ctx.askFork = (fork = 'a') => {
+    ctx.forkAsked[fork] = true; // dismissing the dialog is an answer: the node keeps glowing, the dialog does not come back by itself
+    return openForkDialog(ctx, { fork });
+  };
+
+  /** The ending screen (all text in ending.js). Shown once when the fifth ring closes, readable again from the Hexenring view. */
+  ctx.showEnding = () => {
+    g.state.myz.endShown = true;
+    return openModal({
+      title: ENDING.title,
+      body: h('div', { class: 'stack ending-text' }, ...ENDING.paragraphs.map((t) => h('p', { text: t }))),
+      actions: [{ label: ENDING.button, kind: 'primary' }],
+    });
   };
 
   /* ---------------- header ---------------- */
@@ -37,7 +51,11 @@ export function mountMyzel({ root, runtime, offline }) {
       const banner = h('div', { class: 'chal-banner', hidden: true });
       const bannerText = h('span', { class: 'chal-banner-text' });
       const bannerBar = progressBar();
-      banner.append(bannerText, bannerBar.el);
+      const giveUp = h('button', { class: 'btn btn-ghost chal-giveup', type: 'button', 'aria-label': 'Zu schwer? Challenge aufgeben', onClick: async () => {
+        const ch = g.chActive();
+        if (ch && (await confirmDialog(`„${ch.name}“ ist zu schwer? Du kannst aufgeben: der Lauf wird zurückgesetzt, es gibt keine Belohnung, und du kannst es später noch einmal versuchen.`, { title: 'Challenge aufgeben?', ok: 'Aufgeben', danger: true }))) g.chExit();
+      } }, h('small', { text: 'Zu schwer?' }), h('b', { text: 'Aufgeben' }));
+      banner.append(h('div', { class: 'chal-banner-row' }, bannerText, giveUp), bannerBar.el);
       const top = h('div', { class: 'hdr-top' }, h('div', { class: 'hdr-cur' }, val, h('div', { class: 'hdr-sub' }, h('span', { class: 'hdr-label', text: 'Nährstoffe' }), rate)), rainBtn);
       const el = h('div', { class: 'hdr-inner' }, top, banner);
       let hdrH = 0;
@@ -63,10 +81,16 @@ export function mountMyzel({ root, runtime, offline }) {
             hdrH = hh;
             document.documentElement.style.setProperty('--hdr-h', hh + 'px');
           }
-          // the fork is on offer: ask once per visit (the node keeps glowing if the dialog is dismissed)
-          if (!ctx.forkAsked && g.forkOffered('a') && !document.querySelector('.modal-overlay') && !document.body.classList.contains('lv-open')) {
-            ctx.forkAsked = true;
-            ctx.askFork();
+          // a fork is on offer: ask once per visit (the node keeps glowing if the dialog is dismissed)
+          if (!document.querySelector('.modal-overlay') && !document.body.classList.contains('lv-open')) {
+            for (const f of ['a', 'b']) {
+              if (!ctx.forkAsked[f] && g.forkOffered(f)) {
+                ctx.askFork(f);
+                break;
+              }
+            }
+            // the ending: shown once (also when it was reached while the app was closed)
+            if (ended(g) && !g.state.myz.endShown) ctx.showEnding();
           }
         },
       };
@@ -78,13 +102,13 @@ export function mountMyzel({ root, runtime, offline }) {
   const tabs = [
     {
       id: 'netz', label: 'Netz', icon: 'layers',
-      dot: () => g.forkOffered('a'),
+      dot: () => g.forkOffered('a') || g.forkOffered('b') || (ended(g) && !g.state.myz.endShown),
       build() {
         const tree = buildTree({
           g,
           toast: (...a) => ctx.toast(...a),
           onOpen: (id) => overlay.open(id),
-          onChoose: () => ctx.askFork(),
+          onChoose: (fork) => ctx.askFork(fork),
         });
         return tree;
       },
@@ -102,6 +126,11 @@ export function mountMyzel({ root, runtime, offline }) {
           ['Sporen jetzt', () => String(L.s.units)],
           ['Mykorrhiza jetzt', () => String(L.m.units)],
           ['Fruchtkörper gebildet', () => String(L.f.count)],
+          ['Flechte / Fäulnis gewachsen', () => `${L.l.count} / ${L.z.count}`],
+          ['Humus', () => fmt(humus(g))],
+          ['Waldnetze verbunden', () => String(L.w.count)],
+          ['Hexenringe', () => String(L.r.units)],
+          ['Jahresringe', () => String(g.state.myz.jr)],
           ['Challenges geschafft', () => `${g.chDoneCount()} / ${g.def.challenges.length}`],
           ['Nährstoffe: Bestwert', () => fmt(g.state.cur.n.best)],
           ['Nährstoffe insgesamt', () => fmt(g.state.cur.n.total)],
@@ -137,8 +166,11 @@ export function mountMyzel({ root, runtime, offline }) {
   runtime.on('milestone', ({ def }) => toast(def.desc, { kind: 'good', title: 'Meilenstein: ' + def.name }));
   runtime.on('challenge-done', ({ id }) => toast(g.chalById[id].reward, { kind: 'good', title: 'Challenge geschafft: ' + g.chalById[id].name, ms: 6000 }));
   runtime.on('layer-unlocked', ({ id }) => toast(`${g.layerById[id].name} ist jetzt offen.`, { kind: 'good', title: 'Neu im Netz' }));
-  runtime.on('fork-chosen', ({ opt }) => toast(g.forkDef('a').options.find((o) => o.id === opt).blurb, { kind: 'good', title: 'Gewählt', ms: 5000 }));
-  runtime.on('prestige', ({ id, gain }) => id !== 'h' && toast(`+${fmt(gain)} ${g.currencyById[g.layerById[id].currency].name}`, { kind: 'good', title: g.layerById[id].name, ms: 2200 }));
+  runtime.on('fork-chosen', ({ id, opt }) => toast(g.forkDef(id).options.find((o) => o.id === opt).blurb, { kind: 'good', title: 'Gewählt', ms: 5000 }));
+  runtime.on('jahresring', ({ n }) => toast(`Das Netz ist ein Jahr älter: Ring ${n}, Gewinne +${n} %.`, { kind: 'info', ms: 2600, title: 'Jahresring' }));
+  runtime.on('prestige', ({ id, gain }) => id !== 'h' && id !== 'r' && toast(`+${fmt(gain)} ${g.currencyById[g.layerById[id].currency].name}`, { kind: 'good', title: g.layerById[id].name, ms: 2200 }));
+  runtime.on('prestige', ({ id }) => id === 'r' && !ended(g) && toast(`Ring ${g.state.layers.r.units} von 5 liegt.`, { kind: 'good', title: 'Hexenring', ms: 3000 }));
+  runtime.on('ending', () => ctx.showEnding());
   announceAutoUnlocks({ runtime, toast, offline, whereOf: () => 'Hyphen-Knoten' });
 
   runtime.on('offline', (s) => showOfflineSummary(g, s));

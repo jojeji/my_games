@@ -40,7 +40,7 @@ export function buildTree(ctx) {
     return t;
   };
   const orA = forkText(2);
-  forkText(4);
+  const orB = forkText(4);
 
   const nodes = NODES.map((n) => {
     const x = px(n);
@@ -62,7 +62,7 @@ export function buildTree(ctx) {
   function tap(id) {
     const info = nodeInfo(g, id);
     if (info.kind === 'open') ctx.onOpen(id);
-    else if (info.kind === 'choose') ctx.onChoose();
+    else if (info.kind === 'choose') ctx.onChoose(nodeById[id].fork);
     else ctx.toast(info.hint || 'Noch verborgen.', { kind: 'info', ms: 2600, title: info.kind === 'teaser' ? '?' : nodeById[id].name });
   }
 
@@ -78,6 +78,7 @@ export function buildTree(ctx) {
         setAttr(nd.g1, 'data-kind', k);
         setAttr(nd.g1, 'aria-label', `${nd.n.name}${k === 'open' ? ', ' + info.stock : ''}${info.glow ? ', bereit' : ''}`);
         txt(nd.letter, k === 'open' || k === 'choose' || k === 'closed' ? nd.n.short : '?');
+        setCls(nd.g1, 'wide', nd.n.short.length > 1);
         txt(nd.stock, info.stock);
         txt(nd.label, k === 'open' || k === 'choose' || k === 'closed' ? nd.n.name : '???');
         setCls(nd.g1, 'glow', info.glow);
@@ -89,6 +90,7 @@ export function buildTree(ctx) {
         setCls(e.p, 'on', (ka === 'open' || ka === 'choose') && kb === 'open');
       }
       setCls(orA, 'on', infos.s.kind === 'choose');
+      setCls(orB, 'on', infos.l.kind === 'choose');
     },
   };
 }

@@ -129,3 +129,34 @@ body.lv-open { overflow: hidden; }
 
 /* toasts rise above the sticky prestige button while a layer view is open */
 body.lv-open .toasts { bottom: calc(env(safe-area-inset-bottom) + 92px); }
+
+/* ---------- challenge banner: text + a visible "Aufgeben" ---------- */
+.chal-banner-row { display: flex; align-items: center; gap: 8px; }
+.chal-banner-row .chal-banner-text { flex: 1; min-width: 0; white-space: normal; line-height: 1.25; }
+.chal-giveup { flex: none; min-height: 44px; padding: 2px 12px; font-size: 13px; flex-direction: column; gap: 0; line-height: 1.15; }
+.chal-giveup small { font-size: 10px; color: var(--muted); }
+
+/* ---------- Paket 2: buyables (full-width rows), Zersetzen, rings ---------- */
+.tree-node.wide .tree-letter { font-size: 19px; }
+.blist { display: flex; flex-direction: column; gap: 8px; }
+.bc { display: flex; align-items: stretch; gap: 10px; padding: 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.bc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.bc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.bc-name { font-size: 15px; }
+.bc-lvl { font-size: 12px; color: var(--accent2); }
+.bc-desc { font-size: 12px; line-height: 1.3; color: #cdd6c4; }
+.bc-cur { font-size: 12px; font-weight: 600; color: var(--muted); }
+.bc-cur.is-owned { color: var(--accent); }
+.bc-buy { flex: none; width: 108px; min-height: 52px; align-self: center; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.bc[hidden] { display: none; }
+.zers-card { display: flex; flex-direction: column; gap: 8px; }
+.zers-preview { font-size: 13px; color: var(--accent2); }
+.second-note { text-align: center; }
+.ring-card { display: flex; flex-direction: column; gap: 10px; }
+.rdots { display: flex; justify-content: center; gap: 14px; padding: 6px 0; }
+.rdot { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--border); display: inline-block; }
+.rdot.on { border-color: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 0 8px color-mix(in srgb, var(--accent) 35%, transparent); }
+.ring-count { font-size: 18px; }
+.ring-next { font-size: 14px; }
+.ring-after { background: color-mix(in srgb, var(--accent2) 14%, var(--surface)); }
+.ending-text p { font-size: 15px; line-height: 1.5; }
