@@ -22,5 +22,13 @@
     "path": "games/psst/",
     "icon": "games/psst/icons/icon-192.png",
     "status": "playable"
+  },
+  {
+    "id": "myzel",
+    "title": "Myzel – Das Netz unter dem Wald",
+    "description": "Ein Pilzgeflecht wächst von der Oberfläche in die Tiefe. Prestige-Baum mit Weggabelungen, Regenschauern und Challenges – für kurze Besuche gebaut.",
+    "path": "games/myzel/",
+    "icon": "games/myzel/icons/icon.svg",
+    "status": "playable"
   }
 ]
