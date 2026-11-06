@@ -93,6 +93,10 @@ _Avoid_: Daily Challenge, Tagesaufgabe
 Was im Level zu erreichen ist: größter Körper werden, Körper X absorbieren, Masse M erreichen, Zentralkörper absorbieren, N Umläufe überleben.
 _Avoid_: Quest, Auftrag
 
+**Zielkörper**:
+Der markierte Körper, den ein `absorb`-Ziel verlangt (gestrichelter gelber Ring, Rand-Pfeil, wenn außerhalb des Bildes).
+_Avoid_: Beute (nur im Bot), Boss
+
 **Stern**:
 Wertung eines Levels: geschafft, Effizienz (wenig Ausstoß, nicht zurückgespult), Zeit. Schaltet nichts frei.
 _Avoid_: Medaille, Punkte

@@ -42,10 +42,10 @@ export const LEVELS = [
     targets: { eject: 0.55, time: 125 },
   },
   {
-    id: '1-5', chapter: 1, n: 5, title: 'Beute', family: 'ziel', seed: 27,
-    params: { R: 40, nSmall: 34, sLo: 0.1, sHi: 1.0, sSkew: 2, vSmall: 0.05, keepOut: 6, tLo: 2.2, tHi: 2.6, tDistLo: 14, tDistHi: 22, vT: 0.02, slack: 2 },
+    id: '1-5', chapter: 1, n: 5, title: 'Beute', family: 'ziel', seed: 2,
+    params: { R: 40, nSmall: 34, sLo: 0.1, sHi: 1.0, sSkew: 2, vSmall: 0.05, keepOut: 6, tLo: 2.2, tHi: 2.6, tDistLo: 18, tDistHi: 28, vT: 0.02, slack: 2 },
     goal: { type: 'absorb' },
-    targets: { eject: 1.15, time: 100 },
+    targets: { eject: 1.15, time: 105 },
   },
   {
     id: '1-6', chapter: 1, n: 6, title: 'Strom', family: 'strom', seed: 36,

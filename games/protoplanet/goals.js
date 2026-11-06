@@ -4,7 +4,7 @@ export const fmtMass = (m) => (Math.round(m * 100) / 100).toFixed(2).replace('.'
 
 export function goalText(goal) {
   if (goal.type === 'largest') return 'Werde der größte Körper';
-  if (goal.type === 'absorb') return 'Absorbiere den markierten Körper';
+  if (goal.type === 'absorb') return 'Absorbiere den Zielkörper';
   if (goal.type === 'mass') return 'Erreiche die Masse ' + fmtMass(goal.value);
   return '';
 }
@@ -17,7 +17,11 @@ export function goalStatus(world, goal) {
   if (goal.type === 'absorb') {
     const t = world.bodies.find((b) => b.tag === 'target');
     if (!t) return { done: true, frac: 1 };
-    return { done: false, frac: Math.min(0.99, p.m / t.m) };
+    // erst Masse aufbauen (bis 50 %), dann dem Zielkoerper naeherkommen (bis 99 %)
+    if (p.m <= t.m) return { done: false, frac: 0.5 * (p.m / t.m) };
+    const d = Math.hypot(t.x - p.x, t.y - p.y);
+    if (goal.d0 == null || d > goal.d0) goal.d0 = d;
+    return { done: false, frac: 0.5 + 0.49 * (1 - Math.min(1, d / goal.d0)) };
   }
   // largest
   let mx = 0;

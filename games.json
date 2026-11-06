@@ -30,5 +30,13 @@
     "path": "games/myzel/",
     "icon": "games/myzel/icons/icon.svg",
     "status": "playable"
+  },
+  {
+    "id": "protoplanet",
+    "title": "Protoplanet",
+    "description": "Ein ruhiges Physik-Levelspiel: Du bewegst dich nur, indem du Masse ausstößt. Absorbiere Kleineres, weiche Größerem aus und werde zum Protoplaneten.",
+    "path": "games/protoplanet/",
+    "icon": "games/protoplanet/icons/icon.svg",
+    "status": "soon"
   }
 ]
