@@ -52,6 +52,8 @@
 .tree-letter { fill: var(--text); font-size: 24px; font-weight: 800; }
 .tree-stock { fill: var(--accent2); font-size: 11px; font-weight: 600; }
 .tree-label { fill: var(--muted); font-size: 12px; }
+/* the connection lines run behind the labels: a halo in the page colour keeps every label readable (Paket 3) */
+.tree-label, .tree-or { paint-order: stroke fill; stroke: var(--bg); stroke-width: 6px; stroke-linejoin: round; }
 .tree-ring { fill: none; stroke: var(--accent); stroke-width: 2.5; opacity: 0; }
 .tree-node.glow .tree-ring { opacity: 1; animation: glow 1.8s ease-in-out infinite; filter: drop-shadow(0 0 6px var(--accent)); }
 @keyframes glow { 50% { opacity: 0.35; } }
@@ -128,7 +130,9 @@ body.lv-open { overflow: hidden; }
 .offline-lead { font-size: 18px; }
 
 /* toasts rise above the sticky prestige button while a layer view is open */
-body.lv-open .toasts { bottom: calc(env(safe-area-inset-bottom) + 92px); }
+body.lv-open .toasts { bottom: calc(env(safe-area-inset-bottom) + 92px + var(--sb-h, 0px)); }
+/* ... and the story bubbles rise above the sticky prestige button as well */
+body.lv-open .sb-layer { bottom: calc(env(safe-area-inset-bottom) + 84px); }
 
 /* ---------- challenge banner: text + a visible "Aufgeben" ---------- */
 .chal-banner-row { display: flex; align-items: center; gap: 8px; }

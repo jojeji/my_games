@@ -391,13 +391,13 @@ test('autos: start off, announced when the milestone opens them, auto-buy and au
   assert.ok(g.upgLevel('h11') === 1, 'auto-buy bought the first upgrade');
 });
 
-test('save: version 2, export/import roundtrip, short export, missing keys are filled (migration-ready)', () => {
+test('save: version 3, export/import roundtrip, short export, missing keys are filled (migration-ready)', () => {
   const g = rich(1e6);
   g.state.layers.h.runTime = T.ripeSecs;
   g.prestige('h');
   g.upgBuy('h11');
-  assert.equal(def.version, 2);
-  assert.equal(g.version, 2);
+  assert.equal(def.version, 3);
+  assert.equal(g.version, 3);
   const rt = createRuntime(g, { now: () => 1000 });
   rt.save();
   const text = rt.exportString();

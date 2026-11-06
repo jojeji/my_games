@@ -24,10 +24,10 @@ function loadV1(state) {
 }
 
 for (const fork of ['s', 'm']) {
-  test(`Paket-1 save (day 2, fork ${fork}): migrates 1 -> 2 and keeps all progress; Paket-1 production is unchanged`, () => {
+  test(`Paket-1 save (day 2, fork ${fork}): migrates 1 -> 3 and keeps all progress; Paket-1 production is unchanged`, () => {
     const st = KEEP(fx[fork].state);
     const { g } = loadV1(fx[fork].state);
-    assert.equal(def.version, 2);
+    assert.equal(def.version, 3);
     assert.equal(g.forkChoice('a'), fork);
     assert.equal(g.forkChoice('b'), null, 'fork B starts closed');
     assert.equal(g.state.layers.f.count, st.layers.f.count);
@@ -79,11 +79,11 @@ for (const fork of ['s', 'm']) {
 
 const M_ended = (g) => g.state.myz.end > 0;
 
-test('the loaded Paket-1 save is saved again as version 2 and loads again unchanged (no second migration surprises)', () => {
+test('the loaded Paket-1 save is saved again as version 3 and loads again unchanged (no second migration surprises)', () => {
   const { g, rt, mem } = loadV1(fx.s.state);
   rt.save();
   const env = parse(mem.get('mg:myzel:save'));
-  assert.equal(env.v, 2);
+  assert.equal(env.v, 3);
   const g2 = createMyzel();
   g2.load(env.data);
   assert.deepEqual(g2.state.upg, g.state.upg);

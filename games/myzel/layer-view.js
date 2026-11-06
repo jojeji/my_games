@@ -178,7 +178,7 @@ function prestigeInfo(ctx, layerId) {
         bar.set(hi > lo ? (Math.max(basis.log10(), 0) - lo) / (hi - lo) : 0);
       }
       const gate = layerId === 'l' || layerId === 'z' ? bMinRun(g) : layerId === 'w' ? wMinRun(g) : 0;
-      txt(stats, gate ? `${ls.count ? `Durchläufe: ${ls.count} · ` : ''}Lauf: ${formatDuration(ls.runTime)} von ${formatDuration(gate)}${gateMul(g) < 1 ? ' (Kiefer)' : ''}` : ls.count ? `Durchläufe: ${ls.count} · Letzter Gewinn: +${fmt(ls.lastGain)} nach ${formatDuration(ls.lastTime)}` : layerId === 'h' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(ripeness(g), 0)}` : layerId === 'f' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(fRipeness(g), 0)}` : '');
+      txt(stats, gate ? `${ls.count ? `Durchläufe: ${ls.count} · ` : ''}Lauf: ${formatDuration(ls.runTime)} von ${formatDuration(gate)}${gateMul(g) < 1 ? ' (verkürzt)' : ''}` : ls.count ? `Durchläufe: ${ls.count} · Letzter Gewinn: +${fmt(ls.lastGain)} nach ${formatDuration(ls.lastTime)}` : layerId === 'h' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(ripeness(g), 0)}` : layerId === 'f' ? `Aktueller Lauf: ${formatDuration(ls.runTime)} · Reife ${formatPercent(fRipeness(g), 0)}` : '');
       setHidden(stats, !stats.textContent);
     },
   };

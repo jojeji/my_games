@@ -82,7 +82,8 @@ const base = {
   eicheBase: 4, eicheGrow: 1.45, eicheF: 0.1,
   bucheBase: 6, bucheGrow: 1.5, bucheB: 0.12,
   birkeBase: 10, birkeGrow: 1.55, birkeW: 0.1,
-  kieferBase: 15, kieferGrow: 1.7, kieferGate: 0.015, kieferMax: 10, // gate times x (1 - kieferGate * level) for l, z, w
+  kieferBase: 2, kieferGrow: 1.4, kieferGate: 0.02, kieferMax: 8, // gate times x (1 - kieferGate * level), also for the Fruchtkörper (Paket 3: 8 levels = -16 %, was 10 x 1,5 %)
+  fruehGate: 0.9, fruehCost: 8, // 'Frühlicht' (third way of the Waldnetz tier 3): all gates x 0,9
   escheBase: 40, escheGrow: 1.7, escheR: 0.03,
   lindeBase: 80, lindeGrow: 1.7, lindeI: 0.2,
   tanneBase: 25, tanneGrow: 1.6, tanneR: 0.2,
@@ -93,7 +94,7 @@ const base = {
   ringW: 3, // ... and needs n + ringW Waldnetze (the floor of the timeline: ring 1 after the 3rd)
   rings: 5, // the ring closes
   ringBonus: 0.15, // deep gains x (1 + ringBonus * rings)
-  bHorizon: 12 * 3600, bScale: 20, gateW: 3, humW: 0.5, // autobuyer: income counted over this horizon relative to a typical lump; value of a shorter gate
+  bHorizon: 12 * 3600, bScale: 20, gateW: 20, humW: 0.5, // autobuyer: income counted over this horizon relative to a typical lump; value of a shorter gate
   // ---- upgrade costs ----
   costScaleH: 1,
   costScaleS: 1,

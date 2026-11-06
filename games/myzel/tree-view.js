@@ -28,8 +28,9 @@ export function buildTree(ctx) {
   const edgeEls = EDGES.map(([a, b]) => {
     const A = nodeById[a];
     const B = nodeById[b];
-    const mid = (py(A) + py(B)) / 2;
-    const p = el('path', { d: `M${px(A)} ${py(A) + R} C${px(A)} ${mid} ${px(B)} ${mid} ${px(B)} ${py(B) - R}`, class: 'tree-edge' });
+    const y0 = py(A) + R + 22; // the line starts below the label of its node (and runs behind the halo of the next one): no label is crossed
+    const mid = (y0 + py(B) - R) / 2;
+    const p = el('path', { d: `M${px(A)} ${y0} C${px(A)} ${mid} ${px(B)} ${mid} ${px(B)} ${py(B) - R}`, class: 'tree-edge' });
     svg.append(p);
     return { a, b, p };
   });

@@ -6,11 +6,16 @@ import { confirmDialog, openModal } from '../../engine/ui/modal.js';
 import { buildSettingsPanel } from '../../engine/ui/settings.js';
 import { buildStatsPanel } from '../../engine/ui/stats.js';
 import { announceAutoUnlocks } from '../../engine/ui/auto-hints.js';
+import { chronicleView, createStoryController } from '../../engine/ui/story-view.js';
+import { createStoryBubbles } from '../../engine/ui/story-bubbles.js';
+import { avatar } from '../../engine/ui/avatar.js';
+import { openCharacterCard } from '../../engine/ui/character-card.js';
 import { formatNumber as fmt, formatCompact, formatDuration, setNotation } from '../../engine/format.js';
 import { buildTree } from './tree-view.js';
 import { createLayerOverlay, doRain } from './layer-view.js';
 import { openForkDialog } from './fork-view.js';
 import { ENDING } from './ending.js';
+import { CAST, castInfo, metCast, lineText } from './characters.js';
 import { ended, humus } from './def.js';
 import { showOfflineSummary } from './offline-view.js';
 import { rainCharges, rainMult, rainNextIn } from './def.js';
@@ -29,14 +34,25 @@ export function mountMyzel({ root, runtime, offline }) {
     return openForkDialog(ctx, { fork });
   };
 
-  /** The ending screen (all text in ending.js). Shown once when the fifth ring closes, readable again from the Hexenring view. */
+  /* ---------------- Chronik: speakers, dialogs, bubbles ---------------- */
+  let chronikView = null;
+  let story = null;
+  const showCard = (who, from) => {
+    const c = { ...CAST[who], ...castInfo(g, who) }; // role and bio change with the story
+    openCharacterCard({ name: c.name, color: c.color, role: c.role, bio: c.bio, img: c.img, emblem: c.emblem }, { returnFocus: from });
+  };
+  const speaker = (who) => {
+    const c = CAST[who] || CAST.myzel;
+    return {
+      name: c.name, color: c.color, side: c.side,
+      avatar: (size) => avatar({ src: size > 80 ? c.img : c.sm || c.img, emblem: c.emblem, color: c.color, name: c.name, size, cls: 'avatar-' + who, onTap: (el) => showCard(who, el) }),
+    };
+  };
+  const endEntry = g.def.story.find((e) => e.id === 'end_ring');
+  /** The ending (all text in ending.js): it is the dialog of the Chronik entry `end_ring`; shown once, readable again from the Hexenring view. */
   ctx.showEnding = () => {
     g.state.myz.endShown = true;
-    return openModal({
-      title: ENDING.title,
-      body: h('div', { class: 'stack ending-text' }, ...ENDING.paragraphs.map((t) => h('p', { text: t }))),
-      actions: [{ label: ENDING.button, kind: 'primary' }],
-    });
+    story.replay(endEntry);
   };
 
   /* ---------------- header ---------------- */
@@ -89,8 +105,6 @@ export function mountMyzel({ root, runtime, offline }) {
                 break;
               }
             }
-            // the ending: shown once (also when it was reached while the app was closed)
-            if (ended(g) && !g.state.myz.endShown) ctx.showEnding();
           }
         },
       };
@@ -102,7 +116,7 @@ export function mountMyzel({ root, runtime, offline }) {
   const tabs = [
     {
       id: 'netz', label: 'Netz', icon: 'layers',
-      dot: () => g.forkOffered('a') || g.forkOffered('b') || (ended(g) && !g.state.myz.endShown),
+      dot: () => g.forkOffered('a') || g.forkOffered('b') || (ended(g) && !g.state.chronicle.shown.end_ring),
       build() {
         const tree = buildTree({
           g,
@@ -111,6 +125,15 @@ export function mountMyzel({ root, runtime, offline }) {
           onChoose: (fork) => ctx.askFork(fork),
         });
         return tree;
+      },
+    },
+    {
+      id: 'chronik', label: 'Chronik', icon: 'book',
+      dot: () => g.storyUnread() > 0,
+      build() {
+        const view = chronicleView(g, { speaker, onReplay: (entry) => story.replay(entry), figures: () => metCast(g) });
+        chronikView = view;
+        return { el: view.el, update: () => view.update() };
       },
     },
     {
@@ -170,11 +193,48 @@ export function mountMyzel({ root, runtime, offline }) {
   runtime.on('jahresring', ({ n }) => toast(`Das Netz ist ein Jahr älter: Ring ${n}, Gewinne +${n} %.`, { kind: 'info', ms: 2600, title: 'Jahresring' }));
   runtime.on('prestige', ({ id, gain }) => id !== 'h' && id !== 'r' && toast(`+${fmt(gain)} ${g.currencyById[g.layerById[id].currency].name}`, { kind: 'good', title: g.layerById[id].name, ms: 2200 }));
   runtime.on('prestige', ({ id }) => id === 'r' && !ended(g) && toast(`Ring ${g.state.layers.r.units} von 5 liegt.`, { kind: 'good', title: 'Hexenring', ms: 3000 }));
-  runtime.on('ending', () => ctx.showEnding());
   announceAutoUnlocks({ runtime, toast, offline, whereOf: () => 'Hyphen-Knoten' });
 
   runtime.on('offline', (s) => showOfflineSummary(g, s));
   if (offline && offline.seconds >= 60) showOfflineSummary(g, offline);
+
+  /* ---------------- story: bubbles for the ordinary entries, dialogs for the key moments ---------------- */
+  const lt = (line) => lineText(g, line);
+  const bubbles = createStoryBubbles(g, {
+    mount: root,
+    speaker,
+    lineText: lt,
+    blocked: () => !!document.querySelector('.modal-overlay'),
+    suppress: () => {
+      const p = document.getElementById('page-chronik');
+      return !!p && !p.hidden;
+    },
+    openChronik: (id) => {
+      if (document.body.classList.contains('lv-open')) overlay.close();
+      app.select('chronik');
+      if (chronikView) chronikView.reveal(id);
+    },
+  });
+  ctx.storyBubbles = bubbles;
+  story = createStoryController(g, {
+    runtime,
+    title: (entry) => (entry.id === 'end_ring' ? ENDING.title : ((g.def.chapters || []).find((x) => x.id === entry.chapter) || {}).title || ''),
+    renderPage: (entry, line, i) => {
+      const who = speaker(line.who || 'myzel');
+      return h('div', { class: 'story-page', style: who.color ? { '--c': who.color } : null }, who.avatar(128, entry, i), h('b', { class: 'story-name', text: who.name }), h('p', { class: 'story-body', text: lt(line) }));
+    },
+  });
+  ctx.story = story;
+  runtime.on('story', ({ def }) => {
+    if (def.modal) return;
+    if (!bubbles.push(def)) toast(lt(def.lines[0]), { kind: 'story', ms: 7000, title: speaker(def.lines[0].who || 'myzel').name });
+  });
+  // entries that fired while the app was closed or in the background are muted by the runtime: announce them once
+  const catchUp = (ms) => setTimeout(() => { story.next(); bubbles.syncBacklog(); }, ms);
+  runtime.on('offline', () => catchUp(500));
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && catchUp(600));
+  setTimeout(() => story.next(), 700);
+  setTimeout(() => bubbles.syncBacklog(), 1000);
 
   return { app, ctx, overlay };
 }

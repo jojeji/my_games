@@ -101,7 +101,7 @@ export function chronicleView(g, { speaker, onReplay, figures }) {
         rebuild(list);
       }
       syncFigures();
-      txt(head.lastChild, `${list.length} Einträge`);
+      txt(head.lastChild, list.length === 1 ? '1 Eintrag' : `${list.length} Einträge`);
       setHidden(head, false);
     },
     /** open the chapter of an entry, scroll it into view and flash it (call after the tab is shown) */

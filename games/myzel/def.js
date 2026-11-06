@@ -5,6 +5,7 @@ import { D, ONE, ZERO } from '../../engine/decimal.js';
 import { prestigeAuto } from '../../engine/kit/game.js';
 import { formatNumber, formatDuration } from '../../engine/format.js';
 import { TUNE as T } from './tune.js';
+import { STORY, CHAPTERS } from './story.js';
 
 const has = (g, id) => g.upgLevel(id) > 0;
 const fe = (v) => '×' + formatNumber(v);
@@ -197,7 +198,7 @@ export function wGainParts(g) {
 export const wGainMult = (g) => wGainParts(g).reduce((a, [, v]) => a * v, 1);
 
 /** Time gates of the deep layers: the Kiefer shortens them (at most by kieferMax levels). */
-export const gateMul = (g) => 1 - T.kieferGate * Math.min(T.kieferMax, lv(g, 't_kiefer'));
+export const gateMul = (g) => (1 - T.kieferGate * Math.min(T.kieferMax, lv(g, 't_kiefer'))) * wfx(g, 'gate');
 export const bFirst = (g) => cnt(g, 'l') + cnt(g, 'z') === 0;
 export const bMinRun = (g) => (bFirst(g) ? T.lMin1 : T.lMin) * gateMul(g);
 export const wMinRun = (g) => (cnt(g, 'w') === 0 ? T.wMin1 : T.wMin) * gateMul(g);
@@ -241,7 +242,7 @@ function deepScore(g) {
  * what the upgrades of the fork layers are worth (cheaper Spores, sugar that will have been made within an hour).
  */
 /** 'Reife' of the Fruchtkörper: the gain of a run grows with its age (concave gain + cheap resets would make many short runs the best way to farm them). */
-export const fRipeSecs = (g) => (g.state.layers.f.count === 0 ? T.ripeF1 : T.ripeF);
+export const fRipeSecs = (g) => (g.state.layers.f.count === 0 ? T.ripeF1 : T.ripeF * gateMul(g));
 export const fRipeness = (g) => Math.max(0.02, Math.pow(Math.min(1, g.state.layers.f.runTime / fRipeSecs(g)), T.ripeFExp));
 
 export function objective(g) {
@@ -406,15 +407,16 @@ const WLADDER = [
   ['w21', 'Moosteppich', 'f', 1.5, 30, ['w11'], 1, 4],
   ['w13', 'Hexenpfad', 'ring', 1.3, 40, ['w12'], 2, 2.5],
   ['w22', 'Farnwald', 'lump', 1.3, 80, ['w21'], 2, 5],
-  ['w23', 'Lichtung', 'w', 1.5, 150, ['w13', 'w22'], 3, 3, ['w24']],
-  ['w24', 'Eichenhain', 'f', 1.5, 150, ['w13', 'w22'], 3, 3, ['w23']],
-  ['w31', 'Urwald', 'ring', 1.5, 300, [], 4, 2, null, ['w23', 'w24']],
+  ['w23', 'Lichtung', 'w', 1.5, 150, ['w13', 'w22'], 3, 3, ['w24', 'w25']],
+  ['w24', 'Eichenhain', 'f', 1.5, 150, ['w13', 'w22'], 3, 3, ['w23', 'w25']],
+  ['w25', 'Frühlicht', 'gate', T.fruehGate, T.fruehCost, [], 1, 0, ['w23', 'w24']], // Paket 3: the third way, time instead of strength (survives a live save that owns w23 / w24: it is simply excluded)
+  ['w31', 'Urwald', 'ring', 1.5, 300, [], 4, 2, null, ['w23', 'w24', 'w25']],
 ];
-const WKIND = { w: 'Waldfäden-Gewinn', f: 'Fruchtkörper-Gewinn', inc: 'Flechten- und Fäulnis-Erzeugung', lump: 'Flechten- und Fäulnis-Gewinn', ring: 'Ringkosten ÷' };
+const WKIND = { w: 'Waldfäden-Gewinn', f: 'Fruchtkörper-Gewinn', inc: 'Flechten- und Fäulnis-Erzeugung', lump: 'Flechten- und Fäulnis-Gewinn', ring: 'Ringkosten ÷', gate: 'Reifezeit von Fruchtkörper, Flechte, Fäulnis und Waldnetz' };
 const WFX = {};
 const wLadder = WLADDER.map(([id, name, kind, factor, cst, req, atCount, atHours, excl, any]) => {
   WFX[id] = [kind, factor];
-  const exclText = excl ? ` Schließt „${WLADDER.find((r) => r[0] === excl[0])[1]}“ aus.` : '';
+  const exclText = excl ? ` Schließt ${excl.map((x) => `„${WLADDER.find((r) => r[0] === x)[1]}“`).join(' und ')} aus.` : '';
   return up('w', { id, name, cost: () => cst, desc: (kind === 'ring' ? `Ringkosten ÷${c(factor)}.` : `${WKIND[kind]} ×${c(factor)}.`) + exclText, requires: req, requiresAny: any, excl, require: (g) => cnt(g, 'w') >= atCount && g.state.layers.w.runTime >= atHours * 3600,
     reqText: (g) => (cnt(g, 'w') < atCount ? `Erscheint nach ${atCount} ${atCount === 1 ? 'Waldnetz' : 'Waldnetzen'}.` : `Erscheint im Lauf, noch ${formatDuration(Math.max(0, atHours * 3600 - g.state.layers.w.runTime))}.`),
     effect: (l) => (l ? factor : 1), fmt: fe });
@@ -428,7 +430,7 @@ const wUpgrades = [
   tree('t_eiche', 'Eiche', T.eicheBase, T.eicheGrow, `Fruchtkörper-Gewinn +${Math.round(T.eicheF * 100)} % je Stufe.`, (l) => 1 + T.eicheF * l, (e, l) => `Stufe ${l} · Fruchtkörper ×${formatNumber(e)}`),
   tree('t_buche', 'Buche', T.bucheBase, T.bucheGrow, `Gewinn und Erzeugung von Flechten und Fäulnis +${Math.round(T.bucheB * 100)} % je Stufe.`, (l) => 1 + T.bucheB * l, (e, l) => `Stufe ${l} · Flechte/Fäulnis ×${formatNumber(e)}`),
   tree('t_birke', 'Birke', T.birkeBase, T.birkeGrow, `Waldfäden-Gewinn +${Math.round(T.birkeW * 100)} % je Stufe.`, (l) => 1 + T.birkeW * l, (e, l) => `Stufe ${l} · Waldfäden ×${formatNumber(e)}`),
-  tree('t_kiefer', 'Kiefer', T.kieferBase, T.kieferGrow, `Flechte, Fäulnis und Waldnetz reifen ${c(T.kieferGate * 100)} % schneller je Stufe (höchstens ${T.kieferMax} Stufen).`, (l) => 1 - T.kieferGate * Math.min(T.kieferMax, l), (e, l) => `Stufe ${l} · Reifezeit ×${formatNumber(e)}`, { max: T.kieferMax }),
+  tree('t_kiefer', 'Kiefer', T.kieferBase, T.kieferGrow, `Fruchtkörper, Flechte, Fäulnis und Waldnetz reifen ${c(T.kieferGate * 100)} % schneller je Stufe (höchstens ${T.kieferMax} Stufen).`, (l) => 1 - T.kieferGate * Math.min(T.kieferMax, l), (e, l) => `Stufe ${l} · Reifezeit ×${formatNumber(e)}`, { max: T.kieferMax }),
   tree('t_esche', 'Esche', T.escheBase, T.escheGrow, `Jeder Ring wirkt stärker (+${c(T.escheR * 100)} Prozentpunkte je Stufe).`, (l) => T.ringBonus + T.escheR * l, (e, l) => `Stufe ${l} · ${formatNumber(e * 100)} % je Ring`, { require: (g) => cnt(g, 'w') >= 2, reqText: () => 'Erscheint mit dem 2. Waldnetz.' }),
   tree('t_linde', 'Linde', T.lindeBase, T.lindeGrow, `Flechten- und Fäulnis-Erzeugung +${Math.round(T.lindeI * 100)} % je Stufe.`, (l) => 1 + T.lindeI * l, (e, l) => `Stufe ${l} · Erzeugung ×${formatNumber(e)}`, { require: (g) => cnt(g, 'w') >= 4, reqText: () => 'Erscheint mit dem 4. Waldnetz.' }),
   tree('t_tanne', 'Tanne', T.tanneBase, T.tanneGrow, `Hexenringe kosten ${Math.round(T.tanneR * 100)} % weniger Waldfäden je Stufe (Teiler).`, (l) => 1 + T.tanneR * l, (e, l) => `Stufe ${l} · Ringkosten ÷${formatNumber(e)}`),
@@ -540,14 +542,20 @@ const buyDeep = (g) => {
   buyNode(g, 'l');
   buyNode(g, 'z');
 };
+/** The time mode of the deep autos counts in "gates": a stored 6 h means "when the gate is open" even after the Kiefer shortened it (the value is multiplied by the gate factor). */
+const gated = (a) => {
+  const run = a.run;
+  a.run = (g, st) => run(g, st.mode === 'time' ? { ...st, value: D(Number(st.value.toString()) * gateMul(g)) } : st);
+  return a;
+};
 autos.push(
-  prestigeAuto({ id: 'auto_f', layer: 'f', name: 'Fruchtkörper automatisch bilden', desc: 'Bildet Fruchtkörper, sobald der Pilz reif ist.', where: 'Fruchtkörper-Knoten', unlock: (g) => bMs(g, 1), interval: () => 5, mode: 'time', value: T.fMinRun, minGain: 1, modes: ['time', 'amount', 'mult'] }),
-  prestigeAuto({ id: 'auto_l', layer: 'l', name: 'Flechte automatisch wachsen lassen', desc: 'Sobald die Flechte reif ist.', where: 'Flechten-Knoten', unlock: (g) => ms(g, 'l_m2'), interval: () => 5, mode: 'time', value: T.lMin, minGain: 1, modes: ['time', 'amount', 'mult'] }),
-  prestigeAuto({ id: 'auto_z', layer: 'z', name: 'Fäulnis automatisch wachsen lassen', desc: 'Sobald die Fäulnis reif ist.', where: 'Fäulnis-Knoten', unlock: (g) => ms(g, 'z_m2'), interval: () => 5, mode: 'time', value: T.lMin, minGain: 1, modes: ['time', 'amount', 'mult'] }),
+  gated(prestigeAuto({ id: 'auto_f', layer: 'f', name: 'Fruchtkörper automatisch bilden', desc: 'Bildet Fruchtkörper, sobald der Pilz reif ist.', where: 'Fruchtkörper-Knoten', unlock: (g) => bMs(g, 1), interval: () => 5, mode: 'time', value: T.fMinRun, minGain: 1, modes: ['time', 'amount', 'mult'] })),
+  gated(prestigeAuto({ id: 'auto_l', layer: 'l', name: 'Flechte automatisch wachsen lassen', desc: 'Sobald die Flechte reif ist.', where: 'Flechten-Knoten', unlock: (g) => ms(g, 'l_m2'), interval: () => 5, mode: 'time', value: T.lMin, minGain: 1, modes: ['time', 'amount', 'mult'] })),
+  gated(prestigeAuto({ id: 'auto_z', layer: 'z', name: 'Fäulnis automatisch wachsen lassen', desc: 'Sobald die Fäulnis reif ist.', where: 'Fäulnis-Knoten', unlock: (g) => ms(g, 'z_m2'), interval: () => 5, mode: 'time', value: T.lMin, minGain: 1, modes: ['time', 'amount', 'mult'] })),
   { id: 'auto_bbuy', name: 'Flechten-/Fäulnis-Upgrades automatisch kaufen', desc: 'Kauft, was am meisten bringt.', kind: 'upg', group: 'l', where: 'Flechten- bzw. Fäulnis-Knoten', unlock: (g) => bMs(g, 3), interval: () => 3, run: buyDeep },
   { id: 'auto_zers', name: 'Automatisch zersetzen', desc: 'Zersetzt Vorrat, sobald ein Humus-Zuwachs von 10 % da wäre.', kind: 'misc', where: 'Fäulnis-Knoten', unlock: (g) => ms(g, 'z_m3'), interval: () => 20, run: (g) => humusGain(g) >= 0.1 * Math.max(1, humus(g)) && zersetzen(g) },
   { id: 'auto_wbuy', name: 'Baum-Upgrades automatisch kaufen', desc: 'Kauft den nützlichsten Baum.', kind: 'upg', group: 'w', where: 'Waldnetz-Knoten', unlock: (g) => ms(g, 'w_1'), interval: () => 3, run: (g) => buyNode(g, 'w') },
-  prestigeAuto({ id: 'auto_w', layer: 'w', name: 'Waldnetz automatisch wachsen lassen', desc: 'Sobald das Netz reif ist.', where: 'Waldnetz-Knoten', unlock: (g) => ms(g, 'w_auto'), interval: () => 5, mode: 'time', value: T.wMin, minGain: 1, modes: ['time', 'amount', 'mult'] }),
+  gated(prestigeAuto({ id: 'auto_w', layer: 'w', name: 'Waldnetz automatisch wachsen lassen', desc: 'Sobald das Netz reif ist.', where: 'Waldnetz-Knoten', unlock: (g) => ms(g, 'w_auto'), interval: () => 5, mode: 'time', value: T.wMin, minGain: 1, modes: ['time', 'amount', 'mult'] })),
 );
 
 /* ------------------------------------------------------------------ */
@@ -558,14 +566,25 @@ const sUnitsOk = (g) => units(g, 's') >= T.fUnitsS;
 const mUnitsOk = (g) => units(g, 'm') >= T.fUnitsM;
 export const fUnitsReached = (g) => (g.forkIs('a', 's') && sUnitsOk(g)) || (g.forkIs('a', 'm') && mUnitsOk(g));
 /** The Fruchtkörper take time: a run must be at least this old (the very first one a day). Makes the cadence independent of how often the player visits. */
-export const fMinRun = (g) => (g.state.layers.f.count === 0 ? T.fMinRun1 : T.fMinRun);
+export const fMinRun = (g) => (g.state.layers.f.count === 0 ? T.fMinRun1 : T.fMinRun * gateMul(g));
 export const fAvailable = (g) => fUnitsReached(g) && g.state.layers.f.runTime >= fMinRun(g);
 
 export const def = {
   id: 'myzel',
   title: 'Myzel – Das Netz unter dem Wald',
-  version: 2,
-  migrations: { 1: (d) => d }, // Paket 1 -> 2: the new keys (fork b, layers l z w r, myz.fAt ...) are filled by mergeDefaults
+  version: 3,
+  migrations: {
+    1: (d) => d, // Paket 1 -> 2: the new keys (fork b, layers l z w r, myz.fAt ...) are filled by mergeDefaults
+    // Paket 2 -> 3: the Chronik. Everything an old save already experienced is recorded silently by hooks.onLoad (Game.storyBackfill): no modal flood, no bubbles, unread in the Chronik.
+    2: (d) => {
+      const c = d.chronicle && typeof d.chronicle === 'object' ? d.chronicle : {};
+      d.chronicle = { ...c, read: c.read || {}, shown: c.shown || {}, backfill: true };
+      return d;
+    },
+  },
+  chronicle: true, // Chronik tab, story bubbles and dialogs (games/myzel/story.js)
+  chapters: CHAPTERS,
+  story: STORY,
   autosStartOff: true,
   offlineCapSeconds: T.offlineCap, // fixed, spec: 3 h (engine: Game.offlineCapSeconds; the settings panel hides its offline control)
   rechoose: true,
@@ -741,6 +760,17 @@ export const def = {
       if (id === 'r') checkEnding(g);
     },
     onLoad: (g) => {
+      const c = g.state.chronicle;
+      if (c && c.backfill) {
+        delete c.backfill;
+        g._backfill = true; // story.js: no time fallback while an old save is recorded (a text may not run ahead of the real progress)
+        const done = g.storyBackfill();
+        g._backfill = false;
+        // the chain goes on from NOW (spacing and fallbacks count from this moment), not from the stamp of an ancient entry
+        if (done.length) g.state.story[done.at(-1)] = Math.max(g.state.time.played, 0.001);
+        // the ending was reached before the Chronik existed and its dialog never shown: it still comes once
+        if (ended(g) && !g.state.myz.endShown) delete c.shown.end_ring;
+      }
       checkEnding(g);
     },
   },
