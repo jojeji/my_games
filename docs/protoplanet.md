@@ -150,4 +150,51 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
 Kein Kopieren von `games/_template` nötig (das ist eine Idle-Vorlage), aber Manifest/Icons/`index.html` nach deren Muster.
 
 ## Umsetzung und Messungen
-_(je Paket hier ergänzen: was umgesetzt ist, Bot-Tabelle, Abweichungen von der Spezifikation)_
+
+### P1 (Kern + Kapitel 1) — umgesetzt
+
+**Was steht (alles unter `games/protoplanet/`):**
+`tune.js` (alle Zahlen), `physics.js` (r = sqrt(m), fester Schritt 1/120, semi-implizites Euler, Ausstoß mit exakter Impulserhaltung, Absorbieren nach der Formel der Spezifikation, Paarvergleich bzw. Raster ab 40 Körpern mit fester Paarreihenfolge, elastische Kreis-Arena, `ejectGrace`),
+`rewind.js` (Ringpuffer, Schnappschuss alle 0,5 s, 10 s), `goals.js` (`largest`, `absorb`, `mass`, Sterne), `gen.js` (Familien `wolke`, `ziel`, `strom`, `enge` + `checkRules`), `levels.js` (Kapitel 1, 3 Lehrlevels + 5 Familienlevels), `bot.js`,
+`play.js` (**neu gegenüber der Dateiliste**: ein laufender Level = Welt + Ziel + Zurückspulen + Zeitstufe + Strahl; die Oberfläche UND der Bot benutzen dieselbe Klasse, so spielt der Bot exakt das, was der Mensch spielt), `state.js` (`createSaveStore` id `protoplanet`, Version 1, `snap`),
+`camera.js` (DOM-frei, getestet), `render.js`, `input.js`, `ui.js` + `main.js`, `style.css`, `index.html`, `manifest.webmanifest` (eigene `id`/`start_url`/`scope`), `icons/`. Hub-Eintrag in `games.json` mit `"status": "soon"`.
+Werkzeug `tools/sim-protoplanet.mjs`; Tests `tests/protoplanet-physics|gen|camera.test.mjs`, `tests/sim-protoplanet.test.mjs`.
+
+**Bot-Messung** (`node tools/sim-protoplanet.mjs --seeds 40`, Seeds 1000–1039, Spielzeit in s, Ausstoß = Anteil der Startmasse 1; „Median“ über die gelösten Läufe):
+
+| Level | Familie | gelöst (40 Seeds) | Median s | p90 s | Median Ausstoß | festes Level (Seed): Zeit / Ausstoß |
+|---|---|---|---|---|---|---|
+| 1-1 Bewegen | von Hand | 1/1 | – | – | – | 3,5 s / 0,06 |
+| 1-2 Gefahr | von Hand | 1/1 | – | – | – | 26 s / 0,10 |
+| 1-3 Strahl und Zeit | von Hand | 1/1 | – | – | – | 16 s / 0,03 |
+| 1-4 Wolke | `wolke` | 40/40 | 96 | 139 | 0,43 | 95 s / 0,43 (Seed 9) |
+| 1-5 Beute | `ziel` | 40/40 | 86 | 170 | 1,03 | 78 s / 0,87 (Seed 2) |
+| 1-6 Strom | `strom` | 39/40 | 106 | 149 | 0,80 | 102 s / 0,83 (Seed 36) |
+| 1-7 Dichte Wolke | `wolke` | 40/40 | 96 | 154 | 0,42 | 91 s / 0,41 (Seed 9) |
+| 1-8 Enge | `enge` | 39/40 | 67 | 159 | 0,47 | 70 s / 0,52 (Seed 7) |
+
+Zur Absicherung gegen Überanpassung an die Test-Seeds: 100 Seeds ab 1000 gaben 96–100 % (`wolke` 99/100 und 100/100, `ziel` 100/100 nach der letzten Änderung, `strom` 98/100, `enge` 98/100), 150 andere Seeds (5000 + 7·i) 98–100 % bei Medianen 72–113 s. Die festen Seeds der Familienlevels wurden so gewählt, dass der Bot dort nahe am Familien-Median (Zeit und Ausstoß) spielt, nicht auf „leicht“ (Hilfsskript, nicht eingecheckt: Seeds 1–60 je Level probieren).
+Die Tests laufen ≈ 8,5 s (`sim-protoplanet`), alle neuen Protoplanet-Tests zusammen < 10 s.
+Physik-Leistung (Node, ein Kern, Desktop): 30 Körper 4 µs, 100 Körper 17 µs, 200 Körper 21 µs je Schritt (×10 bei 200 Körpern ≈ 26 ms Rechenzeit je Sekunde); auf einem Handy ist ein Faktor 5–10 zu erwarten, **nicht auf einem echten Gerät gemessen**.
+
+**Finale Zahlen (`tune.js`):** `dt` 1/120, `ejectFrac` 0,01, `ejectSpeed` 20, `streamFrac` 0,004, `streamHz` 10, `holdDelay` 0,15, `ejectGrace` 0,3, `minPlayerMass` 0,08, `minMass` 0,0004, Zurückspulen 3 Versuche / 3 s zurück / 0,5 s-Takt / 10 s Puffer, `camSpan` 12, `camMin` 6, `camMax` 34, `camManualHold` 4.
+Bot: Entscheidung alle 30 Schritte (0,25 s), `costK` 7, `timeBias` 5, `vmax` 1,8, `preyRatio` 0,75, `dangerRatio` 0,97, `margin` 1,1, `horizon` 9 s, `maxFrac` 0,06.
+Level-Parameter stehen als Daten in `levels.js` (Arena R 11 / 14 / 17 / 44 / 40 / 40 / 48 / 38, Körperzahlen 6–46, Hindernismassen 1,5 bis 4,4).
+
+**Abweichungen von der Spezifikation (mit Begründung):**
+1. **`ejectSpeed` 20 statt 6, `ejectFrac` 0,01 statt 0,02, `streamFrac` 0,004 statt 0,008.** Mit 6 kostet jeder Weg mehr Masse, als die kleinen Körper einbringen (der Bot spendete ein Vielfaches seiner Masse und verlor). Die Geschwindigkeitsänderung je Tippen ist jetzt 0,20 statt 0,12 Welteinheiten/s, ein Strahl liefert ≈ 0,8 Welteinheiten/s². Der Spielgefühl-Wert ist unbestätigt (nur Bot, kein Mensch).
+2. **Große Arenen und viel Masse.** Mit 1-5-Minuten-Zielzeit für den Bot (und mit Ausstoß als Impuls: jedes Teilchen, das ein größerer Körper schluckt, stößt ihn an und füttert ihn) mussten die Familienlevels groß und mit viel Vorrat gebaut werden (Radien 38–48 Welteinheiten, die Kamera zeigt höchstens `camMax` = 34 halbe Breite). Hindernisse sind (fast) ruhend (`vBig` 0–0,05), um sie sind Streifen frei (`keepOut`, `bGap`: neue Generator-Parameter), weil sonst die Anstöße durch Ausstoß einen Hindernis-Körper anrollen lassen, der alles auffrisst.
+3. **Tippen stößt beim Loslassen aus, nicht beim Aufsetzen** (damit ein zweiter Finger beim Pinch nie versehentlich ausstößt; Spezifikation: „ein zweiter Finger löst keinen Ausstoß aus“). Wischen vor `holdDelay` startet den Strahl sofort.
+4. **Zielkörper statt „markierter Körper“** im Text (`Absorbiere den Zielkörper`). Fortschritt bei `absorb`: bis 50 % nach Masse (eigene Masse / Masse des Ziels), darüber nach Nähe (sonst steht der Balken im Lehrlevel 1 bei 99 %).
+5. **Generator-Grundregeln** (`gen.js checkRules`): „näher als 3 Spielerradien“ ist als Abstand der Ränder ≥ 3 gelesen (Mitte − Radius des Körpers − 1 ≥ 3), „größer“ = m ≥ 1, „Reichweite“ = ein kleinerer (m < 0,9) Körper im Abstand ≤ 11. Die Massenregel lässt den größten bzw. Zielkörper selbst aus dem Vorrat heraus (`1 + Rest ≥ slack × Hindernis`, `slack` 1,4–2).
+6. **Bot ist präziser als ein Mensch:** Er stößt mit genau passendem Anteil aus (Geschwindigkeitsänderung → Anteil, höchstens 6 %), nicht nur mit festen 1 %-Tippen. Ein Mensch erreicht dasselbe mit Halten (Strahl). Der Bot jagt eigene Teilchen nicht, zielt nie in Richtung eines großen Körpers, wenn das vermeidbar ist, und hält einen einmal gewählten Plan bis zum Treffer (kein Zickzack).
+7. **Stern-Ziele** (`targets`): Bot-Ergebnis des festen Seeds × 1,3. Die **Lehrlevels haben großzügigere Untergrenzen** (Ausstoß ≤ 25 / 20 / 20 %, Zeit ≤ 20 / 60 / 60 s), weil der Bot dort in 3–26 s fertig ist, ein Anfänger aber deutlich länger braucht. Nach dem Spielen des Besitzers nachjustieren.
+8. **Schwierigkeit steigt nach Parametern (Arena, Hindernismasse, Anzahl), nicht streng nach Bot-Zeit:** 1-8 „Enge“ hat den kleinsten Median (67 s). Reihenfolge: Wolke, Beute, Strom, Dichte Wolke (zwei Hindernisse), Enge (sechs Hindernisse nahe beieinander).
+9. **`strom` ohne Gravitation:** Die Körper des „kreisenden Bandes“ fliegen auf Tangenten (Kapitel 1 hat keine Gravitation), prallen am Rand ab und zerlaufen mit der Zeit. Erst P2 kann echte Umlaufbahnen.
+10. Der Rand zeichnet auch **Pfeile** für den Zielkörper außerhalb des Bildes (gelb), nicht nur für nahende größere Körper (orange).
+
+**Bekannte Schwächen / offen:**
+- Der Bot löst 96–100 % je Familie, nicht 100 %. Verlustursachen: ein Hindernis wird durch Teilchen angestoßen, rollt über seine Nachbarn und wird dabei so groß, dass der Spieler nie mehr größer wird (Zeitlimit), selten ein Zusammenstoß beim Ausweichen.
+- **Nicht auf einem echten Gerät geprüft:** Griffigkeit/Gefühl der Steuerung, Leistung der Darstellung, Vibration, Installation als App. Geprüft sind nur Chromium-Emulation (390×844, 360×740, Touch über CDP: Tippen, Halten, Wischen, Pinch ohne Ausstoß) und die Simulation.
+- Menschenzeiten sind unbekannt; der Bot ist die einzige Messung (Median 67–106 s je Familienlevel bei fehlerfreier Steuerung).
+- Kein Klang (P3), kein Tageslevel, keine Gravitation (P2). Auf iOS bleibt Vibration ohne Wirkung.
