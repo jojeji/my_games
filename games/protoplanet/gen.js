@@ -57,15 +57,15 @@ export function checkRules({ bodies, arenaR, goal }) {
   const smalls = bodies.filter((b) => b.m < 0.9);
   if (!smalls.some((b) => Math.hypot(b.x, b.y) <= RULES.reach)) bad.push('kein kleinerer Koerper in Reichweite');
   for (const b of bodies) {
-    if (b.m >= 1 && closest(b, RULES.lookahead) - Math.sqrt(b.m) - 1 < RULES.clearance) bad.push('groesserer Koerper zu nah');
+    if (b.m >= 0.9 && closest(b, RULES.lookahead) - Math.sqrt(b.m) - 1 < RULES.clearance) bad.push('groesserer Koerper zu nah');
   }
   // Masse reicht: alles ausser dem Hindernis (groesster Koerper bzw. Zielkoerper) steht dem Spieler als Vorrat zur Verfuegung
   const total = bodies.reduce((s, b) => s + b.m, 0);
   const maxM = bodies.reduce((m, b) => Math.max(m, b.m), 0);
   const slack = goal.slack || 1.4;
-  if (goal.type === 'largest') {
-    if (maxM < 1) bad.push('largest ohne groesseren Koerper');
-    if (1 + total - maxM < slack * maxM) bad.push('Masse reicht nicht (largest)');
+  if (goal.type === 'largest' || goal.type === 'last') {
+    if (goal.type === 'largest' && maxM < 1) bad.push('largest ohne groesseren Koerper');
+    if (1 + total - maxM < slack * maxM) bad.push('Masse reicht nicht (' + goal.type + ')');
   } else if (goal.type === 'absorb') {
     const t = bodies.find((b) => b.tag === 'target');
     if (!t) bad.push('kein Zielkoerper');
@@ -129,7 +129,8 @@ function strom(p, rng) {
     const s = speed * uni(rng, 0.7, 1.3);
     const tx = -pos[1] / d;
     const ty = pos[0] / d;
-    bodies.push({ x: pos[0], y: pos[1], vx: tx * s + uni(rng, -0.1, 0.1), vy: ty * s + uni(rng, -0.1, 0.1), m, kind: 'mote' });
+    const vn = p.vN == null ? 0.1 : p.vN; // Streuung der Geschwindigkeit um die Tangente
+    bodies.push({ x: pos[0], y: pos[1], vx: tx * s + uni(rng, -vn, vn), vy: ty * s + uni(rng, -vn, vn), m, kind: 'mote' });
   };
   for (let i = 0; i < (p.nBig || 0); i++) band(uni(rng, p.bLo, p.bHi), p.vBig || p.vS);
   for (let i = 0; i < p.nSmall; i++) band(pickMass(rng, p.sLo, p.sHi, p.sSkew || 1.5), p.vS);
@@ -149,12 +150,13 @@ function enge(p, rng) {
 export const FAMILIES = { wolke, ziel, strom, enge };
 
 /** Level aus Familie + Parametern + Seed erzeugen. Wiederholt mit abgeleiteten Seeds, bis alle Grundregeln erfuellt sind. */
-export function generate(family, params, seed) {
+export function generate(family, params, seed, goal = null) {
   const fn = FAMILIES[family];
   if (!fn) throw new Error('Unbekannte Levelfamilie: ' + family);
   for (let attempt = 0; attempt < RULES.maxAttempts; attempt++) {
     const rng = { seed: toSeed(seed * 7919 + attempt * 104729 + 12345) };
     const res = fn(params, rng);
+    if (goal) res.goal = { ...res.goal, ...goal }; // der Zieltyp kommt vom Level, Parameter (value, slack) von der Familie
     if (!checkRules(res).length) return { ...res, attempts: attempt + 1 };
   }
   throw new Error(`Familie ${family}, Seed ${seed}: keine gueltige Anordnung gefunden`);
@@ -166,5 +168,5 @@ export function buildLevel(level) {
     const l = level.layout;
     return { arenaR: l.arenaR, bodies: l.bodies.map((b) => ({ kind: 'mote', ...b })), goal: l.goal || null };
   }
-  return generate(level.family, level.params, level.seed);
+  return generate(level.family, level.params, level.seed, level.goal);
 }

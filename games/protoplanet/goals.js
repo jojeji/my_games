@@ -1,19 +1,47 @@
-// Ziele (largest, absorb, mass), Fortschritt, Sterne. DOM-frei.
+// Ziele (largest, last, absorb, mass), Fortschritt, Sterne. DOM-frei.
+import { T } from './tune.js';
 
 export const fmtMass = (m) => (Math.round(m * 100) / 100).toFixed(2).replace('.', ',');
 
 export function goalText(goal) {
   if (goal.type === 'largest') return 'Werde der größte Körper';
+  if (goal.type === 'last') return 'Werde der letzte Körper';
   if (goal.type === 'absorb') return 'Absorbiere den Zielkörper';
   if (goal.type === 'mass') return 'Erreiche die Masse ' + fmtMass(goal.value);
   return '';
 }
 
-/** @returns {{done:boolean, frac:number}} frac in [0,1] */
+/**
+ * Ziel 'last': Koerper, die noch zaehlen = alle ausser dem Spieler mit Masse >= dustFrac x Spielermasse.
+ * Staub (darunter) zaehlt nicht; auch der eigene Ausstoss des Spielers (`gf` = Spieler-id) zaehlt nie, sonst jagt man am Ende seine eigenen Teilchen.
+ * @returns {{n:number, mass:number}}
+ */
+export function lastRemaining(world) {
+  const p = world.player;
+  let n = 0;
+  let mass = 0;
+  if (!p) return { n, mass };
+  const lim = T.dustFrac * p.m;
+  for (const b of world.bodies) {
+    if (b === p || b.gf === p.id || b.m < lim) continue;
+    n++;
+    mass += b.m;
+  }
+  return { n, mass };
+}
+
+/** @returns {{done:boolean, frac:number, n?:number}} frac in [0,1]; bei 'last' ist n die Zahl der verbleibenden Koerper */
 export function goalStatus(world, goal) {
   const p = world.player;
   if (!p) return { done: false, frac: 0 };
   if (goal.type === 'mass') return { done: p.m >= goal.value, frac: Math.min(1, p.m / goal.value) };
+  if (goal.type === 'last') {
+    const r = lastRemaining(world);
+    if (r.n === 0) return { done: true, frac: 1, n: 0 };
+    // Balken nach absorbierter Masse: bisher aufgenommen / (aufgenommen + noch verbleibender zaehlender Koerper)
+    const got = world.stats.gained;
+    return { done: false, frac: Math.min(0.99, got / (got + r.mass)), n: r.n };
+  }
   if (goal.type === 'absorb') {
     const t = world.bodies.find((b) => b.tag === 'target');
     if (!t) return { done: true, frac: 1 };

@@ -3,15 +3,19 @@
 import { T } from './tune.js';
 
 export function createCamera() {
-  return { x: 0, y: 0, half: T.camSpan, manualHalf: null, manualAt: -Infinity, pinchStartHalf: null, ready: false };
+  return { x: 0, y: 0, half: T.camSpan, rz: 1, manualHalf: null, manualAt: -Infinity, pinchStartHalf: null, ready: false };
 }
 
-/** Automatik-Zoom: camSpan x Spielerradius, offen genug fuer groessere Koerper in der Naehe, begrenzt durch camMin/camMax und die Arena. */
-export function autoHalf(world) {
+/**
+ * Automatik-Zoom: camSpan x Bezugsradius, offen genug fuer groessere Koerper in der Naehe, begrenzt durch camMin/camMax und die Arena.
+ * Der Bezugsradius `rz` ist der Spielerradius, dem die Kamera TRAEGE folgt (siehe updateCamera): schrumpft der Spieler, bleibt der Zoom
+ * zunaechst stehen, der Koerper wird auf dem Bildschirm sichtbar kleiner. Ohne Angabe gilt der aktuelle Radius.
+ */
+export function autoHalf(world, rz = null) {
   const p = world.player;
   if (!p) return T.camSpan;
   const hi = Math.min(T.camMax, world.arenaR * 1.05);
-  let half = T.camSpan * Math.sqrt(p.m);
+  let half = T.camSpan * (rz == null ? Math.sqrt(p.m) : rz);
   for (const b of world.bodies) {
     if (b === p || b.m <= p.m) continue;
     const d = Math.hypot(b.x - p.x, b.y - p.y);
@@ -27,15 +31,20 @@ export function updateCamera(cam, world, dt, now) {
   if (!cam.ready) {
     cam.x = p.x;
     cam.y = p.y;
-    cam.half = autoHalf(world);
+    cam.rz = Math.sqrt(p.m);
+    cam.half = autoHalf(world, cam.rz);
     cam.ready = true;
     return cam;
   }
+  // Bezugsradius: waechst der Spieler, folgt der Zoom zuegig (der Koerper soll nicht aus dem Bild wachsen), schrumpft er, nur sehr traege
+  const rNow = Math.sqrt(p.m);
+  const tau = rNow > cam.rz ? T.camGrowTau : T.camShrinkTau;
+  cam.rz += (rNow - cam.rz) * (1 - Math.exp(-dt / tau));
   const kf = 1 - Math.exp(-T.camFollow * dt);
   cam.x += (p.x - cam.x) * kf;
   cam.y += (p.y - cam.y) * kf;
   const manual = cam.manualHalf != null && (cam.pinchStartHalf != null || now - cam.manualAt < T.camManualHold);
-  let target = manual ? cam.manualHalf : autoHalf(world);
+  let target = manual ? cam.manualHalf : autoHalf(world, cam.rz);
   if (!manual) cam.manualHalf = null;
   target = Math.min(Math.min(T.camMax, world.arenaR * 1.05), Math.max(T.camMin * 0.6, target));
   const kz = 1 - Math.exp(-T.camZoomRate * dt);

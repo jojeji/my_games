@@ -7,7 +7,7 @@ import { buildLevel } from './gen.js';
 
 export function createPlay(level, saved = null) {
   const built = buildLevel(level);
-  const goal = { ...level.goal, ...(built.goal || {}) };
+  const goal = { ...(built.goal || {}), ...level.goal };
   const play = {
     level,
     goal,

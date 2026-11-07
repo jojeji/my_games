@@ -36,7 +36,9 @@ export function botAct(play, st) {
   if (!p) return 0;
   const rp = Math.sqrt(p.m);
   const goalTarget = play.goal.type === 'absorb' ? w.bodies.find((b) => b.tag === 'target') : null;
-  const isPrey = (b) => b.m < B.preyRatio * p.m || (b === goalTarget && b.m < 0.95 * p.m);
+  // Ziel 'last': jeder zaehlende Koerper (>= dustFrac x Masse, nicht eigener Ausstoss) MUSS gefressen werden, auch wenn es teuer ist
+  const must = (b) => play.goal.type === 'last' && b.gf !== p.id && b.m >= T.dustFrac * p.m;
+  const isPrey = (b) => b.m < B.preyRatio * p.m || (must(b) && b.m < B.lastRatio * p.m) || (b === goalTarget && b.m < 0.95 * p.m);
   
   // 1. Gefahr: groesserer (oder fast gleich grosser) Koerper, der bei linearer Vorhersage zu nah kommt
   const dangers = [];
@@ -57,13 +59,52 @@ export function botAct(play, st) {
     return worst;
   };
   const clearOf = (vx, vy, horizon) => margin(vx, vy, horizon) >= 0;
+  // Koerper, die ein ausgestossenes Teilchen fuettern wuerde: Gefahren UND alle Rivalen ab feedRatio x Spielermasse (sonst wachsen sie und fressen den Vorrat)
+  const feeders = w.bodies.filter((b) => b !== p && b.gf !== p.id && b.m >= B.feedRatio * p.m && b !== goalTarget);
+  const feedsDanger = (ex, ey) => {
+    // Teilchenbahn (mit Abprallen am Rand) gegen die Koerper, die es fuettern wuerde, B.feedHorizon Sekunden voraus
+    const len = Math.hypot(ex, ey);
+    if (!(len > 1e-9) || !feeders.length) return false;
+    ex /= len;
+    ey /= len;
+    const R = w.arenaR;
+    let x = p.x + ex * (rp + 0.2);
+    let y = p.y + ey * (rp + 0.2);
+    let vx = p.vx + ex * T.ejectSpeed;
+    let vy = p.vy + ey * T.ejectSpeed;
+    const h = 0.1;
+    for (let t = 0; t < B.feedHorizon; t += h) {
+      x += vx * h;
+      y += vy * h;
+      const d2 = x * x + y * y;
+      if (d2 > R * R) {
+        const d = Math.sqrt(d2);
+        const nx = x / d;
+        const ny = y / d;
+        const vn = vx * nx + vy * ny;
+        if (vn > 0) {
+          vx -= 2 * vn * nx;
+          vy -= 2 * vn * ny;
+        }
+        x = nx * R;
+        y = ny * R;
+      }
+      for (const d of feeders) {
+        const dx = d.x + d.vx * t - x;
+        const dy = d.y + d.vy * t - y;
+        const rr = Math.sqrt(d.m) + 0.3;
+        if (dx * dx + dy * dy < rr * rr) return true;
+      }
+    }
+    return false;
+  };
   if (dangers.length) {
     const now = margin(p.vx, p.vy, B.horizon);
     if (now < 0) {
       // kleinste Geschwindigkeitsaenderung (in 16 Richtungen), nach der nichts mehr zu nah kommt; sonst die mit dem groessten Abstand
       let fallback = { dx: 0, dy: 0, m: now };
+      let pick = null;
       for (let mag = 0.1; mag <= 2.6; mag += 0.1) {
-        let pick = null;
         for (let k = 0; k < 16; k++) {
           const ang = (k / 16) * Math.PI * 2;
           const dx = Math.cos(ang) * mag;
@@ -71,13 +112,15 @@ export function botAct(play, st) {
           const m = margin(p.vx + dx, p.vy + dy, B.horizon);
           if (m > fallback.m) fallback = { dx, dy, m };
           if (m < 0) continue;
-          const sp = Math.hypot(p.vx + dx, p.vy + dy);
-          if (!pick || sp < pick.sp) pick = { dx, dy, sp };
+          // Ausweichen heisst Teilchen in die Gegenrichtung: ein Teilchen, das den Gegner fuettert, kostet Strafe (also eher seitlich ausweichen)
+          const score = mag + (feedsDanger(-dx, -dy) ? B.feedPenalty : 0) + 0.05 * Math.hypot(p.vx + dx, p.vy + dy);
+          if (!pick || score < pick.score) pick = { dx, dy, score };
         }
-        if (pick) {
-          st.evade = (st.evade || 0) + 1;
-          return push(play, pick.dx, pick.dy);
-        }
+        if (pick && mag > pick.score) break; // weitere Staerken koennen nicht mehr besser sein
+      }
+      if (pick) {
+        st.evade = (st.evade || 0) + 1;
+        return push(play, pick.dx, pick.dy);
       }
       if (fallback.m > now) {
         st.evade = (st.evade || 0) + 1;
@@ -89,21 +132,7 @@ export function botAct(play, st) {
   // 2. Beute waehlen (Bahn darf keine Gefahr kreuzen; Gewinn abzueglich Ausstosskosten, geteilt durch die Zeit).
   //    Ein einmal gewaehlter Plan (Beute + Abfangzeit) bleibt bestehen, bis er erledigt oder unsicher ist: das vermeidet Zickzack.
   const u = T.ejectSpeed;
-  const feedsDanger = (ex, ey) => {
-    const len = Math.hypot(ex, ey);
-    if (!(len > 1e-9)) return false;
-    ex /= len;
-    ey /= len;
-    for (const d of dangers) {
-      const rx = d.x - p.x;
-      const ry = d.y - p.y;
-      const along = rx * ex + ry * ey;
-      if (along <= 0) continue;
-      if (Math.abs(rx * ey - ry * ex) < Math.sqrt(d.m) + 0.5) return true;
-    }
-    return false;
-  };
-  const evalAt = (b, tau, sunk) => {
+  const evalAt = (b, tau, sunk, feedOk = false) => {
     const px = b.x + b.vx * tau;
     const py = b.y + b.vy * tau;
     if (Math.hypot(px, py) + Math.sqrt(b.m) > w.arenaR) return null; // Vorhersage ohne Randabprall waere unzuverlaessig
@@ -117,10 +146,11 @@ export function botAct(play, st) {
     const nvy = p.vy + dy * f;
     if (Math.hypot(nvx, nvy) > B.vmax && Math.hypot(nvx, nvy) > Math.hypot(p.vx, p.vy)) return null;
     if (!clearOf(nvx, nvy, tau)) return null;
-    if (eff > B.tapTol && feedsDanger(-dx * f, -dy * f)) return null; // Teilchen wuerde einen grossen Koerper fuettern und anstossen
+    if (!feedOk && eff > B.tapTol && feedsDanger(-dx * f, -dy * f)) return null; // Teilchen wuerde einen grossen Koerper fuettern und anstossen
     const cost = (1 - Math.exp(-eff / u)) * p.m;
-    const net = b.m * (b === goalTarget ? 3 : 1) - B.costK * cost;
-    if (!sunk && net < 0.15 * b.m) return null;
+    const w8 = b === goalTarget ? 3 : must(b) && b.m >= B.rivalMass ? B.rivalW : 1; // Rivalen (fast so gross wie man selbst) zuerst: sie wachsen sonst am schnellsten
+    const net = b.m * w8 - B.costK * cost;
+    if (!sunk && !must(b) && net < 0.15 * b.m) return null;
     return { b, score: net / (tau + B.timeBias), tau, dx: dx * f, dy: dy * f, eff };
   };
   const act = (r) => {
@@ -136,12 +166,16 @@ export function botAct(play, st) {
     st.plan = null;
   }
   let best = null;
-  for (const b of w.bodies) {
-    if (b === p || b.gf === p.id || !isPrey(b)) continue; // eigene Teilchen jagt der Bot nicht
-    for (const tau of B.taus) {
-      const r = evalAt(b, tau, false);
-      if (r && (!best || r.score > best.score)) best = r;
+  // zweiter Durchgang erlaubt fuettern, damit der Bot nie stehen bleibt (wenn jede Richtung einen Koerper traefe)
+  for (const feedOk of [false, true]) {
+    for (const b of w.bodies) {
+      if (b === p || b.gf === p.id || !isPrey(b)) continue; // eigene Teilchen jagt der Bot nicht
+      for (const tau of B.taus) {
+        const r = evalAt(b, tau, false, feedOk);
+        if (r && (!best || r.score > best.score)) best = r;
+      }
     }
+    if (best) break;
   }
   if (!best) return 0;
   st.plan = { id: best.b.id, end: w.t + best.tau };
