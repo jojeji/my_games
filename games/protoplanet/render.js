@@ -143,6 +143,29 @@ export function createRenderer(canvas) {
       const x = toX(b.x);
       const y = toY(b.y);
       const q = b.m / mP;
+      if (p && b.gf === p.id && b.kind !== 'player') {
+        // eigener Ausstoss: gut sichtbar (helles Teilchen mit Halo und kurzem Schweif), auch wenn es winzig ist
+        if (x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
+        const rr = Math.max(r, 2.8);
+        const tx = x - b.vx * sc * 0.14;
+        const ty = y - b.vy * sc * 0.14;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = Math.max(2, rr * 1.3);
+        ctx.strokeStyle = 'rgba(160,225,255,0.28)';
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(150,225,255,0.3)';
+        ctx.beginPath();
+        ctx.arc(x, y, rr + 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#e4f8ff';
+        ctx.beginPath();
+        ctx.arc(x, y, rr, 0, Math.PI * 2);
+        ctx.fill();
+        continue;
+      }
       const onScreen = x + r > -40 && x - r < W + 40 && y + r > -40 && y - r < H + 40;
       if (!onScreen) {
         if (p && (q > 1.05 || b.tag === 'target')) arrows.push({ b, x, y, q });

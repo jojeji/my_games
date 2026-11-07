@@ -20,7 +20,6 @@ const ICON = {
 const TIME_LABEL = { 0.25: '×¼', 1: '×1', 4: '×4', 10: '×10' };
 
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-const fmtPct = (x) => `${Math.round(x * 100)} %`;
 const starText = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
 export function mountApp(root, progress) {
@@ -37,7 +36,9 @@ export function mountApp(root, progress) {
   const barFill = h('div', { class: 'pp-bar-fill' });
   const bar = h('header', { class: 'pp-bar' }, backBtn, h('div', { class: 'pp-goal' }, goalTxt, h('div', { class: 'pp-goal-row' }, h('div', { class: 'pp-bar-track' }, barFill), goalPct)), pauseBtn);
   const helpEl = h('div', { class: 'pp-help', hidden: true });
-  const massEl = h('div', { class: 'pp-mass' });
+  const massVal = h('span', { class: 'pp-mass-val' });
+  const massDelta = h('span', { class: 'pp-mass-delta', 'aria-hidden': 'true' });
+  const massEl = h('div', { class: 'pp-mass' }, massVal, massDelta);
   const timeBtn = h('button', { class: 'pp-time', type: 'button', 'aria-label': 'Zeitstufe' }, '×1');
   const gameEl = h('section', { class: 'pp-game', hidden: true }, canvas, bar, helpEl, massEl, timeBtn);
   root.append(selectEl, gameEl, toasts);
@@ -70,6 +71,11 @@ export function mountApp(root, progress) {
   let lastAbsorbed = 0;
   let lastVibe = 0;
   let hintGone = false;
+  // Masse-Anzeige: kurz eingeblendete Aenderung (Ausstoss rot, Absorbieren gruen), gleiche Vorzeichen innerhalb des Fensters werden summiert
+  let lastMass = null;
+  let deltaAcc = 0;
+  let deltaAt = -Infinity;
+  const DELTA_SHOW = 1.1; // s
 
   const modals = new Set();
   const modal = (opts) => {
@@ -193,6 +199,7 @@ export function mountApp(root, progress) {
     pointer = null;
     lastAbsorbed = play.world.stats.absorbed;
     hintGone = false;
+    resetMassDelta();
     screen = 'game';
     selectEl.hidden = true;
     gameEl.hidden = false;
@@ -205,6 +212,34 @@ export function mountApp(root, progress) {
     lastTs = 0;
     hud();
     if (snap) pause(); // ein gesichertes Level wird pausiert fortgesetzt
+  }
+
+  function resetMassDelta() {
+    lastMass = null;
+    deltaAcc = 0;
+    deltaAt = -Infinity;
+    setCls(massDelta, 'show', false);
+  }
+
+  /** Pro Bild: Massenaenderung des Spielers erfassen und die Anzeige ein-/ausblenden. */
+  function trackMass(now) {
+    const p = play.world.player;
+    if (p) {
+      if (lastMass != null) {
+        const d = p.m - lastMass;
+        if (Math.abs(d) > 1e-5) {
+          if (now - deltaAt > DELTA_SHOW || Math.sign(d) !== Math.sign(deltaAcc)) deltaAcc = 0;
+          deltaAcc += d;
+          deltaAt = now;
+          txt(massDelta, (deltaAcc > 0 ? '+' : '\u2212') + fmtMass(Math.abs(deltaAcc)));
+          setCls(massDelta, 'neg', deltaAcc < 0);
+          setCls(massDelta, 'pos', deltaAcc > 0);
+          setCls(massDelta, 'show', true);
+        }
+      }
+      lastMass = p.m;
+    }
+    if (now - deltaAt > DELTA_SHOW) setCls(massDelta, 'show', false);
   }
 
   function closePauseModal() {
@@ -290,6 +325,7 @@ export function mountApp(root, progress) {
                 onClick: () => {
                   if (play.doRewind()) {
                     endShown = false;
+                    resetMassDelta();
                     setTimeout(pause, 0);
                   }
                 },
@@ -321,14 +357,14 @@ export function mountApp(root, progress) {
         'ul',
         { class: 'pp-result-list' },
         row(true, 'Geschafft', fresh.first ? '(neu)' : ''),
-        row(st.eff, 'Effizienz', r.rewound ? 'zurückgespult, kein Stern in diesem Versuch' : `höchstens ${fmtPct(level.targets.eject)} ausgestoßen`),
+        row(st.eff, 'Effizienz', r.rewound ? 'zurückgespult, kein Stern in diesem Versuch' : `höchstens ${fmtMass(level.targets.eject)} Masse ausgestoßen`),
         row(st.fast, 'Zeit', `höchstens ${fmtTime(level.targets.time)}`),
       ),
       h(
         'div',
         { class: 'pp-result-stats' },
         h('div', {}, h('span', { class: 'muted', text: 'Zeit' }), h('b', { text: fmtTime(r.time) }), h('span', { class: 'muted small', text: `Bestzeit ${fmtTime(info.bestTime)}${fresh.time ? ' (neu)' : ''}` })),
-        h('div', {}, h('span', { class: 'muted', text: 'Ausgestoßen' }), h('b', { text: fmtPct(r.ejected) }), h('span', { class: 'muted small', text: `Bestwert ${fmtPct(info.bestEject)}${fresh.eject ? ' (neu)' : ''}` })),
+        h('div', {}, h('span', { class: 'muted', text: 'Ausgestoßen' }), h('b', { text: fmtMass(r.ejected) }), h('span', { class: 'muted small', text: `Bestwert ${fmtMass(info.bestEject)}${fresh.eject ? ' (neu)' : ''}` })),
       ),
     );
     modal({
@@ -351,10 +387,12 @@ export function mountApp(root, progress) {
     const g = play.progress;
     const pct = Math.floor(g.frac * 100);
     txt(goalTxt, goalText(play.goal));
-    txt(goalPct, pct + ' %');
+    if (play.goal.type === 'last') txt(goalPct, `Noch ${g.n == null ? '–' : g.n} Körper`);
+    else txt(goalPct, pct + ' %');
+    setCls(goalPct, 'wide', play.goal.type === 'last');
     setStyle(barFill, 'width', pct + '%');
     const p = play.world.player;
-    txt(massEl, p ? `Masse ${fmtMass(p.m)}` : 'Masse 0,00');
+    txt(massVal, p ? `Masse ${fmtMass(p.m)}` : 'Masse 0,00');
     txt(timeBtn, TIME_LABEL[play.timeScale] || '×1');
     if (level.hint && !hintGone) {
       const u = level.hint.until;
@@ -449,6 +487,7 @@ export function mountApp(root, progress) {
       }
     }
     updateCamera(cam, play.world, dt, now);
+    trackMass(now);
     if (!slow || frame % 2 === 0) renderer.draw({ world: play.world, cam, now, reduceMotion: reduceMotion(), aim: pointer && play.beam ? play.beam : null });
     if (frame % 4 === 0) hud();
     if (!endShown && play.status !== 'running') {
@@ -580,5 +619,5 @@ export function mountApp(root, progress) {
     progress.setSnap(null);
     renderSelect();
   }
-  return { startLevel, showSelect, get state() { return { screen, level, play, paused }; } };
+  return { startLevel, showSelect, get state() { return { screen, level, play, paused, cam }; } };
 }

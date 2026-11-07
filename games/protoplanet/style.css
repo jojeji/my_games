@@ -63,6 +63,7 @@ body.pp-playing { position: fixed; inset: 0; overflow: hidden; }
 .pp-goal { flex: 1; min-width: 0; padding: 0 2px; }
 .pp-goal-text { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pp-goal-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.pp-goal-pct.wide { min-width: 96px; }
 .pp-goal-pct { flex: none; min-width: 34px; text-align: right; font-size: 12px; font-weight: 600; color: var(--accent); }
 .pp-bar-track { flex: 1; height: 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
 .pp-bar-fill { height: 100%; width: 0; border-radius: 4px; background: linear-gradient(90deg, #3aa8d8, var(--accent)); transition: width 0.15s linear; }
@@ -78,6 +79,10 @@ body.pp-playing { position: fixed; inset: 0; overflow: hidden; }
   background: rgba(10, 16, 32, 0.75); border: 1px solid var(--border); pointer-events: none; transition: border-color 0.2s, color 0.2s;
 }
 .pp-mass.flash { border-color: var(--bad); color: var(--bad); }
+.pp-mass-delta { position: absolute; left: 12px; bottom: calc(100% + 4px); font-size: 17px; font-weight: 700; opacity: 0; transform: translateY(6px); transition: opacity 0.9s ease-out, transform 0.9s ease-out; pointer-events: none; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
+.pp-mass-delta.show { opacity: 1; transform: translateY(0); transition: opacity 0.08s, transform 0.12s; }
+.pp-mass-delta.neg { color: #ff6b6b; }
+.pp-mass-delta.pos { color: #6be39a; }
 .pp-time {
   position: absolute; right: var(--pad-r); bottom: calc(14px + env(safe-area-inset-bottom)); width: 64px; height: 64px; border-radius: 50%; cursor: pointer;
   background: rgba(20, 29, 51, 0.9); border: 2px solid var(--accent); color: var(--text); font-size: 19px; font-weight: 700; touch-action: manipulation;

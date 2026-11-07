@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { T } from '../games/protoplanet/tune.js';
 import { createWorld } from '../games/protoplanet/physics.js';
-import { createCamera, updateCamera, autoHalf, pinchStart, pinchMove, pinchEnd, worldToScreen, screenToWorld } from '../games/protoplanet/camera.js';
+import { createCamera, updateCamera, autoHalf, pinchStart, pinchMove, pinchEnd, worldToScreen, screenToWorld, scaleOf } from '../games/protoplanet/camera.js';
 
 const run = (cam, w, seconds, t0 = 0) => {
   for (let i = 0; i < seconds * 60; i++) updateCamera(cam, w, 1 / 60, t0 + i / 60);
@@ -63,4 +63,33 @@ test('Weltkoordinaten und Bildschirmkoordinaten sind zueinander invers', () => {
   const [wx, wy] = screenToWorld(cam, 390, 844, sx, sy);
   assert.ok(Math.abs(wx - 5) < 1e-9 && Math.abs(wy - 1) < 1e-9);
   assert.deepEqual(worldToScreen(cam, 390, 844, 3, -2), [195, 422]);
+});
+
+test('Schrumpfen durch Ausstoss ist sichtbar: der Zoom folgt dem kleiner werdenden Spieler nur traege', () => {
+  const w = createWorld({ bodies: [], arenaR: 60, player: { m: 4 } });
+  const cam = createCamera();
+  updateCamera(cam, w, 0, 0);
+  let now = run(cam, w, 3);
+  const screenR = () => Math.sqrt(w.player.m) * scaleOf(cam, 390);
+  const before = screenR();
+  assert.ok(Math.abs(before - 390 / 2 / T.camSpan) < 0.5, 'im Gleichgewicht: Radius = Breite/2/camSpan Pixel');
+  w.player.m = 2.8; // grosser Ausstoss (30 % der Masse)
+  now = run(cam, w, 1, now);
+  assert.ok(screenR() < before * 0.9, `nach 1 s sichtbar kleiner: ${screenR().toFixed(1)} gegen ${before.toFixed(1)}`);
+  now = run(cam, w, 3, now);
+  assert.ok(screenR() < before * 0.93, 'auch nach 4 s noch kleiner');
+  run(cam, w, 40, now);
+  assert.ok(Math.abs(screenR() - before) < before * 0.1, 'langfristig gleicht der Zoom sich an');
+});
+
+test('Wachsen holt der Zoom zuegig nach, damit der Koerper nicht aus dem Bild waechst', () => {
+  const w = createWorld({ bodies: [], arenaR: 100, player: { m: 1 } });
+  const cam = createCamera();
+  updateCamera(cam, w, 0, 0);
+  let now = run(cam, w, 2);
+  const before = Math.sqrt(w.player.m) * scaleOf(cam, 390);
+  w.player.m = 6;
+  now = run(cam, w, 3, now);
+  const after = Math.sqrt(w.player.m) * scaleOf(cam, 390);
+  assert.ok(after < before * 1.25, `3 s nach dem Wachsen: ${after.toFixed(1)} px gegen ${before.toFixed(1)} px`);
 });

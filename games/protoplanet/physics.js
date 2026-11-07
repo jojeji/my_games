@@ -100,7 +100,6 @@ export function absorb(w, a, b) {
   }
   if (!(dm > 0)) return false;
   const full = dm >= S.m;
-  if (globalThis.__abs) globalThis.__abs(w, L, S, dm);
   const mNew = L.m + dm;
   if (L.gf && S.gf !== L.gf && S.kind !== 'player') L.gf = 0; // ein Teilchen, das fremde Masse schluckt, gilt nicht mehr als Ausstoss des Spielers
   L.vx = (L.m * L.vx + dm * S.vx) / mNew;

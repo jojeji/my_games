@@ -4,7 +4,7 @@ import { T } from '../games/protoplanet/tune.js';
 import { createWorld, addBody, eject, absorb, step, snapshot, restore, totalMass, radius } from '../games/protoplanet/physics.js';
 import { createRewind } from '../games/protoplanet/rewind.js';
 import { createPlay } from '../games/protoplanet/play.js';
-import { goalStatus, starsFor } from '../games/protoplanet/goals.js';
+import { goalStatus, goalText, lastRemaining, starsFor } from '../games/protoplanet/goals.js';
 import { LEVELS, levelById } from '../games/protoplanet/levels.js';
 import { createProgress } from '../games/protoplanet/state.js';
 import { createStorage } from '../engine/save.js';
@@ -219,7 +219,7 @@ test('Level zurueckspulen: 3 Mal, danach nicht mehr; Ausstoss-Stern ist dann weg
   const lv = levelById('1-2');
   const play = createPlay(lv);
   // Verlust erzwingen: Spieler fliegt in den grossen Koerper
-  const big = play.world.bodies.find((b) => b.m > 2);
+  const big = play.world.bodies.find((b) => b.kind !== 'player' && b.m > 1);
   for (let k = 0; k < 3; k++) {
     play.world.player.x = big.x - 0.2;
     play.world.player.y = big.y;
@@ -342,4 +342,98 @@ test('kein Math.random in Physik, Generatoren, Bot und Leveln', async () => {
     const src = readFileSync(new URL(`../games/protoplanet/${f}.js`, import.meta.url), 'utf8');
     assert.ok(!/Math\.random/.test(src), f);
   }
+});
+
+/* ---------- Kosten des Ausstosses (Raketengleichung) ---------- */
+
+test('Kosten je Geschwindigkeitsaenderung: ein Ausstoss kostet Masse nach m1/m0 = u/(u+dv), viele kleine nach exp(-dv/u)', () => {
+  const u = T.ejectSpeed;
+  // exakt fuer einen einzelnen Ausstoss: dv = f/(1-f) * u  <=>  m1/m0 = 1 - f = u / (u + dv)
+  for (const f of [0.01, T.ejectFrac, 0.1, 0.3]) {
+    const w = createWorld({ bodies: [], arenaR: 50 });
+    eject(w, 1, 0, f);
+    const dv = Math.hypot(w.player.vx, w.player.vy);
+    close(w.player.m / 1, u / (u + dv), 1e-12);
+  }
+  // viele kleine Ausstoesse gegen dieselbe Richtung: Grenzwert der Raketengleichung
+  const w = createWorld({ bodies: [], arenaR: 500 });
+  const n = 100;
+  const frac = 0.5 / u / n; // zusammen dv ~ 0,5
+  for (let i = 0; i < n; i++) eject(w, 1, 0, frac);
+  const dv = Math.hypot(w.player.vx, w.player.vy);
+  close(dv, 0.5, 0.01);
+  close(w.player.m, Math.exp(-dv / u), 2e-4);
+  // Richtwert des Besitzers: eine Kurskorrektur von dv ~ 0,5 kostet etwa 8 % der Masse
+  const cost = 1 - w.player.m;
+  assert.ok(cost > 0.07 && cost < 0.09, 'Kurskorrektur dv 0,5 kostet ' + (cost * 100).toFixed(1) + ' %');
+});
+
+test('der Preis je Geschwindigkeit haengt nur von ejectSpeed ab, ejectFrac nur von der Groesse eines Tippens', () => {
+  const u = T.ejectSpeed;
+  const w = createWorld({ bodies: [], arenaR: 50 });
+  eject(w, 1, 0, T.ejectFrac);
+  const tap = Math.hypot(w.player.vx, w.player.vy);
+  close(tap, (T.ejectFrac / (1 - T.ejectFrac)) * u, 1e-12);
+  assert.ok(tap > 0.15 && tap < 0.25, 'ein Tippen gibt ungefaehr denselben Schub wie vor der Aenderung (0,2): ' + tap);
+  assert.ok(u <= 8, 'Ausstoss muss spuerbar kosten');
+});
+
+/* ---------- Ziel 'last' (Letzter Koerper, Staub) ---------- */
+
+test("Ziel 'last': Staub (unter dustFrac x Spielermasse) zaehlt nicht, Koerper darueber schon", () => {
+  const w = createWorld({ bodies: [{ x: 6, y: 0, m: 0.05 }, { x: -6, y: 0, m: 0.5 }], arenaR: 30, player: { m: 2 } });
+  const lim = T.dustFrac * 2;
+  assert.ok(0.05 < lim && 0.5 > lim);
+  assert.deepEqual(goalStatus(w, { type: 'last' }).n, 1, 'nur der 0,5er zaehlt');
+  assert.equal(goalStatus(w, { type: 'last' }).done, false);
+  assert.equal(goalText({ type: 'last' }), 'Werde der letzte Körper');
+  // der 0,5er ist weg: nur Staub uebrig = gewonnen
+  w.bodies = w.bodies.filter((b) => b.m !== 0.5);
+  const st = goalStatus(w, { type: 'last' });
+  assert.equal(st.done, true);
+  assert.equal(st.n, 0);
+  // die Grenze haengt an der aktuellen Spielermasse: schrumpft der Spieler, zaehlt der Staub von eben wieder
+  w.player.m = 1;
+  assert.equal(goalStatus(w, { type: 'last' }).n, 1, '0,05 >= 0,03 x 1');
+  // Grenzfall genau auf der Schwelle zaehlt (>=)
+  w.bodies = [w.player, { id: 9, x: 5, y: 0, vx: 0, vy: 0, m: T.dustFrac * 1, kind: 'mote', tag: '', gu: 0, gf: 0 }];
+  assert.equal(lastRemaining(w).n, 1);
+});
+
+test("Ziel 'last': der eigene Ausstoss blockiert nie, auch nicht, wenn er groesser als die Staubgrenze ist", () => {
+  const w = createWorld({ bodies: [], arenaR: 60, player: { m: 3 } });
+  for (let i = 0; i < 12; i++) eject(w, Math.cos(i), Math.sin(i), 0.1); // grosse Teilchen (>> Staub)
+  const mine = w.bodies.filter((b) => b.gf === w.player.id);
+  assert.equal(mine.length, 12);
+  assert.ok(mine.every((b) => b.m > T.dustFrac * w.player.m), 'Teilchen liegen ueber der Staubgrenze');
+  const st = goalStatus(w, { type: 'last' });
+  assert.equal(st.done, true, 'ausser dem Ausstoss ist nichts da');
+  assert.equal(st.n, 0);
+  // schluckt ein Teilchen fremde Masse, ist es kein Ausstoss mehr und zaehlt wieder
+  const fremd = addBody(w, { x: 40, y: 40, m: 0.2 });
+  const p0 = mine[0];
+  p0.x = 40;
+  p0.y = 40;
+  absorb(w, p0, fremd);
+  assert.equal(p0.gf, 0);
+  assert.equal(goalStatus(w, { type: 'last' }).n, 1);
+});
+
+test("Ziel 'last': Fortschritt nach absorbierter Masse, Level mit 'last' ist spielbar und gewinnbar", () => {
+  const lv = { id: 't', family: 'hand', seed: 0, layout: { arenaR: 12, bodies: [{ x: 3, y: 0, m: 0.3 }, { x: -9, y: 0, m: 0.00005 }] }, goal: { type: 'last' }, targets: { eject: 1, time: 60 } };
+  const play = createPlay(lv);
+  const g0 = play.progress;
+  assert.equal(g0.n, 1);
+  assert.equal(g0.frac, 0);
+  const w = play.world;
+  w.player.x = 2.5; // beruehrt den 0,3er: wird absorbiert; der Staub (0,00005) bleibt liegen
+  play.advanceSteps(8);
+  assert.equal(play.status, 'won', 'Staub zaehlt nicht: gewonnen');
+  assert.equal(play.progress.n, 0);
+  assert.equal(play.progress.frac, 1);
+});
+
+test('Kapitel 1: Zuordnung der Ziele (1-1 und 1-5 absorb, alle anderen last)', () => {
+  const t = Object.fromEntries(LEVELS.map((l) => [l.id, l.goal.type]));
+  assert.deepEqual(t, { '1-1': 'absorb', '1-2': 'last', '1-3': 'last', '1-4': 'last', '1-5': 'absorb', '1-6': 'last', '1-7': 'last', '1-8': 'last' });
 });

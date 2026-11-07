@@ -35,7 +35,7 @@ _Avoid_: Out of bounds, Flucht
 ## Aktionen
 
 **Ausstoß**:
-Der Spieler gibt einen Teil seiner Masse als Teilchen ab und bewegt sich in die Gegenrichtung (Impulserhaltung). Durch Tippen ein einzelner Ausstoß, durch Halten ein Strahl.
+Der Spieler gibt einen Teil seiner Masse als Teilchen ab und bewegt sich in die Gegenrichtung (Impulserhaltung). Durch Tippen ein einzelner Ausstoß, durch Halten ein Strahl. Kostet Masse nach der Raketengleichung: Preis je Geschwindigkeitsänderung = `ejectSpeed`.
 _Avoid_: Schuss, Schub, Boost, Dash
 
 **Strahl**:
@@ -90,8 +90,16 @@ Ein Level, dessen Seed aus dem heutigen Datum kommt. Für alle gleich, ohne Serv
 _Avoid_: Daily Challenge, Tagesaufgabe
 
 **Ziel**:
-Was im Level zu erreichen ist: größter Körper werden, Körper X absorbieren, Masse M erreichen, Zentralkörper absorbieren, N Umläufe überleben.
+Was im Level zu erreichen ist: letzter Körper werden, Körper X absorbieren, größter Körper werden, Masse M erreichen, Zentralkörper absorbieren, N Umläufe überleben.
 _Avoid_: Quest, Auftrag
+
+**Letzter Körper**:
+Ziel `last` („Werde der letzte Körper“): gewonnen, wenn kein anderer Körper mehr existiert, der noch zählt, also keiner mit Masse ≥ `dustFrac` × Spielermasse. Anzeige „Noch N Körper“. Der eigene Ausstoß zählt nie.
+_Avoid_: Alles absorbieren, Aufräumen, Survivor
+
+**Staub**:
+Ein Körper mit Masse unter `dustFrac` (0,03) × Spielermasse. Zählt für „Letzter Körper“ nicht; die Grenze wandert mit der Spielermasse.
+_Avoid_: Krümel, Rest
 
 **Zielkörper**:
 Der markierte Körper, den ein `absorb`-Ziel verlangt (gestrichelter gelber Ring, Rand-Pfeil, wenn außerhalb des Bildes).

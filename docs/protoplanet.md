@@ -35,11 +35,12 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
   nie `dt`. Höchstens `maxStepsPerFrame` (z. B. 40) Schritte pro Bild: Ist das Gerät zu langsam, läuft das Spiel langsamer, die Physik bleibt gleich.
 - **Kein Luftwiderstand.** Was fliegt, fliegt weiter.
 - **Ausstoß** (`eject(world, dirX, dirY, frac)`): Der Spieler (Masse `m`, Geschwindigkeit `v`) stößt `dm = frac * m` aus (Tippen: `ejectFrac` 0,02).
-  Das ausgestoßene Teilchen entsteht am Rand des Spielers in Richtung `d` mit Geschwindigkeit `v + ejectSpeed * d` (`ejectSpeed` Startwert 6 Welteinheiten/s,
+  Das ausgestoßene Teilchen entsteht am Rand des Spielers in Richtung `d` mit Geschwindigkeit `v + ejectSpeed * d` (`ejectSpeed` 6 Welteinheiten/s, **Entscheidung des Besitzers: Ausstoß muss spürbar kosten**,
   1 Welteinheit = Radius des Spielers beim Start, also eine feste Geschwindigkeit unabhängig von der aktuellen Größe). Der Spieler bekommt `v' = v - dm/(m - dm) * ejectSpeed * d` (Impulserhaltung, exakt).
-  Ausstoß ist nur möglich, solange `m - dm >= minPlayerMass`. Ausgestoßene Teilchen sind normale Körper und können von jedem absorbiert werden (auch vom Spieler).
+  **Raketengleichung:** für eine Geschwindigkeitsänderung Δv gilt `m1/m0 = exp(-Δv / ejectSpeed)` (ein einzelner Ausstoß exakt `u/(u+Δv)`): der **Preis je Δv hängt nur von `ejectSpeed` ab**, `ejectFrac` (0,028) bestimmt nur, wie groß ein Tipp ist (Δv ≈ 0,17). Richtwert: eine Kurskorrektur Δv 0,5 kostet ≈ 8 % der Masse. Ausstoß ist nur möglich, solange `m - dm >= minPlayerMass`. Ausgestoßene Teilchen sind normale Körper und können von jedem absorbiert werden (auch vom Spieler).
   Damit der Spieler sein eigenes Teilchen nicht sofort wieder schluckt, ignoriert er es für `ejectGrace` (0,3 s).
-- **Dauerstrahl**: Halten länger als `holdDelay` (150 ms) stößt mit `streamHz` (10/s) je `streamFrac` (0,008) aus, Richtung folgt dem Finger.
+- **Dauerstrahl**: Halten länger als `holdDelay` (150 ms) stößt mit `streamHz` (10/s) je `streamFrac` (0,012) aus, Richtung folgt dem Finger.
+- **Eigener Ausstoß** trägt `gf` = Spieler-id. Er zählt für das Ziel „Letzter Körper“ nie mit; schluckt ein Teilchen fremde Masse, wird `gf` gelöscht (es ist dann kein Ausstoß mehr). Der Renderer zeichnet eigenen Ausstoß hell mit Halo und Schweif (mindestens 2,8 px).
 - **Absorbieren** (`absorb(a, b)`): Überlappen sich zwei Körper (`dist < rL + rS`), fließt Masse vom kleineren (S) zum größeren (L), bis sie sich gerade berühren.
   Mit `M = rL² + rS²` (Gesamtmasse) und `d = dist` ist der neue Radius des kleineren `rS' = (d - sqrt(2M - d²)) / 2`; ist `d² <= M`, wird S ganz absorbiert.
   `dm = rS² - rS'²` geht an L. L übernimmt den Impuls des übertragenen Anteils: `vL' = (mL vL + dm vS) / (mL + dm)`; S behält seine Geschwindigkeit.
@@ -65,7 +66,7 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
 
 ## Kamera (`camera.js`)
 - Folgt dem Spieler weich (exponentielles Nachziehen).
-- Automatik-Zoom: Die sichtbare halbe Breite ist ≈ `camSpan` (12) × Spielerradius, begrenzt durch `camMin/camMax` und die Arena.
+- Automatik-Zoom: Die sichtbare halbe Breite ist ≈ `camSpan` (12) × **Bezugsradius**, begrenzt durch `camMin/camMax` und die Arena. Der Bezugsradius `cam.rz` folgt dem Spielerradius **asymmetrisch**: wachsend zügig (`camGrowTau` 1,2 s, der Körper soll nicht aus dem Bild wachsen), schrumpfend sehr träge (`camShrinkTau` 9 s). Hätte der Zoom den Radius sofort verfolgt, sähe der eigene Körper immer gleich groß aus und das Schrumpfen durch Ausstoß wäre unsichtbar (Beobachtung des Besitzers).
   Liegt ein größerer Körper in der Nähe (Abstand < 2 × Sichtweite), zoomt sie so weit heraus, dass er sichtbar bleibt.
 - Pinch-Zoom übersteuert die Automatik; nach `camManualHold` (4 s) ohne Pinch kehrt sie weich zur Automatik zurück.
 - Körper außerhalb des Bildes, die größer als der Spieler sind und sich nähern, zeigen einen kleinen warmen Pfeil am Bildrand.
@@ -85,10 +86,11 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
   kein größerer Körper ist bei geradliniger Vorhersage in den ersten 5 s näher als 3 Spielerradien, und die Masse der kleineren Körper reicht für das Ziel.
 - **Kapitel 1 „Staubwolke“ (P1)**, 8 Levels:
   1. Lehre „Bewegen“ (von Hand): ein ruhender kleinerer Körper. Hilfe: „Tippe, wohin du fliegen willst.“ Ziel: absorbiere ihn.
-  2. Lehre „Gefahr“ (von Hand): einige kleinere Körper, ein langsam treibender größerer. Hilfe: „Warme Körper sind größer als du. Weich ihnen aus.“ Ziel: Masse M.
-  3. Lehre „Strahl und Zeit“ (von Hand): verstreute kleine Körper, weite Wege. Hilfe: „Halte gedrückt für einen Strahl. Unten rechts läuft die Zeit schneller.“ Ziel: werde der größte Körper.
-  4.–8. aus Familien: `wolke` (zufällige Wolke, Größenverteilung über `params`, Ziel: größter Körper), `ziel` (ein markierter größerer Körper, Ziel: absorbiere ihn),
-     `strom` (Körper in einem kreisenden Band, Ziel: Masse M), `enge` (viele etwas größere, wenige kleinere Körper, Ziel: größter Körper). Reihenfolge und Parameter so, dass die Schwierigkeit steigt.
+  2. Lehre „Gefahr“ (von Hand): einige kleinere Körper, ein langsam treibender größerer (orange). Ziel `last`: erst ausweichen, an den kleinen wachsen, dann den orangen Körper schlucken (genug Futter eingeplant).
+  3. Lehre „Strahl und Zeit“ (von Hand): verstreute kleine Körper, weite Wege, ein ruhender größerer. Hilfe: „Halte gedrückt für einen Strahl. Unten rechts läuft die Zeit schneller.“ Ziel `last`.
+  4.–8. aus Familien: `wolke` (zufällige Wolke, Größenverteilung über `params`), `ziel` (ein markierter größerer Körper, Ziel: absorbiere ihn = „Jagd“, bleibt `absorb`),
+     `strom` (Körper in einem kreisenden Band, langsam), `enge` (mehrere größere Körper eng beieinander, dazu kleine). **Zuordnung der Ziele (Entscheidung des Besitzers, unterschiedliche Ziele sind gewollt):** 1-1 und 1-5 `absorb`, alle anderen `last`.
+     Reihenfolge und Parameter so, dass die Schwierigkeit steigt. Mit teurem Ausstoß sind die Arenen klein (R 13–20) und dicht, siehe „Nach dem ersten Spielen“.
 - **Kapitel 2 „Protostern“ (P2)**: ein Attraktor, Familien z. B. `orbit` (Körper auf Bahnen), Ziele „überlebe N Umläufe“, „Masse M“, „absorbiere den Zentralkörper“.
 - **Kapitel 3 „Planetensystem“ (P2)**: mehrere Attraktoren, auch auf Bahnen (Doppelstern, Planeten um Stern).
 - **Tageslevel (P2)**: Seed aus dem Datum (`JJJJMMTT`, lokale Zeit), Familie per Seed aus allen Familien der freigeschalteten Kapitel. Kein Server.
@@ -96,10 +98,11 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
 - **Freischalten**: Ein Level schaltet das nächste frei, das letzte Level eines Kapitels das nächste Kapitel. Sterne sind nur Zusatz.
 
 ## Ziele und Wertung (`goals.js`)
-- Zieltypen: `largest` (der Spieler ist größer als jeder andere Körper, Attraktoren eingeschlossen), `absorb` (Körper X existiert nicht mehr; wer ihn absorbiert hat, ist egal, die Generatoren sorgen dafür, dass realistisch nur der Spieler es kann),
-  `mass` (Spielermasse ≥ M), ab P2 `absorbCenter` (der Zentral-Attraktor ist absorbiert) und `survive` (N Umläufe um den Attraktor überlebt, gezählt am Winkel).
+- Zieltypen: **`last` („Werde der letzte Körper“, in Kapitel 1 der Standard)**: gewonnen, wenn kein anderer Körper mehr existiert, dessen Masse ≥ `dustFrac` (0,03) × aktuelle Spielermasse ist. Alles darunter ist **Staub** und zählt nicht; der eigene Ausstoß zählt nie (siehe Physik). Zielzeile „Noch N Körper“ statt Prozent, der Balken zeigt die absorbierte Masse (aufgenommen / (aufgenommen + Masse der noch zählenden Körper)). `largest` (der Spieler ist größer als jeder andere Körper, Attraktoren eingeschlossen), `absorb` (Körper X existiert nicht mehr; wer ihn absorbiert hat, ist egal, die Generatoren sorgen dafür, dass realistisch nur der Spieler es kann),
+  `mass` (Spielermasse ≥ M; `largest` und `mass` bleiben als Werkzeug im Code, Kapitel 1 nutzt sie nicht mehr), ab P2 `absorbCenter` (der Zentral-Attraktor ist absorbiert) und `survive` (N Umläufe um den Attraktor überlebt, gezählt am Winkel).
 - Verlieren: Spieler absorbiert (`m < minMass`) oder, ab P2, abgetrieben. Kein automatisches „Unlösbar“; Neustart ist immer im Pausenmenü.
-- Oben eine schmale Zielzeile mit Fortschritt (z. B. „Werde der größte Körper · 42 %“, Fortschritt = eigene Masse / Masse des größten anderen Körpers).
+- Oben eine schmale Zielzeile mit Fortschritt (z. B. „Werde der größte Körper · 42 %“, Fortschritt = eigene Masse / Masse des größten anderen Körpers; bei `last` „Noch N Körper“).
+- **Masseanzeige** unten links: zeigt Masseänderungen kurz (1,1 s) als Chip über dem Kasten (Ausstoß rot „−0,03“, Absorbieren grün „+0,12“, gleiche Vorzeichen werden summiert), ohne Layoutsprung (absolut positioniert).
 - **Sterne** (je Level gespeichert, das Beste zählt):
   1. geschafft
   2. **Effizienz**: ausgestoßene Masse ≤ `targets.eject` (Anteil der Startmasse) und nicht zurückgespult
@@ -160,7 +163,7 @@ Kein Kopieren von `games/_template` nötig (das ist eine Idle-Vorlage), aber Man
 `camera.js` (DOM-frei, getestet), `render.js`, `input.js`, `ui.js` + `main.js`, `style.css`, `index.html`, `manifest.webmanifest` (eigene `id`/`start_url`/`scope`), `icons/`. Hub-Eintrag in `games.json` mit `"status": "soon"`.
 Werkzeug `tools/sim-protoplanet.mjs`; Tests `tests/protoplanet-physics|gen|camera.test.mjs`, `tests/sim-protoplanet.test.mjs`.
 
-**Bot-Messung** (`node tools/sim-protoplanet.mjs --seeds 40`, Seeds 1000–1039, Spielzeit in s, Ausstoß = Anteil der Startmasse 1; „Median“ über die gelösten Läufe):
+**Bot-Messung (Stand P1, vor den Änderungen unten: `ejectSpeed` 20, Ziele `largest`/`mass`, Arenen R 38–48)** (`node tools/sim-protoplanet.mjs --seeds 40`, Seeds 1000–1039, Spielzeit in s, Ausstoß = Anteil der Startmasse 1; „Median“ über die gelösten Läufe):
 
 | Level | Familie | gelöst (40 Seeds) | Median s | p90 s | Median Ausstoß | festes Level (Seed): Zeit / Ausstoß |
 |---|---|---|---|---|---|---|
@@ -198,3 +201,47 @@ Level-Parameter stehen als Daten in `levels.js` (Arena R 11 / 14 / 17 / 44 / 40 
 - **Nicht auf einem echten Gerät geprüft:** Griffigkeit/Gefühl der Steuerung, Leistung der Darstellung, Vibration, Installation als App. Geprüft sind nur Chromium-Emulation (390×844, 360×740, Touch über CDP: Tippen, Halten, Wischen, Pinch ohne Ausstoß) und die Simulation.
 - Menschenzeiten sind unbekannt; der Bot ist die einzige Messung (Median 67–106 s je Familienlevel bei fehlerfreier Steuerung).
 - Kein Klang (P3), kein Tageslevel, keine Gravitation (P2). Auf iOS bleibt Vibration ohne Wirkung.
+
+### Nach dem ersten Spielen (Handy des Besitzers) — umgesetzt
+
+Rückmeldung und Entscheidungen: (1) neues Ziel **Letzter Körper** (`last`) mit Staubgrenze, (2) **Ausstoß muss spürbar kosten** (Wege planen), (3) die **Kamera darf das Schrumpfen nicht verstecken**, (4) **Rückmeldung** bei Ausstoß/Absorbieren und gut sichtbare Teilchen. Bereits vorher geändert: Standardsteuerung = Masse fliegt zum Finger (`play.invert`, Einstellung `aim`).
+
+**`tune.js` vorher → nachher:**
+
+| Wert | P1 | jetzt | Grund |
+|---|---|---|---|
+| `ejectSpeed` | 20 | **6** | Preis je Δv (Raketengleichung `m1/m0 = exp(-Δv/ejectSpeed)`), ≈ 3× teurer |
+| `ejectFrac` | 0,01 | **0,028** | ein Tipp gibt ≈ denselben Schub (Δv 0,17 statt 0,20), kostet ≈ 2,8 % statt 1 % |
+| `streamFrac` | 0,004 | **0,012** | Strahl: gleicher Schub je Sekunde (≈ 0,7) |
+| `dustFrac` | – | **0,03** | Staubgrenze des Ziels `last` |
+| `camGrowTau` / `camShrinkTau` | – | **1,2 s / 9 s** | Zoom folgt dem Radius wachsend zügig, schrumpfend träge |
+| Bot `vmax` | 1,8 | 1,2 | Weniger Δv je Beute (Ausstoß ist teuer) |
+| Bot neu | – | `feedRatio` 0,2, `feedHorizon` 8, `feedPenalty` 0,8, `lastRatio` 0,9, `rivalMass`/`rivalW` 1/1 (aus) | siehe unten |
+
+Der Preis eines Wegs ist jetzt der Gegner: Ausstoß, den ein größerer Körper schluckt, füttert ihn und stößt ihn an (Impuls und Masse); in den kleinen Arenen prallen Teilchen vom Rand ab und treffen früher oder später irgendeinen Körper. Messung: Der Bot (Median) stößt über ein Level 3–5 Startmassen aus (nur ein kleiner Teil davon stammt aus der Anfangsmasse, der Rest ist Masse, die er vorher gefressen hat; die Ausstoß-Sterne sind deshalb in Masseneinheiten angegeben, nicht mehr in Prozent).
+
+**Level neu kalibriert** (lieber verkleinert als Grenzen verschoben): Arena R 13–20 statt 38–48, 12–19 kleine Körper (sHi 0,85: kein Körper nahe der Spielermasse), Hindernisse 1,1–1,3 statt 3,8–4,4 (sonst wächst der Spieler nie so weit, dass er sie am Ende fressen kann: bei Preis ≈ Gewinn stagniert die Spielermasse bei ≈ 3), Hindernisse ruhend (`vBig` 0), `strom` ohne großen Körper und mit Bandgeschwindigkeit 0,1 (`vN` = neuer Parameter Streuung). Generator-Grundregel angepasst: der Mindestabstand gilt jetzt für alle Körper ab m ≥ 0,9 (vorher ≥ 1), sonst startet ein fast gleich großer Körper dicht am Spieler und der Bot weicht ihm minutenlang aus.
+
+**Bot-Messung** (`node tools/sim-protoplanet.mjs`, Seeds 1000–1039, Spielzeit in s, Ausstoß in Startmassen):
+
+| Level | Ziel | gelöst (40) | Median s | p90 s | Median Ausstoß | festes Level (Seed): Zeit / Ausstoß | `targets` |
+|---|---|---|---|---|---|---|---|
+| 1-1 Bewegen | absorb | 1/1 | – | – | – | 6,7 s / 0,07 | 0,25 / 20 s |
+| 1-2 Gefahr | last | 1/1 | – | – | – | 91 s / 1,65 | 2,5 / 150 s |
+| 1-3 Strahl und Zeit | last | 1/1 | – | – | – | 119 s / 1,79 | 2,5 / 180 s |
+| 1-4 Wolke | last | 40/40 | 133,5 | 165,8 | 3,00 | 122 s / 3,04 (Seed 9) | 4,0 / 160 s |
+| 1-5 Beute | absorb | 39/40 | 67,9 | 110,2 | 0,81 | 71 s / 0,78 (Seed 24) | 1,05 / 95 s |
+| 1-6 Strom | last | 39/40 | 138,1 | 171,7 | 3,22 | 136 s / 3,01 (Seed 4) | 4,0 / 180 s |
+| 1-7 Dichte Wolke | last | 38/40 | 148,5 | 186,5 | 3,43 | 144 s / 3,43 (Seed 17) | 4,5 / 190 s |
+| 1-8 Enge | last | 39/40 | 158,0 | 208,5 | 5,06 | 161 s / 5,17 (Seed 5) | 6,75 / 210 s |
+
+Gegenprobe (nicht zum Einstellen benutzt): je 150 Seeds ab 1000 und 150 Seeds 5000 + 7·i: gelöst 91–97 % (Wolke 143/150 und 142/150, Beute 143 und 143, Strom 143 und 146, Dichte Wolke 144 und 145, Enge 143 und 137), Mediane 64–167 s. **Das Kriterium „≥ 95 % je Familie“ gilt auf den 40 Test-Seeds (1-7 mit 38/40 genau an der Grenze), über viele Seeds liegt der Bot bei 92–97 %, Enge bei 91–95 %.** Die Beute-Familie hat mit 68 s Median wenig Luft über der 60-s-Grenze.
+
+**Was die Fehlschläge sind:** Zeitlimit, weil ein Körper (Hindernis oder ein kleiner, der angestoßen wurde) viel Masse frisst und größer wird als der Spieler; der Bot schaut nicht in die Zukunft über 8 s hinaus. Gegenmittel im Bot (alle gemessen): Teilchenbahn mit Randabprall prüfen, nicht auf Körper ab 0,2 × Spielermasse zielen (`feedRatio`), beim Ausweichen seitlich statt vom Gegner weg ausweichen (`feedPenalty`: Ausstoß in Gegenrichtung füttert sonst den Gegner), Zielzwang `must` (jeder zählende Körper muss gefressen werden, auch mit Verlust), zweiter Durchgang erlaubt Füttern, damit der Bot nie stehen bleibt. **Probiert und verworfen:** Rivalen bevorzugen (`rivalW` ≥ 2: 81–93 % statt 94 %), `costK` 3 oder 12 (schlechter als 7), schnelleres Ranking negativer Gewinne (88 % statt 93 %).
+
+**Abweichungen / Hinweise:**
+1. Staubgrenze und eigener Ausstoß: `lastRemaining` (goals.js) ignoriert Körper mit `gf` = Spieler-id; ohne das blockiert ein Teilchen von 2,8 % der Masse (knapp unter 3 %) schon nach ein paar Tipps den Sieg, weil der Spieler durch Ausstoß schrumpft und seine alten Teilchen dann über der Grenze liegen.
+2. `play.js`: Zieltyp vom Level, Parameter (value, slack) von der Familie (`{...built.goal, ...level.goal}`), `generate(..., goal)` prüft die Grundregeln mit dem Zieltyp des Levels.
+3. Kamera-Zeitkonstanten laufen in **echter** Zeit (Bildzeit), nicht in Spielzeit: bei Zeitstufe ×10 schrumpft der Körper auf dem Bildschirm also schneller (gewollt: man sieht es).
+4. Ausstoß-Stern in **Masseneinheiten** (Ergebnis: „höchstens 4,00 Masse ausgestoßen“), Bestwerte ebenso; `targets.eject` unverändert als Zahl der Startmassen (Spielstände mit alten Bestwerten bleiben lesbar, die Sterne alter Spielstände ändern sich nicht rückwirkend).
+5. Menschenzeiten und -Gefühl weiter unbekannt. Der Besitzer sollte prüfen: ob ein Tipp (2,8 %) zu teuer oder zu billig wirkt (`ejectFrac`), ob die Levels zu eng sind, ob der Staub-Zähler verständlich ist.
