@@ -16,7 +16,7 @@ export function createPlay(level, saved = null) {
     rewindsLeft: saved ? saved.rewindsLeft : T.rewindLives,
     rewound: saved ? !!saved.rewound : false,
     timeScale: 1,
-    invert: false, // Steuerung umkehren
+    invert: true, // true = Teilchen fliegt zum Finger, du vom Finger weg (Standard); false = Zielsteuerung
     beam: null, // Weltpunkt {x,y}, wenn der Strahl laeuft
     beamAcc: 0,
     acc: 0,
@@ -29,7 +29,7 @@ export function createPlay(level, saved = null) {
 
   /** Ausstoss in Richtung (dx,dy) (Richtung des Teilchens). */
   play.eject = (dx, dy, frac = T.ejectFrac) => !!eject(play.world, dx, dy, frac);
-  /** Ausstoss passend zu einem Fingerpunkt in Weltkoordinaten (Standard: Teilchen fliegt weg vom Finger, du zum Finger). */
+  /** Ausstoss passend zu einem Fingerpunkt in Weltkoordinaten (Standard: Teilchen fliegt zum Finger, du vom Finger weg). */
   play.ejectAt = (wx, wy, frac = T.ejectFrac) => {
     const p = play.world.player;
     if (!p) return false;

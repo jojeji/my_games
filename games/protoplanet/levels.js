@@ -8,7 +8,7 @@ export const LEVELS = [
     id: '1-1', chapter: 1, n: 1, title: 'Bewegen', family: 'hand', seed: 0,
     layout: { arenaR: 11, bodies: [mote(4, 2.5, 0.4, 0, 0, { tag: 'target' })] },
     goal: { type: 'absorb' },
-    hint: { text: 'Tippe, wohin du fliegen willst.', until: 'eject' },
+    hint: { text: 'Tippe neben dich: Dort stößt du Masse aus, du fliegst in die Gegenrichtung.', textAim: 'Tippe, wohin du fliegen willst.', until: 'eject' },
     targets: { eject: 0.25, time: 20 },
   },
   {

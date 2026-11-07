@@ -56,8 +56,8 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
 - **Leistung**: Ziel 60 fps mit bis zu ~200 Körpern auf einem Mittelklasse-Handy. Bei zu langsamer Darstellung zeichnet die Darstellung nur jedes zweite Bild (30 fps), die Physik ändert sich nicht.
 
 ## Steuerung (`input.js`)
-- **Standard: Tippe, wohin du willst.** Die Masse geht in die Gegenrichtung raus (Richtung = vom Spieler zum Finger in Weltkoordinaten, Ausstoß = Gegenrichtung).
-  Einstellung „Steuerung umkehren“: Tippen stößt **zum Finger hin** aus (du fliegst vom Finger weg).
+- **Standard (Entscheidung des Besitzers nach dem ersten Spielen): Tippen stößt Masse zum Finger hin aus, du fliegst in die Gegenrichtung.** Das ist aufregender als Zielen.
+  Einstellung „Zielsteuerung“ (`settings.aim`, aus): Tippe, wohin du fliegen willst, die Masse geht nach hinten raus. Lehrlevel 1-1 hat für beide Modi eine eigene Bedienhilfe (`hint.text` / `hint.textAim`).
 - Halten = Dauerstrahl (siehe Physik), der Finger darf dabei wandern.
 - Zwei Finger = Zoomen (Pinch); ein zweiter Finger bricht den Strahl ab und löst keinen Ausstoß aus.
 - `touch-action: none` auf der Zeichenfläche, keine Seitenscroll- oder Zoomgesten des Browsers. Pointer Events (Maus und Touch gleich).

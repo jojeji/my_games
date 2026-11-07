@@ -87,6 +87,7 @@ export function mountApp(root, progress) {
   const closeAllModals = () => [...modals].forEach((m) => m.close());
 
   const settings = () => progress.settings;
+  const hintText = (hint) => (settings().aim && hint.textAim) || hint.text;
   const reduceMotion = () => {
     const v = settings().reduceMotion;
     if (v != null) return !!v;
@@ -181,7 +182,7 @@ export function mountApp(root, progress) {
     closePauseModal();
     level = lv;
     play = createPlay(lv, snap ? snap.play : null);
-    play.invert = !!settings().invert;
+    play.invert = !settings().aim;
     play.timeScale = snap && snap.timeScale ? snap.timeScale : 1;
     timeIdx = Math.max(0, T.timeSteps.indexOf(play.timeScale));
     cam = createCamera();
@@ -198,7 +199,7 @@ export function mountApp(root, progress) {
     document.body.classList.add('pp-playing');
     if (!snap) progress.setSnap(null);
     renderer.resize();
-    helpEl.textContent = lv.hint ? lv.hint.text : '';
+    helpEl.textContent = lv.hint ? hintText(lv.hint) : '';
     helpEl.hidden = !lv.hint;
     setCls(helpEl, 'gone', false);
     lastTs = 0;
@@ -476,9 +477,10 @@ export function mountApp(root, progress) {
     const body = h(
       'div',
       { class: 'pp-settings' },
-      sw('Steuerung umkehren', 'Tippen stößt zum Finger hin aus – du fliegst vom Finger weg.', () => settings().invert, (v) => {
-        settings().invert = v;
-        if (play) play.invert = v;
+      sw('Zielsteuerung', 'Tippe, wohin du fliegen willst. Die Masse geht nach hinten raus.', () => settings().aim, (v) => {
+        settings().aim = v;
+        if (play) play.invert = !v;
+        if (play && level && level.hint) helpEl.textContent = hintText(level.hint);
       }),
       sw('Vibration', 'Kurz beim Absorbieren, länger beim Verlust. Auf iOS ohne Wirkung.', () => settings().vibrate, (v) => (settings().vibrate = v)),
       sw('Weniger Bewegung', 'Kein Pulsieren, kein Parallax im Hintergrund. Standard folgt der Systemeinstellung.', reduceMotion, (v) => (settings().reduceMotion = v)),

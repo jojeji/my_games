@@ -7,7 +7,7 @@ export const SAVE_VERSION = 1;
 
 export const defaultState = () => ({
   progress: {}, // levelId -> { done, eff, fast, bestTime, bestEject }
-  settings: { invert: false, vibrate: true, reduceMotion: null }, // reduceMotion null = folgt prefers-reduced-motion
+  settings: { aim: false, vibrate: true, reduceMotion: null }, // aim = Zielsteuerung (Tippen = dorthin fliegen), Standard: Masse fliegt zum Finger; reduceMotion null = folgt prefers-reduced-motion
   snap: null, // { levelId, play: { snap, rewindsLeft, rewound }, timeScale }
 });
 

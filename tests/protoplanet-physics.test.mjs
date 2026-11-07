@@ -294,14 +294,14 @@ test('Play: serialize/restore setzt Spielzeit, Koerper und Versuche fort', () =>
   assert.equal(JSON.stringify(snapshot(a.world)), JSON.stringify(snapshot(b.world)));
 });
 
-test('Steuerung: Standard fliegt zum Finger, umgekehrt vom Finger weg', () => {
+test('Steuerung: Standard stoesst zum Finger aus (du fliegst weg), Zielsteuerung fliegt zum Finger', () => {
   const a = createPlay(levelById('1-3'));
   a.ejectAt(10, 0);
-  assert.ok(a.world.player.vx > 0, 'Standard: zum Finger');
+  assert.ok(a.world.player.vx < 0, 'Standard: vom Finger weg');
   const b = createPlay(levelById('1-3'));
-  b.invert = true;
+  b.invert = false;
   b.ejectAt(10, 0);
-  assert.ok(b.world.player.vx < 0, 'umgekehrt: vom Finger weg');
+  assert.ok(b.world.player.vx > 0, 'Zielsteuerung: zum Finger');
 });
 
 test('Spielstand: Fortschritt, Sterne, Freischalten, Schnappschuss, Export/Import, Loeschen', () => {
@@ -320,11 +320,11 @@ test('Spielstand: Fortschritt, Sterne, Freischalten, Schnappschuss, Export/Impor
   const play = createPlay(LEVELS[0]);
   play.advance(1);
   pr.setSnap({ levelId: LEVELS[0].id, play: play.serialize(), timeScale: 4 });
-  pr.settings.invert = true;
+  pr.settings.aim = true;
   assert.equal(pr.save(), true);
   const again = createProgress({ storage });
   assert.equal(again.stars(LEVELS[0].id), 3);
-  assert.equal(again.settings.invert, true);
+  assert.equal(again.settings.aim, true);
   assert.equal(again.state.snap.levelId, LEVELS[0].id);
   assert.equal(again.state.snap.timeScale, 4);
   const text = again.exportString();
