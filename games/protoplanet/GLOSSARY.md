@@ -20,6 +20,14 @@ _Avoid_: Größe (nur umgangssprachlich in UI-Texten), Gewicht, Leben
 Ein Körper, der durch Ausstoß entstanden ist. Physikalisch ein normaler Körper.
 _Avoid_: Projektil, Schuss, Tropfen
 
+**Jäger**:
+KI-Körper (`kind: 'hunter'`, ab Kapitel 2). Gleiche Physik wie der Spieler: Ausstoß kostet Masse, seine Teilchen sind normale, fressbare Körper. Jagt Kleineres (auch den Spieler), flieht vor Größerem (auch vor dem Spieler). Reagiert langsam (0,5–1,5 s), zielt ungenau, zögert manchmal, hat einen schlechteren Antrieb als du. Darstellung: gestrichelter Ring, Farbe wie immer relativ zum Spieler, Ausstoß warm und sichtbar. Stufen `easy` | `normal` | `hard` (`T.hunter`).
+_Avoid_: Gegner, Feind, KI, Boss, Monster
+
+**Brocken**:
+Sehr großer, ruhender (oder sehr langsamer) Körper mit 3–6 Startmassen (Tag `rock`, doppelter Warnring). Eine Gefahr, die man nicht fressen muss, nur überholen (Ziel „Werde unangreifbar“) oder meiden (Ziel Masse). Je Level 1–2.
+_Avoid_: Hindernis (so hießen die 1,1–1,3 großen Körper in P1), Felsen, Riese
+
 **Attraktor**:
 Ein Körper, der andere anzieht (ab Kapitel 2), z. B. ein Protostern. Steht still oder folgt einer festen Bahn; spürt selbst keine Gravitation.
 _Avoid_: Sonne, Gravitationsquelle, Planet
@@ -67,7 +75,7 @@ _Avoid_: Savestate, Checkpoint
 ## Levels
 
 **Kapitel**:
-Eine Gruppe von Levels mit gemeinsamer Mechanik: Staubwolke (ohne Gravitation), Protostern (ein Attraktor), Planetensystem (mehrere Attraktoren).
+Eine Gruppe von Levels mit gemeinsamer Mechanik: Staubwolke (Grundlagen, Brocken), Jäger (KI-Körper), später Protostern (Attraktor), Dunkelwolke (begrenztes Sichtfeld), Planetensystem (alles).
 _Avoid_: Welt, Akt, Episode
 
 **Level**:
@@ -90,12 +98,16 @@ Ein Level, dessen Seed aus dem heutigen Datum kommt. Für alle gleich, ohne Serv
 _Avoid_: Daily Challenge, Tagesaufgabe
 
 **Ziel**:
-Was im Level zu erreichen ist: letzter Körper werden, Körper X absorbieren, größter Körper werden, Masse M erreichen, Zentralkörper absorbieren, N Umläufe überleben.
+Was im Level zu erreichen ist: letzter Körper werden, unangreifbar werden, Körper X (Zielkörper, auch ein Jäger) absorbieren, Masse M erreichen, Zentralkörper absorbieren, N Umläufe überleben.
 _Avoid_: Quest, Auftrag
 
 **Letzter Körper**:
 Ziel `last` („Werde der letzte Körper“): gewonnen, wenn kein anderer Körper mehr existiert, der noch zählt, also keiner mit Masse ≥ `dustFrac` × Spielermasse. Anzeige „Noch N Körper“. Der eigene Ausstoß zählt nie.
 _Avoid_: Alles absorbieren, Aufräumen, Survivor
+
+**Unangreifbar**:
+Ziel `largest` („Werde unangreifbar“): im Moment ist kein anderer Körper größer als du, weder Brocken noch Jäger noch (später) ein Attraktor. Gleiche Masse zählt als größer. Anzeige „Noch N größere“ (Zahl der Körper mit Masse ≥ deiner), der Balken zeigt eigene Masse / Masse des größten anderen Körpers. Zählt nur den Augenblick: was ein Jäger später durch Fressen werden könnte, zählt nicht.
+_Avoid_: Größter Körper (so hieß das Ziel in P1)
 
 **Staub**:
 Ein Körper mit Masse unter `dustFrac` (0,03) × Spielermasse. Zählt für „Letzter Körper“ nicht; die Grenze wandert mit der Spielermasse.
@@ -116,5 +128,5 @@ _Avoid_: Tipp, Erzähler
 ## Werkzeuge
 
 **Bot**:
-DOM-freier Spieler, der mit derselben Physik in Node Levels spielt; misst Lösungsquote und Dauer.
-_Avoid_: KI, Gegner (Gegner-KI ist ein späteres Paket und heißt dann anders)
+DOM-freier Spieler, der mit derselben Physik in Node Levels spielt; misst Lösungsquote und Dauer. Sein Gehirn (`brain.js`) teilen sich Bot und Jäger; der Jäger ist die begrenzte Fassung davon, der Bot der perfekte Spieler.
+_Avoid_: KI, Gegner (der Gegner im Spiel heißt Jäger)

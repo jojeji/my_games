@@ -2,7 +2,7 @@
 // Protoplanet: Bot-Simulation. Der Bot spielt mit derselben Physik (games/protoplanet/play.js) in Node.
 //   node tools/sim-protoplanet.mjs                      alle festen Levels + je Familie 40 Seeds (= --table)
 //   node tools/sim-protoplanet.mjs --level 1-5 [--verbose]   ein festes Level
-//   node tools/sim-protoplanet.mjs --family wolke --seeds 100   eine Familie (Parameter aller Levels, die sie nutzen)
+//   node tools/sim-protoplanet.mjs --family jaeger --seeds 100  eine Familie (Parameter aller Levels, die sie nutzen; Familien: wolke ziel strom enge brocken jaeger)
 // Ausgabe: Loesungsquote, Median/90. Perzentil der Spielzeit, Median der ausgestossenen Masse (Anteil der Startmasse) und vorgeschlagene `targets` (Bot-Median x 1,3).
 import { LEVELS, levelById } from '../games/protoplanet/levels.js';
 import { playLevel, botBatch } from '../games/protoplanet/bot.js';

@@ -25,6 +25,7 @@ body.pp-playing { position: fixed; inset: 0; overflow: hidden; }
 .pp-sel-head h1 { flex: 1; text-align: center; font-size: 22px; letter-spacing: 0.04em; font-weight: 700; }
 .pp-sub { color: var(--muted); font-size: 14px; text-align: center; margin: 10px 4px 18px; }
 .pp-resume { margin-bottom: 18px; }
+.pp-chapter + .pp-chapter { margin-top: 26px; }
 .pp-chapter h2 { font-size: 17px; margin-bottom: 2px; }
 .pp-chapter-meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
 .pp-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }

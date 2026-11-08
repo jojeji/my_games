@@ -20,7 +20,7 @@ Mobile UI, PWA/Deploy und Arbeitsweise gelten. Die Abschnitte zu Prestige, Idle 
 | Paket | Inhalt |
 |---|---|
 | **P1** | Physik-Kern, Steuerung, Kamera, Zeitstufen, Pause, Zurückspulen, Speichern (inkl. Level-Schnappschuss), Kapitel 1 (ohne Gravitation, 3 Lehrlevels + 5 erzeugte), Levelauswahl, Ergebnis-Bildschirm, Einstellungen, Bot + Tests, Hub-Eintrag (`status: "soon"`), Manifest, Icons |
-| **P2** | Ziel-Mix + große Brocken in Kapitel 1 (1-6..1-8 umbauen), Zieltyp „Werde unangreifbar“, **KI-Gegner** (Jäger) und Kapitel 2 „Jäger“ |
+| **P2** (umgesetzt, wartet auf Abnahme) | Ziel-Mix + große Brocken in Kapitel 1 (1-6..1-8 umbauen), Zieltyp „Werde unangreifbar“, **KI-Gegner** (Jäger) und Kapitel 2 „Jäger“ |
 | **P3** | Gravitation: Attraktoren (auch auf Bahnen), offener Raum mit Abdrift-Grenze, **Anziehung unter den Körpern** (nur ab Mindestmasse, weich, je Kapitel einstellbar), Kapitel 3 „Protostern“ |
 | **P4** | Generative Ambient-Musik + Effektklänge (WebAudio, keine Dateien) |
 | **P5** | Kapitel 4 „Dunkelwolke“ (begrenztes Sichtfeld), Kapitel 5 „Planetensystem“ (alles, große Levels), Tageslevel |
@@ -94,7 +94,7 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
   4.–8. aus Familien: `wolke` (zufällige Wolke, Größenverteilung über `params`), `ziel` (ein markierter größerer Körper, Ziel: absorbiere ihn = „Jagd“, bleibt `absorb`),
      `strom` (Körper in einem kreisenden Band, langsam), `enge` (mehrere größere Körper eng beieinander, dazu kleine). **Zuordnung der Ziele (Entscheidung des Besitzers, unterschiedliche Ziele sind gewollt):** 1-1 und 1-5 `absorb`, alle anderen `last`.
      Reihenfolge und Parameter so, dass die Schwierigkeit steigt. Mit teurem Ausstoß sind die Arenen klein (R 13–20) und dicht, siehe „Nach dem ersten Spielen“.
-- **Kapitel 2 „Protostern“ (P2)**: ein Attraktor, Familien z. B. `orbit` (Körper auf Bahnen), Ziele „überlebe N Umläufe“, „Masse M“, „absorbiere den Zentralkörper“.
+- (Alte Einteilung vor der Planänderung Q28–Q35; Kapitel 2 ist jetzt „Jäger“, der Protostern wird Kapitel 3, siehe „Ausbau nach dem zweiten Spielen“.) **Kapitel „Protostern“**: ein Attraktor, Familien z. B. `orbit` (Körper auf Bahnen), Ziele „überlebe N Umläufe“, „Masse M“, „absorbiere den Zentralkörper“.
 - **Kapitel 3 „Planetensystem“ (P2)**: mehrere Attraktoren, auch auf Bahnen (Doppelstern, Planeten um Stern).
 - **Tageslevel (P2)**: Seed aus dem Datum (`JJJJMMTT`, lokale Zeit), Familie per Seed aus allen Familien der freigeschalteten Kapitel. Kein Server.
   Gezeigt werden Zeit und ausgestoßene Masse, die Bestwerte des Tages werden gespeichert, Sterne gibt es dort nicht.
@@ -102,7 +102,7 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
 
 ## Ziele und Wertung (`goals.js`)
 - Zieltypen: **`last` („Werde der letzte Körper“, in Kapitel 1 der Standard)**: gewonnen, wenn kein anderer Körper mehr existiert, dessen Masse ≥ `dustFrac` (0,03) × aktuelle Spielermasse ist. Alles darunter ist **Staub** und zählt nicht; der eigene Ausstoß zählt nie (siehe Physik). Zielzeile „Noch N Körper“ statt Prozent, der Balken zeigt die absorbierte Masse (aufgenommen / (aufgenommen + Masse der noch zählenden Körper)). `largest` (der Spieler ist größer als jeder andere Körper, Attraktoren eingeschlossen), `absorb` (Körper X existiert nicht mehr; wer ihn absorbiert hat, ist egal, die Generatoren sorgen dafür, dass realistisch nur der Spieler es kann),
-  `mass` (Spielermasse ≥ M; `largest` und `mass` bleiben als Werkzeug im Code, Kapitel 1 nutzt sie nicht mehr), ab P2 `absorbCenter` (der Zentral-Attraktor ist absorbiert) und `survive` (N Umläufe um den Attraktor überlebt, gezählt am Winkel).
+  `mass` (Spielermasse ≥ M; seit P2 nutzen 1-6..1-8 und Kapitel 2 `largest` = „Werde unangreifbar“ und `mass` wieder), ab P2 `absorbCenter` (der Zentral-Attraktor ist absorbiert) und `survive` (N Umläufe um den Attraktor überlebt, gezählt am Winkel).
 - Verlieren: Spieler absorbiert (`m < minMass`) oder, ab P2, abgetrieben. Kein automatisches „Unlösbar“; Neustart ist immer im Pausenmenü.
 - Oben eine schmale Zielzeile mit Fortschritt (z. B. „Werde der größte Körper · 42 %“, Fortschritt = eigene Masse / Masse des größten anderen Körpers; bei `last` „Noch N Körper“).
 - **Masseanzeige** unten links: zeigt Masseänderungen kurz (1,1 s) als Chip über dem Kasten (Ausstoß rot „−0,03“, Absorbieren grün „+0,12“, gleiche Vorzeichen werden summiert), ohne Layoutsprung (absolut positioniert).
@@ -282,3 +282,82 @@ Gegenprobe (nicht zum Einstellen benutzt): je 150 Seeds ab 1000 und 150 Seeds 50
 3. Kamera-Zeitkonstanten laufen in **echter** Zeit (Bildzeit), nicht in Spielzeit: bei Zeitstufe ×10 schrumpft der Körper auf dem Bildschirm also schneller (gewollt: man sieht es).
 4. Ausstoß-Stern in **Masseneinheiten** (Ergebnis: „höchstens 4,00 Masse ausgestoßen“), Bestwerte ebenso; `targets.eject` unverändert als Zahl der Startmassen (Spielstände mit alten Bestwerten bleiben lesbar, die Sterne alter Spielstände ändern sich nicht rückwirkend).
 5. Menschenzeiten und -Gefühl weiter unbekannt. Der Besitzer sollte prüfen: ob ein Tipp (2,8 %) zu teuer oder zu billig wirkt (`ejectFrac`), ob die Levels zu eng sind, ob der Staub-Zähler verständlich ist.
+
+
+### P2 (Jäger, Kapitel 2, Brocken, „Werde unangreifbar“) — umgesetzt
+
+**Was steht:** `brain.js` (gemeinsames Gehirn: `think(w, p, {B, goal}, st)` gibt die gewünschte Geschwindigkeitsänderung zurück; `bot.js` ist jetzt nur noch „Gehirn + Ausstoß des Spielers“, das Verhalten des Bots für 1-1..1-5 ist **bit-identisch** zu P1: Zeit und Ausstoß der festen Level unverändert), `hunter.js` (Jäger), `physics.js` (`ejectFrom(w, body, …)`; `eject` ist der Spieler-Fall; `addBody` kennt `ai`; Schnappschuss-Zeilen haben eine 11. Spalte `ai`, alte mit 10 laden), `gen.js` (Familien `brocken` und `jaeger`, `rockKeep`, `buildLevel` macht aus `hunter: {seed, diff}` das Gehirn `ai`), `levels.js` (1-6..1-8 neu, Kapitel 2), `goals.js` (`goalExplain`, `goalCounter`, `largest`), `state.js` (Version 2), `render.js` (Jäger-Ring, Jäger-Ausstoß, Brocken-Ringe), `ui.js` (zwei Kapitel, Zähler, Pausentext), `tests/protoplanet-hunter.test.mjs`, `tests/helpers/protoplanet-sim.mjs`.
+
+**1. „Werde unangreifbar“ (`largest`).** Bedingung: im Moment ist kein anderer Körper (auch kein Jäger, Brocken, später Attraktor, auch eigene Teilchen nicht) mit Masse ≥ der Spielermasse; gleiche Masse zählt als größer. Anzeige: **„Noch N größere“** (N = Zahl der Körper, die dich noch überragen; „Noch 1 größerer“) rechts neben dem Balken, der Balken zeigt eigene Masse / Masse des größten anderen Körpers (höchstens 99 %). Begründung: reine Prozent (so war es in P1: „größter Körper · 42 %“) sagen nur etwas über den einen größten Körper und verstecken die Mittelgroßen, die man ebenfalls überholen muss; die Zahl sagt konkret, was zu tun ist, und sinkt sichtbar in Schritten, der Balken zeigt trotzdem die Annäherung an den schwersten. Das Pausenmenü erklärt das Ziel in einem Satz („Kein anderer Körper ist größer als du, auch kein Jäger. Du musst die Brocken nicht fressen, nur überholen.“). 1-6 hat eine Bedienhilfe, die das Ziel erklärt.
+
+**2. Brocken (1-6..1-8, `rev: 2`).** Familie `brocken`: 1–2 ruhende Brocken (`tag: 'rock'`, `vRock` 0,01, 3–6 Startmassen), `nMid` Mittelgroße 1,1–2,2 als Nahrungskette, `nSmall` kleine Körper, Ziel `largest` oder `mass` (Wert = 1 + `mFrac` × Summe der kleinen). Darstellung: großer Körper mit dickem Warnring plus zweitem, schwachem Ring. **Zuordnung:** 1-6 „Brocken“ `largest` (ein Brocken 3,6–4,2, R 17), 1-7 „Ernte“ `mass` (zwei Brocken 4,5–6, `mFrac` 0,4, R 18), 1-8 „Überholen“ `largest` (zwei Brocken 3,3–4, R 20, 24 kleine, 4 Mittelgroße). 1-1..1-5 sind unverändert (Parameter, Seeds, `targets`).
+Zwei Erkenntnisse, die das Design bestimmen: (a) **Brocken müssen weit weg von der Beute liegen** (`rMin` 9, `rockKeep` 8: nichts anderes liegt näher als 8 Einheiten Randabstand), sonst frisst ein Brocken im Zentrum durch Zusammenstöße mit angestoßenen Körpern den Vorrat (4 → 10–25 Massen) und `largest` wird unlösbar (Bot 84–90 % statt 96–99 %). (b) Mit teurem Ausstoß wächst der Spieler an Beute unter 0,85 nie über ≈ 3; gegen einen Brocken von 3,6 braucht es **Mittelgroße (1,1–2,2)**, die man erst frisst, wenn man 1,5–2,9 hat (der Preis je Beute ist ein Anteil der eigenen Masse, der Gewinn nicht).
+
+**3. Jäger (`kind: 'hunter'`).** Gleiche Physik: `ejectFrom` (Ausstoß kostet Masse nach der Raketengleichung, Impuls und Masse bleiben erhalten), Teilchen sind normale Körper (`gf` = id des Jägers, 0,3 s Schonfrist gegen das Wiederfressen), fressbar. Das Gehirn ist `brain.js` mit anderen Parametern (`T.hunter.bot` + Stufe), begrenzt durch:
+- **Takt:** eine Entscheidung nur alle `react` s (Reaktionszeit je Jäger aus dem Seed-Zufall im Bereich der Stufe, ±15 % Jitter), nicht in jedem Physikschritt; die erste irgendwann in den ersten Sekunden (mehrere Jäger laufen nicht im Gleichschritt). Eine Entscheidung kostet ≈ 0,006 ms.
+- **Fehler:** Zögern (`hesitate`: Wahrscheinlichkeit, eine Entscheidung auszulassen), Winkelrauschen (`aimNoise`, ≈ 1 Sigma in rad), Fehler der Schubstärke (`magNoise`), Tempolimit `vmax`.
+- **Wahrnehmung und Verhalten:** Sichtweite `sense` 8 (Körper weiter weg gibt es für ihn nicht), jagt Beute < 0,75 × eigene Masse (**auch den Spieler**, Gewicht `playerW` 2, Kosten-Gewicht `costK` 3 statt 7 beim Bot), flieht vor Körpern ≥ 0,97 × eigene Masse (auch vor dem Spieler: weicht Kollisionen aus wie der Bot UND weicht aus, sobald ein Größerer näher als `fleeGap` 3 Randabstand kommt, bis `fleeV` 0,45 von ihm weg), kein Ziel (Level-Ziel gibt es nur für den Spieler-Bot).
+- **Schlechterer Antrieb (wichtigste Stellschraube):** Abgasgeschwindigkeit `ejectSpeed` 2 / 2,5 / 3,5 (Stufe easy / normal / hard) statt 6 beim Spieler: jede Geschwindigkeit kostet den Jäger ein Vielfaches an Masse, er schrumpft beim Jagen und Fliehen, seine Teilchen sind langsam und stoßen andere Körper kaum an.
+- **Determinismus:** Seed je Jäger aus dem Level-Seed (im Generator aus dem Seed-Zufall, in Hand-Leveln fest eingetragen), Zustand `{seed, diff, react, next, plan}` im Körper und damit im Schnappschuss (Zurückspulen, Speichern). Test: gleicher Level + gleiche Bot-Eingaben = identischer Schnappschuss, JSON-Schnappschuss mitten im Lauf setzt identisch fort.
+- **Darstellung:** gestrichelter, langsam drehender Ring (Farbe relativ zur Spielermasse: warm = größer, kühl = kleiner, weiß = gleich), Ausstoß als warm-helles Teilchen mit Schweif (auch winzig), Rand-Pfeil wie bei jedem größeren Körper.
+
+`tune.js` `T.hunter`: `bot` = `{ ejectSpeed 3, sense 8, horizon 7, maxFrac 0,05, feedRatio 10, feedPenalty 0, preyRatio 0,75, dangerRatio 0,97, costK 3, playerW 2, fleeGap 3, fleeV 0,45, tapTol 0,04 }` (ejectSpeed wird je Stufe überschrieben); `levels`:
+
+| Stufe | `react` s | `aimNoise` rad | `magNoise` | `hesitate` | `vmax` | `ejectSpeed` |
+|---|---|---|---|---|---|---|
+| easy | 1,1–1,5 | 0,30 | 0,25 | 0,30 | 0,55 | 2 |
+| normal | 0,75–1,2 | 0,17 | 0,15 | 0,15 | 0,85 | 2,5 |
+| hard | 0,5–0,9 | 0,09 | 0,08 | 0,06 | 1,15 | 3,5 |
+
+**Teilchen von Jägern und `last` (Entscheidung):** Der eigene Ausstoß des Spielers (`gf` = Spieler-id) zählt weiter nie; Teilchen eines Jägers zählen **nach den normalen Regeln** (zählen, sobald Masse ≥ `dustFrac` × Spielermasse). Geprüft, ob das unlösbare Situationen erzeugt: in 2-6 („Aufräumen“, `last` mit Jäger) blieb in 11 Fehlschlägen von 300 Seeds in keinem einzigen ein Jäger-Teilchen als zählender Körper übrig (ein Fehlschlag mit Jäger, 10 mit anderen Körpern; der Bot hat nie verloren, sondern ist ins Zeitlimit gelaufen). Grund: Teilchen eines Jägers sind bei `ejectSpeed` 2–3,5 und Massenanteilen unter 5 % meist kleiner als die Staubgrenze oder werden schnell von irgendetwas gefressen. Keine Ausnahme nötig; Test `Ziel 'last' mit Jaegern` hält die Regel fest.
+
+**4. Kapitel 2 „Jäger“ (8 Levels, öffnet sich mit dem Schaffen von 1-8).** Ziele gemischt (absorb 2×, mass 3×, largest 2×, last 1×); die Levels werden zum Ende hin größer (R 13 → 23). Parameter in `levels.js`:
+
+| Level | Ziel | Inhalt |
+|---|---|---|
+| 2-1 Der Jäger | absorb (Zielkörper = Jäger, „Absorbiere den Jäger“) | Lehrlevel von Hand: ein kleiner (0,55), langsamer Jäger (easy), 6 kleine Körper, R 13. Bedienhilfe: „Jäger stoßen selbst aus. Sie jagen Kleinere und fliehen vor Größeren.“ |
+| 2-2 Verfolger | mass (`mFrac` 0,25) | ein größerer Jäger (1,5–1,8, easy) verfolgt dich, R 16, 18 kleine |
+| 2-3 Jagdzeit | absorb | Jäger (1,1–1,4, easy) weit weg (≥ 14), R 20, 26 kleine |
+| 2-4 Konkurrenz | largest | ein Riese-Jäger (2,6–3,2, easy), R 19, 26 kleine |
+| 2-5 Rudel | mass (`mFrac` 0,22) | zwei Jäger (1,2–1,6, easy), R 17, 20 kleine |
+| 2-6 Aufräumen | last | ein kleiner Jäger (0,4–0,6, easy), R 13, 13 kleine (`sLo` 0,2) |
+| 2-7 Revier | largest | zwei große Jäger (2,4–3,0, easy), R 23, 34 kleine, Abstand ≥ 12 |
+| 2-8 Rudelführer | mass (`mFrac` 0,28) | zwei Jäger (1,3–1,7, easy), ein Brocken 5–6 weit außen, 2 Mittelgroße, R 22, 28 kleine |
+
+`normal` und `hard` kommen in keinem Level vor: gegen den Bot sinken die Quoten dort auf 80–90 % (siehe LESSONS), sie sind für spätere Kapitel und Menschen da (`levels.js`-Parameter `diff`/`hDiffs`, Tageslevel).
+
+**5. Bot-Tabelle (alle Level)** (`node tools/sim-protoplanet.mjs`, `tools/…` plus Hilfsskripte; Spalten: festes Level (Seed): Zeit/Ausstoß; 40 Test-Seeds ab 1000; 300 **andere** Seeds ab 7000, die zum Einstellen nicht benutzt wurden):
+
+| Level | Ziel | fest (Seed): Zeit s / Ausstoß | 40 Seeds ab 1000: gelöst | Median s | p90 s | Median Ausstoß | 300 Seeds ab 7000: gelöst | Median s |
+|---|---|---|---|---|---|---|---|---|
+| 1-1 Bewegen | absorb | 6.7 / 0.07 | (Lehrlevel) | – | – | – | – | – |
+| 1-2 Gefahr | last | 91.1 / 1.65 | (Lehrlevel) | – | – | – | – | – |
+| 1-3 Strahl und Zeit | last | 119.0 / 1.79 | (Lehrlevel) | – | – | – | – | – |
+| 1-4 Wolke | last | 122 / 3.04 (9) | 40/40 | 134 | 166 | 3.00 | 278/300 (92.7 %) | 134 |
+| 1-5 Beute | absorb | 71 / 0.78 (24) | 39/40 | 68 | 110 | 0.81 | 280/300 (93.3 %) | 66 |
+| 1-6 Brocken | largest | 79 / 0.41 (59) | 39/40 | 69 | 101 | 0.36 | 293/300 (97.7 %) | 70 |
+| 1-7 Ernte | mass | 71 / 0.52 (6) | 40/40 | 77 | 121 | 0.61 | 296/300 (98.7 %) | 79 |
+| 1-8 Überholen | largest | 66 / 0.48 (47) | 39/40 | 63 | 90 | 0.49 | 289/300 (96.3 %) | 70 |
+| 2-1 Der Jäger | absorb | 9.0 / 0.19 | (Lehrlevel) | – | – | – | – | – |
+| 2-2 Verfolger | mass | 60 / 0.32 (24) | 40/40 | 63 | 82 | 0.41 | 292/300 (97.3 %) | 61 |
+| 2-3 Jagdzeit | absorb | 54 / 0.88 (36) | 39/40 | 67 | 160 | 1.07 | 290/300 (96.7 %) | 58 |
+| 2-4 Konkurrenz | largest | 70 / 0.31 (7) | 39/40 | 68 | 110 | 0.35 | 290/300 (96.7 %) | 68 |
+| 2-5 Rudel | mass | 58 / 0.44 (16) | 39/40 | 61 | 90 | 0.54 | 290/300 (96.7 %) | 59 |
+| 2-6 Aufräumen | last | 132 / 3.45 (18) | 38/40 | 130 | 174 | 3.50 | 289/300 (96.3 %) | 129 |
+| 2-7 Revier | largest | 61 / 0.38 (6) | 38/40 | 68 | 122 | 0.45 | 291/300 (97.0 %) | 67 |
+| 2-8 Rudelführer | mass | 85 / 0.96 (51) | 40/40 | 90 | 116 | 0.96 | 291/300 (97.0 %) | 85 |
+
+Alle 40-Seed-Zeilen erfüllen die Test-Kriterien (≥ 38/40, Median 60–300 s), jedes feste Level wird mit 3 Sternen gelöst. **Über 300 fremde Seeds liegen alle Familienlevels aus P2 bei 96,3–98,7 %** (die P1-Level 1-4/1-5 bei 92,7/93,3 %, wie schon in P1 gemessen); die Mediane liegen teils knapp unter 60 s (2-3, 2-5: 58/59 s), auf den Test-Seeds darüber. Gegenprobe zur Obergrenze: in einer Zwischenfassung von 2-7 erreichte der Bot mit regungslosen Jägern 96 %, mit aktiven 89 %; die Jäger kosten also ein paar Punkte, der Rest ist das Level selbst (Mehrspieler-Chaos durch angestoßene Körper).
+
+**6. Spielstände (Entscheidung):** `SAVE_VERSION` 1 → 2. Migration `1 -> 2` löscht Sterne und Bestwerte von **1-6..1-8** (andere Levels mit anderem Ziel; Sterne eines Levels zu behalten, das man nie gespielt hat, wäre falsch) und einen laufenden Schnappschuss dieser Levels. Folge: wer 1-8 schon geschafft hatte, spielt die drei neuen Levels, bevor sich Kapitel 2 öffnet (Freischalten nach „das Level davor geschafft“). Fortschritt und Sterne von 1-1..1-5, Einstellungen und der Schnappschuss von 1-1..1-5 bleiben. Zusätzlich trägt `snap` jetzt `rev` (Fassung des Levels, `level.rev`, fehlt = 1); `snapValid` verwirft beim Laden jeden Schnappschuss, dessen Level es nicht mehr gibt oder dessen Fassung nicht passt (zweite Sicherung, auch für spätere Umbauten); `startLevel` fängt einen beschädigten Schnappschuss ab und beginnt neu. Alte Schnappschuss-Zeilen (10 Spalten) laden (`ai` = null). Getestet in Node (echte Version-1-Ablage über `engine/save.js`) und im Browser (Version-1-Spielstand mit Schnappschuss von 1-7 -> Levelauswahl, mit Schnappschuss von 1-4 -> pausiert fortgesetzt).
+
+**7. Leistung:** 60 s Spielzeit in Node: 1-4 (14 Körper) 34 ms, 2-5 (26 Körper, 2 Jäger) 23 ms, 2-8 (33 Körper) 18 ms (2–5 µs je Schritt); die Jäger-Entscheidungen sind dagegen vernachlässigbar. Nicht auf einem echten Handy gemessen.
+
+**8. Abweichungen und Hinweise:**
+1. Die Spezifikation sagt „Gehirn = das des Bots, nur begrenzt“. Reaktionszeit, Rauschen und Zögern allein reichten nicht (der Jäger fraß so gut wie der Bot und wuchs auf 5–15 Massen); dazu kamen Sichtweite, schlechterer Antrieb und eine eigene Flucht. Alles in `T.hunter`, nichts im Code festgelegt.
+2. Die Levels nutzen praktisch nur die Stufe `easy` (Bot-Quote); für Menschen ist das nicht zwingend leicht: die Jäger jagen aktiv (`costK` 3, `playerW` 2). **Ob das für Menschen zu schwer oder zu leicht ist, weiß nur der Besitzer.**
+3. Stern-Ziele wie in P1 (Bot × 1,3, Lehrlevel großzügig); die Ausstoß-Ziele liegen in den neuen Levels mit 0,4–1,25 Massen (2-6 `last`: 4,5) deutlich unter denen von Kapitel 1, weil der Bot dort kaum ausstößt (Beute 1,1–2,2, ruhende Brocken).
+4. 1-4 und 1-5 bleiben bei 92,7/93,3 % über fremde Seeds (P1), die Test-Seeds sind dort 40/40 und 39/40.
+5. Familien `strom` und `enge` kommen in keinem Level mehr vor (waren 1-6/1-8), bleiben im Generator (für das Tageslevel) und werden in `tests/protoplanet-gen.test.mjs` mit ihren P1-Parametern geprüft; ihre Bot-Quote wird nicht mehr automatisch gemessen.
+6. Der Bot hat im Gehirn einen dritten Durchgang („auch unrentable Beute“, nur für `largest`/`mass`), weil er sonst bis zu 100 s still stand; er ist für `last`/`absorb` ausgeschaltet (1-1..1-5 unverändert).
+7. Browser: Playwright 390×844 und 360×740, Touch über CDP; Levelauswahl mit zwei Kapiteln, 1-6 (Hilfe, „Noch 5 größere“, Pausentext), 1-7 (Brocken), 2-1 (Hilfe, Jäger-Ring), 2-5 (zwei Jäger, Jäger-Ausstoß), Ergebnis-Bildschirm; alle Tap-Ziele ≥ 44 px, 0 Konsolenfehler. Nicht auf einem echten Gerät geprüft.
