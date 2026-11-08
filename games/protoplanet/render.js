@@ -136,6 +136,8 @@ export function createRenderer(canvas) {
     const mP = p ? p.m : 1;
     const pulse = reduceMotion ? 0.6 : 0.55 + 0.25 * Math.sin(now * 2.2);
     const arrows = [];
+    const hunterIds = new Set();
+    for (const b of world.bodies) if (b.kind === 'hunter') hunterIds.add(b.id);
 
     for (const b of world.bodies) {
       if (b === p) continue;
@@ -166,12 +168,29 @@ export function createRenderer(canvas) {
         ctx.fill();
         continue;
       }
+      if (b.gf && hunterIds.has(b.gf) && b.kind !== 'hunter') {
+        // Ausstoss eines Jaegers: warmes Teilchen mit kurzem Schweif, auch wenn es winzig ist (sein Antrieb soll sichtbar sein)
+        if (x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
+        const rr = Math.max(r, 2.2);
+        ctx.lineCap = 'round';
+        ctx.lineWidth = Math.max(1.6, rr * 1.1);
+        ctx.strokeStyle = 'rgba(255,170,120,0.25)';
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - b.vx * sc * 0.1, y - b.vy * sc * 0.1);
+        ctx.stroke();
+        ctx.fillStyle = '#ffd2b0';
+        ctx.beginPath();
+        ctx.arc(x, y, rr, 0, Math.PI * 2);
+        ctx.fill();
+        continue;
+      }
       const onScreen = x + r > -40 && x - r < W + 40 && y + r > -40 && y - r < H + 40;
       if (!onScreen) {
         if (p && (q > 1.05 || b.tag === 'target')) arrows.push({ b, x, y, q });
         continue;
       }
-      if (r < 1.2) {
+      if (r < 1.2 && b.kind !== 'hunter') {
         ctx.fillStyle = q > 1.1 ? '#ff9a5a' : '#79d6e8';
         ctx.fillRect(x - 1, y - 1, 2, 2);
         continue;
@@ -179,11 +198,30 @@ export function createRenderer(canvas) {
       const k = r / CORE;
       ctx.drawImage(spriteFor(q), x - (SPRITE / 2) * k, y - (SPRITE / 2) * k, SPRITE * k, SPRITE * k);
       if (q > 1.1) {
-        ctx.lineWidth = 1.6;
+        const rock = b.tag === 'rock'; // Brocken: dicker Warnring und zweiter Ring, damit sie als Gefahr auffallen
+        ctx.lineWidth = rock ? 2.6 : 1.6;
         ctx.strokeStyle = `rgba(255,150,90,${pulse})`;
         ctx.beginPath();
         ctx.arc(x, y, r * (reduceMotion ? 1.3 : 1.3 + 0.05 * Math.sin(now * 2.2)) + 3, 0, Math.PI * 2);
         ctx.stroke();
+        if (rock) {
+          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = `rgba(255,120,70,${pulse * 0.55})`;
+          ctx.beginPath();
+          ctx.arc(x, y, r * 1.3 + 10, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      if (b.kind === 'hunter') {
+        // Jaeger: gestrichelter Ring (dreht sich), Farbe wie immer relativ zum Spieler (warm = groesser, kuehl = kleiner, weiss = gleich)
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = q > 1.1 ? 'rgba(255,140,90,0.95)' : q < 0.9 ? 'rgba(120,225,255,0.95)' : 'rgba(235,240,255,0.95)';
+        ctx.setLineDash([3, 5]);
+        ctx.lineDashOffset = reduceMotion ? 0 : now * 10;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(r, 3) * 1.25 + 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
       if (b.tag === 'target') {
         ctx.lineWidth = 2;

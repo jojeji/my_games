@@ -5,7 +5,7 @@ import { createToaster } from '../../engine/ui/toast.js';
 import { T } from './tune.js';
 import { LEVELS, CHAPTERS, levelById, nextLevel } from './levels.js';
 import { createPlay } from './play.js';
-import { goalText, starsFor, fmtMass } from './goals.js';
+import { goalText, goalExplain, goalCounter, starsFor, fmtMass } from './goals.js';
 import { createCamera, updateCamera, pinchStart, pinchMove, pinchEnd, screenToWorld } from './camera.js';
 import { createRenderer } from './render.js';
 import { createInput } from './input.js';
@@ -113,7 +113,7 @@ export function mountApp(root, progress) {
 
   function persist() {
     if (screen === 'game' && play) {
-      progress.setSnap(play.status === 'running' ? { levelId: level.id, play: play.serialize(), timeScale: play.timeScale } : null);
+      progress.setSnap(play.status === 'running' ? { levelId: level.id, rev: level.rev || 1, play: play.serialize(), timeScale: play.timeScale } : null);
     }
     progress.save();
   }
@@ -138,6 +138,9 @@ export function mountApp(root, progress) {
       const lvls = LEVELS.filter((l) => l.chapter === ch.id);
       const got = lvls.reduce((s, l) => s + progress.stars(l.id), 0);
       const tiles = h('div', { class: 'pp-tiles' });
+      const first = lvls[0];
+      const prevLv = LEVELS[LEVELS.findIndex((l) => l.id === first.id) - 1];
+      const chapterLocked = !progress.unlocked(first.id);
       for (const lv of lvls) {
         const open = progress.unlocked(lv.id);
         const stars = progress.stars(lv.id);
@@ -154,7 +157,7 @@ export function mountApp(root, progress) {
         );
       }
       selectEl.append(
-        h('section', { class: 'pp-chapter' }, h('h2', { text: `Kapitel ${ch.id} · ${ch.name}` }), h('p', { class: 'pp-chapter-meta', text: `★ ${got} von ${lvls.length * 3}` }), tiles),
+        h('section', { class: 'pp-chapter' }, h('h2', { text: `Kapitel ${ch.id} · ${ch.name}` }), h('p', { class: 'pp-chapter-meta', text: chapterLocked ? `Öffnet sich, wenn du Level ${prevLv ? prevLv.id : ''} schaffst.` : `★ ${got} von ${lvls.length * 3}` }), tiles),
       );
     }
     selectEl.append(h('p', { class: 'pp-note', text: 'Weitere Kapitel folgen in späteren Updates.' }));
@@ -187,7 +190,12 @@ export function mountApp(root, progress) {
   function startLevel(lv, snap) {
     closePauseModal();
     level = lv;
-    play = createPlay(lv, snap ? snap.play : null);
+    try {
+      play = createPlay(lv, snap ? snap.play : null);
+    } catch {
+      snap = null; // beschaedigter Schnappschuss: das Level neu beginnen
+      play = createPlay(lv, null);
+    }
     play.invert = !settings().aim;
     play.timeScale = snap && snap.timeScale ? snap.timeScale : 1;
     timeIdx = Math.max(0, T.timeSteps.indexOf(play.timeScale));
@@ -260,7 +268,7 @@ export function mountApp(root, progress) {
     let leaving = false;
     pauseModal = modal({
       title: 'Pausiert',
-      body: h('div', {}, h('p', { class: 'muted', text: `Level ${level.id} · ${level.title}` }), h('p', { text: goalText(play.goal) })),
+      body: h('div', {}, h('p', { class: 'muted', text: `Level ${level.id} · ${level.title}` }), h('p', { text: goalText(play.goal) }), h('p', { class: 'muted small', text: goalExplain(play.goal) })),
       dismissible: true,
       onClose: () => {
         pauseModal = null;
@@ -387,9 +395,8 @@ export function mountApp(root, progress) {
     const g = play.progress;
     const pct = Math.floor(g.frac * 100);
     txt(goalTxt, goalText(play.goal));
-    if (play.goal.type === 'last') txt(goalPct, `Noch ${g.n == null ? '–' : g.n} Körper`);
-    else txt(goalPct, pct + ' %');
-    setCls(goalPct, 'wide', play.goal.type === 'last');
+    txt(goalPct, goalCounter(play.goal, g));
+    setCls(goalPct, 'wide', play.goal.type === 'last' || play.goal.type === 'largest');
     setStyle(barFill, 'width', pct + '%');
     const p = play.world.player;
     txt(massVal, p ? `Masse ${fmtMass(p.m)}` : 'Masse 0,00');

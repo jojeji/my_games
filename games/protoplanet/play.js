@@ -4,6 +4,7 @@ import { createWorld, step, eject, snapshot, restore } from './physics.js';
 import { createRewind } from './rewind.js';
 import { goalStatus } from './goals.js';
 import { buildLevel } from './gen.js';
+import { runHunters } from './hunter.js';
 
 export function createPlay(level, saved = null) {
   const built = buildLevel(level);
@@ -51,6 +52,7 @@ export function createPlay(level, saved = null) {
         play.ejectAt(play.beam.x, play.beam.y, T.streamFrac);
       }
     }
+    runHunters(w);
     step(w);
     play.rewind.tick(w);
     if (!w.player) {

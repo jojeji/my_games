@@ -1,6 +1,6 @@
 // Protoplanet: DOM-freie, deterministische Physik. Kreise mit r = sqrt(m), fester Schritt, Ausstoss mit Impulserhaltung,
 // Absorbieren (Masse fliesst vom kleineren zum groesseren, bis sie sich beruehren), elastische Kreis-Arena.
-// Kapitel 1 kennt keine Gravitation; `kind` kennt 'attractor' schon (P2), die Physik behandelt ihn hier wie jeden Koerper.
+// Kapitel 1 und 2 kennen keine Gravitation; `kind` kennt 'hunter' (P2, Gehirn in hunter.js) und 'attractor' (P3), die Physik behandelt sie wie jeden Koerper.
 import { T } from './tune.js';
 
 export const radius = (m) => Math.sqrt(m);
@@ -34,15 +34,18 @@ export function addBody(w, b) {
     tag: b.tag || '',
     gu: b.gu || 0, // Schonfrist bis (Spielzeit) ...
     gf: b.gf || 0, //  ... fuer den Koerper mit dieser id
+    ai: b.ai || null, // nur kind 'hunter': Gehirn-Zustand { seed, diff, react, next, plan } (hunter.js), Teil des Schnappschusses
   };
   if (body.id >= w.nextId) w.nextId = body.id + 1;
   w.bodies.push(body);
   return body;
 }
 
-/** Ein Teilchen ausstossen. (dx,dy) = Richtung des Teilchens; der Spieler fliegt in die Gegenrichtung. Gibt das Teilchen zurueck oder null. */
-export function eject(w, dx, dy, frac = T.ejectFrac, speed = T.ejectSpeed) {
-  const p = w.player;
+/**
+ * Ein Teilchen aus Koerper `p` ausstossen (Spieler oder Jaeger, gleiche Physik). (dx,dy) = Richtung des Teilchens; `p` fliegt in die Gegenrichtung.
+ * Das Teilchen ist ein normaler Koerper (`gf` = id des Ausstossenden, bis es fremde Masse schluckt). Gibt das Teilchen zurueck oder null.
+ */
+export function ejectFrom(w, p, dx, dy, frac = T.ejectFrac, speed = T.ejectSpeed) {
   if (!p) return null;
   const len = Math.hypot(dx, dy);
   if (!(len > 1e-12)) return null;
@@ -66,9 +69,16 @@ export function eject(w, dx, dy, frac = T.ejectFrac, speed = T.ejectSpeed) {
   p.vx -= k * dx;
   p.vy -= k * dy;
   p.m = mAfter;
-  w.stats.ejected += dm;
-  w.stats.ejects++;
+  if (p === w.player) {
+    w.stats.ejected += dm;
+    w.stats.ejects++;
+  }
   return q;
+}
+
+/** Ein Teilchen des Spielers ausstossen (siehe ejectFrom). */
+export function eject(w, dx, dy, frac = T.ejectFrac, speed = T.ejectSpeed) {
+  return ejectFrom(w, w.player, dx, dy, frac, speed);
 }
 
 /**
@@ -238,7 +248,7 @@ export function snapshot(w) {
     nextId: w.nextId,
     arenaR: w.arenaR,
     stats: { ...w.stats },
-    b: w.bodies.map((b) => [b.id, b.x, b.y, b.vx, b.vy, b.m, b.kind, b.tag, b.gu, b.gf]),
+    b: w.bodies.map((b) => [b.id, b.x, b.y, b.vx, b.vy, b.m, b.kind, b.tag, b.gu, b.gf, b.ai ? { ...b.ai, plan: b.ai.plan ? { ...b.ai.plan } : null } : null]),
   };
 }
 
@@ -249,7 +259,7 @@ export function restore(s) {
     nextId: s.nextId,
     arenaR: s.arenaR,
     stats: { ...s.stats },
-    bodies: s.b.map(([id, x, y, vx, vy, m, kind, tag, gu, gf]) => ({ id, x, y, vx, vy, m, kind, tag, gu, gf })),
+    bodies: s.b.map(([id, x, y, vx, vy, m, kind, tag, gu, gf, ai]) => ({ id, x, y, vx, vy, m, kind, tag, gu, gf, ai: ai ? { ...ai, plan: ai.plan ? { ...ai.plan } : null } : null })), // Schnappschuesse aus P1 haben 10 Eintraege (ai fehlt = null)
     player: null,
   };
   w.player = w.bodies.find((b) => b.kind === 'player') || null;

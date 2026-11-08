@@ -58,4 +58,16 @@ export const T = {
     maxFrac: 0.06, // groesster Anteil je Ausstoss des Bots
     maxTime: 600, // s Spielzeit, dann gilt das Level als nicht geloest
   },
+  // --- Jaeger (KI-Koerper, hunter.js): gleiche Physik wie der Spieler, Gehirn = brain.js, aber begrenzt ---
+  hunter: {
+    // Parameter des gemeinsamen Gehirns (ueberschreiben T.bot): Jaeger jagen nur Kleineres und fliehen nur vor Groesserem (auch vor dem Spieler), kein Level-Ziel
+    bot: { ejectSpeed: 3, sense: 8, horizon: 7, maxFrac: 0.05, feedRatio: 10, feedPenalty: 0, preyRatio: 0.75, dangerRatio: 0.97, costK: 3, playerW: 2, fleeGap: 3, fleeV: 0.45, tapTol: 0.04 },
+    // Schwierigkeitsstufen: react = Reaktionszeit (s, je Jaeger aus dem Seed-Zufall), aimNoise = Winkelfehler (rad, ungefaehr 1 Sigma),
+    // magNoise = Fehler der Schubstaerke (Anteil), hesitate = Wahrscheinlichkeit, eine Entscheidung auszulassen, vmax = Tempolimit (Welteinheiten/s)
+    levels: {
+      easy: { react: [1.1, 1.5], aimNoise: 0.3, magNoise: 0.25, hesitate: 0.3, bot: { vmax: 0.55, ejectSpeed: 2 } },
+      normal: { react: [0.75, 1.2], aimNoise: 0.17, magNoise: 0.15, hesitate: 0.15, bot: { vmax: 0.85, ejectSpeed: 2.5 } },
+      hard: { react: [0.5, 0.9], aimNoise: 0.09, magNoise: 0.08, hesitate: 0.06, bot: { vmax: 1.15, ejectSpeed: 3.5 } },
+    },
+  },
 };

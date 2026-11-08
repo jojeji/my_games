@@ -239,9 +239,9 @@ test('Level zurueckspulen: 3 Mal, danach nicht mehr; Ausstoss-Stern ist dann weg
   assert.equal(starsFor(lv, { time: 1, ejected: 0, rewound: true }).eff, false);
 });
 
-test('Ziele: largest, absorb, mass und Sterne', () => {
+test('Ziele: largest (unangreifbar), absorb, mass und Sterne', () => {
   const w = createWorld({ bodies: [{ x: 5, y: 0, m: 2, tag: 'target' }], arenaR: 30 });
-  assert.deepEqual(goalStatus(w, { type: 'largest' }), { done: false, frac: 0.5 });
+  assert.deepEqual(goalStatus(w, { type: 'largest' }), { done: false, frac: 0.5, n: 1 });
   assert.deepEqual(goalStatus(w, { type: 'mass', value: 4 }), { done: false, frac: 0.25 });
   assert.equal(goalStatus(w, { type: 'absorb' }).done, false);
   w.player.m = 3;
@@ -338,7 +338,7 @@ test('Spielstand: Fortschritt, Sterne, Freischalten, Schnappschuss, Export/Impor
 
 test('kein Math.random in Physik, Generatoren, Bot und Leveln', async () => {
   const { readFileSync } = await import('node:fs');
-  for (const f of ['physics', 'gen', 'bot', 'levels', 'play', 'rewind', 'goals']) {
+  for (const f of ['physics', 'gen', 'bot', 'brain', 'hunter', 'levels', 'play', 'rewind', 'goals', 'state']) {
     const src = readFileSync(new URL(`../games/protoplanet/${f}.js`, import.meta.url), 'utf8');
     assert.ok(!/Math\.random/.test(src), f);
   }
@@ -433,7 +433,7 @@ test("Ziel 'last': Fortschritt nach absorbierter Masse, Level mit 'last' ist spi
   assert.equal(play.progress.frac, 1);
 });
 
-test('Kapitel 1: Zuordnung der Ziele (1-1 und 1-5 absorb, alle anderen last)', () => {
-  const t = Object.fromEntries(LEVELS.map((l) => [l.id, l.goal.type]));
-  assert.deepEqual(t, { '1-1': 'absorb', '1-2': 'last', '1-3': 'last', '1-4': 'last', '1-5': 'absorb', '1-6': 'last', '1-7': 'last', '1-8': 'last' });
+test('Kapitel 1: Zuordnung der Ziele (1-1..1-5 unveraendert, 1-6..1-8 Brocken mit unangreifbar/Masse)', () => {
+  const t = Object.fromEntries(LEVELS.filter((l) => l.chapter === 1).map((l) => [l.id, l.goal.type]));
+  assert.deepEqual(t, { '1-1': 'absorb', '1-2': 'last', '1-3': 'last', '1-4': 'last', '1-5': 'absorb', '1-6': 'largest', '1-7': 'mass', '1-8': 'largest' });
 });
