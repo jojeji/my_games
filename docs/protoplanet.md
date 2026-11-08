@@ -20,9 +20,12 @@ Mobile UI, PWA/Deploy und Arbeitsweise gelten. Die Abschnitte zu Prestige, Idle 
 | Paket | Inhalt |
 |---|---|
 | **P1** | Physik-Kern, Steuerung, Kamera, Zeitstufen, Pause, Zurückspulen, Speichern (inkl. Level-Schnappschuss), Kapitel 1 (ohne Gravitation, 3 Lehrlevels + 5 erzeugte), Levelauswahl, Ergebnis-Bildschirm, Einstellungen, Bot + Tests, Hub-Eintrag (`status: "soon"`), Manifest, Icons |
-| **P2** | Gravitation (Attraktoren, auch auf Bahnen), offener Raum mit Abdrift-Grenze, Kapitel 2 und 3, Tageslevel |
-| **P3** | Klänge (WebAudio, keine Dateien), Feinschliff nach den Spielerfahrungen des Besitzers. Ein generativer Ambient-Klangteppich ist eine Option für später. |
+| **P2** | Ziel-Mix + große Brocken in Kapitel 1 (1-6..1-8 umbauen), Zieltyp „Werde unangreifbar“, **KI-Gegner** (Jäger) und Kapitel 2 „Jäger“ |
+| **P3** | Gravitation: Attraktoren (auch auf Bahnen), offener Raum mit Abdrift-Grenze, **Anziehung unter den Körpern** (nur ab Mindestmasse, weich, je Kapitel einstellbar), Kapitel 3 „Protostern“ |
+| **P4** | Generative Ambient-Musik + Effektklänge (WebAudio, keine Dateien) |
+| **P5** | Kapitel 4 „Dunkelwolke“ (begrenztes Sichtfeld), Kapitel 5 „Planetensystem“ (alles, große Levels), Tageslevel |
 
+Planänderung nach dem zweiten Spielen (Besitzer, Runde Q28–Q35), ersetzt die alte P2/P3-Einteilung: siehe „Ausbau nach dem zweiten Spielen“.
 Zwischen den Paketen spielt der Besitzer (direkter Link `games/protoplanet/`, der Hub zeigt bis zur Abnahme „Bald verfügbar“).
 Erst nach der Abnahme von P1 bekommt der Hub-Eintrag `status: "playable"`.
 
@@ -151,6 +154,40 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
 `games/protoplanet/`: `index.html`, `main.js` (Start, Bildschirmwechsel), `style.css` (eigenes Theme), `manifest.webmanifest` (eigene `id`, `start_url`, `scope`), `icons/`,
 `tune.js`, `physics.js`, `rewind.js`, `gen.js`, `levels.js`, `goals.js`, `bot.js`, `state.js` (DOM-frei bis hier), `render.js`, `camera.js`, `input.js`, `ui.js`, `GLOSSARY.md`.
 Kein Kopieren von `games/_template` nötig (das ist eine Idle-Vorlage), aber Manifest/Icons/`index.html` nach deren Muster.
+
+## Ausbau nach dem zweiten Spielen (Entscheidungen Q28–Q35)
+Rückmeldung des Besitzers: es fehlen Gegner-KI, von Beginn an große Brocken, größere Levels später, ein Modus mit begrenzter Sicht,
+generative Ambient-Musik, Levels, die enden, wenn einen keiner mehr fressen kann, und mehr Gravitation unter den Körpern.
+
+**Kapitel** (je neue Mechanik ein Kapitel, innerhalb eines Kapitels werden die Levels zum Ende hin größer):
+1. **Staubwolke** (Grundlagen, vorhanden; die letzten Levels mit großen Brocken)
+2. **Jäger** (KI-Körper)
+3. **Protostern** (Attraktor + Anziehung unter den Körpern)
+4. **Dunkelwolke** (begrenztes Sichtfeld)
+5. **Planetensystem** (alles zusammen, große Levels)
+Danach das **Tageslevel** aus den Familien aller freigeschalteten Kapitel (Lösbarkeit über viele Seeds prüfen, nicht über 40 feste: der Generator ist auf neue Seeds nur zu 91–97 % lösbar, siehe unten).
+
+**Ziel-Mix** (je Level eines; Abwechslung ist erwünscht):
+- `last` „Werde der letzte Körper“: kleine, dichte Levels.
+- `largest` **„Werde unangreifbar“**: kein anderer Körper (Attraktoren eingeschlossen) ist im Moment größer als der Spieler. Was ein Jäger später durch Fressen werden könnte, zählt nicht. Gut für große Levels mit Brocken, die man nur überholen muss.
+- `mass` „Erreiche die Masse M“: Ernte zwischen Gefahren, die man nie fressen muss.
+- `absorb` „Absorbiere den Zielkörper“: Jagd.
+- ab Kapitel 3 `survive` „Überlebe N Umläufe“.
+- **Grundsatz:** Große Gefahren und `last` vertragen sich nicht (mit teurem Ausstoß wächst man nicht weit genug). Brocken gehören in Levels mit `largest`/`mass`/`absorb`.
+
+**Kapitel 1 (P2):** 1-1..1-5 bleiben unverändert. 1-6..1-8 werden umgebaut: je 1–2 **Brocken** mit 3–6 Startmassen (ruhend oder sehr langsam), Ziel `largest` oder `mass`.
+
+**KI-Gegner „Jäger“ (P2, Kapitel 2):** `kind: 'hunter'`, dieselbe Physik wie der Spieler (Ausstoß kostet sie Masse, ihre Teilchen sind normale Körper und fressbar).
+Gehirn = das des Bots (`bot.js`, gemeinsamer Kern), aber begrenzt: Reaktionszeit 0,5–1,5 s (Seed-Zufall), Zielfehler (Winkelrauschen), gelegentliches Zögern; jagen nur Kleineres (auch den Spieler), fliehen vor Größerem (auch vor dem Spieler).
+Alle Grenzen und Schwierigkeitsstufen in `tune.js` (`T.hunter`). Darstellung: eigener Ring (z. B. gestrichelt), die Farbe zeigt wie immer die Größe relativ zum Spieler.
+Deterministisch (Seed je Jäger aus dem Level-Seed). Der Bot (Spieler-Bot) muss Kapitel 2 mit denselben Kriterien lösen (≥ 95 %, Median 1–5 min).
+
+**Gravitation unter den Körpern (P3, ab Kapitel 3; Kapitel 1 und 2 bleiben ohne):** nur Körper ab einer Mindestmasse ziehen an, weich (`soft²` im Nenner), Stärke je Kapitel/Level einstellbar; Kosten auf dem Handy begrenzen (nur die k schwersten Körper als Quellen oder Raster). Die Levels „leben“ (Klumpen wachsen von selbst) und werden mit dem Bot kalibriert.
+
+**Dunkelwolke (P5, Kapitel 4):** Sichtkreis um den Spieler, Radius wächst mit seiner Größe, außen dunkel; größere Körper, die sich nähern, verraten sich am Rand durch ein schwaches **Pulsieren** (keine Überraschungs-Tode).
+
+**Musik (P4):** generativ per WebAudio, keine Dateien: langsamer Klangteppich aus 2–3 Schichten + sanfte Töne einer Tonleiter; Absorbieren = Ton in der Tonart, Ausstoß = leises Rauschen;
+reagiert aufs Spiel (dunkler, wenn ein Größerer nah ist; je Kapitel eine Tonart). Getrennte Lautstärken Musik/Effekte in den Einstellungen; Ton startet erst nach der ersten Berührung (iOS).
 
 ## Umsetzung und Messungen
 
