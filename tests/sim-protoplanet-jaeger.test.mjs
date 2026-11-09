@@ -1,4 +1,4 @@
-// Deploy-Sperre fuer Protoplanet Kapitel 2 "Jaeger" (KI-Koerper): dieselben Kriterien wie Kapitel 1, der Bot spielt gegen die Jaeger.
-import { simChapter } from './helpers/protoplanet-sim.mjs';
+// Deploy-Sperre fuer Protoplanet Kapitel 2 "Jaeger", Teil 1 (2-1 Lehrlevel, 2-2..2-4): der Bot spielt gegen die Jaeger. Kriterien: tests/helpers/protoplanet-sim.mjs.
+import { simLevels } from './helpers/protoplanet-sim.mjs';
 
-simChapter(2);
+simLevels(['2-1', '2-2', '2-3', '2-4']);

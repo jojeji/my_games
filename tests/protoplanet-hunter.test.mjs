@@ -50,7 +50,7 @@ test('Jaeger-Stufen: Reaktionszeit 0,5-1,5 s, je Jaeger aus dem Seed, gleicher S
 
 test('Jaeger: Ausstoss kostet Masse, das Teilchen ist ein normaler, fressbarer Koerper (Impuls und Masse bleiben erhalten)', () => {
   // ein kleiner Koerper in Reichweite, der Spieler weit weg
-  const w = scene([hunter(0, 12, 1.5), { x: 6, y: 12, m: 0.4, kind: 'mote' }], { x: 0, y: -30 });
+  const w = scene([hunter(0, 12, 2.2), { x: 3.2, y: 12, m: 0.7, kind: 'mote' }], { x: 0, y: -30 });
   const h = w.bodies.find((b) => b.kind === 'hunter');
   const m0 = totalMass(w);
   const p0 = w.bodies.reduce((s, b) => [s[0] + b.m * b.vx, s[1] + b.m * b.vy], [0, 0]);
@@ -248,7 +248,63 @@ test('Migration 1 -> 2 direkt: 1-6..1-8 weg, Rest und Einstellungen bleiben, Sch
   assert.equal(keep.snap.levelId, '1-4');
 });
 
-test('Spielstand mit alter Version wird beim Laden migriert (echte Ablage ueber engine/save.js)', async () => {
+test('Migration 2 -> 3 (Paket A) direkt: Sterne und Bestwerte der neu gebauten Level weg, `done` bleibt, unveraenderte Level und Einstellungen bleiben', async () => {
+  const { MIGRATIONS, REBUILT_V3 } = await import('../games/protoplanet/state.js');
+  assert.deepEqual(REBUILT_V3, ['1-4', '1-5', '1-6', '1-7', '1-8', '2-2', '2-3', '2-4', '2-5', '2-6', '2-7', '2-8']);
+  for (const id of REBUILT_V3) assert.equal(levelById(id).rev, 3, id + ' hat die neue Fassung');
+  for (const id of ['1-1', '1-2', '1-3', '2-1']) assert.equal(levelById(id).rev, undefined, id + ' ist unveraendert');
+  const data = {
+    progress: {
+      '1-1': { done: true, eff: true, fast: true, bestTime: 6, bestEject: 0.06 },
+      '1-4': { done: true, eff: true, fast: true, bestTime: 90, bestEject: 1.2 },
+      '1-8': { done: true, eff: false, fast: true, bestTime: 80, bestEject: 3 },
+      '2-2': { done: true, eff: true, fast: false, bestTime: 50, bestEject: 0.3 },
+      '2-3': { done: false, eff: false, fast: false, bestTime: null, bestEject: null },
+    },
+    settings: { aim: true, vibrate: false },
+    snap: { levelId: '2-2', rev: 1, play: {} },
+  };
+  const out = MIGRATIONS[2](JSON.parse(JSON.stringify(data)));
+  assert.deepEqual(out.progress['1-1'], data.progress['1-1'], 'unveraendertes Level bleibt');
+  for (const id of ['1-4', '1-8', '2-2']) assert.deepEqual(out.progress[id], { done: true, eff: false, fast: false, bestTime: null, bestEject: null }, id);
+  assert.equal(out.progress['2-3'], undefined);
+  assert.equal(out.settings.aim, true);
+  assert.equal(out.snap, null);
+  assert.equal(MIGRATIONS[2]({ progress: {}, snap: { levelId: '1-3', play: {} } }).snap.levelId, '1-3');
+});
+
+test('Spielstand der Version 2 (Paket A): wird beim Laden migriert, Kapitel 2 bleibt offen, Sterne der neuen Level sind weg, ein laufender Schnappschuss von 1-3 bleibt', async () => {
+  const { createSaveStore } = await import('../engine/save.js');
+  const storage = createStorage(mem());
+  const v2 = createSaveStore({ id: 'protoplanet', version: 2, migrations: {}, storage });
+  const all = {};
+  for (const l of LEVELS) all[l.id] = { done: true, eff: true, fast: true, bestTime: 50, bestEject: 0.5 };
+  v2.save({
+    progress: all,
+    settings: { aim: true, vibrate: true, reduceMotion: null },
+    snap: { levelId: '1-3', play: createPlay(levelById('1-3')).serialize(), timeScale: 1 },
+  });
+  const pr = createProgress({ storage });
+  assert.equal(SAVE_VERSION, 3);
+  assert.equal(pr.stars('1-1'), 3);
+  assert.equal(pr.stars('1-3'), 3);
+  for (const id of ['1-4', '1-8', '2-2', '2-8']) {
+    assert.equal(pr.done(id), true, id + ' bleibt geschafft');
+    assert.equal(pr.stars(id), 1, id + ': nur noch der Geschafft-Stern');
+    assert.equal(pr.info(id).bestTime, null);
+  }
+  assert.equal(pr.unlocked('2-1'), true, 'Kapitel 2 bleibt offen');
+  assert.equal(pr.unlocked('2-8'), true);
+  assert.equal(pr.settings.aim, true);
+  assert.equal(pr.state.snap && pr.state.snap.levelId, '1-3', 'ein unveraendertes Level behaelt seinen Schnappschuss');
+  // Schnappschuss eines neu gebauten Levels (alte Fassung) geht beim Laden verloren, auch wenn die Migration ihn nicht kannte
+  const st2 = createStorage(mem());
+  const w = createSaveStore({ id: 'protoplanet', version: 3, migrations: {}, storage: st2 });
+  w.save({ progress: {}, settings: {}, snap: { levelId: '1-4', rev: 1, play: createPlay(levelById('1-4')).serialize(), timeScale: 1 } });
+  assert.equal(createProgress({ storage: st2 }).state.snap, null);
+});
+
+test('Spielstand mit alter Version wird beim Laden migriert (echte Ablage ueber engine/save.js, Version 1)', async () => {
   const { createSaveStore } = await import('../engine/save.js');
   const storage = createStorage(mem());
   const v1 = createSaveStore({ id: 'protoplanet', version: 1, migrations: {}, storage });
@@ -268,28 +324,29 @@ test('Spielstand mit alter Version wird beim Laden migriert (echte Ablage ueber 
 });
 
 test('Schnappschuss eines Levels mit anderer Fassung (rev) wird verworfen, ein gueltiger bleibt; P1-Schnappschuesse (10 Spalten) laden', () => {
-  assert.equal(snapValid({ levelId: '1-4' }), true, 'alte Schnappschuesse ohne rev gelten fuer unveraenderte Level');
-  assert.equal(snapValid({ levelId: '1-4', rev: 1 }), true);
-  assert.equal(snapValid({ levelId: '1-6' }), false, 'altes 1-6 (rev 1) gegen das neue (rev 2)');
-  assert.equal(snapValid({ levelId: '1-6', rev: 2 }), true);
+  assert.equal(snapValid({ levelId: '1-3' }), true, 'alte Schnappschuesse ohne rev gelten fuer unveraenderte Level');
+  assert.equal(snapValid({ levelId: '1-3', rev: 1 }), true);
+  assert.equal(snapValid({ levelId: '1-6' }), false, 'altes 1-6 (rev 1) gegen das neue (rev 3)');
+  assert.equal(snapValid({ levelId: '1-6', rev: 2 }), false, 'auch die Fassung aus P2 ist nicht mehr gueltig');
+  assert.equal(snapValid({ levelId: '1-6', rev: 3 }), true);
   assert.equal(snapValid({ levelId: 'gibt-es-nicht', rev: 1 }), false);
   assert.equal(snapValid(null), false);
   // Spielstand mit einem gueltigen Schnappschuss und einem falschen
   const storage = createStorage(mem());
   const pr = createProgress({ storage });
-  const play = createPlay(levelById('1-4'));
+  const play = createPlay(levelById('1-3'));
   play.advance(1);
-  pr.setSnap({ levelId: '1-4', rev: 1, play: play.serialize(), timeScale: 1 });
+  pr.setSnap({ levelId: '1-3', rev: 1, play: play.serialize(), timeScale: 1 });
   pr.save();
-  assert.equal(createProgress({ storage }).state.snap.levelId, '1-4');
-  pr.setSnap({ levelId: '1-7', rev: 1, play: play.serialize(), timeScale: 1 });
+  assert.equal(createProgress({ storage }).state.snap.levelId, '1-3');
+  pr.setSnap({ levelId: '1-7', rev: 2, play: play.serialize(), timeScale: 1 });
   pr.save();
   assert.equal(createProgress({ storage }).state.snap, null);
   // ein P1-Schnappschuss (Zeilen mit 10 Eintraegen, kein ai) laedt und laeuft weiter
   const s = play.serialize();
   const p1 = JSON.parse(JSON.stringify(s));
   p1.snap.b = p1.snap.b.map((r) => r.slice(0, 10));
-  const again = createPlay(levelById('1-4'), p1);
+  const again = createPlay(levelById('1-3'), p1);
   assert.ok(again.world.bodies.every((b) => b.ai === null));
   again.advance(2);
   assert.equal(again.status, 'running');

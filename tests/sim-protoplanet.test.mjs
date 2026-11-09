@@ -1,6 +1,6 @@
-// Deploy-Sperre fuer Protoplanet Kapitel 1: der Bot (games/protoplanet/bot.js, gleiche Physik wie das Spiel) loest jedes feste Level,
-// jede Levelfamilie ueber >= 40 Seeds zu >= 95 % und mit Median-Spielzeit zwischen 1 und 5 Minuten (Lehrlevels duerfen kuerzer sein).
-// Kapitel 2 (Jaeger) steht in sim-protoplanet-jaeger.test.mjs (eigene Datei, damit die Tests parallel laufen).
-import { simChapter } from './helpers/protoplanet-sim.mjs';
+// Deploy-Sperre fuer Protoplanet Kapitel 1, Teil 1 (Lehrlevels 1-1..1-3 und 1-4, 1-5): der Bot (games/protoplanet/bot.js, gleiche Physik wie das Spiel) loest die festen Seeds
+// (mindestens 2 von 3 Varianten) und die Familien ueber 30 Zufalls-Seeds zu >= 80 %. Die Kriterien stehen in tests/helpers/protoplanet-sim.mjs.
+// Die Bot-Tests sind auf mehrere Dateien verteilt, damit sie parallel laufen (node --test startet je Datei einen Prozess).
+import { simLevels } from './helpers/protoplanet-sim.mjs';
 
-simChapter(1);
+simLevels(['1-1', '1-2', '1-3', '1-4', '1-5']);

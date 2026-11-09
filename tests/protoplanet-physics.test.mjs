@@ -433,7 +433,7 @@ test("Ziel 'last': Fortschritt nach absorbierter Masse, Level mit 'last' ist spi
   assert.equal(play.progress.frac, 1);
 });
 
-test('Kapitel 1: Zuordnung der Ziele (1-1..1-5 unveraendert, 1-6..1-8 Brocken mit unangreifbar/Masse)', () => {
+test('Kapitel 1: Zuordnung der Ziele (1-1..1-3 Lehrlevels, danach gemischt: Masse, Jagd, unangreifbar, unangreifbar, Masse)', () => {
   const t = Object.fromEntries(LEVELS.filter((l) => l.chapter === 1).map((l) => [l.id, l.goal.type]));
-  assert.deepEqual(t, { '1-1': 'absorb', '1-2': 'last', '1-3': 'last', '1-4': 'last', '1-5': 'absorb', '1-6': 'largest', '1-7': 'mass', '1-8': 'largest' });
+  assert.deepEqual(t, { '1-1': 'absorb', '1-2': 'last', '1-3': 'last', '1-4': 'mass', '1-5': 'absorb', '1-6': 'largest', '1-7': 'largest', '1-8': 'mass' });
 });
