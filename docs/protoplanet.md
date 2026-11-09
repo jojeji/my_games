@@ -189,6 +189,28 @@ Deterministisch (Seed je Jäger aus dem Level-Seed). Der Bot (Spieler-Bot) muss 
 **Musik (P4):** generativ per WebAudio, keine Dateien: langsamer Klangteppich aus 2–3 Schichten + sanfte Töne einer Tonleiter; Absorbieren = Ton in der Tonart, Ausstoß = leises Rauschen;
 reagiert aufs Spiel (dunkler, wenn ein Größerer nah ist; je Kapitel eine Tonart). Getrennte Lautstärken Musik/Effekte in den Einstellungen; Ton startet erst nach der ersten Berührung (iOS).
 
+## Überarbeitung „rundes Spiel“ (Design-Review nach dem dritten Spielen, Entscheidungen des Orchestrators im Auftrag des Besitzers)
+Rückmeldung des Besitzers: Richtung stimmt, aber Levels teils zu leicht und zu schnell vorbei, es fühlt sich nicht wie ein fertiges Spiel an,
+Musik fehlt, und er will einen echten **Umlaufbahn-Modus** (Zentralkörper, man kreist und wandert auf Ellipsen). Freie Hand für die Weiterentwicklung.
+
+**Diagnose (aus Code und Messwerten):**
+1. **Die Welt steht still.** Fast alle Körper haben `v ≈ 0,03`, Brocken ruhen. Das war eine Folge der Bot-Abnahme (bewegte, wachsende Körper senkten die Quote). Ergebnis: kein Timing, keine Überraschung, kein Druck.
+2. **Zu wenig Wachstum.** Der Spieler wächst von 1 auf ~3. Der Reiz des Genres ist die Verwandlung: vom Staubkorn zum größten Körper (10–40×), die Kamera fährt dabei heraus.
+3. **Zu kurz.** Bot-Median 60–90 s, `mass`-Ziele enden nach wenigen Happen.
+4. **Die Abnahme „95 % über Zufalls-Seeds“ hat die festen Levels weichgespült.** Sie ist für das Tageslevel richtig, für handverlesene Kapitel-Levels falsch.
+5. Kein Klang, kaum Rückmeldung (Aufnahme, Sieg, Verlust, Übergänge), kein Auftakt und kein Abschluss eines Levels.
+
+**Entscheidungen:**
+- **Lebendige Welt:** Körper treiben mit echten Geschwindigkeiten (0,1–0,6), Strömungen, gegenläufige Bänder; auch Große bewegen sich. Dass Rivalen von selbst wachsen, ist gewollt (Zeitdruck).
+- **Massenleiter:** Jedes normale Level hat Futter in geometrischen Stufen, sodass der Spieler am Ende 8–30 Startmassen hat; größere Arenen (R bis ~60), `camMax` entsprechend.
+- **Dauer:** Lehrlevels kurz, normale Levels Bot-Median 2–4 min, Kapitel-Finale bis 6 min. Zeitstufen bleiben.
+- **Schwierigkeit steigt je Kapitel sichtbar**; das letzte Level jedes Kapitels ist ein „Finale“. Jäger ab der Kapitelmitte `normal`, am Ende `hard`. Wenn der Bot das nicht schafft, wird der Bot besser, nicht das Level leichter.
+- **Neue Abnahme:** feste Levels: der Bot löst den festen Seed in mindestens 2 von 3 Bot-Varianten (unterschiedliche Entscheidungs-Phase), Median der Zeit im Zielkorridor. Familien über 40 Zufalls-Seeds: ≥ 80 % (wird berichtet). Die 95 % gelten nur noch für Familien, die das Tageslevel benutzt (`daily: true`).
+- **Kapitel 3 „Protostern“ = Umlaufbahn-Modus:** Zentralkörper, alles kreist, der Spieler startet auf einer Kreisbahn. Schub in/gegen Flugrichtung hebt/senkt die Bahn (Ellipsen). **Bahnvorschau** (gepunktete vorhergesagte Bahn des Spielers) ist Pflicht: ohne sie ist Bahnmechanik auf dem Handy Raten. Verlust: in den Stern fallen oder abtreiben.
+- **Spielgefühl:** Level-Auftakt (Kamera fährt von der Übersicht auf den Spieler), sichtbares Hinüberfließen beim Absorbieren, Sieg- und Verlustmoment (kurze Zeitlupe, Lichtwelle), weiche Bildschirmwechsel, Farbwelt je Kapitel, Haptik.
+- **Musik:** generativ per WebAudio, standardmäßig AN (nach der ersten Berührung), reagiert auf Gefahr und Größe; Effekte in der Tonart.
+- Reihenfolge: (A) Levels/Balance Kapitel 1–2 ∥ (C) Klang → (B) Kapitel 3 Umlaufbahn → (F) Spielgefühl → (D) Kapitel 4/5 + Tageslevel, soweit die Qualität reicht.
+
 ## Umsetzung und Messungen
 
 ### P1 (Kern + Kapitel 1) — umgesetzt
