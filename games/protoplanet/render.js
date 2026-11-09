@@ -5,6 +5,7 @@
 import { T } from './tune.js';
 import { scaleOf } from './camera.js';
 import { COLORS } from './fx.js';
+import { fogAlpha } from './fog.js';
 
 const SPRITE = 128; // Sprite-Kantenlaenge; der Koerper selbst fuellt den Radius 32 (Rest = Glow)
 const CORE = 32;
@@ -251,6 +252,45 @@ export function createRenderer(canvas) {
     return c;
   })();
   const back = createBackdrop();
+  // Kapitel 4 (Nebel): Sprite mit klarem Zentrum (Radius = FOG_T x halbe Kante) und dunklem, staubigem Rand; Glimmen = weicher warmer Fleck
+  const FOG_T = 0.4;
+  const FOG_RGB = '3,9,7';
+  const FOG_OUT = 0.95;
+  const fogSprite = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 512;
+    const g = c.getContext('2d');
+    const gr = g.createRadialGradient(256, 256, 0, 256, 256, 256);
+    gr.addColorStop(0, `rgba(${FOG_RGB},0)`);
+    gr.addColorStop(FOG_T * 0.62, `rgba(${FOG_RGB},0)`);
+    gr.addColorStop(FOG_T * 0.8, `rgba(${FOG_RGB},0.1)`);
+    gr.addColorStop(FOG_T, `rgba(${FOG_RGB},0.52)`);
+    gr.addColorStop(FOG_T * 1.45, `rgba(${FOG_RGB},0.86)`);
+    gr.addColorStop(FOG_T * 2, `rgba(${FOG_RGB},${FOG_OUT})`);
+    gr.addColorStop(1, `rgba(${FOG_RGB},${FOG_OUT})`);
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 512, 512);
+    return c;
+  })();
+  const glimSprite = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(255,200,150,1)');
+    gr.addColorStop(0.2, 'rgba(255,110,70,0.8)');
+    gr.addColorStop(0.55, 'rgba(230,60,50,0.26)');
+    gr.addColorStop(1, 'rgba(200,40,40,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 128, 128);
+    return c;
+  })();
+  const dust = [];
+  {
+    let sd = 7;
+    const rn = () => ((sd = (sd * 1664525 + 1013904223) >>> 0) / 4294967296);
+    for (let i = 0; i < T.fog.dust; i++) dust.push({ x: rn(), y: rn(), s: 0.6 + rn() * 0.8, par: 0.16 + rn() * 0.22, a: 0.3 + rn() * 0.25, rgb: rn() < 0.5 ? '60,92,72' : '56,74,96', ph: rn() * 6.28 });
+  }
 
   const view = { w: 300, h: 500, dpr: 1 };
   function resize() {
@@ -334,6 +374,7 @@ export function createRenderer(canvas) {
     const p = world.player;
     const mP = p ? p.m : 1;
     const pulse = reduceMotion ? 0.6 : 0.55 + 0.25 * Math.sin(now * 2.2);
+    const fg = s.fog || null; // Kapitel 4: { R (Welteinheiten, Auftakt eingerechnet), glims[], hints:Set }
     const arrows = [];
     const hunterIds = new Set();
     for (const b of world.bodies) if (b.kind === 'hunter') hunterIds.add(b.id);
@@ -344,6 +385,15 @@ export function createRenderer(canvas) {
       const x = toX(b.x);
       const y = toY(b.y);
       const q = b.m / mP;
+      if (fg && p) {
+        // Nebel: ausserhalb des Sichtkreises unsichtbar (Hinweise auf Ziel / letzte Koerper bleiben als schwache Pfeile), am Rand weich eingeblendet
+        const fa = b.gf === p.id ? 1 : fogAlpha(Math.hypot(b.x - p.x, b.y - p.y), Math.sqrt(b.m), fg.R);
+        if (fa <= 0.004) {
+          if (fg.hints && fg.hints.has(b.id)) arrows.push({ b, x, y, q });
+          continue;
+        }
+        ctx.globalAlpha = fa;
+      } else ctx.globalAlpha = 1;
       if (p && b.gf === p.id && b.kind !== 'player') {
         // eigener Ausstoss: gut sichtbar (helles Teilchen mit weichem Halo und Schweif), auch wenn es winzig ist
         if (x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
@@ -392,7 +442,7 @@ export function createRenderer(canvas) {
       }
       const onScreen = x + r > -40 && x - r < W + 40 && y + r > -40 && y - r < H + 40;
       if (!onScreen) {
-        if (p && (q > 1.05 || b.tag === 'target')) arrows.push({ b, x, y, q });
+        if (p && (q > 1.05 || b.tag === 'target' || (fg && fg.hints && fg.hints.has(b.id)))) arrows.push({ b, x, y, q });
         continue;
       }
       if (r < 1.2 && b.kind !== 'hunter') {
@@ -440,6 +490,7 @@ export function createRenderer(canvas) {
       }
     }
 
+    ctx.globalAlpha = 1;
     // Protostern: Korona (pulsiert, ausser bei "Weniger Bewegung"), darunter heller Kern
     if (star) {
       const x = toX(star.x);
@@ -574,6 +625,39 @@ export function createRenderer(canvas) {
       }
     }
 
+    // Nebel (Kapitel 4): dunkler, staubiger Rand um den Sichtkreis des Spielers, darin treibender Staub
+    let fogC = null;
+    if (fg && p) {
+      const fx0 = toX(p.x);
+      const fy0 = toY(p.y);
+      const Rpx = Math.max(8, fg.R * sc);
+      const half = Rpx / FOG_T;
+      ctx.drawImage(fogSprite, fx0 - half, fy0 - half, half * 2, half * 2);
+      ctx.fillStyle = `rgba(${FOG_RGB},${FOG_OUT})`;
+      const y0 = Math.max(0, fy0 - half);
+      const y1 = Math.min(H, fy0 + half);
+      if (fy0 - half > 0) ctx.fillRect(0, 0, W, fy0 - half);
+      if (fy0 + half < H) ctx.fillRect(0, fy0 + half, W, H - fy0 - half);
+      if (fx0 - half > 0 && y1 > y0) ctx.fillRect(0, y0, fx0 - half, y1 - y0);
+      if (fx0 + half < W && y1 > y0) ctx.fillRect(fx0 + half, y0, W - fx0 - half, y1 - y0);
+      for (let i = 0; i < dust.length; i++) {
+        const d = dust[i];
+        const dd = d.s * W * 1.3;
+        const ox = reduceMotion ? 0 : cam.x * sc * d.par + Math.sin(now * 0.05 + d.ph) * 14;
+        const oy = reduceMotion ? 0 : cam.y * sc * d.par + Math.cos(now * 0.04 + d.ph * 1.3) * 14;
+        const padW = W + dd;
+        const padH = H + dd;
+        const x = ((((d.x * W - ox + dd / 2) % padW) + padW) % padW) - dd / 2;
+        const y = ((((d.y * H - oy + dd / 2) % padH) + padH) % padH) - dd / 2;
+        const u = Math.max(0, Math.min(1, (Math.hypot(x - fx0, y - fy0) - Rpx * 0.75) / (Rpx * 0.55)));
+        if (u <= 0.01) continue;
+        ctx.globalAlpha = d.a * u * u * (3 - 2 * u);
+        ctx.drawImage(nebSprite(d.rgb), x - dd / 2, y - dd / 2, dd, dd);
+      }
+      ctx.globalAlpha = 1;
+      fogC = { x: fx0, y: fy0, R: Rpx };
+    }
+
     // Rand-Pfeile: groessere Koerper ausserhalb des Bildes (Groesse = Pfeilgroesse und "x2,4" relativ zu dir, Naehe = Deckkraft) und der Zielkoerper
     if (p && p.m > 0.1 && arrows.length) {
       const half = cam.half;
@@ -585,8 +669,10 @@ export function createRenderer(canvas) {
       let n = 0;
       for (const a of arrows) {
         const isTarget = a.b.tag === 'target';
+        const isHint = !!(fg && fg.hints && fg.hints.has(a.b.id));
+        if (fg && !isTarget && !isHint && a.d > fg.R * T.fog.arrowNear) continue;
         const closing = (a.b.vx - p.vx) * (a.b.x - p.x) + (a.b.vy - p.vy) * (a.b.y - p.y) < 0;
-        const range = isTarget ? Infinity : closing || a.b.tag === 'rock' ? half * 4 : half * 2.2;
+        const range = isTarget || isHint ? Infinity : closing || a.b.tag === 'rock' ? half * 4 : half * 2.2;
         if (a.d > range) continue;
         if (n++ >= 5) break;
         const near = Math.max(0, Math.min(1, 1 - (a.d - half) / (half * 3)));
@@ -595,16 +681,17 @@ export function createRenderer(canvas) {
         const dy = Math.sin(ang);
         const tx = dx !== 0 ? (W / 2 - padX) / Math.abs(dx) : Infinity;
         const ty = dy !== 0 ? Math.min((H / 2 - padB) / Math.abs(dy), (H / 2 - padT) / Math.abs(dy)) : Infinity;
-        const tt = Math.min(tx, ty);
-        const px = W / 2 + dx * tt;
-        const py = H / 2 + dy * tt;
+        let tt = Math.min(tx, ty);
+        if (fogC) tt = Math.min(tt, fogC.R * 0.9); // im Nebel sitzen die Pfeile am Rand des Sichtkreises
+        const px = (fogC ? fogC.x : W / 2) + dx * tt;
+        const py = (fogC ? fogC.y : H / 2) + dy * tt;
         const sz = isTarget ? 11 : Math.max(7.5, Math.min(16, 6.5 + 3.2 * Math.log2(Math.max(1, a.q) + 0.5)));
-        const alpha = isTarget ? 0.95 : (closing ? 0.45 : 0.28) + 0.5 * near;
-        const col = isTarget ? '255,224,130' : '255,140,80';
+        const alpha = fg && (isTarget || isHint) ? 0.5 : isTarget ? 0.95 : (closing ? 0.45 : 0.28) + 0.5 * near;
+        const col = isTarget || isHint ? '255,224,130' : '255,140,80';
         ctx.save();
         ctx.translate(px, py);
         ctx.rotate(ang);
-        ctx.fillStyle = `rgba(${col},${alpha * (isTarget || reduceMotion ? 1 : 0.8 + 0.2 * Math.sin(now * (2 + 5 * near)))})`;
+        ctx.fillStyle = `rgba(${col},${alpha * (isTarget || isHint || reduceMotion ? 1 : 0.8 + 0.2 * Math.sin(now * (2 + 5 * near)))})`;
         ctx.beginPath();
         ctx.moveTo(sz, 0);
         ctx.lineTo(-sz * 0.7, -sz * 0.75);
@@ -627,6 +714,21 @@ export function createRenderer(canvas) {
           ctx.fillText(label, lx, ly);
         }
       }
+    }
+
+    // Glimmen (Kapitel 4): groessere Koerper jenseits des Sichtkreises pulsieren schwach am Rand, in ihrer Richtung (Staerke nach Naehe und Groesse)
+    if (fogC && fg.glims && fg.glims.length) {
+      ctx.globalCompositeOperation = 'lighter';
+      for (const gl of fg.glims) {
+        const ex = Math.max(20, Math.min(W - 20, fogC.x + gl.ux * fogC.R * 0.98));
+        const ey = Math.max(70, Math.min(H - 80, fogC.y + gl.uy * fogC.R * 0.98));
+        const sz = Math.max(46, fogC.R * (0.2 + 0.42 * gl.k));
+        const pu = reduceMotion ? 0.85 : 0.66 + 0.34 * Math.sin(now * (1.7 + 3.6 * gl.k) + gl.id * 1.7);
+        ctx.globalAlpha = Math.min(1, (0.3 + 0.7 * gl.k) * pu);
+        ctx.drawImage(glimSprite, ex - sz, ey - sz, sz * 2, sz * 2);
+      }
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
     }
 
     // Gefahren-Hinweis: Randgluehen aus der Richtung eines naeherkommenden Groesseren (weich, kein Blinken)

@@ -80,6 +80,8 @@ export const T = {
     1: { name: 'Staubwolke', bg: ['#0c1a33', '#03060d'], accent: '#6fe3ff', neb: [[0.15, 0.2, 0.9, '60,130,200', 0.16, 0.02], [0.8, 0.45, 0.8, '50,175,185', 0.11, 0.035], [0.35, 0.85, 1.0, '80,110,210', 0.12, 0.025], [0.9, 0.9, 0.6, '70,190,170', 0.08, 0.05]] },
     2: { name: 'Jäger', bg: ['#1a1233', '#06040f'], accent: '#c3a2ff', neb: [[0.2, 0.25, 0.95, '120,80,200', 0.17, 0.02], [0.85, 0.6, 0.8, '170,90,190', 0.11, 0.035], [0.4, 0.9, 1.0, '80,90,210', 0.12, 0.025], [0.8, 0.1, 0.6, '150,110,230', 0.09, 0.05]] },
     3: { name: 'Protostern', bg: ['#231428', '#07040a'], accent: '#ffc27a', neb: [[0.2, 0.2, 1.0, '170,80,110', 0.15, 0.02], [0.85, 0.55, 0.85, '190,120,70', 0.1, 0.035], [0.3, 0.9, 1.0, '110,70,150', 0.12, 0.025], [0.85, 0.1, 0.6, '200,130,90', 0.08, 0.05]] },
+    4: { name: 'Dunkelwolke', bg: ['#10201a', '#030807'], accent: '#9be37a', neb: [[0.2, 0.25, 1.0, '70,140,90', 0.13, 0.02], [0.85, 0.55, 0.85, '120,150,70', 0.09, 0.035], [0.35, 0.9, 1.0, '50,110,110', 0.11, 0.025], [0.85, 0.1, 0.6, '110,170,100', 0.07, 0.05]] },
+    5: { name: 'Planetensystem', bg: ['#141a36', '#04050e'], accent: '#f2e3b0', neb: [[0.2, 0.2, 1.0, '90,100,200', 0.15, 0.02], [0.85, 0.55, 0.85, '200,170,110', 0.1, 0.035], [0.3, 0.9, 1.0, '120,90,190', 0.12, 0.025], [0.85, 0.1, 0.6, '230,200,140', 0.08, 0.05]] },
   },
   // --- Kapitel 3 "Protostern" (Umlaufbahn-Modus, Paket B): Gravitation, offener Raum, Bahnvorschau ---
   orbit: {
@@ -139,6 +141,22 @@ export const T = {
       maxFrac: 0.12,
       minGain: 0.015, // ein Schub lohnt, wenn er den Wert der Untaetigkeit um mindestens so viel (Anteil der Spielermasse) uebertrifft
     },
+  },
+  // --- Kapitel 4 "Dunkelwolke" (Paket D, fog.js): begrenztes Sichtfeld, reine Darstellung ---
+  fog: {
+    r0: 6.2, // Sichtradius (Welteinheiten) = r0 x Spielerradius^exp: wie camSpan x r^camExp, also immer ~95 % der halben Bildbreite
+    exp: 0.78,
+    softIn: 0.3, // weicher Rand: Koerper blenden zwischen (1 - softIn) und 1 x Sichtradius ein (Abstand der Koerper-Kante)
+    glimRange: 1.25, // Glimmen reicht so viele Sichtradien (Anteil) hinter den Rand
+    glimMin: 0.06, // darunter kein Glimmen
+    glimMax: 4, // hoechstens so viele Glimmer gleichzeitig
+    glimTau: 0.35, // s, Glaettung der Staerke
+    arrowNear: 1.3, // Randpfeile nur fuer Koerper bis so viele Sichtradien Abstand (Ziel und Hinweise immer)
+    hintLast: 3, // Ziel `last`: ab so wenigen uebrigen Koerpern zeigen schwache Zielpfeile den Weg
+    introFrom: 0.22, // Auftakt: Sichtradius startet bei diesem Anteil und waechst auf 1 (Fahrt aus der Dunkelheit)
+    introZoom: 1.7, // Auftakt: die Kamera startet um diesen Faktor weiter weg und faehrt auf den Spieler
+    dust: 8, // Staubschleier im Nebel
+    soundK: 0.18, // Pegel des Glimm-Tons (sehr leise)
   },
   // --- Bot ---
   bot: {
@@ -219,7 +237,7 @@ export const T = {
     smooth: { tau: 2.2, danger: 1.0 }, // s, Zeitkonstanten fuer Parameteraenderungen
     sfx: {
       // Drosselung je Art: gap = Mindestabstand (s), max = Anzahl je 1 s
-      gates: { absorb: { gap: 0.07, max: 6 }, eject: { gap: 0.09, max: 7 }, beam: { gap: 0.22, max: 4 }, ui: { gap: 0.05, max: 8 }, time: { gap: 0.1, max: 5 }, warn: { gap: 2.5, max: 1 } },
+      gates: { absorb: { gap: 0.07, max: 6 }, eject: { gap: 0.09, max: 7 }, beam: { gap: 0.22, max: 4 }, ui: { gap: 0.05, max: 8 }, time: { gap: 0.1, max: 5 }, warn: { gap: 2.5, max: 1 }, glimmer: { gap: 7, max: 1 } },
       chainWin: 1.1, // s: Aufnahmen innerhalb dieses Fensters steigen als Arpeggio
       chainMax: 5,
       absorbLoIdx: 0, absorbHiIdx: 9, // Skalenindex-Bereich (ab root + 12) fuer kleine (hoch) bis grosse (tief) Happen

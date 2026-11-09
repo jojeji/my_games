@@ -16,6 +16,7 @@ import { createFx, blendWorlds } from './fx.js';
 import { step as physStep, snapshot, restore } from './physics.js';
 import { predictOrbit, driftState } from './orbit.js';
 import { dangerOf, sizeOf } from './audio-score.js';
+import { fogOf, fogRadius, fogGlimmers, fogHints, fogIntro } from './fog.js';
 
 const ICON = {
   back: '<path d="M15 5l-7 7 7 7"/>',
@@ -127,6 +128,12 @@ export function mountApp(root, progress) {
   let lastPlayerPos = null;
   let lastDangerVibe = -Infinity;
   let beamVibed = false;
+  // Kapitel 4: Nebel (fog.js), Glimmen mit Glaettung je Koerper
+  let fogCfg = null;
+  let fogK = new Map();
+  let fogRaw = [];
+  let introK = 1;
+  let lastGlimSnd = -Infinity;
   // Kapitel 3: Bahnvorschau (orbit.js) und Abdrift-Warnung
   let preview = null;
   let previewAt = -Infinity;
@@ -369,6 +376,9 @@ export function mountApp(root, progress) {
     play.timeScale = snap && snap.timeScale ? snap.timeScale : 1;
     timeIdx = Math.max(0, T.timeSteps.indexOf(play.timeScale));
     cam = createCamera();
+    fogCfg = fogOf(lv);
+    fogK = new Map();
+    introK = 1;
     fx = createFx({ reduce: reduceMotion(), seed: 11 + lv.n * 7 });
     ghost = null;
     rewindFrames = null;
@@ -439,7 +449,7 @@ export function mountApp(root, progress) {
     titleEl.classList.remove('away');
     void titleEl.offsetWidth; // Neustart der CSS-Animation
     titleEl.classList.add('show');
-    introCamera(cam, play.world, reduce ? 1 : 0);
+    introCamera(cam, play.world, reduce ? 1 : 0, !!fogCfg);
   }
 
   function endIntro(now) {
@@ -920,7 +930,8 @@ export function mountApp(root, progress) {
     if (phase === 'intro') {
       if (!paused) ip = Math.min(1, ip + dt * introRate);
       const hold = reduce ? 0 : T.intro.hold / (play.world.arenaR <= 0 ? T.intro.orbitDur : T.intro.dur);
-      introCamera(cam, play.world, reduce ? 1 : (ip - hold) / (1 - hold));
+      introK = reduce ? 1 : (ip - hold) / (1 - hold);
+      introCamera(cam, play.world, introK, !!fogCfg);
       if (ip >= 1) endIntro(now);
     } else if (phase === 'play') {
       if (!paused && play.status === 'running') {
@@ -993,9 +1004,50 @@ export function mountApp(root, progress) {
     if (phase === 'play') trackMass(now);
     if (play.world.grav && phase !== 'loss') orbitFrame(now);
     else if (preview) preview = null;
+    // Nebel: Sichtradius (Auftakt: waechst aus der Dunkelheit, Sieg: lichtet sich), Glimmen mit Glaettung, Hinweise
+    let fogState = null;
+    if (fogCfg && rw.player) {
+      let R = fogRadius(rw.player.m, fogCfg);
+      if (phase === 'intro') R *= fogIntro(introK, fogCfg);
+      else if (phase === 'win') R *= 1 + 2.5 * smooth((now - phaseT0) / 1.4);
+      fogGlimmers(rw, fogRadius(rw.player.m, fogCfg), fogRaw, fogCfg);
+      const kf = 1 - Math.exp(-dt / fogCfg.glimTau);
+      const seen = new Set();
+      const glims = [];
+      for (const gl of fogRaw) {
+        const old = fogK.get(gl.id) || 0;
+        const k = old + (gl.k - old) * kf;
+        fogK.set(gl.id, k);
+        seen.add(gl.id);
+        glims.push({ ...gl, k });
+      }
+      for (const [id, k] of fogK) {
+        if (seen.has(id)) continue;
+        const nk = k * Math.exp(-dt / fogCfg.glimTau);
+        if (nk < 0.02) fogK.delete(id);
+        else {
+          const b = rw.bodies.find((x) => x.id === id);
+          const pl = rw.player;
+          if (b && pl) {
+            const d = Math.hypot(b.x - pl.x, b.y - pl.y) || 1;
+            glims.push({ id, ux: (b.x - pl.x) / d, uy: (b.y - pl.y) / d, k: nk, d });
+          }
+          fogK.set(id, nk);
+        }
+      }
+      if (phase === 'play' && !paused && play.status === 'running') {
+        const top = glims.reduce((m, g) => Math.max(m, g.k), 0);
+        if (top > 0.3 && now - lastGlimSnd > 6) {
+          lastGlimSnd = now;
+          audio.sfx.glimmer({ k: top });
+        }
+      }
+      fogState = { R, glims: phase === 'intro' || phase === 'win' ? [] : glims, hints: phase === 'play' ? fogHints(rw, play.goal, fogCfg) : null };
+    }
     if (!slow || frame % 2 === 0) {
       const t0 = performance.now();
       renderer.draw({
+        fog: fogState,
         world: rw,
         cam,
         now,

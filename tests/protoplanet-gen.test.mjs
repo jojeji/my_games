@@ -107,13 +107,13 @@ test('Lehrlevels und feste Levels erfuellen die Grundregeln (soweit sie fuer Leh
 });
 
 test('Kapitel 1: 8 Levels, 3 Lehrlevels mit Bedienhilfe, 1-4..1-8 lebendige Welten (Familie welt); Kapitel 2: 8 Levels', () => {
-  assert.equal(CHAPTERS.length, 3);
+  assert.ok(CHAPTERS.length >= 3);
   const c1 = LEVELS.filter((l) => l.chapter === 1);
   const c2 = LEVELS.filter((l) => l.chapter === 2);
   assert.equal(c1.length, 8);
   assert.equal(c2.length, 8);
-  assert.equal(LEVELS.length, 24);
-  assert.equal(new Set(LEVELS.map((l) => l.id)).size, 24);
+  assert.equal(LEVELS.filter((l) => l.chapter <= 3).length, 24);
+  assert.equal(new Set(LEVELS.map((l) => l.id)).size, LEVELS.length);
   assert.deepEqual(c1.slice(0, 3).map((l) => l.family), ['hand', 'hand', 'hand']);
   for (const l of c1.slice(0, 3)) assert.ok(l.hint && l.hint.text && l.hint.until, l.id);
   assert.deepEqual(c1.slice(3).map((l) => l.family), ['welt', 'welt', 'welt', 'welt', 'welt']);
@@ -124,11 +124,11 @@ test('Kapitel 1: 8 Levels, 3 Lehrlevels mit Bedienhilfe, 1-4..1-8 lebendige Welt
     assert.ok(['largest', 'last', 'absorb', 'mass'].includes(l.goal.type), l.id);
     assert.ok(l.title && l.title.length > 2, l.id);
   }
-  assert.equal(new Set(LEVELS.map((l) => l.title)).size, 24, 'jedes Level hat einen eigenen Namen');
+  assert.equal(new Set(LEVELS.map((l) => l.title)).size, LEVELS.length, 'jedes Level hat einen eigenen Namen');
   assert.equal(levelById('1-4').family, 'welt');
   assert.equal(nextLevel('1-8').id, '2-1');
   assert.equal(nextLevel('2-8').id, '3-1');
-  assert.equal(nextLevel('3-8'), null);
+  assert.equal(nextLevel('3-8').id, '4-1');
   assert.equal(nextLevel('1-1').id, '1-2');
   // Ziele gemischt: in jedem Kapitel mindestens drei verschiedene
   for (const c of [c1, c2]) assert.ok(new Set(c.map((l) => l.goal.type)).size >= 3);
@@ -167,7 +167,7 @@ test('Kapitel 1: 1-6 und 1-7 haben einen langsamen Brocken mit 6-7 Startmassen (
 });
 
 test('Massenleiter: jedes Familienlevel hat Futter in Stufen (Staub, Kleine, Mittlere, Grosse), die Welt lebt (mittlere Geschwindigkeit >= 0,08), Arenen bis R 56 und bis ~140 Koerper', () => {
-  for (const lv of LEVELS.filter((l) => l.family === 'welt')) {
+  for (const lv of LEVELS.filter((l) => l.family === 'welt' && l.chapter <= 2)) { // Kapitel 4 hat eigene Pruefungen (protoplanet-fog.test.mjs)
     const b = buildLevel(lv);
     const bs = b.bodies;
     const speed = bs.reduce((s, x) => s + Math.hypot(x.vx, x.vy), 0) / bs.length;

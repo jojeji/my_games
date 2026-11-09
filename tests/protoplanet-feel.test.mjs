@@ -69,7 +69,7 @@ test('Rueckwaertslauf: peek liefert neu -> alt bis zum Ziel von pick und aendert
 
 test('Freischalten (Paket F): ein Kapitel oeffnet sich mit 5 geschafften Levels des vorherigen, innerhalb Level fuer Level', () => {
   const pr = createProgress({ storage: createStorage(mem()) });
-  assert.equal(CHAPTERS.length, 3);
+  assert.ok(CHAPTERS.length >= 3);
   assert.equal(pr.unlocked('2-1'), false);
   for (const id of ['1-1', '1-2', '1-3', '1-4']) rec(pr, id);
   assert.equal(pr.unlocked('2-1'), false);

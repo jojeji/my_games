@@ -48,9 +48,10 @@ export function startPose(world) {
 }
 
 /** Auftakt: Kamera auf der Fahrt von der Uebersicht (k = 0) zur Startpose (k = 1); k wird vom Aufrufer eingesetzt (Ease). */
-export function introCamera(cam, world, k) {
-  const a = { x: 0, y: 0, half: overviewHalf(world) };
+export function introCamera(cam, world, k, fog = false) {
   const b = startPose(world);
+  // Nebel (Kapitel 4): keine Uebersicht, die Fahrt beginnt beim Spieler selbst (etwas weiter weg) und zeigt nichts von der Welt vorab
+  const a = fog ? { x: b.x, y: b.y, half: Math.min(T.camMax, b.half * T.fog.introZoom) } : { x: 0, y: 0, half: overviewHalf(world) };
   const u = Math.max(0, Math.min(1, k));
   const e = u * u * (3 - 2 * u); // smoothstep
   const ez = Math.min(1, e * 1.12); // der Zoom eilt der Position leicht voraus

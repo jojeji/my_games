@@ -4,6 +4,7 @@ export const CHAPTERS = [
   { id: 1, name: 'Staubwolke' },
   { id: 2, name: 'Jäger' },
   { id: 3, name: 'Protostern' },
+  { id: 4, name: 'Dunkelwolke' },
 ];
 
 const mote = (x, y, m, vx = 0, vy = 0, extra = {}) => ({ x, y, m, vx, vy, ...extra });
@@ -250,6 +251,60 @@ export const LEVELS = [
     },
     goal: { type: 'mass' },
     targets: { eject: 2.85, time: 350 },
+  },
+  // Kapitel 4 "Dunkelwolke" (Paket D): begrenztes Sichtfeld (`fog: true`, fog.js: reine Darstellung, der Bot sieht alles). Arena-Levels der Familie `welt` (lebendig, Massenleiter),
+  // Groessere verraten sich am Rand des Sichtkreises durch Glimmen. Zahlen kalibriert mit tools/sim-protoplanet.mjs (docs/protoplanet.md, "Paket D").
+  {
+    id: '4-1', chapter: 4, n: 1, rev: 1, title: 'Im Dunkeln', family: 'welt', seed: 3, fog: true,
+    params: { R: 21, goalType: 'mass', mass: 6, slack: 1.5, groups: [g(20, 0.15, 0.4, SW, 0.15), g(10, 0.5, 0.9, SW, 0.15), g(5, 1.1, 1.5, SW, 0.12), g(2, 1.5, 1.9, SW, 0.1)] },
+    goal: { type: 'mass' },
+    hint: { text: 'Du siehst nur, was dein Licht erreicht. Ein Glimmen am Rand warnt vor Größeren.', until: 'absorb' },
+    targets: { eject: 2.6, time: 150 },
+  },
+  {
+    id: '4-2', chapter: 4, n: 2, rev: 1, title: 'Erkundung', family: 'welt', seed: 5, fog: true,
+    params: { R: 34, goalType: 'mass', mass: 12, slack: 1.6, groups: lad(10, 0.2) },
+    goal: { type: 'mass' },
+    targets: { eject: 8.6, time: 275 },
+  },
+  {
+    id: '4-3', chapter: 4, n: 3, rev: 1, title: 'Schattenfels', family: 'welt', seed: 14, fog: true,
+    params: { R: 44, goalType: 'largest', slack: 1.4, groups: [g(34, 0.12, 0.45, SW, 0.25), g(15, 0.5, 0.9, SW, 0.25), g(8, 1.1, 1.9, SW, 0.22), g(3, 2.2, 3, SW, 0.18), g(1, 6, 7, SW, 0.1, { tag: 'rock', rMin: 18 })] },
+    goal: { type: 'largest' },
+    targets: { eject: 5.9, time: 290 },
+  },
+  {
+    id: '4-4', chapter: 4, n: 4, rev: 1, title: 'Aus dem Nebel', family: 'welt', seed: 11, fog: true,
+    params: { R: 38, goalType: 'mass', mass: 14, slack: 1.6, groups: lad(13, 0.2), hunters: [{ lo: 1.3, hi: 1.7, diff: 'normal', hMin: 12 }] },
+    goal: { type: 'mass' },
+    targets: { eject: 8.6, time: 335 },
+  },
+  {
+    id: '4-5', chapter: 4, n: 5, rev: 1, title: 'Fernes Licht', family: 'welt', seed: 10, fog: true,
+    params: {
+      R: 34, goalType: 'absorb', slack: 1.4,
+      groups: [g(1, 3.2, 3.6, 'rand', 0.3, { tag: 'target', rMin: 13, rMax: 24 }), g(30, 0.12, 0.45, SW, 0.3), g(14, 0.5, 0.9, SW, 0.3), g(8, 1.1, 1.9, SW, 0.25), g(3, 2.2, 2.8, SW, 0.2)],
+    },
+    goal: { type: 'absorb' },
+    targets: { eject: 9.85, time: 250 },
+  },
+  {
+    id: '4-6', chapter: 4, n: 6, rev: 1, title: 'Letzte Lichter', family: 'welt', seed: 16, fog: true,
+    params: { R: 28, goalType: 'last', slack: 1.4, groups: [g(24, 0.12, 0.45, SW, 0.18), g(10, 0.5, 0.9, SW, 0.18), g(3, 1.1, 1.5, SW, 0.15)] },
+    goal: { type: 'last' },
+    targets: { eject: 26.4, time: 510 },
+  },
+  {
+    id: '4-7', chapter: 4, n: 7, rev: 1, title: 'Nebelbank', family: 'welt', seed: 18, fog: true,
+    params: { R: 46, goalType: 'largest', slack: 1.4, groups: lad(15, 0.2), hunters: [{ lo: 8, hi: 9, diff: 'normal', hMin: 14 }] },
+    goal: { type: 'largest' },
+    targets: { eject: 5.85, time: 255 },
+  },
+  {
+    id: '4-8', chapter: 4, n: 8, rev: 1, title: 'Die Dunkelwolke', family: 'welt', seed: 12, fog: true,
+    params: { R: 54, goalType: 'mass', mass: 30, slack: 1.5, groups: [...lad(22, 0.2, [4, 2.4, 3.2]), g(3, 0.3, 0.6, 'rand', 1, { vj: 0.2 })], hunters: [{ lo: 1.6, hi: 2.0, diff: 'normal', hMin: 14 }] },
+    goal: { type: 'mass' },
+    targets: { eject: 22.7, time: 470 },
   },
 ];
 

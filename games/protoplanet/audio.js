@@ -432,6 +432,14 @@ export function createEngine(ctx, opts = {}) {
       const n = scaleOf(m).length;
       [0, 0.22].forEach((dt, i) => tone({ t: t + dt, hz: midiToHz(scaleMidi(m, n - 2 - i)), gain: 0.07, att: 0.03, dec: 0.5, type: 'triangle', oct: 0, send: 0.4, pan: 0 }));
     },
+    // Glimmen (Kapitel 4): ein sehr leiser, tiefer Ton, der mit der Staerke etwas lauter wird (hoechstens alle paar Sekunden)
+    glimmer({ k = 0.5, t = now() } = {}) {
+      if (!gate.allow('glimmer', t).ok || !live()) return;
+      const m = mood();
+      const g = T.fog.soundK * (0.45 + 0.55 * clamp(k, 0, 1));
+      tone({ t, hz: midiToHz(scaleMidi(m, 0) - 12), gain: g, att: 0.7, dec: 2.4, type: 'sine', oct: 0, send: 0.5, pan: 0 });
+      tone({ t: t + 0.9, hz: midiToHz(scaleMidi(m, 2) - 12), gain: g * 0.6, att: 0.8, dec: 2.2, type: 'sine', oct: 0, send: 0.5, pan: 0 });
+    },
     levelStart({ t = now() } = {}) {
       if (!live()) return;
       const m = mood();
@@ -579,7 +587,7 @@ export function createAudio({ settings, seed } = {}) {
     },
     sfx: {},
   };
-  for (const k of ['absorb', 'eject', 'swallowed', 'win', 'rewind', 'timeStep', 'ui', 'warn', 'levelStart', 'star']) {
+  for (const k of ['absorb', 'eject', 'swallowed', 'win', 'rewind', 'timeStep', 'ui', 'warn', 'glimmer', 'levelStart', 'star']) {
     api.sfx[k] = (arg) => {
       if (engine && ctx.state === 'running') engine.sfx[k](arg);
     };
