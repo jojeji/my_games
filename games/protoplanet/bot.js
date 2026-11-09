@@ -26,9 +26,10 @@ export function botAct(play, st) {
 }
 
 /** Ein Level mit dem Bot spielen. Gibt {solved, lost, time, ejected, ejects} zurueck. */
-export function playLevel(level, { maxTime = B.maxTime } = {}) {
+export function playLevel(level, { maxTime = B.maxTime, variant = 0 } = {}) {
   const play = createPlay(level);
   const st = createBot();
+  play.advanceSteps(variant * B.variantSteps); // Variante = andere Entscheidungs-Phase (deterministisch): der Bot beginnt zu handeln, wenn die Welt schon ein paar Schritte alt ist
   while (play.status === 'running' && play.world.t < maxTime) {
     botAct(play, st);
     play.advanceSteps(B.every);
@@ -56,7 +57,7 @@ export const median = (xs) => {
 export function botBatch(level, seeds, opts) {
   const runs = seeds.map((seed) => {
     const r = playLevel({ ...level, seed }, opts);
-    return { seed, solved: r.solved, lost: r.lost, time: r.time, ejected: r.ejected };
+    return { seed, solved: r.solved, lost: r.lost, time: r.time, ejected: r.ejected, mass: r.mass };
   });
   const ok = runs.filter((r) => r.solved);
   return {
@@ -67,5 +68,6 @@ export function botBatch(level, seeds, opts) {
     medTime: median(ok.map((r) => r.time)),
     p90Time: ok.length ? ok.map((r) => r.time).sort((a, b) => a - b)[Math.min(ok.length - 1, Math.floor(ok.length * 0.9))] : NaN,
     medEject: median(ok.map((r) => r.ejected)),
+    medMass: median(ok.map((r) => r.mass)),
   };
 }

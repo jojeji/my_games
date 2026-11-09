@@ -201,7 +201,133 @@ function jaeger(p, rng) {
   return { bodies, arenaR: p.R, goal: { type: p.target ? 'absorb' : 'last', value: massValue(p, bodies), slack: p.slack || 1.3 } };
 }
 
-export const FAMILIES = { wolke, ziel, strom, enge, brocken, jaeger };
+
+/* ---------- Lebendige Welt (Paket A): Massenleiter + Stroemungen ---------- */
+
+const gauss = (rng) => rngRoll(rng) + rngRoll(rng) + rngRoll(rng) - 1.5; // ungefaehr Normalverteilung, Sigma 0,5
+
+/**
+ * Kandidaten-Erzeuger einer Gruppe: gibt bei jedem Aufruf [x, y, vx, vy] zurueck.
+ * flow: 'rand' (zufaellige Richtung), 'drift' (gemeinsame Richtung), 'swirl' (kreisend, g.dir = +-1), 'bands' (gegenlaeufige Baender), 'swarm' (Schwarm um einen Mittelpunkt).
+ * Richtungen (Grad) sind relativ zur Grundrichtung `base` des Levels (aus dem Seed), damit dasselbe Muster in jedem Seed anders liegt.
+ */
+function sampler(rng, g, R, base) {
+  const fl = g.flow || 'rand';
+  const rMin = g.rMin != null ? g.rMin : 2.6;
+  const rMax = g.rMax != null ? g.rMax : R - 1.5;
+  const ang = base + ((g.ang || 0) * Math.PI) / 180;
+  const v = g.v || 0;
+  const vj = g.vj != null ? g.vj : 0.25; // Streuung der Geschwindigkeit (Anteil)
+  const dirJ = g.dirJ != null ? g.dirJ : 0.25; // Streuung der Richtung (rad)
+  let cx = 0;
+  let cy = 0;
+  if (fl === 'swarm') {
+    const a = uni(rng, 0, Math.PI * 2);
+    const d = uni(rng, R * 0.3, R * 0.65);
+    cx = Math.cos(a) * d;
+    cy = Math.sin(a) * d;
+  }
+  const bw = g.bw || R / 2.5;
+  return () => {
+    let x;
+    let y;
+    if (fl === 'swarm') {
+      const s = g.spread || R * 0.12;
+      x = cx + gauss(rng) * 2 * s;
+      y = cy + gauss(rng) * 2 * s;
+    } else {
+      const a = uni(rng, 0, Math.PI * 2);
+      const d = Math.sqrt(uni(rng, rMin * rMin, rMax * rMax));
+      x = Math.cos(a) * d;
+      y = Math.sin(a) * d;
+    }
+    let dir;
+    let sp = v * uni(rng, 1 - vj, 1 + vj);
+    if (fl === 'rand') dir = uni(rng, 0, Math.PI * 2);
+    else if (fl === 'drift' || fl === 'swarm') dir = ang + gauss(rng) * 2 * dirJ;
+    else if (fl === 'swirl') {
+      const d = Math.hypot(x, y) || 1;
+      dir = Math.atan2(y, x) + ((g.dir || 1) * Math.PI) / 2 + gauss(rng) * 2 * dirJ * 0.5;
+      sp *= 0.6 + 0.4 * Math.min(1, d / (R * 0.5)); // innen langsamer
+    } else if (fl === 'bands') {
+      const yp = -Math.sin(ang) * x + Math.cos(ang) * y; // Koordinate quer zur Stroemung
+      const k = Math.floor((yp + R) / bw);
+      dir = ang + (k % 2 === 0 ? 0 : Math.PI) + gauss(rng) * 2 * dirJ * 0.4;
+    } else dir = ang;
+    return [x, y, Math.cos(dir) * sp, Math.sin(dir) * sp];
+  };
+}
+
+/** Ein Koerper der Masse m darf hier mit dieser Geschwindigkeit starten (keine Ueberlappung, Abstand zum Spieler, ab 0,9 Masse: kein Schussfeld). */
+function fits(bodies, x, y, vx, vy, m, R, g, rockKeep) {
+  const r = Math.sqrt(m);
+  const d0 = Math.hypot(x, y);
+  if (d0 + r > R - 0.2 || d0 < Math.max(g.dMin || 0, 1 + r + 0.5)) return false;
+  for (const o of bodies) {
+    const keep = o.tag === 'rock' ? Math.max(g.keepOut || 0, rockKeep) : o.m >= 1 ? g.keepOut || 0 : 0;
+    if (Math.hypot(x - o.x, y - o.y) < r + Math.sqrt(o.m) + 0.15 + keep) return false;
+    if (g.sep && o.m >= 1.4 && Math.hypot(x - o.x, y - o.y) < g.sep) return false; // grosse Koerper weit auseinander (sonst verschmelzen sie frueh und werden zum Riesen)
+  }
+  if (m >= 0.9 && closest({ x, y, vx, vy }, RULES.lookahead) - r - 1 < RULES.clearance + 0.3) return false;
+  return true;
+}
+
+/**
+ * Lebendige Welt. p = { R, goalType?, mass?, slack?, rockKeep?, groups[], hunters[], target?, comets? }
+ *  group = { n, lo, hi, skew?, flow, v, vj?, ang?, dir?, rMin?, rMax?, dMin?, tag?, keepOut?, bw?, spread? }  (Massenleiter: mehrere Gruppen mit wachsender Masse)
+ *  hunters[i] = { lo, hi, diff, hMin?, v?, target? }.
+ */
+function welt(p, rng) {
+  const R = p.R;
+  const bodies = [];
+  const base = uni(rng, 0, Math.PI * 2);
+  const rockKeep = p.rockKeep || 0;
+  // Reihenfolge: grosse Gruppen zuerst (sie brauchen den meisten Platz), dann die kleinen
+  const groups = (p.groups || []).slice().sort((a, b) => b.hi - a.hi);
+  for (const g of groups) {
+    const next = sampler(rng, g, R, base);
+    for (let i = 0; i < g.n; i++) {
+      const m = pickMass(rng, g.lo, g.hi, g.skew || 1);
+      for (let k = 0; k < 120; k++) {
+        const [x, y, vx, vy] = next();
+        if (!fits(bodies, x, y, vx, vy, m, R, g.sep == null && g.lo >= 1.1 ? { ...g, sep: p.sep != null ? p.sep : 10 } : g, rockKeep)) continue;
+        bodies.push({ x, y, vx: vx * (p.vMul || 1), vy: vy * (p.vMul || 1), m, kind: 'mote', ...(g.tag ? { tag: g.tag } : {}) });
+        break;
+      }
+    }
+  }
+  for (let i = 0; i < (p.hunters || []).length; i++) {
+    const h = p.hunters[i];
+    const m = uni(rng, h.lo, h.hi);
+    const seed = Math.floor(rngRoll(rng) * 4294967296);
+    for (let k = 0; k < 200; k++) {
+      const a = uni(rng, 0, Math.PI * 2);
+      const d = Math.sqrt(uni(rng, (h.hMin || 8) ** 2, (R - 2) ** 2));
+      const x = Math.cos(a) * d;
+      const y = Math.sin(a) * d;
+      if (!fits(bodies, x, y, 0, 0, m, R, { keepOut: 0.6, sep: h.sep != null ? h.sep : 10, dMin: 0 }, rockKeep)) continue;
+      bodies.push({ x, y, vx: 0, vy: 0, m, kind: 'hunter', hunter: { seed, diff: h.diff || 'normal' }, tag: h.target ? 'target' : '' });
+      break;
+    }
+  }
+  // Starthilfe: ein paar kleine, langsame Koerper nahe am Spieler (sonst sind alle Wege am Anfang teurer als die Beute)
+  const st = p.starter || { n: 4, lo: 0.2, hi: 0.5, dLo: 3.2, dHi: 7, v: 0.12 };
+  for (let i = 0; i < st.n; i++) {
+    const m = uni(rng, st.lo, st.hi);
+    for (let k = 0; k < 120; k++) {
+      const a = uni(rng, 0, Math.PI * 2);
+      const d = uni(rng, st.dLo, st.dHi);
+      const [vx, vy] = velocity(rng, st.v, st.v * 0.3);
+      if (!fits(bodies, Math.cos(a) * d, Math.sin(a) * d, vx, vy, m, R, {}, 0)) continue;
+      bodies.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, vx, vy, m, kind: 'mote' });
+      break;
+    }
+  }
+  const mass = p.mass || 0;
+  return { bodies, arenaR: R, goal: { type: p.goalType || 'last', value: mass, slack: p.slack || 1.4 } };
+}
+
+export const FAMILIES = { wolke, ziel, strom, enge, brocken, jaeger, welt };
 
 /** Level aus Familie + Parametern + Seed erzeugen. Wiederholt mit abgeleiteten Seeds, bis alle Grundregeln erfuellt sind. */
 export function generate(family, params, seed, goal = null) {
