@@ -87,7 +87,7 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
 - **Levelfamilie** = Generator `family(params, rng) -> { bodies, arena?, attractors? }`. Grundregeln, die jeder Generator selbst sicherstellt:
   Der Spieler startet mit `m = 1` in der Mitte (Kapitel 1) bzw. auf einer stabilen Bahn (P2), in Reichweite gibt es kleinere Körper,
   kein größerer Körper ist bei geradliniger Vorhersage in den ersten 5 s näher als 3 Spielerradien, und die Masse der kleineren Körper reicht für das Ziel.
-- **Kapitel 1 „Staubwolke“ (P1)**, 8 Levels:
+- **Kapitel 1 „Staubwolke“ (P1)**, 8 Levels (**1-4..1-8 und Kapitel 2 sind seit Paket A neu gebaut, siehe „Paket A“; die Beschreibung hier ist die ursprüngliche Planung**):
   1. Lehre „Bewegen“ (von Hand): ein ruhender kleinerer Körper. Hilfe: „Tippe, wohin du fliegen willst.“ Ziel: absorbiere ihn.
   2. Lehre „Gefahr“ (von Hand): einige kleinere Körper, ein langsam treibender größerer (orange). Ziel `last`: erst ausweichen, an den kleinen wachsen, dann den orangen Körper schlucken (genug Futter eingeplant).
   3. Lehre „Strahl und Zeit“ (von Hand): verstreute kleine Körper, weite Wege, ein ruhender größerer. Hilfe: „Halte gedrückt für einen Strahl. Unten rechts läuft die Zeit schneller.“ Ziel `last`.
@@ -143,7 +143,7 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
 - `bot.js` (DOM-frei, nutzt dieselbe `physics.js`): handelt alle 0,25 s Spielzeit. Wählt als Ziel den kleineren Körper mit dem besten Verhältnis Masse / (Abfangzeit + Ausstoßkosten),
   weicht Körpern aus, die größer sind und bei linearer Vorhersage näher als ein Sicherheitsabstand kommen, und stößt so wenig aus wie nötig. Läuft immer mit Zeitstufe ×1 (`dt` fest).
 - `tools/sim-protoplanet.mjs [--level id] [--family f --seeds N] [--table] [--verbose]`: Lösungsquote, Median/Streuung der Spielzeit und der Ausstoßmasse, vorgeschlagene `targets`.
-- Tests (Deploy-Sperre, gesamt < ~20 s):
+- Tests (Deploy-Sperre, gesamt < ~20 s; die Abnahme des Bots hat sich mit Paket A geändert, siehe dort, die folgende Aufzählung nennt die alte Regel):
   - `tests/protoplanet-physics.test.mjs`: Masse- und Impulserhaltung bei Ausstoß und Absorbieren, Absorptionsformel (berühren sich danach genau), Spiegelung am Rand, Determinismus (gleicher Seed + Eingaben = gleicher Zustand), Schnappschuss/Zurückspulen.
   - `tests/protoplanet-gen.test.mjs`: Grundregeln jeder Familie über viele Seeds (Startabstand, Masse reicht, keine Überlappung beim Start).
   - `tests/sim-protoplanet.test.mjs`: der Bot löst jedes feste Level; je Familie über ≥ 40 Seeds **≥ 95 % gelöst**, **Median-Spielzeit 1–5 min** (Lehrlevels kürzer erlaubt).
@@ -383,3 +383,56 @@ Alle 40-Seed-Zeilen erfüllen die Test-Kriterien (≥ 38/40, Median 60–300 s),
 5. Familien `strom` und `enge` kommen in keinem Level mehr vor (waren 1-6/1-8), bleiben im Generator (für das Tageslevel) und werden in `tests/protoplanet-gen.test.mjs` mit ihren P1-Parametern geprüft; ihre Bot-Quote wird nicht mehr automatisch gemessen.
 6. Der Bot hat im Gehirn einen dritten Durchgang („auch unrentable Beute“, nur für `largest`/`mass`), weil er sonst bis zu 100 s still stand; er ist für `last`/`absorb` ausgeschaltet (1-1..1-5 unverändert).
 7. Browser: Playwright 390×844 und 360×740, Touch über CDP; Levelauswahl mit zwei Kapiteln, 1-6 (Hilfe, „Noch 5 größere“, Pausentext), 1-7 (Brocken), 2-1 (Hilfe, Jäger-Ring), 2-5 (zwei Jäger, Jäger-Ausstoß), Ergebnis-Bildschirm; alle Tap-Ziele ≥ 44 px, 0 Konsolenfehler. Nicht auf einem echten Gerät geprüft.
+
+
+### Paket A: lebendige, längere, schwerere Levels (Kapitel 1 und 2) — umgesetzt
+
+Auftrag aus „Überarbeitung ‚rundes Spiel‘“ (Diagnose: Welt steht still, Spieler wächst nur 1 -> 3, Levels 60–90 s, Abnahme hat die festen Levels weichgespült). UI, Render, Eingabe und Kamera blieben unberührt (`camMax` 34 -> 66 in `tune.js`).
+
+**1. Generator `welt` (`gen.js`).** Eine Familie für alle neuen Levels: `params = { R, goalType, mass?, slack?, groups[], hunters[], starter?, sep?, vMul? }`.
+- **Massenleiter:** Gruppen mit wachsender Masse (`lad(k, v, top)` in `levels.js`: Staub 0,12–0,45, Kleine 0,5–0,9, Mittlere 1,1–1,9, wenige Große 2,2–3,4; k = 10 sind 36/16/9 Körper). Gesamtmasse der Körper 21 (2-6) bis 92, der Bot endet je nach Ziel bei 7–28 Startmassen.
+- **Strömungen** je Gruppe: `swirl` (Tangenten um die Mitte, auch gegenläufige Ringe `rMin/rMax/dir`), `drift`, `bands`, `swarm`, `rand` (Kometen, v ~ 1). Der Spieler startet in Ruhe; mittlere Startgeschwindigkeit 0,16–0,26.
+- **Grundregeln bleiben** (`checkRules`): nichts überlappt, kleinerer Körper in Reichweite, kein größerer Körper kommt in 5 s näher als 3 Radien (jetzt mit echter Geschwindigkeit je Körper beim Platzieren geprüft), Masse reicht fürs Ziel. Neu: **Starthilfe** (4 kleine, langsame Körper 3–7 vom Spieler) und **`sep`** (große Körper >= 1,4 und Jäger mindestens 10 voneinander entfernt).
+- Hand-Level 1-1, 1-2, 1-3, 2-1 sind unverändert (kein `rev`). Die Altfamilien `wolke|ziel|strom|enge|brocken|jaeger` bleiben im Generator (Tageslevel) und werden mit ihren Alt-Parametern getestet.
+
+**2. Level-Tabelle** (Messung: `node tools/sim-protoplanet.mjs --seeds 30`; „fest“ = fester Seed in 3 Bot-Varianten, Zeit in s / Endmasse; „30 Seeds“ = Test-Seeds 1000..1029; „150 fremde“ = Seeds 7000..7149, nicht zum Einstellen benutzt; Median-Zeit der Familie in s):
+
+| Level | Name | Ziel | Charakter | Körper | R | fest: 3 Varianten (s / Endmasse) | 30 Seeds | 150 fremde (Median s) | Endmasse Median |
+|---|---|---|---|---|---|---|---|---|---|
+| 1-4 | Treibgut | Masse 14 | ruhiger Wirbel, 4 Stufen, v 0,2 | 68 | 36 | 169 / 145 / 174 (14) | 27/30 (171) | 144/150 = 96 % (154) | 14,0 |
+| 1-5 | Wanderer | Zielkörper absorbieren | wandernder Zielkörper 3,2–3,6 (v 0,3) im schnelleren Treibgut | 60 | 34 | 141 / 152 / 146 (17–18) | 27/30 (144) | 130/150 = 87 % (154) | 15,8 |
+| 1-6 | Gegenströme | unangreifbar | zwei gegenläufige Ringe, Brocken 6–7 im Außenring | 110 | 56 | 120 / 117 / 93 (7) | 27/30 (119) | 145/150 = 97 % (116) | 7,2 |
+| 1-7 | Wirbel | unangreifbar | ein großer Wirbel (v 0,25), 2 Kometen, Brocken 6–7 | 67 | 44 | 131 / 132 / 131 (6,4) | 27/30 (140) | 132/150 = 88 % (135) | 7,3 |
+| 1-8 | Kometenschwarm (Finale) | Masse 28 | größte Arena, 133 Körper, 3 Kometen | 133 | 50 | 246 / 218 / 248 (28) | 27/30 (261) | 126/150 = 84 % (244) | 28,1 |
+| 2-2 | Verfolger | Masse 12 | ein leichter Jäger (easy, 1,5–1,8) verfolgt dich | 68 | 32 | 130 / 114 / 138 (12) | 27/30 (131) | 140/150 = 93 % (143) | 12,0 |
+| 2-3 | Jagdzeit | Jäger absorbieren | Zielkörper ist ein normaler Jäger (1,4–1,8) | 81 | 36 | 157 / 165 / 155 (15–24) | 30/30 (172) | 143/150 = 95 % (130) | 15,0 |
+| 2-4 | Konkurrenz | unangreifbar | Riesenjäger (normal, 8–9) | 100 | 46 | 131 / 139 / 145 (11–12) | 28/30 (131) | 133/150 = 89 % (145) | 9,4 |
+| 2-5 | Rudel | Masse 14 | zwei normale Jäger (1,2–1,6) | 89 | 38 | 166 / 127 / 144 (14) | 27/30 (145) | 140/150 = 93 % (158) | 14,0 |
+| 2-6 | Aufräumen | letzter Körper | kleine Arena, normaler + leichter Jäger | 43 | 28 | 250 / 274 / 266 (12–20) | 24/30 (257) | 130/150 = 87 % (263) | 18,2 |
+| 2-7 | Revier | unangreifbar | zwei große Jäger (normal 6–7, **hard** 5,5–6,5) | 120 | 54 | 145 / 126 / 111 (9) | 27/30 (136) | 133/150 = 89 % (127) | 8,9 |
+| 2-8 | Rudelführer (Finale) | Masse 22 | harter + normaler Jäger, dichtes Feld | 107 | 42 | 185 / 189 / 167 (22) | 27/30 (189) | 125/150 = 83 % (194) | 22,1 |
+
+Alle zwölf neuen Levels: 3 von 3 Varianten lösen den festen Seed (Test verlangt 2 von 3), alle 30-Seed-Quoten >= 80 % (2-6 mit 24/30 genau an der Grenze, über 150 fremde Seeds 87 %), über fremde Seeds 83–97 %. Namen sind eindeutig, Ziele gemischt (Kapitel 1: absorb, last, last, mass, absorb, largest, largest, mass; Kapitel 2: absorb, mass, absorb, largest, mass, last, largest, mass). **Zeitkorridor:** Normale Levels 117–172 s (Ziel war 120–240 s: `largest`-Levels 1-6/1-7/2-4/2-7 und 2-2 liegen mit 116–145 s am unteren Rand), Finale 1-8 244–261 s (Ziel 240–360 s erreicht), **Finale 2-8 nur 189–194 s (Ziel 240–360 s verfehlt)**, `last` 2-6 257–263 s. Längere `largest`/Jäger-Levels haben die Quote unter 80 % gedrückt (siehe unten), deshalb nicht verlängert.
+
+**3. Was die Messungen bestimmt hat (alle mit >= 48 Seeds, `--params/--tune` der Sim).**
+- **Strömung `swirl` statt Drift/Bänder:** gemeinsame Drift stößt an den Rand und prallt zurück (Gegenverkehr, Zusammenstöße), Tangenten bleiben im Ring (Billard im Kreis). 1-4 mit Drift 8/16, mit `swirl` 15/16.
+- **Das Hauptproblem ist der Lawinen-Rivale:** zwei, drei mittelgroße Körper verschmelzen früh (3 -> 9 -> 20+), fressen den Vorrat, der Spieler bleibt klein (Zeitlimit). Passiv wächst der größte Körper moderat (2,9 -> 6,5 in 240 s, Median). Die Lawine entsteht vor allem durch **frühes Verschmelzen großer Körper**: `sep` 10 hob die Bot-Quote von 63 auf 85 % (2-2 mit hartem Jäger), kleineres Tempo (0,2 statt 0,35) um ~15 Punkte. Verschwindende Teilchen (Ausstoß füttert Rivalen nicht mehr) brachte nur 17 -> 19 von 24: der Ausstoß ist weniger wichtig als vermutet. **Brocken fressen in einer lebendigen Welt alles** (5 -> 29 in 240 s, auch mit `rockKeep`): höchstens ein Brocken (6–7) und nur in `largest`-Levels; in Kapitel 2 keine.
+- **Zielwahl:** `last` ist am schwersten (80–87 %, der Bot stößt mehr Masse aus, als er am Ende hat), `mass` mit hohem Wert am verlässlichsten (90–97 %). `largest` gegen Brocken/Jäger ab 8–9 Massen fällt unter 80 %: der Rivale wächst mit.
+- **Jäger:** `hard` (vmax 1,15, ejectSpeed 3,5) senkte die Bot-Quote einer sonst 95-%-Welt auf 63 %; `hard` jetzt vmax 0,9, ejectSpeed 3, react 0,55–0,95 (`normal` vmax 0,75): ~83 %. Weniger Gier (`T.hunter.bot.costK` 5 statt 3) +9 Punkte, **Sichtweite `sense` 10 statt 8: -28 Punkte** (62 %). Probiert ohne Wirkung: Bot gewichtet Jäger höher (`hunterW` 3: schlechter, 23 statt 30 von 48). Die Jäger konkurrieren trotzdem spürbar: sie wachsen in 100 s von 1,8 auf 5–7 und fressen Futter.
+
+**4. Bot (`brain.js`, gleiches Gehirn für Jäger).** Neu: (a) **Bahnvorhersage mit Randabprall** (`trajOf`: Positionen je 0,5 s für Beute, 0,25 s für Gefahren, die Relativbewegung ist je Abschnitt linear, der kleinste Abstand wird exakt gerechnet); (b) **Beute nach dem Ausstoß noch fressbar** (`catchRatio` 0,85 neu, begonnene Jagd bis `keepRatio` 0,95; vorher kippte der Plan, weil der Ausstoß den Bot kleiner macht, und der Bot gab nach jedem Schub das Ziel auf = der größte Einzelfehler: 1-8 52 -> 83 %, 1-5 71 -> 90 %, 1-6 79 -> 88 % bei je 48 Seeds); (c) `costK` 7 -> 3 (schnelleres Wachstum und kürzere Zeiten; 1,5 / 2,2 / 3 / 5 liegen innerhalb des Rauschens, 7 war in der lebendigen Welt schlechter, z. B. 1-8: 25 statt 34 von 48), `margin` 1,1 -> 0,5; (d) für `absorb` ebenfalls der dritte Durchgang („auch unrentable Beute“) und eine **weite Anfahrt** (`tausFar` 38/55 s, nur wenn nichts in Reichweite ist: sonst steht der Bot in der leeren Mitte); (e) Bot-Varianten (`playLevel(level, {variant})`, Phase 14 Schritte × v). Die vorausschauende Planung per Vorwärtssimulation von Kandidaten-Schüben wurde **nicht** umgesetzt (Aufwand gegen Zeit; die Bahnvorhersage und die Kauf-Regel haben die Fehler gefunden, die gemessen wurden). Verworfen nach Messung: `rivalBoost` (größte Rivalen bevorzugen), `hunterW`, andere Horizonte/Gefahrenschwellen (Rauschen ±5 Punkte). **Deterministisch** wie bisher (Cache der Bahnen hängt an Welt und Schrittzahl, keine Zufallszahl im Bot).
+
+**5. Physik und Leistung.** `findPairs`: Sweep entlang x (Einfügesortierung, Paare in fester Reihenfolge (i, j), identisch zum Paarvergleich, Test bleibt) statt Map-Raster: 135 Körper 3–5× schneller (Profil: 149 -> 31 ms von 310 ms je 68 s Spielzeit). `T.gridMinBodies` 24. Alle Protoplanet-Tests zusammen 121 Tests, ~19 s Wanduhr (~51 s CPU, 4 Kerne).
+
+**6. Neue Abnahme (Begründung).** Wie in „Überarbeitung ‚rundes Spiel‘“ entschieden: feste Levels sind handverlesene Aufgaben, kein Zufallstest; der Bot muss sie in 2 von 3 Varianten (Entscheidungs-Phase) lösen, sonst hätte ein einzelner Glückslauf die Level weichgespült; Zeitkorridor statt Mindestzeit-Median; Familien über 30 Zufalls-Seeds >= 80 % (jeder Test-Seed kostet ~1 s, 40 wären ~40 s); die 95 %-Regel gilt künftig nur für Familien mit `daily: true`. Neu „Welt lebt“ (mittlere Startgeschwindigkeit >= 0,08, Endmasse des Bots im Median >= 6) und „Stern-Ziele erreichbar“ (mindestens eine Variante je Ziel); Stern-Ziele = Bot-Median der Varianten × 1,3 (Zeit und Ausstoß). Test-Seeds 1000..1029 sind nicht die Seeds, mit denen die Levels gebaut wurden (feste Seeds aus 1..40 mit `--pick`), die 150 fremden Seeds (7000+) sind die ehrliche Gegenprobe: 83–97 %.
+
+**7. Spielstand.** `SAVE_VERSION` 3, Migration `2` (`REBUILT_V3`): Sterne und Bestwerte der zwölf neuen Levels weg, `done` bleibt (Kapitel 2 bleibt offen), laufende Schnappschüsse dieser Level gehen weg; alle zwölf `rev: 3`, `snapValid` verwirft auch Schnappschüsse mit `rev` 2 (altes 1-6..1-8). Getestet mit einem echten Version-2-Spielstand (Ablage über `engine/save.js`).
+
+**8. Browser (Playwright, 390×844, 1-5, 1-8, 2-5, 2-8, Bot spielt 20 s mit).** Screenshots gesehen: alle Körper sichtbar und bewegt, die Kamera fährt heraus (halbe Breite 36–52), Jäger mit gestricheltem Ring, 0 Konsolenfehler. Bildzeit in Headless-Chromium (Desktop-CPU, kein Handy!) mit 135 Körpern (1-8): Median 16,7 ms (60 fps), p99 16,8 ms, Maximum 33 ms; 2-8 (112 Körper) gleich. Nicht auf einem echten Handy gemessen.
+
+**9. Offen / Hinweise.**
+- Menschenzeiten und -Gefühl weiter unbekannt; die Levels sind für den Bot kalibriert. Besonders `last`-Levels (1-2/1-3 als Lehrlevel in 2 von 3 Varianten, 2-6) sind für den Bot grenzwertig.
+- 1-2 (Hand-Lehrlevel, unverändert): die Bot-Variante 1 läuft in das Zeitlimit (2 von 3 Varianten lösen es); der Bot steht dort, ein Mensch nicht. Nicht angefasst (Lehrlevel, kein `rev`).
+- Finale 2-8 (189–194 s) ist kürzer als das Ziel (240–360 s); längere Fassungen haben die Bot-Quote unter 80 % gedrückt.
+- Stern-Ziele sind Bot-Werte × 1,3; für Menschen vermutlich zu streng beim Ausstoß (Bot stößt 3–24 Massen aus, in 1-8 14), nach dem Spielen nachjustieren.
+- Die Messung hat ±5 Punkte Rauschen bei 48 Seeds; alle Parameterentscheidungen oben mit >= 48 Seeds, die Endwerte mit 150 fremden Seeds.

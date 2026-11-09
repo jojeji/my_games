@@ -25,15 +25,27 @@ KI-Körper (`kind: 'hunter'`, ab Kapitel 2). Gleiche Physik wie der Spieler: Aus
 _Avoid_: Gegner, Feind, KI, Boss, Monster
 
 **Brocken**:
-Sehr großer, ruhender (oder sehr langsamer) Körper mit 3–6 Startmassen (Tag `rock`, doppelter Warnring). Eine Gefahr, die man nicht fressen muss, nur überholen (Ziel „Werde unangreifbar“) oder meiden (Ziel Masse). Je Level 1–2.
+Sehr großer, langsamer Körper (Tag `rock`, doppelter Warnring), seit Paket A 6–7 Startmassen, in Levels mit Ziel „Werde unangreifbar“ (1-6, 1-7), höchstens einer je Level. Eine Gefahr, die man nicht fressen muss, nur überholen oder meiden. Er wächst von allein, wenn etwas vorbeitreibt (Zeitdruck).
 _Avoid_: Hindernis (so hießen die 1,1–1,3 großen Körper in P1), Felsen, Riese
+
+**Massenleiter**:
+Die Stufen der Körper eines Levels (Staub, Kleine, Mittlere, Große), jede etwa gleich viel Gesamtmasse, damit der Spieler Stufe für Stufe wächst (am Ende 7–28 Startmassen) und die Kamera herausfährt.
+_Avoid_: Größenklassen, Level-Ups
+
+**Strömung**:
+Gemeinsame Bewegung einer Gruppe von Körpern in einem Level (Wirbel um die Mitte, gegenläufige Ringe, Schwarm, Kometen). Es gibt keine Kraft, nur Anfangsgeschwindigkeiten: Wirbel-Körper fliegen auf Tangenten und bleiben dabei in einem Ring.
+_Avoid_: Wind, Fluss, Gravitation
+
+**Komet**:
+Kleiner, schneller Körper (Geschwindigkeit ~ 1) in einer lebendigen Welt; Beute, die schwer einzuholen ist.
+_Avoid_: Meteor, Geschoss
 
 **Attraktor**:
 Ein Körper, der andere anzieht (ab Kapitel 2), z. B. ein Protostern. Steht still oder folgt einer festen Bahn; spürt selbst keine Gravitation.
 _Avoid_: Sonne, Gravitationsquelle, Planet
 
 **Arena**:
-Der kreisförmige Rand in Kapitel 1, an dem Körper abprallen.
+Der kreisförmige Rand in Kapitel 1 und 2 (R 26–56), an dem Körper abprallen.
 _Avoid_: Wand, Spielfeld, Käfig
 
 **Abdrift**:
@@ -128,5 +140,5 @@ _Avoid_: Tipp, Erzähler
 ## Werkzeuge
 
 **Bot**:
-DOM-freier Spieler, der mit derselben Physik in Node Levels spielt; misst Lösungsquote und Dauer. Sein Gehirn (`brain.js`) teilen sich Bot und Jäger; der Jäger ist die begrenzte Fassung davon, der Bot der perfekte Spieler.
+DOM-freier Spieler, der mit derselben Physik in Node Levels spielt; misst Lösungsquote und Dauer. Läuft in Varianten (andere Entscheidungs-Phase), damit ein fester Seed nicht von einem Glückslauf abhängt. Sein Gehirn (`brain.js`) teilen sich Bot und Jäger; der Jäger ist die begrenzte Fassung davon, der Bot der perfekte Spieler.
 _Avoid_: KI, Gegner (der Gegner im Spiel heißt Jäger)
