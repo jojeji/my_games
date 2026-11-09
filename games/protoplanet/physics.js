@@ -148,6 +148,7 @@ function bounds(w) {
 const graceBlocks = (w, a, b) => (a.gf === b.id && w.t < a.gu) || (b.gf === a.id && w.t < b.gu);
 
 let pairBuf = [];
+let ord = []; // Reihenfolge der Koerper nach x (Sweep), bleibt zwischen Schritten erhalten
 
 function findPairs(w) {
   const bs = w.bodies;
@@ -168,38 +169,43 @@ function findPairs(w) {
     }
     return pairs;
   }
-  // gleichmaessiges Raster, Zellgroesse = 2 x groesster Radius; Paare danach in fester Reihenfolge (i, j)
+  // Sweep entlang x: Koerper nach x geordnet (Einfuegesortierung auf der Reihenfolge des letzten Schritts: fast sortiert, also ~O(n)), jeder Koerper
+  // wird nur mit den Nachbarn verglichen, deren x-Abstand kleiner ist als die Summe aus seinem Radius und dem groessten Radius. Die Paare werden danach
+  // in fester Reihenfolge (i, j) sortiert, das Ergebnis haengt also nicht von der Sortierreihenfolge ab (deterministisch, identisch zum Paarvergleich).
+  if (ord.length !== n) {
+    ord = new Array(n);
+    for (let i = 0; i < n; i++) ord[i] = i;
+  }
   let rmax = 0;
-  for (const b of bs) rmax = Math.max(rmax, Math.sqrt(b.m));
-  const cell = Math.max(2 * rmax, 0.5);
-  const grid = new Map();
-  const key = (cx, cy) => (cx + 4096) * 8192 + (cy + 4096);
   for (let i = 0; i < n; i++) {
-    const b = bs[i];
-    const k = key(Math.floor(b.x / cell), Math.floor(b.y / cell));
-    const c = grid.get(k);
-    if (c) c.push(i);
-    else grid.set(k, [i]);
+    const m = bs[i].m;
+    if (m > rmax) rmax = m;
+  }
+  rmax = Math.sqrt(rmax);
+  for (let k = 1; k < n; k++) {
+    const idx = ord[k];
+    const x = bs[idx].x;
+    let h = k - 1;
+    while (h >= 0 && bs[ord[h]].x > x) {
+      ord[h + 1] = ord[h];
+      h--;
+    }
+    ord[h + 1] = idx;
   }
   const found = [];
-  for (let i = 0; i < n; i++) {
+  for (let k = 0; k < n; k++) {
+    const i = ord[k];
     const a = bs[i];
     const ra = Math.sqrt(a.m);
-    const cx = Math.floor(a.x / cell);
-    const cy = Math.floor(a.y / cell);
-    for (let ox = -1; ox <= 1; ox++) {
-      for (let oy = -1; oy <= 1; oy++) {
-        const c = grid.get(key(cx + ox, cy + oy));
-        if (!c) continue;
-        for (const j of c) {
-          if (j <= i) continue;
-          const b = bs[j];
-          const dx = b.x - a.x;
-          const dy = b.y - a.y;
-          const rr = ra + Math.sqrt(b.m);
-          if (dx * dx + dy * dy < rr * rr) found.push(i * 65536 + j);
-        }
-      }
+    const reach = ra + rmax;
+    for (let h = k + 1; h < n; h++) {
+      const j = ord[h];
+      const b = bs[j];
+      const dx = b.x - a.x;
+      if (dx >= reach) break;
+      const dy = b.y - a.y;
+      const rr = ra + Math.sqrt(b.m);
+      if (dx * dx + dy * dy < rr * rr) found.push(i < j ? i * 65536 + j : j * 65536 + i);
     }
   }
   found.sort((x, y) => x - y);
