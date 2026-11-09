@@ -3,6 +3,8 @@
 // kein groesserer Koerper kommt bei geradliniger Vorhersage in den ersten 5 s naeher als 3 Spielerradien, die Masse der kleineren Koerper reicht fuers Ziel.
 import { rngRoll, toSeed } from '../../engine/kit/rng.js';
 import { makeAi } from './hunter.js';
+import { T } from './tune.js';
+import { orbitState, elements } from './orbit.js';
 
 export const RULES = { reach: 11, clearance: 3, lookahead: 5, gap: 0.05, maxAttempts: 40 };
 
@@ -327,7 +329,149 @@ function welt(p, rng) {
   return { bodies, arenaR: R, goal: { type: p.goalType || 'last', value: mass, slack: p.slack || 1.4 } };
 }
 
-export const FAMILIES = { wolke, ziel, strom, enge, brocken, jaeger, welt };
+
+/* ---------- Kapitel 3 "Protostern": Familie `orbit` (Koerper auf Bahnen um einen Stern) ---------- */
+
+/** Stern + Grundwerte des offenen Raums aus den Parametern (gm, rS, rP, selfGrav, loseR, warnR). */
+function orbitSetup(p) {
+  const gm = p.gm || T.orbit.gm;
+  const rS = p.rS || 3.5;
+  const rP = p.rP || 14;
+  const loseR = p.loseR || Math.max(60, rP * 4);
+  const warnR = p.warnR || loseR * 0.72;
+  return { gm, rS, rP, loseR, warnR, selfGrav: p.selfGrav || 0, rings: p.rings || null, dirP: p.dirP || 1 };
+}
+
+const orbitStar = (o) => ({ x: 0, y: 0, vx: 0, vy: 0, m: o.rS * o.rS, kind: 'attractor', gm: o.gm });
+const orbitGrav = (o) => ({ selfGrav: o.selfGrav, warnR: o.warnR, loseR: o.loseR, ...(o.rings ? { rings: o.rings } : {}) });
+
+/** Spieler auf einer Kreisbahn bei Winkel 0 (alle Bahnen laufen standardmaessig gegen den Uhrzeigersinn). */
+const orbitPlayer = (o) => {
+  const s = orbitState(o.gm, o.rP, 0, { dir: o.dirP });
+  return { x: s.x, y: s.y, vx: s.vx, vy: s.vy, m: 1 };
+};
+
+/** Kepler-Vorhersage (Stern allein, Leapfrog) aller Koerper: kleinster Abstand zum Spieler im Fenster [0, T] je Koerper. */
+function closestToPlayer(o, player, bodies, T_, dt = 0.1) {
+  const s2 = T.orbit.soft * T.orbit.soft;
+  const st = [player, ...bodies].map((b) => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy }));
+  const acc = (s) => {
+    const d2 = s.x * s.x + s.y * s.y;
+    const f = o.gm / ((d2 + s2) * Math.sqrt(d2 + 1e-12));
+    return [-f * s.x, -f * s.y];
+  };
+  const best = new Array(bodies.length).fill(Infinity);
+  for (let t = 0; t < T_; t += dt) {
+    for (const s of st) {
+      let [ax, ay] = acc(s);
+      s.vx += ax * dt * 0.5;
+      s.vy += ay * dt * 0.5;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      [ax, ay] = acc(s);
+      s.vx += ax * dt * 0.5;
+      s.vy += ay * dt * 0.5;
+    }
+    for (let i = 0; i < bodies.length; i++) {
+      const d = Math.hypot(st[i + 1].x - st[0].x, st[i + 1].y - st[0].y);
+      if (d < best[i]) best[i] = d;
+    }
+  }
+  return best;
+}
+
+/** Grundregeln fuer Bahnlevels (leere Liste = in Ordnung). Neu gegenueber checkRules: Bahn statt Gerade (Kepler-Vorhersage 10 s), Stern-Abstand, Futter auf Nachbarbahnen. */
+export function checkRulesOrbit({ bodies, goal, orbit }) {
+  const bad = [];
+  const o = orbit;
+  const pl = orbitPlayer(o);
+  const rest = bodies.filter((b) => b.kind !== 'attractor');
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i];
+    const ra = Math.sqrt(a.m);
+    const el = elements(o.gm, a.x, a.y, a.vx, a.vy);
+    if (!el.bound) bad.push('Koerper auf Fluchtbahn');
+    else if (el.rp < o.rS + ra + 1.2) bad.push('Bahn endet im Stern');
+    else if (el.ra > o.loseR * 0.8) bad.push('Bahn reicht in die Abdrift');
+    if (Math.hypot(a.x - pl.x, a.y - pl.y) < 1 + ra + RULES.gap + 0.5) bad.push('ueberlappt den Spieler');
+    for (let j = i + 1; j < rest.length; j++) {
+      const b = rest[j];
+      if (Math.hypot(a.x - b.x, a.y - b.y) < ra + Math.sqrt(b.m) + RULES.gap) bad.push('ueberlappen sich');
+    }
+  }
+  const close = closestToPlayer(o, pl, rest, 10);
+  rest.forEach((b, i) => {
+    if (b.m >= 0.9 && close[i] - Math.sqrt(b.m) - 1 < RULES.clearance - 0.5) bad.push('groesserer Koerper zu nah');
+  });
+  // Futter auf einer Nachbarbahn: ein kleiner Koerper, dessen Bahnband das des Spielers fast beruehrt
+  const near = rest.some((b) => {
+    if (b.m >= 0.9) return false;
+    const el = elements(o.gm, b.x, b.y, b.vx, b.vy);
+    return el.rp <= o.rP + 7 && el.ra >= o.rP - 7;
+  });
+  if (!near) bad.push('kein kleiner Koerper auf einer Nachbarbahn');
+  const total = rest.reduce((s, b) => s + b.m, 0);
+  const maxM = rest.reduce((m, b) => Math.max(m, b.m), 0);
+  const slack = goal.slack || 1.4;
+  if (goal.type === 'largest' || goal.type === 'last') {
+    if (goal.type === 'largest' && maxM < 1) bad.push('largest ohne groesseren Koerper');
+    if (1 + total - maxM < slack * maxM) bad.push('Masse reicht nicht (' + goal.type + ')');
+  } else if (goal.type === 'absorb') {
+    const t = rest.find((b) => b.tag === 'target');
+    if (!t) bad.push('kein Zielkoerper');
+    else if (1 + total - t.m < slack * t.m) bad.push('Masse reicht nicht (absorb)');
+  } else if (goal.type === 'mass') {
+    if (1 + total < slack * goal.value) bad.push('Masse reicht nicht (mass)');
+  }
+  return bad;
+}
+
+/**
+ * Familie `orbit`. p = { gm?, rS?, rP?, loseR?, warnR?, selfGrav?, rings?, goalType?, mass?, slack?, groups[] }
+ *  group = { n, lo, hi, skew?, rMin, rMax, dir? (+1/-1), ecc? (Streuung des Tempos, 0,012), phi? (Flugwinkel-Streuung in Grad), f? (festes Tempo-Verhaeltnis), tag?, minRp? }
+ * Koerper stehen auf Bahnen um den Stern: innen schneller als aussen; Kreisbahnen mit leichter Streuung, Kometen (f < 1, phi) auf Ellipsen.
+ */
+function orbit(p, rng) {
+  const o = orbitSetup(p);
+  const bodies = [orbitStar(o)];
+  const pl = orbitPlayer(o);
+  const groups = (p.groups || []).slice().sort((a, b) => b.hi - a.hi);
+  const laneW = p.laneW || 2;
+  for (const g of groups) {
+    for (let i = 0; i < g.n; i++) {
+      const m = pickMass(rng, g.lo, g.hi, g.skew || 1);
+      const rb = Math.sqrt(m);
+      for (let k = 0; k < 80; k++) {
+        let r = Math.sqrt(uni(rng, g.rMin * g.rMin, g.rMax * g.rMax));
+        const comet = g.f != null;
+        // Bahnspuren (Lanes): Kreisbahnen liegen im Abstand laneW, ausgehend von der Bahn des Spielers. Koerper in DERSELBEN Spur treffen sich nie (gleiche Geschwindigkeit),
+        // Koerper in verschiedenen Spuren nur, wenn die Spuren sich ueberlappen: das verbietet die Regel unten. So bilden sich Guertel mit Luecken, und nichts verschmilzt von allein zum Riesen.
+        if (!comet) r = o.rP + Math.round((r - o.rP) / laneW) * laneW;
+        if (r < g.rMin - laneW / 2 || r > g.rMax + laneW / 2 || r < o.rS + rb + 2) continue;
+        const ang = uni(rng, 0, 360);
+        const f = comet ? g.f * uni(rng, 0.985, 1.015) : 1 + (g.ecc || 0) * uni(rng, -1, 1);
+        const s = orbitState(o.gm, r, ang, { f, dir: g.dir || 1, phi: g.phi ? uni(rng, -g.phi, g.phi) : 0 });
+        if (Math.hypot(s.x - pl.x, s.y - pl.y) < 1 + rb + 2 + (m >= 0.9 ? 4 : 0)) continue;
+        if (bodies.some((b) => b.kind !== 'attractor' && Math.hypot(s.x - b.x, s.y - b.y) < rb + Math.sqrt(b.m) + 0.2 + (m >= 1.4 && b.m >= 1.4 ? 6 : 0))) continue;
+        if (!comet) {
+          const apart = (r0, rad, dirO) => {
+            const dr = Math.abs(r - r0);
+            return (dr < 0.2 && dirO === (g.dir || 1)) || dr >= rb + rad + 0.3; // gleiche Spur und gleiche Richtung, oder genug Abstand
+          };
+          if (!apart(o.rP, 1, o.dirP) || bodies.some((b) => b.kind !== 'attractor' && !b.comet && !apart(Math.hypot(b.x, b.y), Math.sqrt(b.m), b.dir || 1))) continue;
+        }
+        bodies.push({ x: s.x, y: s.y, vx: s.vx, vy: s.vy, m, kind: 'mote', ...(g.tag ? { tag: g.tag } : {}), ...(comet ? { comet: true } : {}), dir: g.dir || 1 });
+        break;
+      }
+    }
+  }
+  const rest = bodies.filter((b) => b.kind !== 'attractor' && b.m < 0.9);
+  const sum = rest.reduce((s, b) => s + b.m, 0);
+  const value = p.mass || Math.round((1 + (p.mFrac || 0.3) * sum) * 100) / 100;
+  return { bodies, arenaR: 0, grav: orbitGrav(o), player: pl, orbit: o, goal: { type: p.goalType || 'mass', value, slack: p.slack || 1.4 } };
+}
+
+export const FAMILIES = { wolke, ziel, strom, enge, brocken, jaeger, welt, orbit };
 
 /** Level aus Familie + Parametern + Seed erzeugen. Wiederholt mit abgeleiteten Seeds, bis alle Grundregeln erfuellt sind. */
 export function generate(family, params, seed, goal = null) {
@@ -337,7 +481,8 @@ export function generate(family, params, seed, goal = null) {
     const rng = { seed: toSeed(seed * 7919 + attempt * 104729 + 12345) };
     const res = fn(params, rng);
     if (goal) res.goal = { ...res.goal, ...goal }; // der Zieltyp kommt vom Level, Parameter (value, slack) von der Familie
-    if (!checkRules(res).length) return { ...res, attempts: attempt + 1 };
+    const bad = res.orbit ? checkRulesOrbit(res) : checkRules(res);
+    if (!bad.length) return { ...res, attempts: attempt + 1 };
   }
   throw new Error(`Familie ${family}, Seed ${seed}: keine gueltige Anordnung gefunden`);
 }
@@ -354,6 +499,17 @@ const withAi = (bodies) =>
 export function buildLevel(level) {
   if (level.family === 'hand') {
     const l = level.layout;
+    if (l.orbit) {
+      // Lehrlevel auf Bahnen: l.orbit = { gm?, rS?, rP?, selfGrav?, loseR?, warnR?, rings? }, Koerper mit `orbit: { r, ang, f?, dir?, phi? }` statt x/y/vx/vy
+      const o = orbitSetup(l.orbit);
+      const bodies = [orbitStar(o)];
+      for (const b of l.bodies) {
+        const { orbit: spec, ...rest } = b;
+        const s = orbitState(o.gm, spec.r, spec.ang || 0, spec);
+        bodies.push({ kind: 'mote', ...rest, x: s.x, y: s.y, vx: s.vx, vy: s.vy });
+      }
+      return { arenaR: 0, bodies, grav: orbitGrav(o), player: orbitPlayer(o), orbit: o, goal: l.goal || null };
+    }
     return { arenaR: l.arenaR, bodies: withAi(l.bodies.map((b) => ({ kind: 'mote', ...b }))), goal: l.goal || null };
   }
   const g = generate(level.family, level.params, level.seed, level.goal);

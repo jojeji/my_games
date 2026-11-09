@@ -1,5 +1,7 @@
 # Protoplanet: Klang (Paket C)
 
+Begriffe (Stimmung, Teppich, Flächenakkord, Einzelton, Kette): `games/protoplanet/GLOSSARY.md`, Abschnitt „Klang“. **Einzelton** heißt im Code `star` (`starEvery`, `starBus`); im Text nicht „Stern“ sagen: das ist der Protostern aus Kapitel 3 und die Wertung.
+
 Generative Ambient-Musik und Effektklänge, komplett per WebAudio, keine Audiodateien. Eigene Klangwelt.
 
 ## Dateien
@@ -13,16 +15,16 @@ Generative Ambient-Musik und Effektklänge, komplett per WebAudio, keine Audioda
 Drone (2 Sägezahn leicht verstimmt + Quinte, Obertöne je Größe, Schwebungs-Zwillinge je Gefahr)
   -> Tiefpass (atmet per LFO 0,043 Hz) -> Lautstärke-LFO (0,027 Hz) -> droneLevel ─┐
 Akkorde (je 3-5 Töne, Dreieck + Sinus, Hanning-Hüllkurve über 20-55 s) -> Tiefpass -> chordBus ─┼-> musicBus ─┐
-Sterne (Sinus + Oktave + Teilton 2,76, langer Ausklang, Stereo-Position zufällig) -> starBus ───┘            │
+Einzeltöne (Sinus + Oktave + Teilton 2,76, langer Ausklang, Stereo-Position zufällig) -> starBus ───┘            │
 alles -> Sendebus -> ConvolverNode (erzeugte Impulsantwort 3,4 s, Rauschen mit exp. Abfall, nach hinten dunkler) -> musicBus
 Effekte -> sfxBus (eigener kurzer Raum, 1,4 s)                                                              │
 musicBus + sfxBus -> master (Ein-/Ausblenden) -> DynamicsCompressor (Limiter) -> post-Gain 0,85 -> Ziel
 ```
-Dauerhaft ca. 12 Oszillatoren + 2 Convolver; Akkorde (6-10 Oszillatoren, 2 überlappen) und Sterne (3) entstehen kurz vor ihrem Einsatz (`lookahead` 2,2 s, Pump alle 250 ms) und werden nach dem Ende getrennt. Keine ScriptProcessor.
+Dauerhaft ca. 12 Oszillatoren + 2 Convolver; Akkorde (6-10 Oszillatoren, 2 überlappen) und Einzeltöne (3) entstehen kurz vor ihrem Einsatz (`lookahead` 2,2 s, Pump alle 250 ms) und werden nach dem Ende getrennt. Keine ScriptProcessor.
 Alle Pegel laufen über `setTargetAtTime`/Kurven, nichts springt. Lautstärke = `(Regler/100)^2 * Bus`.
 
 ## Stimmungen (`T.audio.moods`)
-| Schlüssel | Name | Grundton | Tonleiter | Akkordwechsel | Sterne | Helligkeit |
+| Schlüssel | Name | Grundton | Tonleiter | Akkordwechsel | Einzeltöne | Helligkeit |
 |---|---|---|---|---|---|---|
 | select | Levelauswahl | D3 | Pentatonik Dur | 22-38 s | 9-20 s | 0,45 |
 | 1 | Staubwolke | F3 | Lydisch | 18-34 s | 7-16 s | 0,50 |
@@ -35,9 +37,9 @@ Alle Pegel laufen über `setTargetAtTime`/Kurven, nichts springt. Lautstärke = 
 
 ## Parameter (weich, `musicParams`)
 Eingaben: `danger` 0..1 (nächster Körper mit Masse >= 0,97 x deine, je näher desto höher, quadratisch), `size` 0..1 (log10 der Masse / 1,3), `timeScale` (x1/4 .. x10), `lift` -1..1 (Sieg + / Verlust -).
-- Gefahr: Tiefpass zu, Teppich lauter, Schwebung (zwei Sinus mit 0,65 % Verstimmung), Akkorde leiser, weniger Sterne.
-- Größe: Obertöne im Teppich, bis zu 5 Akkordtöne, mehr Sterne, mehr Hall.
-- Zeitstufe: x1/4 Filter zu und Sterne seltener; x4/x10 heller, Akkorde schneller (`tempo`), LFOs schneller.
+- Gefahr: Tiefpass zu, Teppich lauter, Schwebung (zwei Sinus mit 0,65 % Verstimmung), Akkorde leiser, weniger Einzeltöne.
+- Größe: Obertöne im Teppich, bis zu 5 Akkordtöne, mehr Einzeltöne, mehr Hall.
+- Zeitstufe: x1/4 Filter zu und Einzeltöne seltener; x4/x10 heller, Akkorde schneller (`tempo`), LFOs schneller.
 - Sieg hellt auf, Verlust dunkelt ab. Zeitkonstanten 2,2 s (Gefahr 1 s). Alle Werte werden auf `T.audio.limits` geklemmt.
 
 ## Effekte
@@ -81,4 +83,5 @@ Größter Pegelsprung zwischen Sekundenfenstern in Auswahl/Level: 3,4-7,3 dB (Be
 ## Offene Punkte
 - Gehört wurde nichts: Pegel, Spektrum und Klickfreiheit sind gemessen, der Geschmack (Mischung, Hallanteil, Effekt-Lautstärke) braucht das Ohr des Besitzers; alles in `T.audio` einstellbar (`busMusic`, `busSfx`, `moods`).
 - iOS: `latencyHint: 'playback'`, Entsperren per Geste und Wiederaufnahme per jeder Geste sind eingebaut, aber nicht auf einem iPhone getestet.
-- Kapitel 3-5 haben Stimmungen, aber noch keine Level; Feintuning, sobald sie existieren.
+- Kapitel 3 hat seit Paket B Levels (Stimmung `3`, Mixolydisch, greift beim Start jedes 3-x-Levels über `audio.setScene(lv.chapter)`); Feintuning mit dem Ohr des Besitzers. Kapitel 4 und 5 haben Stimmungen, aber noch keine Level.
+- Neu in Paket B: Effekt `warn` („Zu weit draußen“: leiser tiefer Doppelton, Drosselung 2,5 s + Sperre in der Oberfläche 3,5 s) und der Verlustklang `swallowed` auch für „In den Stern gestürzt“ und „Abgetrieben“; der Protostern zählt nicht für die Gefahr-Parameter der Musik (`dangerOf`).

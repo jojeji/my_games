@@ -62,6 +62,30 @@ export function createRenderer(canvas) {
     sprites.push(makeSprite(Math.round(h), Math.round(s), Math.round(l)));
   }
   const playerSprite = makeSprite(188, 100, 80, { rim: 1, glow: 0.6 });
+  // Protostern (Kapitel 3): Korona als Sprite (Kern = Radius 1/3 der Kantenlaenge), Pulsieren nur ueber die Skalierung (kein shadowBlur)
+  const STAR = 256;
+  const starSprite = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = STAR;
+    const g = c.getContext('2d');
+    const mid = STAR / 2;
+    const glow = g.createRadialGradient(mid, mid, STAR * 0.1, mid, mid, mid);
+    glow.addColorStop(0, 'rgba(255,214,140,0.85)');
+    glow.addColorStop(0.28, 'rgba(255,150,70,0.42)');
+    glow.addColorStop(0.6, 'rgba(210,80,60,0.13)');
+    glow.addColorStop(1, 'rgba(160,50,90,0)');
+    g.fillStyle = glow;
+    g.fillRect(0, 0, STAR, STAR);
+    const core = g.createRadialGradient(mid - STAR * 0.03, mid - STAR * 0.03, 2, mid, mid, STAR / 6);
+    core.addColorStop(0, '#fffbe8');
+    core.addColorStop(0.55, '#ffd27a');
+    core.addColorStop(1, '#ff9b4a');
+    g.fillStyle = core;
+    g.beginPath();
+    g.arc(mid, mid, STAR / 6, 0, Math.PI * 2);
+    g.fill();
+    return c;
+  })();
   // Sternenstaub: feste Punkte (einfacher LCG, nur Darstellung)
   const stars = [];
   let seed = 91;
@@ -93,9 +117,10 @@ export function createRenderer(canvas) {
     const W = view.w;
     const H = view.h;
     ctx.clearRect(0, 0, W, H);
+    const orbit = world.arenaR <= 0; // Kapitel 3: offener Raum um einen Protostern, waermere Farbwelt
     const bg = ctx.createRadialGradient(W / 2, H * 0.45, 10, W / 2, H * 0.45, Math.max(W, H) * 0.8);
-    bg.addColorStop(0, '#0b1224');
-    bg.addColorStop(1, '#03050a');
+    bg.addColorStop(0, orbit ? '#171024' : '#0b1224');
+    bg.addColorStop(1, orbit ? '#06040a' : '#03050a');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
@@ -114,6 +139,38 @@ export function createRenderer(canvas) {
 
     const toX = (x) => W / 2 + (x - cam.x) * sc;
     const toY = (y) => H / 2 + (y - cam.y) * sc;
+
+    // Offener Raum (Kapitel 3): feine Bahnringe als Orientierung, Warn- und Abdriftgrenze
+    let star = null;
+    if (orbit) {
+      for (const b of world.bodies) if (b.kind === 'attractor') star = b;
+      const g = world.grav || {};
+      const cx = toX(star ? star.x : 0);
+      const cy = toY(star ? star.y : 0);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,190,130,0.09)';
+      for (const rr of g.rings || []) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, rr * sc, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.setLineDash([2, 9]);
+      if (g.warnR > 0) {
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255,170,80,0.38)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, g.warnR * sc, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      if (g.loseR > 0) {
+        ctx.lineWidth = 2.4;
+        ctx.strokeStyle = 'rgba(255,90,80,0.5)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, g.loseR * sc, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
 
     // Arena
     if (world.arenaR > 0) {
@@ -140,7 +197,7 @@ export function createRenderer(canvas) {
     for (const b of world.bodies) if (b.kind === 'hunter') hunterIds.add(b.id);
 
     for (const b of world.bodies) {
-      if (b === p) continue;
+      if (b === p || b.kind === 'attractor') continue;
       const r = Math.sqrt(b.m) * sc;
       const x = toX(b.x);
       const y = toY(b.y);
@@ -235,11 +292,105 @@ export function createRenderer(canvas) {
       }
     }
 
+    // Protostern: Korona (pulsiert, ausser bei "Weniger Bewegung"), darunter heller Kern
+    if (star) {
+      const x = toX(star.x);
+      const y = toY(star.y);
+      const rs = Math.sqrt(star.m) * sc;
+      const pulseK = reduceMotion ? 1 : 1 + 0.035 * Math.sin(now * 1.3) + 0.015 * Math.sin(now * 3.1);
+      const size = rs * 6 * pulseK; // Kern = 1/3 der Sprite-Kante, also Radius rs bei Kantenlaenge 6 rs
+      if (x + size > 0 && x - size < W && y + size > 0 && y - size < H) ctx.drawImage(starSprite, x - size / 2, y - size / 2, size, size);
+      else if (p) {
+        // ausserhalb des Bildes: goldene Marke am Rand in Richtung des Sterns
+        const ang = Math.atan2(y - H / 2, x - W / 2);
+        const dx = Math.cos(ang);
+        const dy = Math.sin(ang);
+        const padX = 26;
+        const tx = dx !== 0 ? (W / 2 - padX) / Math.abs(dx) : Infinity;
+        const ty = dy !== 0 ? Math.min((H / 2 - 74) / Math.abs(dy), (H / 2 - 74) / Math.abs(dy)) : Infinity;
+        const tt = Math.min(tx, ty);
+        const px = W / 2 + dx * tt;
+        const py = H / 2 + dy * tt;
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.fillStyle = 'rgba(255,190,110,0.28)';
+        ctx.beginPath();
+        ctx.arc(0, 0, 15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffd98a';
+        ctx.beginPath();
+        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.rotate(ang);
+        ctx.fillStyle = 'rgba(255,217,138,0.95)';
+        ctx.beginPath();
+        ctx.moveTo(21, 0);
+        ctx.lineTo(12, -6);
+        ctx.lineTo(12, 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Bahnvorschau: gepunktete Linie vom Spieler aus, Punktabstand fest in Pixeln (die Punkte wandern mit dem Spieler: ruhig, kein Flackern), verblassend,
+    // rot dort, wo die Bahn in den Stern fuehrt, bernstein jenseits der Warnschwelle
+    const pv = s.preview;
+    if (p && pv && pv.n > 1) {
+      const GAP = 9;
+      let acc = GAP * 0.5; // erster Punkt kurz vor dem Spieler-Rand
+      let total = 0;
+      const pts = pv.pts;
+      const len = [0];
+      for (let i = 1; i < pv.n; i++) {
+        const sx = (pts[2 * i] - pts[2 * i - 2]) * sc;
+        const sy = (pts[2 * i + 1] - pts[2 * i - 1]) * sc;
+        len.push(len[i - 1] + Math.hypot(sx, sy));
+      }
+      total = len[pv.n - 1];
+      const rpx = Math.max(2, Math.sqrt(p.m) * sc);
+      let seg = 1;
+      for (let d = rpx + GAP * 0.6 + acc * 0; d < total; d += GAP) {
+        while (seg < pv.n - 1 && len[seg] < d) seg++;
+        const l0 = len[seg - 1];
+        const k = len[seg] > l0 ? (d - l0) / (len[seg] - l0) : 0;
+        const wx = pts[2 * seg - 2] + (pts[2 * seg] - pts[2 * seg - 2]) * k;
+        const wy = pts[2 * seg - 1] + (pts[2 * seg + 1] - pts[2 * seg - 1]) * k;
+        const fl = pv.flag[seg];
+        const fade = 1 - 0.8 * (d / Math.max(1, total));
+        ctx.fillStyle = fl === 1 ? `rgba(255,88,70,${0.95 * fade + 0.05})` : fl === 2 ? `rgba(255,176,70,${0.9 * fade + 0.05})` : `rgba(165,232,255,${0.8 * fade + 0.05})`;
+        ctx.beginPath();
+        ctx.arc(toX(wx), toY(wy), fl ? 2.3 : 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (pv.end) {
+        // Endpunkt der Bahn (Sturz / Abdrift): kleines Kreuz in Warnfarbe
+        const ex = toX(pts[2 * pv.n - 2]);
+        const ey = toY(pts[2 * pv.n - 1]);
+        ctx.strokeStyle = pv.end === 'star' ? 'rgba(255,88,70,0.95)' : 'rgba(255,176,70,0.95)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(ex - 5, ey - 5);
+        ctx.lineTo(ex + 5, ey + 5);
+        ctx.moveTo(ex + 5, ey - 5);
+        ctx.lineTo(ex - 5, ey + 5);
+        ctx.stroke();
+      }
+    }
+
     // Spieler zuletzt (liegt oben)
     if (p) {
       const r = Math.max(2, Math.sqrt(p.m) * sc);
       const x = toX(p.x);
       const y = toY(p.y);
+      if (s.introRing > 0) {
+        // Auftakt (Uebersicht): ein Ring zeigt, wo du bist
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = `rgba(150,235,255,${0.85 * s.introRing})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 14 + (1 - s.introRing) * 10, 0, Math.PI * 2);
+        ctx.stroke();
+      }
       const k = r / CORE;
       ctx.drawImage(playerSprite, x - (SPRITE / 2) * k, y - (SPRITE / 2) * k, SPRITE * k, SPRITE * k);
       if (s.aim) {
@@ -286,6 +437,16 @@ export function createRenderer(canvas) {
         ctx.fill();
         ctx.restore();
       }
+    }
+
+    // Abdrift-Warnung: roter Rand, der mit der Entfernung staerker wird (kein Blinken, "Weniger Bewegung" bleibt ruhig)
+    if (s.warn > 0) {
+      const a = 0.12 + 0.3 * s.warn;
+      const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.75);
+      vg.addColorStop(0, 'rgba(255,70,60,0)');
+      vg.addColorStop(1, `rgba(255,70,60,${a})`);
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, W, H);
     }
   }
 

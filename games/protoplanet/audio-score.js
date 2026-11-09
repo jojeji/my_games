@@ -62,7 +62,7 @@ export function dangerOf(w) {
   const range = A.danger.range + rp * A.danger.rangeR;
   let d = 0;
   for (const b of w.bodies) {
-    if (b === p || b.m < lim) continue;
+    if (b === p || b.m < lim || b.kind === 'attractor') continue; // der Protostern ist keine Beute-Gefahr: ihn meldet die Bahnwarnung
     const gap = Math.hypot(b.x - p.x, b.y - p.y) - rp - Math.sqrt(b.m);
     const v = 1 - gap / range;
     if (v > d) d = v;

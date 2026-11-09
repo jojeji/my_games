@@ -10,6 +10,7 @@ import { createCamera, updateCamera, pinchStart, pinchMove, pinchEnd, screenToWo
 import { createRenderer } from './render.js';
 import { createInput } from './input.js';
 import { createAudio } from './audio.js';
+import { predictOrbit, driftState } from './orbit.js';
 import { dangerOf, sizeOf } from './audio-score.js';
 
 const ICON = {
@@ -44,7 +45,8 @@ export function mountApp(root, progress) {
   const massDelta = h('span', { class: 'pp-mass-delta', 'aria-hidden': 'true' });
   const massEl = h('div', { class: 'pp-mass' }, massVal, massDelta);
   const timeBtn = h('button', { class: 'pp-time', type: 'button', 'aria-label': 'Zeitstufe' }, '×1');
-  const gameEl = h('section', { class: 'pp-game', hidden: true }, canvas, bar, helpEl, massEl, timeBtn);
+  const warnEl = h('div', { class: 'pp-warn', hidden: true, role: 'status' }, 'Zu weit draußen');
+  const gameEl = h('section', { class: 'pp-game', hidden: true }, canvas, bar, helpEl, warnEl, massEl, timeBtn);
   root.append(selectEl, gameEl, toasts);
 
   const renderer = createRenderer(canvas);
@@ -75,6 +77,14 @@ export function mountApp(root, progress) {
   let lastAbsorbed = 0;
   let lastVibe = 0;
   let hintGone = false;
+  // Kapitel 3: Bahnvorschau (orbit.js) und Abdrift-Warnung
+  let preview = null;
+  let previewAt = -Infinity;
+  let previewEj = -1;
+  let warn = 0;
+  let warnShown = false;
+  let lastWarnSnd = -Infinity;
+  const previewStats = { n: 0, ms: 0, max: 0 }; // Kosten der Vorschau (Messung fuer docs)
   // Masse-Anzeige: kurz eingeblendete Aenderung (Ausstoss rot, Absorbieren gruen), gleiche Vorzeichen innerhalb des Fensters werden summiert
   let lastMass = null;
   let deltaAcc = 0;
@@ -256,6 +266,13 @@ export function mountApp(root, progress) {
     audio.update({ danger: 0, size: sizeOf(play.world.player ? play.world.player.m : 1), timeScale: play.timeScale, lift: 0 });
     if (!snap) audio.sfx.levelStart();
     hintGone = false;
+    preview = null;
+    previewAt = -Infinity;
+    previewEj = -1;
+    warn = 0;
+    warnShown = false;
+    setCls(warnEl, 'lose', false);
+    warnEl.hidden = true;
     resetMassDelta();
     screen = 'game';
     selectEl.hidden = true;
@@ -366,12 +383,15 @@ export function mountApp(root, progress) {
     audio.update({ lift: -1, danger: 0 });
     persist();
     const left = play.rewindsLeft;
+    const cause = play.world.lostTo;
+    const lossTitle = cause === 'attractor' ? 'In den Stern gestürzt' : cause === 'drift' ? 'Abgetrieben' : 'Absorbiert';
+    const lossText = cause === 'attractor' ? 'Deine Bahn hat den Protostern berührt. Die Vorschau färbt sich rot, wenn die Bahn im Stern endet.' : cause === 'drift' ? 'Du bist zu weit vom Protostern weggetrieben. Die Vorschau warnt, wenn die Bahn hinausführt.' : 'Ein größerer Körper hat dich absorbiert.';
     modal({
-      title: 'Absorbiert',
+      title: lossTitle,
       body: h(
         'div',
         {},
-        h('p', { text: 'Ein größerer Körper hat dich absorbiert.' }),
+        h('p', { text: lossText }),
         left > 0
           ? h('p', { class: 'muted small', text: `Zurückspulen setzt dich ${T.rewindBack} Sekunden zurück und kostet den Effizienz-Stern dieses Versuchs.` })
           : h('p', { class: 'muted small', text: 'Du hast keine Versuche zum Zurückspulen mehr.' }),
@@ -525,6 +545,38 @@ export function mountApp(root, progress) {
   });
   addEventListener('pagehide', () => persist());
 
+  /** Kapitel 3, pro Bild: Bahnvorschau auffrischen (sofort nach einem Ausstoss, sonst hoechstens alle `every` s, im Strahl oefter) und Abdrift-Warnung. */
+  function orbitFrame(now) {
+    const w = play.world;
+    const p = w.player;
+    if (!p) return;
+    const ej = w.stats.ejects;
+    const every = play.beam ? T.orbit.preview.every * 0.5 : T.orbit.preview.every;
+    if (!preview || ej !== previewEj || (play.status === 'running' && !paused && now - previewAt >= every)) {
+      const t0 = performance.now();
+      preview = predictOrbit(w);
+      const ms = performance.now() - t0;
+      previewStats.n++;
+      previewStats.ms += ms;
+      if (ms > previewStats.max) previewStats.max = ms;
+      previewAt = now;
+      previewEj = ej;
+    }
+    warn = driftState(w);
+    const show = warn > 0 && play.status === 'running';
+    if (show !== warnShown) {
+      warnShown = show;
+      warnEl.hidden = !show;
+    }
+    if (show) {
+      setCls(warnEl, 'lose', warn > 0.6);
+      if (!paused && now - lastWarnSnd > 3.5) {
+        lastWarnSnd = now;
+        audio.sfx.warn();
+      }
+    }
+  }
+
   /* ---------- Schleife ---------- */
   function loop(ts) {
     requestAnimationFrame(loop);
@@ -564,7 +616,9 @@ export function mountApp(root, progress) {
     }
     updateCamera(cam, play.world, dt, now);
     trackMass(now);
-    if (!slow || frame % 2 === 0) renderer.draw({ world: play.world, cam, now, reduceMotion: reduceMotion(), aim: pointer && play.beam ? play.beam : null });
+    if (play.world.grav) orbitFrame(now);
+    else if (preview) preview = null;
+    if (!slow || frame % 2 === 0) renderer.draw({ world: play.world, cam, now, reduceMotion: reduceMotion(), aim: pointer && play.beam ? play.beam : null, preview, warn, introRing: cam.intro ? Math.max(0, Math.min(1, (cam.intro + 2.5 - now) / 2.5)) : 0 });
     if (frame % 4 === 0) hud();
     if (!endShown && play.status !== 'running') {
       hud();
@@ -722,5 +776,5 @@ export function mountApp(root, progress) {
     progress.setSnap(null);
     renderSelect();
   }
-  return { startLevel, showSelect, audio, get state() { return { screen, level, play, paused, cam }; } };
+  return { startLevel, showSelect, audio, previewStats, get state() { return { screen, level, play, paused, cam, preview, warn }; } };
 }

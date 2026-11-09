@@ -1,17 +1,22 @@
 // Protoplanet: DOM-freie, deterministische Physik. Kreise mit r = sqrt(m), fester Schritt, Ausstoss mit Impulserhaltung,
 // Absorbieren (Masse fliesst vom kleineren zum groesseren, bis sie sich beruehren), elastische Kreis-Arena.
-// Kapitel 1 und 2 kennen keine Gravitation; `kind` kennt 'hunter' (P2, Gehirn in hunter.js) und 'attractor' (P3), die Physik behandelt sie wie jeden Koerper.
+// Kapitel 1 und 2 kennen keine Gravitation; `kind` kennt 'hunter' (P2, Gehirn in hunter.js) und 'attractor' (Kapitel 3 "Protostern", Paket B).
+// Attraktor: steht still, zieht alle anderen Koerper mit a = gm / (d^2 + soft^2) an (`gm` = G x Masse, getrennt von `m`, das nur Groesse und Absorption bestimmt), absorbiert was ihn beruehrt.
+// Offener Raum (`w.grav`, arenaR = 0): kein Rand; ausserhalb `warnR` Warnung, ausserhalb `loseR` ist der Spieler verloren (Abdrift), weit dahinter verschwinden Koerper.
+// Anziehung unter den Koerpern (`w.grav.selfGrav` 0..1): die `selfK` schwersten Koerper ab `selfMin` Masse ziehen weich an. Alles semi-implizites Euler (Kick, dann Drift), eine Auswertung je Schritt.
 import { T } from './tune.js';
 
 export const radius = (m) => Math.sqrt(m);
 
 /** Welt aus einer Koerperliste (ohne Spieler) bauen. Der Spieler bekommt id 1 (bei Gleichstand gilt die kleinere id als groesser). */
-export function createWorld({ bodies, arenaR, player }) {
+export function createWorld({ bodies, arenaR, player, grav }) {
   const w = {
     t: 0,
     steps: 0,
     nextId: 1,
     arenaR,
+    grav: grav ? { ...grav } : null, // Offener Raum / Gravitation: { selfGrav, warnR, loseR } (null in Kapitel 1 und 2)
+    lostTo: null, // Verlustursache: 'attractor' (in den Stern gestuerzt), 'body' (absorbiert), 'drift' (abgetrieben)
     bodies: [],
     player: null,
     stats: { ejected: 0, ejects: 0, absorbed: 0, gained: 0 },
@@ -35,6 +40,7 @@ export function addBody(w, b) {
     gu: b.gu || 0, // Schonfrist bis (Spielzeit) ...
     gf: b.gf || 0, //  ... fuer den Koerper mit dieser id
     ai: b.ai || null, // nur kind 'hunter': Gehirn-Zustand { seed, diff, react, next, plan } (hunter.js), Teil des Schnappschusses
+    gm: b.gm || 0, // nur kind 'attractor': G x Masse (Anziehung), unabhaengig von `m`
   };
   if (body.id >= w.nextId) w.nextId = body.id + 1;
   w.bodies.push(body);
@@ -110,10 +116,13 @@ export function absorb(w, a, b) {
   }
   if (!(dm > 0)) return false;
   const full = dm >= S.m;
+  if (full && S.kind === 'player') w.lostTo = L.kind === 'attractor' ? 'attractor' : 'body';
   const mNew = L.m + dm;
   if (L.gf && S.gf !== L.gf && S.kind !== 'player') L.gf = 0; // ein Teilchen, das fremde Masse schluckt, gilt nicht mehr als Ausstoss des Spielers
-  L.vx = (L.m * L.vx + dm * S.vx) / mNew;
-  L.vy = (L.m * L.vy + dm * S.vy) / mNew;
+  if (L.kind !== 'attractor') {
+    L.vx = (L.m * L.vx + dm * S.vx) / mNew; // ein Attraktor behaelt seinen Platz
+    L.vy = (L.m * L.vy + dm * S.vy) / mNew;
+  }
   L.m = mNew;
   S.m = full ? 0 : S.m - dm;
   if (L.kind === 'player') {
@@ -231,18 +240,123 @@ function collide(w) {
   }
 }
 
+/* ---------- Gravitation (Kapitel 3) ---------- */
+
+/** Beschleunigung durch die Attraktoren an der Stelle (x, y): [ax, ay]. */
+export function pullAt(atts, x, y, out = [0, 0]) {
+  const s2 = T.orbit.soft * T.orbit.soft;
+  let ax = 0;
+  let ay = 0;
+  for (const a of atts) {
+    const dx = a.x - x;
+    const dy = a.y - y;
+    const d2 = dx * dx + dy * dy;
+    const f = a.gm / ((d2 + s2) * Math.sqrt(d2 + 1e-12));
+    ax += f * dx;
+    ay += f * dy;
+  }
+  out[0] = ax;
+  out[1] = ay;
+  return out;
+}
+
+/** Geschwindigkeit einer Kreisbahn mit Radius r um einen Attraktor mit `gm` (mit der Weichheit des Kerns). */
+export const circularSpeed = (gm, r) => Math.sqrt((gm * r * r) / ((r * r + T.orbit.soft * T.orbit.soft) * Math.sqrt(r * r + 1e-12)));
+
+let srcBuf = [];
+
+/** Kick: Attraktoren und die schwersten Koerper aendern die Geschwindigkeit aller (nicht-Attraktor-)Koerper. */
+function gravity(w, dt) {
+  const bs = w.bodies;
+  let atts = null;
+  for (const b of bs) if (b.kind === 'attractor' && b.gm > 0) (atts || (atts = [])).push(b);
+  if (!atts) return;
+  const O = T.orbit;
+  const s2 = O.soft * O.soft;
+  // Quellen der Anziehung unter den Koerpern: die selfK schwersten ab selfMin (Gleichstand: kleinere id zuerst), Staerke selfGrav x O.selfG
+  const G = w.grav && w.grav.selfGrav > 0 ? w.grav.selfGrav * O.selfG : 0;
+  const src = srcBuf;
+  src.length = 0;
+  if (G > 0) {
+    for (const b of bs) {
+      if (b.kind === 'attractor' || b.kind === 'player' || b.m < O.selfMin) continue; // der Spieler zieht nicht (er ist die Sonde, die Welt zieht)
+      let i = src.length;
+      src.push(b);
+      while (i > 0 && (src[i - 1].m < b.m || (src[i - 1].m === b.m && src[i - 1].id > b.id))) {
+        src[i] = src[i - 1];
+        i--;
+      }
+      src[i] = b;
+      if (src.length > O.selfK) src.length = O.selfK;
+    }
+  }
+  for (const b of bs) {
+    if (b.kind === 'attractor') continue;
+    let ax = 0;
+    let ay = 0;
+    for (const a of atts) {
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      const d2 = dx * dx + dy * dy;
+      const f = a.gm / ((d2 + s2) * Math.sqrt(d2 + 1e-12));
+      ax += f * dx;
+      ay += f * dy;
+    }
+    for (let k = 0; k < src.length; k++) {
+      const s = src[k];
+      if (s === b) continue;
+      const dx = s.x - b.x;
+      const dy = s.y - b.y;
+      const d2 = dx * dx + dy * dy;
+      const rr = Math.sqrt(s.m) + Math.sqrt(b.m);
+      const f = (G * s.m) / ((d2 + O.selfSoft * O.selfSoft + rr * rr) * Math.sqrt(d2 + 1e-12));
+      ax += f * dx;
+      ay += f * dy;
+    }
+    b.vx += ax * dt;
+    b.vy += ay * dt;
+  }
+}
+
+/** Offener Raum: Spieler jenseits von loseR ist abgetrieben (verloren), Koerper weit dahinter verschwinden (ausser Zielkoerper und Brocken). */
+function openSpace(w) {
+  const g = w.grav;
+  if (!g || !(g.loseR > 0)) return;
+  const p = w.player;
+  if (p && p.x * p.x + p.y * p.y > g.loseR * g.loseR) {
+    w.lostTo = 'drift';
+    p.m = 0;
+  }
+  const cull = g.loseR * T.orbit.cullFrac;
+  const c2 = cull * cull;
+  let dead = false;
+  for (const b of w.bodies) {
+    if (b.kind === 'attractor' || b === p || b.tag) continue;
+    if (b.x * b.x + b.y * b.y > c2) {
+      b.m = 0;
+      dead = true;
+    }
+  }
+  if (dead || (p && p.m <= 0)) {
+    w.bodies = w.bodies.filter((b) => b.m > 0);
+    if (p && p.m <= 0) w.player = null;
+  }
+}
+
 /** Ein fester Physikschritt. */
 export function step(w) {
   const dt = T.dt;
   w.t += dt;
   w.steps++;
-  // (P2: hier wirkt die Gravitation der Attraktoren auf die Geschwindigkeit, semi-implizit: erst v, dann x)
+  if (w.grav) gravity(w, dt); // erst v (Kick), dann x: semi-implizites Euler
   for (const b of w.bodies) {
+    if (b.kind === 'attractor') continue;
     b.x += b.vx * dt;
     b.y += b.vy * dt;
   }
   bounds(w);
   collide(w);
+  if (w.grav) openSpace(w);
 }
 
 /* ---------- Schnappschuss ---------- */
@@ -253,8 +367,9 @@ export function snapshot(w) {
     steps: w.steps,
     nextId: w.nextId,
     arenaR: w.arenaR,
+    ...(w.grav ? { g: { ...w.grav } } : {}), // nur Kapitel 3: Schnappschuesse der Kapitel 1 und 2 bleiben Byte fuer Byte wie vorher
     stats: { ...w.stats },
-    b: w.bodies.map((b) => [b.id, b.x, b.y, b.vx, b.vy, b.m, b.kind, b.tag, b.gu, b.gf, b.ai ? { ...b.ai, plan: b.ai.plan ? { ...b.ai.plan } : null } : null]),
+    b: w.bodies.map((b) => [b.id, b.x, b.y, b.vx, b.vy, b.m, b.kind, b.tag, b.gu, b.gf, b.ai ? { ...b.ai, plan: b.ai.plan ? { ...b.ai.plan } : null } : null, ...(b.gm ? [b.gm] : [])]),
   };
 }
 
@@ -264,8 +379,10 @@ export function restore(s) {
     steps: s.steps,
     nextId: s.nextId,
     arenaR: s.arenaR,
+    grav: s.g ? { ...s.g } : null,
+    lostTo: null,
     stats: { ...s.stats },
-    bodies: s.b.map(([id, x, y, vx, vy, m, kind, tag, gu, gf, ai]) => ({ id, x, y, vx, vy, m, kind, tag, gu, gf, ai: ai ? { ...ai, plan: ai.plan ? { ...ai.plan } : null } : null })), // Schnappschuesse aus P1 haben 10 Eintraege (ai fehlt = null)
+    bodies: s.b.map(([id, x, y, vx, vy, m, kind, tag, gu, gf, ai, gm]) => ({ id, x, y, vx, vy, m, kind, tag, gu, gf, ai: ai ? { ...ai, plan: ai.plan ? { ...ai.plan } : null } : null, gm: gm || 0 })), // Schnappschuesse aus P1 haben 10 Eintraege (ai fehlt = null), Kapitel 3 haengt `gm` an
     player: null,
   };
   w.player = w.bodies.find((b) => b.kind === 'player') || null;

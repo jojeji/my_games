@@ -5,7 +5,7 @@ Du bist ein Staubkorn in einer jungen Sternscheibe. Bewegen kannst du dich nur, 
 größere absorbieren dich. Jede Bewegung macht dich kleiner.
 
 id `protoplanet`, Ordner `games/protoplanet/`. Architektur: `docs/adr/0003-protoplanet-echtzeit-physik-ausserhalb-der-idle-engine.md`.
-Begriffe: `games/protoplanet/GLOSSARY.md` (verbindlich für Code, UI-Texte und Commits). Vorher `docs/LESSONS.md` lesen:
+Begriffe: `games/protoplanet/GLOSSARY.md` (verbindlich für Code, UI-Texte und Commits; enthält auch die Klang-Begriffe Stimmung, Teppich, Flächenakkord, Einzelton, Kette). Klang: `docs/protoplanet-klang.md`. Vorher `docs/LESSONS.md` lesen:
 Mobile UI, PWA/Deploy und Arbeitsweise gelten. Die Abschnitte zu Prestige, Idle und Story gelten hier nicht.
 
 ## Rahmen des Besitzers (nicht verhandelbar)
@@ -21,8 +21,8 @@ Mobile UI, PWA/Deploy und Arbeitsweise gelten. Die Abschnitte zu Prestige, Idle 
 |---|---|
 | **P1** | Physik-Kern, Steuerung, Kamera, Zeitstufen, Pause, Zurückspulen, Speichern (inkl. Level-Schnappschuss), Kapitel 1 (ohne Gravitation, 3 Lehrlevels + 5 erzeugte), Levelauswahl, Ergebnis-Bildschirm, Einstellungen, Bot + Tests, Hub-Eintrag (`status: "soon"`), Manifest, Icons |
 | **P2** (umgesetzt, wartet auf Abnahme) | Ziel-Mix + große Brocken in Kapitel 1 (1-6..1-8 umbauen), Zieltyp „Werde unangreifbar“, **KI-Gegner** (Jäger) und Kapitel 2 „Jäger“ |
-| **P3** | Gravitation: Attraktoren (auch auf Bahnen), offener Raum mit Abdrift-Grenze, **Anziehung unter den Körpern** (nur ab Mindestmasse, weich, je Kapitel einstellbar), Kapitel 3 „Protostern“ |
-| **P4** | Generative Ambient-Musik + Effektklänge (WebAudio, keine Dateien) |
+| **P3** (umgesetzt als **Paket B**, wartet auf Abnahme) | Gravitation: Attraktoren (auch auf Bahnen), offener Raum mit Abdrift-Grenze, **Anziehung unter den Körpern** (nur ab Mindestmasse, weich, je Kapitel einstellbar), Kapitel 3 „Protostern“ |
+| **P4** (umgesetzt als Paket C, siehe `docs/protoplanet-klang.md`) | Generative Ambient-Musik + Effektklänge (WebAudio, keine Dateien) |
 | **P5** | Kapitel 4 „Dunkelwolke“ (begrenztes Sichtfeld), Kapitel 5 „Planetensystem“ (alles, große Levels), Tageslevel |
 
 Planänderung nach dem zweiten Spielen (Besitzer, Runde Q28–Q35), ersetzt die alte P2/P3-Einteilung: siehe „Ausbau nach dem zweiten Spielen“.
@@ -51,10 +51,9 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
 - **Kollisionssuche**: Gleichmäßiges Raster (Zellgröße ≈ 2 × größter Radius der Nicht-Attraktoren), Paare in fester Reihenfolge (nach `id`) abarbeiten, damit das Ergebnis deterministisch ist.
 - **Rand (Kapitel 1)**: Kreisförmige Arena mit Radius `arenaR`. Körper, die den Rand berühren, werden elastisch gespiegelt (Geschwindigkeitskomponente nach außen umkehren).
   Der Rand ist sichtbar (sanft leuchtender Ring).
-- **Gravitation (P2)**: Nur Körper mit `kind: 'attractor'` ziehen an: `a = G * mA / (d² + soft²)` in Richtung Attraktor. Attraktoren spüren selbst keine Gravitation;
-  sie stehen still oder folgen einer **festen Bahn** (Kreisbahn um einen Punkt, Parameter Radius/Periode/Phase), ihre Geschwindigkeit wird aus der Bahn abgeleitet.
-  Attraktoren absorbieren wie jeder Körper (meist sind sie größer). Wird ein Attraktor kleiner als der Spieler, kann der Spieler ihn absorbieren.
-- **Offener Raum (P2)**: Kein Rand. Außerhalb von `driftWarnR` erscheint eine Warnung (Pfeil zur Mitte), außerhalb von `driftLoseR` ist das Level verloren.
+- **Gravitation (Kapitel 3, Paket B)**: Nur wenn die Welt `grav` hat. Ein Körper mit `kind: 'attractor'` (Protostern) zieht alle anderen an: `a = gm / (d² + soft²)` (`T.orbit.gm` 80, `soft` 0,3), `gm` ist von `m` getrennt (`m` bestimmt nur Radius und Absorption). Attraktoren spüren selbst nichts und **stehen still** (nach jeder Absorption bleibt `v = 0`; feste Kreisbahnen für Attraktoren sind im Datenmodell nicht umgesetzt, kein Level braucht sie). Der Attraktor absorbiert wie jeder Körper; der Spieler ist dann verloren (`lostTo = 'attractor'`). Integration: semi-implizites Euler (Kick dann Drift, eine Auswertung je Schritt), gemessen: Kreisbahn r 8/14/30 über 50 Umläufe Radius ±1 %, Energie < 1 %; eine Ellipse mit Periapsis 1,6 verliert in 50 Umläufen 2 % Energie (sehr tiefe Bahnen sind im Spiel ohnehin Sturzbahnen).
+- **Anziehung unter den Körpern (`selfGrav` 0..1 je Level)**: Die `selfK` (6) schwersten Körper ab `selfMin` (2 Massen) ziehen alle anderen weich an, `a = selfG × selfGrav × m_Quelle / (d² + selfSoft² + (r_Quelle + r_Ziel)²)`. **Der Spieler zieht nie** (er ist die Sonde, die Welt zieht; sonst würden große Spieler die Beute einsammeln und der Bot müsste seine eigene Wirkung vorhersagen). Kosten: ≤ 6 × n Paare je Schritt.
+- **Offener Raum (Kapitel 3)**: `arenaR = 0`, kein Rand. `warnR` (Warnung „Zu weit draußen“: roter Rand, Textchip, dezenter Ton, gedrosselt) und `loseR` (Spieler abgetrieben = verloren, `lostTo = 'drift'`); Körper hinter `1,5 × loseR` werden entfernt (ausgenommen Körper mit `tag`). Beides ist zurückspulbar.
 - **Determinismus**: Kein `Math.random` in Physik, Generatoren und Bot, nur der Seed-Zufall aus `engine/kit/rng.js`. Gleicher Seed + gleiche Eingaben = gleicher Verlauf (in Node getestet).
   Kleinste Abweichungen zwischen Browsern bei `Math.sin/cos` sind erlaubt (kein Wettbewerb, das Zurückspulen arbeitet mit Schnappschüssen, nicht mit Wiederholung).
 - **Leistung**: Ziel 60 fps mit bis zu ~200 Körpern auf einem Mittelklasse-Handy. Bei zu langsamer Darstellung zeichnet die Darstellung nur jedes zweite Bild (30 fps), die Physik ändert sich nicht.
@@ -436,3 +435,37 @@ Alle zwölf neuen Levels: 3 von 3 Varianten lösen den festen Seed (Test verlang
 - Finale 2-8 (189–194 s) ist kürzer als das Ziel (240–360 s); längere Fassungen haben die Bot-Quote unter 80 % gedrückt.
 - Stern-Ziele sind Bot-Werte × 1,3; für Menschen vermutlich zu streng beim Ausstoß (Bot stößt 3–24 Massen aus, in 1-8 14), nach dem Spielen nachjustieren.
 - Die Messung hat ±5 Punkte Rauschen bei 48 Seeds; alle Parameterentscheidungen oben mit >= 48 Seeds, die Endwerte mit 150 fremden Seeds.
+
+
+### Paket B: Kapitel 3 „Protostern“ (Umlaufbahn-Modus) — umgesetzt
+
+Wunsch des Besitzers: ein Modus wie eine Umlaufbahn, mit einem Körper in der Mitte, um den man kreist und auf Ellipsen hin und her wandert. Klang-Begriffe: Glossar, Abschnitt „Klang“; Klang selbst: `docs/protoplanet-klang.md`.
+
+**1. Physik und Werte** (`physics.js`, `tune.js T.orbit`; Beschreibung oben unter „Physik“). `gm` 80 (Kreisbahn r 14 = 37 s Umlauf, v 2,4), `soft` 0,3, Protostern r 3,5. Ein Schub Δv 0,25 hebt die Bahn von 14 auf ~20 und kostet ~4 % Masse. `selfG` 2, `selfMin` 2, `selfK` 6, der Spieler zieht nie. Offener Raum: `warnR` = 0,72 `loseR`. Schnappschuss: `g` und 12. Feld `gm` nur mit Gravitation (Kapitel 1/2 byte-gleich, Test). Zeitstufen: ×10 = 20 Schritte je Bild (< `maxStepsPerFrame` 40), gemessen stabil.
+
+**2. Bahnvorschau** (`orbit.js predictOrbit`, `render.js`). Leapfrog mit Schritt 0,05/ω (~125 je Umlauf), 1,25 Umläufe, Punktabstand 9 px, verblassend, rot im Stern, bernstein jenseits `warnR`, Kreuz am Ende; sofort nach jedem Ausstoß, sonst alle 0,1 s (im Strahl 0,05 s). Kosten im Browser (10 s Lauf): Mittel 0,055–0,081 ms, Maximum 0,2 ms je Berechnung; im Node-Test < 1,5 ms (Grenze). Abweichung zur echten Bahn nach einem Umlauf < 2 % (Test für 4 Bahnen).
+
+**3. Kamera/Darstellung.** Auftakt: Übersicht (Mitte = Stern) 3,2 s, Ring um den Spieler, dann langsam hinein; danach Zoom = max(Auto, 0,8 × Sternabstand + Sternradius, 0,72 × Apoapsis), Blick 40 % zum Stern hin, Marke am Rand wenn der Stern außerhalb liegt. Stern: Kern mit pulsierender Korona (aus bei „Weniger Bewegung“), Bahnringe, gestrichelte Warn-/Verlustgrenze, roter Randschein bei Abdrift. Klang: Stimmung 3 über `setScene`, neuer Effekt `warn`, Verlustklang auch für Stern/Abdrift.
+
+**4. Level-Tabelle** (fest = fester Seed, 3 Bot-Varianten, Zeit s / Endmasse; 30 Seeds = 1000..1029; 150 fremde = 7000..7149, Median s):
+
+| Level | Name | Ziel | Charakter | Körper | fest (Seed) | 30 Seeds | 150 fremde | Endmasse |
+|---|---|---|---|---|---|---|---|---|
+| 3-1 | Umlaufbahn | letzter Körper | Lehre: 4 Kleine auf Nachbarbahnen, Hilfe „Du kreist …“ | 5 | 114 / 114 / 119 (2,2) | – | – | 2,2 |
+| 3-2 | Höher | Masse 2,1 | Lehre: Beute außen (r 19–25), Hilfe zu Schub vor/hinter dich (beide Steuerungen) | 5 | 170 / 231 / 170 (2,1) | – | – | 2,1 |
+| 3-3 | Tiefer | Zielkörper „Funke“ | Lehre: Beute innen (r 8,5–12), Stern als Gefahr | 5 | 11 / 12 / 14 (1,6) | – | – | 1,6 |
+| 3-4 | Staubgürtel | Masse 9 | Leiter in Spuren r 7–30 | 37 | 156 / 95 / 173 (Seed 1) | 29/30 (138) | 147/150 = 98 % (165) | 9,0 |
+| 3-5 | Kometen | Zielkörper 2,2–2,6 | Leiter + 4 Kometen (Ellipsen) | 35 | 143 / 63 / 143 (Seed 5) | 30/30 (97) | 149/150 = 99 % (102) | 6–10,6 |
+| 3-6 | Enges System | letzter Körper | kompakt r 8–22, nur prograd | 29 | 271 / 313 / 217 (Seed 1) | 29/30 (297) | 145/150 = 97 % (312) | 12–14,5 |
+| 3-7 | Planet | unangreifbar | Planet 2,6–3 mit Eigenanziehung (`selfGrav` 0,15) | 31 | 111 / 108 / 105 (Seed 30) | 26/30 (76) | 127/150 = 85 % (57) | 5,8 |
+| 3-8 | Gegenläufer | Masse 14 | größtes System, Gürtel gegenläufig r 33–42 | 68 | 198 / 174 / 135 (Seed 6) | 27/30 (169) | 140/150 = 93 % (179) | 14,0 |
+
+Alle fünf Familien-Levels über 30 Seeds ≥ 80 % (3-7 87 %), feste Seeds in 3 von 3 Varianten. Zeitkorridor normal 60–420 s, Finale bis 480 s: erfüllt. **Abweichungen:** 3-7 ist mit Median 57–76 s kurz (`largest` gegen einen Planeten; längere Fassungen kippen unter 80 %, siehe LESSONS) und endet im Median bei 3,5–4,5 Massen (Test verlangt dort 3,5 statt 6); Ziel `last` steht in 3-1 und 3-6 (kompaktes System, ohne Gegenläufer: die sind für den Bot nicht einzufangen), Gegenläufer sind Futter im Finale. Kometen nur in 3-5, Anziehung unter den Körpern nur in 3-7, sonst lösen sie Lawinen aus. Attraktoren auf festen Bahnen und `survive`/`absorbCenter` sind nicht umgesetzt. Stern-Ziele (Bot-Median × 1,3; Lehrlevels großzügiger) sind für Menschen vermutlich zu streng.
+
+**5. Bahnplaner** (`orbit-bot.js`, `T.orbit.plan`): Entscheidung alle 1,5 s (0,5 s bei nahenden Größeren), Vorhersage aller Körper einmal (Leapfrog h 0,5 s, 40 s, mit Anziehung der schweren Körper), Kandidaten: dichte Suche vor/zurück (0,012…0,75, Faktor 1,1) + 24 Richtungen × 3 Stärken, Verfeinerung der zwei besten nach Potenzial (6 Hangkletter-Runden), Bewertung = Beute (Teilgewinn nach Absorptionsformel, Formgewinn für Beinahe-Treffer, `exp(−t/22)`) − `costK` × Ausstoßkosten; verworfen: Stern (+1,5), Abdrift, Größere (0,5 + 0,3 s × Relativtempo). Kosten ~0,33 s CPU je Lauf. Alte Kapitel behalten den alten Planer.
+
+**6. Tests/Laufzeit.** `tests/protoplanet-orbit.test.mjs` (20 Tests: Bahnstabilität, Ellipse, Gravitation, Impuls, Stern absorbiert, Abdrift, Vorschau, selfGrav + Determinismus, Schnappschuss/Rewind, alte Schnappschüsse und Spielstand v3, Ziele, Klang, Kamera, Level, Generator über 125 Seeds, ruhige Welt), `tests/sim-protoplanet-orbit{,2,3,4}.test.mjs` (26 Bot-Tests, 14/10/9/20 s parallel). `protoplanet-gen.test.mjs` auf Kapitel 1/2 eingegrenzt. Ganzes `npm test` (alle Spiele) 281 s, 602 Tests.
+
+**7. Browser** (Playwright, 390×844 und 360×740, Touch/CDP-frei per `startLevel`): 3-1 Übersicht + Hilfe + Vorschau, 3-2 nach Schub (Ellipse), 3-5/3-7/3-8 im Lauf, „Zu weit draußen“, „In den Stern gestürzt“, Levelauswahl mit drei Kapiteln; 0 Konsolenfehler. Bildzeit 3-8 (68 Körper, Headless, vsync 60): ×1 und ×10 Median 16,7 ms, p95 16,7, max 16,8; ×10 = 100 s Spielzeit je 10 s. Kein echtes Handy.
+
+**8. Offen.** Gefühl und Schwierigkeit für Menschen unbekannt (Bahnmechanik ist ungewohnt: Lehrlevel 3-1 braucht den Bot 114 s). Gehört wurde der neue `warn`-Ton nicht. Preview zeigt nur die Sterngravitation, nahe Planeten lenken ab.

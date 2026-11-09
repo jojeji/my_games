@@ -39,7 +39,7 @@ export function lastRemaining(world) {
   if (!p) return { n, mass };
   const lim = T.dustFrac * p.m;
   for (const b of world.bodies) {
-    if (b === p || b.gf === p.id || b.m < lim) continue;
+    if (b === p || b.gf === p.id || b.m < lim || b.kind === 'attractor') continue; // der Protostern ist kein Koerper, den man absorbieren muss
     n++;
     mass += b.m;
   }
@@ -72,7 +72,7 @@ export function goalStatus(world, goal) {
   let mx = 0;
   let n = 0;
   for (const b of world.bodies) {
-    if (b === p) continue;
+    if (b === p || b.kind === 'attractor') continue; // der Protostern zaehlt nicht als Koerper, den man ueberholen muss
     if (b.m > mx) mx = b.m;
     if (b.m >= p.m) n++;
   }

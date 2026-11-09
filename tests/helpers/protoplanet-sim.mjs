@@ -14,7 +14,8 @@ export const SEEDS = Array.from({ length: 30 }, (_, i) => 1000 + i);
 const MAX = 480;
 const isFinale = (lv) => lv.n === 8;
 
-export function simLevels(ids) {
+/** opts.endMass = { levelId: Mindest-Endmasse (Median) } fuer Levels, deren Ziel keine grosse Endmasse verlangt (Standard 6). */
+export function simLevels(ids, opts = {}) {
   for (const id of ids) {
     const lv = levelById(id);
     const hand = lv.family === 'hand';
@@ -50,7 +51,8 @@ export function simLevels(ids) {
       const v = bs.reduce((s, b) => s + Math.hypot(b.vx, b.vy), 0) / bs.length;
       assert.ok(v >= 0.08, `${id}: mittlere Geschwindigkeit ${v.toFixed(3)}`);
       const masses = [...family().runs.filter((r) => r.solved).map((r) => r.mass), ...variants().filter((r) => r.solved).map((r) => r.mass)];
-      assert.ok(median(masses) >= 6, `${id}: Endmasse (Median) ${median(masses).toFixed(1)}`);
+      const need = (opts.endMass && opts.endMass[id]) || 6;
+      assert.ok(median(masses) >= need, `${id}: Endmasse (Median) ${median(masses).toFixed(1)} < ${need}`);
     });
   }
 }

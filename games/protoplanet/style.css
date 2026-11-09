@@ -28,7 +28,7 @@ body.pp-playing { position: fixed; inset: 0; overflow: hidden; }
 .pp-chapter + .pp-chapter { margin-top: 26px; }
 .pp-chapter h2 { font-size: 17px; margin-bottom: 2px; }
 .pp-chapter-meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
-.pp-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.pp-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; } /* minmax(0, ..): lange Titel (Kometenschwarm, Gegenläufer) weiten die Spalten nicht mehr */
 .pp-tile {
   position: relative; min-height: 92px; padding: 8px 4px; border-radius: 16px; cursor: pointer;
   background: var(--surface); border: 1px solid var(--border); color: var(--text);
@@ -75,6 +75,12 @@ body.pp-playing { position: fixed; inset: 0; overflow: hidden; }
   background: rgba(10, 16, 32, 0.88); border: 1px solid var(--border); pointer-events: none; transition: opacity 0.5s;
 }
 .pp-help.gone { opacity: 0; }
+.pp-warn {
+  position: absolute; left: 50%; transform: translateX(-50%); top: calc(76px + env(safe-area-inset-top)); padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 700;
+  color: #ffd9a8; background: rgba(60, 22, 18, 0.88); border: 1px solid rgba(255, 150, 80, 0.7); pointer-events: none; transition: opacity 0.3s; white-space: nowrap;
+}
+.pp-warn[hidden] { display: none; }
+.pp-warn.lose { color: #ffb0a8; border-color: rgba(255, 90, 80, 0.9); }
 .pp-mass {
   position: absolute; left: var(--pad-l); bottom: calc(22px + env(safe-area-inset-bottom)); padding: 8px 12px; border-radius: 12px; font-size: 14px; font-variant-numeric: tabular-nums;
   background: rgba(10, 16, 32, 0.75); border: 1px solid var(--border); pointer-events: none; transition: border-color 0.2s, color 0.2s;

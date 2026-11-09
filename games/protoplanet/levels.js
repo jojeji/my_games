@@ -3,6 +3,7 @@
 export const CHAPTERS = [
   { id: 1, name: 'Staubwolke' },
   { id: 2, name: 'Jäger' },
+  { id: 3, name: 'Protostern' },
 ];
 
 const mote = (x, y, m, vx = 0, vy = 0, extra = {}) => ({ x, y, m, vx, vy, ...extra });
@@ -20,6 +21,15 @@ const rings = (rSplit, k, v) => {
     g(n(5), 1.1, 1.9, SW, v * 0.9, { rMax: rSplit }), g(n(5), 1.1, 1.9, SW, v * 0.9, { rMin: rSplit, dir: -1 }),
   ];
 };
+
+// Kapitel 3 "Protostern" (Paket B): Umlaufbahn-Modus. Gruppe der Familie `orbit`: n Koerper, Masse lo..hi, Bahnband rMin..rMax (innen schneller als aussen), dir -1 = gegenlaeufig
+const og = (n, lo, hi, rMin, rMax, extra = {}) => ({ n, lo, hi, rMin, rMax, ...extra });
+// Koerper auf einer Bahn (Lehrlevels): r, Winkel (Grad), Tempo-Verhaeltnis f, Richtung dir
+const orb = (r, ang, m, extra = {}, spec = {}) => ({ orbit: { r, ang, ...spec }, m, ...extra });
+// Massenleiter auf Bahnen: Staub, Kleine, Mittlere, wenige Grosse ueber das Band rMin..rMax (k = 10: 20 / 9 / 5 Koerper)
+const olad = (k, rMin, rMax, top = [2, 2.2, 3], extra = {}) => [
+  og(Math.round(2 * k), 0.12, 0.45, rMin, rMax, extra), og(Math.round(0.9 * k), 0.5, 0.9, rMin, rMax, extra), og(Math.round(0.5 * k), 1.1, 1.9, rMin, rMax, extra), og(top[0], top[1], top[2], rMin, rMax, extra),
+];
 
 export const LEVELS = [
   {
@@ -161,6 +171,85 @@ export const LEVELS = [
     params: { R: 42, goalType: 'mass', mass: 22, slack: 1.5, groups: lad(16, 0.2), hunters: [{ lo: 1.8, hi: 2.4, diff: 'hard', hMin: 12 }, { lo: 1.4, hi: 1.8, diff: 'normal', hMin: 12 }] },
     goal: { type: 'mass' },
     targets: { eject: 14.65, time: 245 },
+  },
+
+  // Kapitel 3 "Protostern" (Paket B): Umlaufbahn-Modus. Der Spieler kreist auf einer Kreisbahn (r 14) um den Protostern in der Mitte (Anziehung a = gm / (d^2 + soft^2), tune.js T.orbit),
+  // Schub in Flugrichtung hebt die Bahn, Schub dagegen senkt sie, die Bahnvorschau zeigt die Ellipse. Offener Raum: Warnung ab warnR, Abdrift ab loseR. Zahlen kalibriert mit tools/sim-protoplanet.mjs.
+  {
+    id: '3-1', chapter: 3, n: 1, title: 'Umlaufbahn', family: 'hand', seed: 0,
+    layout: {
+      orbit: { rP: 14, rings: [8, 14, 20] },
+      bodies: [orb(14, 55, 0.4), orb(11.5, 140, 0.35), orb(17, 230, 0.4), orb(14, 305, 0.3)],
+      goal: { type: 'last' },
+    },
+    goal: { type: 'last' },
+    hint: { text: 'Du kreist um den Protostern. Die gepunktete Linie zeigt deine Bahn.', until: 'eject' },
+    targets: { eject: 0.6, time: 240 },
+  },
+  {
+    id: '3-2', chapter: 3, n: 2, title: 'Höher', family: 'hand', seed: 0,
+    layout: {
+      orbit: { rP: 14, rings: [8, 14, 20, 26] },
+      bodies: [orb(19, 70, 0.45), orb(22, 160, 0.4), orb(25, 250, 0.5), orb(19, 330, 0.4)],
+      goal: { type: 'mass', value: 2.1 },
+    },
+    goal: { type: 'mass', value: 2.1 },
+    hint: {
+      text: 'Tippe hinter dich: Du wirst schneller und deine Bahn steigt. Tippe vor dich: Du bremst, die Bahn sinkt.',
+      textAim: 'Tippe in Flugrichtung: Du wirst schneller und deine Bahn steigt. Tippe dagegen: Du bremst, die Bahn sinkt.',
+      until: 'eject',
+    },
+    targets: { eject: 0.5, time: 360 },
+  },
+  {
+    id: '3-3', chapter: 3, n: 3, title: 'Tiefer', family: 'hand', seed: 0,
+    layout: {
+      orbit: { rP: 14, rings: [8, 14, 20] },
+      bodies: [orb(9.5, 40, 0.7, { tag: 'target' }), orb(11, 130, 0.35), orb(8.5, 220, 0.3), orb(12, 300, 0.4)],
+      goal: { type: 'absorb', label: 'Absorbiere den Funken' },
+    },
+    goal: { type: 'absorb', label: 'Absorbiere den Funken' },
+    hint: { text: 'Bremsen senkt die Bahn. Fällt sie in den Stern, wird die Vorschau rot.', textAim: 'Gegen die Flugrichtung tippen senkt die Bahn. Fällt sie in den Stern, wird die Vorschau rot.', until: 'eject' },
+    targets: { eject: 0.6, time: 120 },
+  },
+  {
+    id: '3-4', chapter: 3, n: 4, rev: 1, title: 'Staubgürtel', family: 'orbit', seed: 1,
+    params: { rP: 14, loseR: 85, rings: [8, 14, 22, 30], goalType: 'mass', mass: 9, slack: 1.6, groups: olad(10, 7, 30) },
+    goal: { type: 'mass' },
+    targets: { eject: 0.9, time: 205 },
+  },
+  {
+    id: '3-5', chapter: 3, n: 5, rev: 1, title: 'Kometen', family: 'orbit', seed: 5,
+    params: {
+      rP: 14, loseR: 90, rings: [8, 14, 22, 30], goalType: 'absorb', slack: 1.4,
+      groups: [og(1, 2.2, 2.6, 18, 26, { tag: 'target', ecc: 0.06 }), ...olad(8, 7, 30, [2, 1.8, 2.6]), og(4, 0.3, 0.6, 26, 34, { f: 0.7, phi: 12 })],
+    },
+    goal: { type: 'absorb' },
+    targets: { eject: 2.15, time: 190 },
+  },
+  {
+    id: '3-6', chapter: 3, n: 6, rev: 1, title: 'Enges System', family: 'orbit', seed: 1,
+    params: { rP: 14, loseR: 70, rings: [8, 14, 20], goalType: 'last', slack: 1.4, groups: olad(8, 8, 22, [1, 1.8, 2.2]) },
+    goal: { type: 'last' },
+    targets: { eject: 3.45, time: 355 },
+  },
+  {
+    id: '3-7', chapter: 3, n: 7, rev: 1, title: 'Planet', family: 'orbit', seed: 30,
+    params: {
+      rP: 14, loseR: 80, rings: [8, 14, 22, 30], goalType: 'largest', slack: 1.4, selfGrav: 0.15,
+      groups: [og(16, 0.12, 0.45, 8, 28), og(8, 0.5, 0.9, 8, 28), og(5, 1.1, 1.6, 8, 28), og(1, 2.6, 3, 19, 24, { tag: 'planet' })],
+    },
+    goal: { type: 'largest' },
+    targets: { eject: 0.4, time: 145 },
+  },
+  {
+    id: '3-8', chapter: 3, n: 8, rev: 1, title: 'Gegenläufer', family: 'orbit', seed: 6,
+    params: {
+      rP: 14, loseR: 100, rings: [8, 14, 22, 30, 38], goalType: 'mass', mass: 14, slack: 1.5,
+      groups: [...olad(14, 7, 30, [3, 2.2, 3]), og(10, 0.12, 0.45, 33, 42, { dir: -1 }), og(4, 0.5, 0.9, 33, 42, { dir: -1 }), og(2, 1.1, 1.5, 33, 42, { dir: -1 })],
+    },
+    goal: { type: 'mass' },
+    targets: { eject: 2.1, time: 230 },
   },
 ];
 

@@ -3,14 +3,16 @@
 import { T } from './tune.js';
 import { createPlay } from './play.js';
 import { think, pushFrac } from './brain.js';
+import { planOrbit } from './orbit-bot.js';
 
 const B = T.bot;
+const OB = { ...T.bot, maxFrac: T.orbit.plan.maxFrac }; // Kapitel 3: groessere Schuebe erlaubt
 
 /** Spielergeschwindigkeit um (dvx,dvy) aendern: ein Ausstoss in die Gegenrichtung mit genau passendem Anteil. */
 function push(play, dvx, dvy) {
   const mag = Math.hypot(dvx, dvy);
   if (mag < 1e-9) return 0;
-  return play.eject(-dvx, -dvy, pushFrac(mag, B)) ? 1 : 0;
+  return play.eject(-dvx, -dvy, pushFrac(mag, play.world.grav ? OB : B)) ? 1 : 0;
 }
 
 export function createBot() {
@@ -21,7 +23,8 @@ export function createBot() {
 export function botAct(play, st) {
   const p = play.world.player;
   if (!p) return 0;
-  const a = think(play.world, p, { B, goal: play.goal }, st);
+  // Gravitationslevels (Kapitel 3): Planer mit Vorwaertssimulation, sonst das gemeinsame Gehirn mit linearer Abfangrechnung
+  const a = play.world.grav ? planOrbit(play.world, p, { goal: play.goal }, st) : think(play.world, p, { B, goal: play.goal }, st);
   return a ? push(play, a.dx, a.dy) : 0;
 }
 
@@ -29,10 +32,12 @@ export function botAct(play, st) {
 export function playLevel(level, { maxTime = B.maxTime, variant = 0 } = {}) {
   const play = createPlay(level);
   const st = createBot();
-  play.advanceSteps(variant * B.variantSteps); // Variante = andere Entscheidungs-Phase (deterministisch): der Bot beginnt zu handeln, wenn die Welt schon ein paar Schritte alt ist
+  const orbit = !!play.world.grav;
+  const every = orbit ? Math.round(T.orbit.plan.every / T.dt) : B.every;
+  play.advanceSteps(variant * (orbit ? T.orbit.plan.variantSteps : B.variantSteps)); // Variante = andere Entscheidungs-Phase (deterministisch): der Bot beginnt zu handeln, wenn die Welt schon ein paar Schritte alt ist
   while (play.status === 'running' && play.world.t < maxTime) {
     botAct(play, st);
-    play.advanceSteps(B.every);
+    play.advanceSteps(orbit && st.wait ? Math.round(st.wait / T.dt) : every);
   }
   const w = play.world;
   return {

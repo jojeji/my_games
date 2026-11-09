@@ -15,11 +15,12 @@ const LEGACY = [
   { id: 'enge (P1)', family: 'enge', goal: { type: 'last' }, params: { R: 15, nBig: 3, bLo: 1.1, bHi: 1.3, vBig: 0, bGap: 3, keepOut: 2, nSmall: 16, sLo: 0.15, sHi: 0.85, sSkew: 1.5, vSmall: 0.05 } },
 ];
 const levelsWithFamily = LEVELS.filter((l) => l.family !== 'hand');
-const familyLevels = [...levelsWithFamily, ...LEGACY];
+const familyLevels = [...levelsWithFamily.filter((l) => l.family !== 'orbit'), ...LEGACY]; // Kapitel 3 (Familie orbit) hat eigene Regeln: tests/protoplanet-orbit.test.mjs
+const CH12 = LEVELS.filter((l) => l.chapter <= 2); // Kapitel 1 und 2: Arena, Spieler in der Mitte
 const seeds = Array.from({ length: 60 }, (_, i) => 1 + i * 17);
 
 test('jede Familie ist durch ein Level oder einen Altbestand abgedeckt, alle Level-Familien sind bekannt', () => {
-  for (const f of Object.keys(FAMILIES)) assert.ok(familyLevels.some((l) => l.family === f), f);
+  for (const f of Object.keys(FAMILIES)) assert.ok([...familyLevels, ...levelsWithFamily].some((l) => l.family === f), f);
   for (const l of levelsWithFamily) assert.ok(FAMILIES[l.family], l.id);
 });
 
@@ -83,8 +84,8 @@ test('gleicher Seed = gleiches Level, anderer Seed = anderes Level', () => {
   }
 });
 
-test('Spieler startet mit Masse 1 in der Mitte und ruht', () => {
-  for (const lv of LEVELS) {
+test('Spieler startet mit Masse 1 in der Mitte und ruht (Kapitel 1 und 2; Kapitel 3 startet auf einer Kreisbahn: tests/protoplanet-orbit.test.mjs)', () => {
+  for (const lv of CH12) {
     const b = buildLevel(lv);
     const w = createWorld(b);
     assert.equal(w.player.m, 1);
@@ -94,7 +95,7 @@ test('Spieler startet mit Masse 1 in der Mitte und ruht', () => {
 });
 
 test('Lehrlevels und feste Levels erfuellen die Grundregeln (soweit sie fuer Lehrlevels gelten)', () => {
-  for (const lv of LEVELS) {
+  for (const lv of CH12) {
     const b = buildLevel(lv);
     const goal = { ...(b.goal || {}), ...lv.goal };
     if (lv.family === 'hand') {
@@ -106,13 +107,13 @@ test('Lehrlevels und feste Levels erfuellen die Grundregeln (soweit sie fuer Leh
 });
 
 test('Kapitel 1: 8 Levels, 3 Lehrlevels mit Bedienhilfe, 1-4..1-8 lebendige Welten (Familie welt); Kapitel 2: 8 Levels', () => {
-  assert.equal(CHAPTERS.length, 2);
+  assert.equal(CHAPTERS.length, 3);
   const c1 = LEVELS.filter((l) => l.chapter === 1);
   const c2 = LEVELS.filter((l) => l.chapter === 2);
   assert.equal(c1.length, 8);
   assert.equal(c2.length, 8);
-  assert.equal(LEVELS.length, 16);
-  assert.equal(new Set(LEVELS.map((l) => l.id)).size, 16);
+  assert.equal(LEVELS.length, 24);
+  assert.equal(new Set(LEVELS.map((l) => l.id)).size, 24);
   assert.deepEqual(c1.slice(0, 3).map((l) => l.family), ['hand', 'hand', 'hand']);
   for (const l of c1.slice(0, 3)) assert.ok(l.hint && l.hint.text && l.hint.until, l.id);
   assert.deepEqual(c1.slice(3).map((l) => l.family), ['welt', 'welt', 'welt', 'welt', 'welt']);
@@ -123,10 +124,11 @@ test('Kapitel 1: 8 Levels, 3 Lehrlevels mit Bedienhilfe, 1-4..1-8 lebendige Welt
     assert.ok(['largest', 'last', 'absorb', 'mass'].includes(l.goal.type), l.id);
     assert.ok(l.title && l.title.length > 2, l.id);
   }
-  assert.equal(new Set(LEVELS.map((l) => l.title)).size, 16, 'jedes Level hat einen eigenen Namen');
+  assert.equal(new Set(LEVELS.map((l) => l.title)).size, 24, 'jedes Level hat einen eigenen Namen');
   assert.equal(levelById('1-4').family, 'welt');
   assert.equal(nextLevel('1-8').id, '2-1');
-  assert.equal(nextLevel('2-8'), null);
+  assert.equal(nextLevel('2-8').id, '3-1');
+  assert.equal(nextLevel('3-8'), null);
   assert.equal(nextLevel('1-1').id, '1-2');
   // Ziele gemischt: in jedem Kapitel mindestens drei verschiedene
   for (const c of [c1, c2]) assert.ok(new Set(c.map((l) => l.goal.type)).size >= 3);

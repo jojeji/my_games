@@ -417,6 +417,13 @@ export function createEngine(ctx, opts = {}) {
       const m = mood();
       tone({ t, hz: midiToHz(scaleMidi(m, scaleOf(m).length * 2)), gain: 0.05, att: 0.004, dec: 0.1, oct: 0, send: 0.15 });
     },
+    // Warnung "Zu weit draussen": ein leiser, tiefer Doppelton, hoechstens alle paar Sekunden (die Oberflaeche drosselt zusaetzlich)
+    warn({ t = now() } = {}) {
+      if (!gate.allow('warn', t).ok || !live()) return;
+      const m = mood();
+      const n = scaleOf(m).length;
+      [0, 0.22].forEach((dt, i) => tone({ t: t + dt, hz: midiToHz(scaleMidi(m, n - 2 - i)), gain: 0.07, att: 0.03, dec: 0.5, type: 'triangle', oct: 0, send: 0.4, pan: 0 }));
+    },
     levelStart({ t = now() } = {}) {
       if (!live()) return;
       const m = mood();
@@ -564,7 +571,7 @@ export function createAudio({ settings, seed } = {}) {
     },
     sfx: {},
   };
-  for (const k of ['absorb', 'eject', 'swallowed', 'win', 'rewind', 'timeStep', 'ui', 'levelStart']) {
+  for (const k of ['absorb', 'eject', 'swallowed', 'win', 'rewind', 'timeStep', 'ui', 'warn', 'levelStart']) {
     api.sfx[k] = (arg) => {
       if (engine && ctx.state === 'running') engine.sfx[k](arg);
     };

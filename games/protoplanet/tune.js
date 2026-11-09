@@ -36,6 +36,65 @@ export const T = {
   dprMax: 2,
   glowSteps: 24, // Farbstufen der vorgezeichneten Glow-Sprites
   starCount: 70,
+  // --- Kapitel 3 "Protostern" (Umlaufbahn-Modus, Paket B): Gravitation, offener Raum, Bahnvorschau ---
+  orbit: {
+    gm: 80, // Standardstaerke des Sterns (G x Masse): Kreisbahn r = 14 dauert ~37 s
+    soft: 0.3, // Weichheit des Sternkerns in der Anziehung (verhindert 1/d^2-Spitzen)
+    selfG: 2, // Staerke der Anziehung unter Koerpern bei selfGrav = 1: a = selfG x selfGrav x m_Quelle / (d^2 + ...)
+    selfMin: 2, // nur Koerper ab dieser Masse ziehen an (der Spieler nie: er ist die Sonde, die Welt zieht)
+    selfK: 6, // hoechstens so viele Quellen (die schwersten): Kosten bleiben begrenzt
+    selfSoft: 1, // Weichheit der Anziehung unter Koerpern (zusaetzlich zur Radiensumme)
+    cullFrac: 1.5, // Koerper hinter cullFrac x loseR verschwinden
+    // Bahnvorschau (orbit.js): gepunktete Vorhersage der Spielerbahn nur unter der Sterngravitation
+    preview: {
+      revs: 1.25, // Umlaeufe voraus (bei gebundener Bahn)
+      maxT: 60, // s, hoechstens so weit voraus (auch bei Fluchtbahn)
+      stepFrac: 0.05, // Schritt = stepFrac / lokale Winkelgeschwindigkeit (Leapfrog, ~125 Schritte je Umlauf)
+      dtMin: 0.02,
+      dtMax: 0.25,
+      maxPoints: 220, // Punkte der Linie (Schrittzahl wird sonst ausgeduennt)
+      every: 0.1, // s echte Zeit zwischen zwei Neuberechnungen (nach einem Ausstoss sofort)
+      starGap: 0.3, // Bahnpunkt gilt als "im Stern", wenn r < Sternradius + Spielerradius + starGap
+    },
+    camBias: 0.4, // Orbit-Kamera schaut um diesen Anteil des Weges zum Stern vom Spieler weg
+    camBigNear: 0.8, // Orbit-Kamera: groessere Koerper halten den Zoom nur innerhalb dieses Vielfachen der Sichtweite offen (viele Koerper sind groesser als du: sonst zoomt sie immer heraus)
+    camOrbit: 0.72, // ... und mindestens camOrbit x Apoapsis der aktuellen Bahn (die ganze Ellipse im Bild)
+    camStar: 0.8, // Orbit-Kamera: sichtbare halbe Breite mindestens camStar x Abstand zum Stern (+ Sternradius), damit der Stern im Bild bleibt
+    camIntro: 3.2, // s: Levelstart zeigt zuerst das ganze System, die Kamera faehrt dann auf den Spieler
+    plan: {
+      // Planer des Bots fuer Gravitationslevels (orbit-bot.js): Vorwaertssimulation von Kandidaten-Schueben
+      every: 1.5, // s Spielzeit zwischen zwei Entscheidungen
+      h: 0.5, // s Schrittweite der Vorhersage
+      horizon: 40, // s Vorhersagehorizont
+      mags: [0.1, 0.25, 0.5], // Kandidaten (Raster in allen Richtungen ausser vor/zurueck): Geschwindigkeitsaenderung
+      lineMin: 0.012, // dichte Suche entlang der Flugrichtung: Staerken von lineMin bis lineMax im Faktor lineStep
+      lineMax: 0.75,
+      lineStep: 1.1,
+      dirs: 24, // Kandidaten: Richtungen
+      costK: 3, // Gewicht der Ausstosskosten (Masse) gegen den Gewinn
+      costKGoal: 1.5, //   ... bei den Zielen `last` und `absorb` (Fertigwerden zaehlt mehr als Masse sparen)
+      tau: 22, // s: Gewinne verblassen mit exp(-t / tau)
+      near: 3.2, // Bahnbaender: ein Koerper wird nur geprueft, wenn sein Radienband das der Kandidatenbahn auf near x Radiensumme + margin beruehrt
+      shapeWide: 0.12, // Formgewinn fuer Beinahe-Treffer: breiter Anteil (Breite wideW Radiensummen) ...
+      wideW: 6,
+      shapeNarrow: 0.35, //   ... und enger Anteil (Breite narrowW), jeweils als Anteil des Treffer-Gewinns
+      narrowW: 1.5,
+      finish: 0.5, // Ziel `absorb` / `last`: ein Zielkoerper ist mindestens so viel wert (Anteil der Spielermasse), auch wenn nur noch ein Rest uebrig ist
+      onCourse: 0.12, // liegt die Untaetigkeit schon auf Abfangkurs (sichere Treffer ab diesem Anteil der Spielermasse), wird nicht gesucht
+      refine: 2, // so viele (verschiedene) beste Kandidaten werden verfeinert ...
+      climb: 6, //   ... mit so vielen Hangkletter-Runden (je 4 Auswertungen)
+      margin: 0.5, // Sicherheitsabstand zu Groesseren (Welteinheiten) ...
+      reactT: 0.3, //   ... plus so viele s x Relativgeschwindigkeit bei der Begegnung (der Planer reagiert nur alle `every` s)
+      dangerRatio: 0.95, // ab dieser Masse (relativ zum Spieler nach dem Schub) gilt ein Koerper als Gefahr
+      everyUrgent: 0.5, // s Spielzeit zwischen Entscheidungen, wenn ein Groesserer naht (naeher als alertGap in den naechsten alertT s)
+      alertGap: 14,
+      alertT: 10,
+      starMargin: 1.5, // Abstand zur Sternoberflaeche, unter dem eine Bahn verworfen wird
+      variantSteps: 90, // Bot-Variante v beginnt nach v x 90 Schritten (0,75 s) zu handeln
+      maxFrac: 0.12,
+      minGain: 0.015, // ein Schub lohnt, wenn er den Wert der Untaetigkeit um mindestens so viel (Anteil der Spielermasse) uebertrifft
+    },
+  },
   // --- Bot ---
   bot: {
     every: 30, // Physikschritte je Entscheidung (0,25 s)
@@ -115,7 +174,7 @@ export const T = {
     smooth: { tau: 2.2, danger: 1.0 }, // s, Zeitkonstanten fuer Parameteraenderungen
     sfx: {
       // Drosselung je Art: gap = Mindestabstand (s), max = Anzahl je 1 s
-      gates: { absorb: { gap: 0.07, max: 6 }, eject: { gap: 0.09, max: 7 }, beam: { gap: 0.22, max: 4 }, ui: { gap: 0.05, max: 8 }, time: { gap: 0.1, max: 5 } },
+      gates: { absorb: { gap: 0.07, max: 6 }, eject: { gap: 0.09, max: 7 }, beam: { gap: 0.22, max: 4 }, ui: { gap: 0.05, max: 8 }, time: { gap: 0.1, max: 5 }, warn: { gap: 2.5, max: 1 } },
       chainWin: 1.1, // s: Aufnahmen innerhalb dieses Fensters steigen als Arpeggio
       chainMax: 5,
       absorbLoIdx: 0, absorbHiIdx: 9, // Skalenindex-Bereich (ab root + 12) fuer kleine (hoch) bis grosse (tief) Happen
