@@ -20,6 +20,13 @@ export function createRewind({ every = T.rewindEvery, keep = T.rewindKeep } = {}
       while (list.length > 1 && list[0].t < min) list.shift();
       return true;
     },
+    /** Nur lesen (Darstellung des Rueckwaertslaufs): die Schnappschuesse von neu nach alt bis einschliesslich des Ziels, das `pick` waehlen wuerde. Veraendert nichts. */
+    peek(tNow, back = T.rewindBack) {
+      if (!list.length) return [];
+      let idx = 0;
+      for (let i = 0; i < list.length; i++) if (list[i].t <= tNow - back + 1e-9) idx = i;
+      return list.slice(idx).reverse().map((e) => e.snap);
+    },
     /** Neuester Schnappschuss mit t <= tNow - back (sonst der aelteste). Verwirft alles danach. Gibt den Schnappschuss zurueck. */
     pick(tNow, back = T.rewindBack) {
       if (!list.length) return null;

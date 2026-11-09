@@ -1,5 +1,5 @@
 // Kapitel 1 "Staubwolke": 3 Lehrlevels von Hand, 5 Levels aus Familien mit festen Seeds (1-6..1-8 seit P2 mit Brocken). Kapitel 2 "Jaeger" (P2): KI-Koerper.
-// `rev` = Fassung eines Levels (fehlt = 1): ein gesicherter Spielstand eines Levels mit anderer Fassung wird verworfen (state.js). `targets` (Sterne) stammen aus tools/sim-protoplanet.mjs (Bot-Median x 1,3).
+// `rev` = Fassung eines Levels (fehlt = 1): ein gesicherter Spielstand eines Levels mit anderer Fassung wird verworfen (state.js). `targets` (Sterne, Paket F: fuer Menschen) stammen aus tools/sim-protoplanet.mjs (Bot-Median der Varianten: Zeit x 2, Ausstoss x 1,8; Lehrlevels grosszuegig).
 export const CHAPTERS = [
   { id: 1, name: 'Staubwolke' },
   { id: 2, name: 'Jäger' },
@@ -37,7 +37,7 @@ export const LEVELS = [
     layout: { arenaR: 11, bodies: [mote(4, 2.5, 0.4, 0, 0, { tag: 'target' })] },
     goal: { type: 'absorb' },
     hint: { text: 'Tippe neben dich: Dort stößt du Masse aus, du fliegst in die Gegenrichtung.', textAim: 'Tippe, wohin du fliegen willst.', until: 'eject' },
-    targets: { eject: 0.25, time: 20 },
+    targets: { eject: 0.3, time: 20 },
   },
   {
     id: '1-2', chapter: 1, n: 2, title: 'Gefahr', family: 'hand', seed: 0,
@@ -47,7 +47,7 @@ export const LEVELS = [
     },
     goal: { type: 'last' },
     hint: { text: 'Warme Körper sind größer als du. Weich ihnen aus, wachse an den kleinen und schlucke sie am Ende.', until: 'absorb' },
-    targets: { eject: 2.5, time: 150 },
+    targets: { eject: 2.5, time: 290 },
   },
   {
     id: '1-3', chapter: 1, n: 3, title: 'Strahl und Zeit', family: 'hand', seed: 0,
@@ -61,7 +61,7 @@ export const LEVELS = [
     },
     goal: { type: 'last' },
     hint: { text: 'Halte gedrückt für einen Strahl. Unten rechts läuft die Zeit schneller.', until: 'beam' },
-    targets: { eject: 2.5, time: 180 },
+    targets: { eject: 3.6, time: 200 },
   },
   // 1-4..1-8 (rev 3, Paket A): lebendige Welten. Massenleiter (`lad`: Gruppen mit wachsender Masse), Koerper kreisen in Stroemungen (`swirl`: Tangenten, Zusammenstoesse selten),
   // grosse Koerper weit auseinander (`sep`), auch Brocken bewegen sich langsam. Zahlen kalibriert mit tools/sim-protoplanet.mjs (docs/protoplanet.md, "Paket A").
@@ -69,7 +69,7 @@ export const LEVELS = [
     id: '1-4', chapter: 1, n: 4, rev: 3, title: 'Treibgut', family: 'welt', seed: 36,
     params: { R: 36, goalType: 'mass', mass: 14, slack: 1.6, groups: lad(10, 0.2) },
     goal: { type: 'mass' },
-    targets: { eject: 9.55, time: 220 },
+    targets: { eject: 13.25, time: 340 },
   },
   {
     id: '1-5', chapter: 1, n: 5, rev: 3, title: 'Wanderer', family: 'welt', seed: 17,
@@ -81,7 +81,7 @@ export const LEVELS = [
       ],
     },
     goal: { type: 'absorb' },
-    targets: { eject: 9.2, time: 190 },
+    targets: { eject: 12.7, time: 295 },
   },
   {
     id: '1-6', chapter: 1, n: 6, rev: 3, title: 'Gegenströme', family: 'welt', seed: 36,
@@ -94,7 +94,7 @@ export const LEVELS = [
       ],
     },
     goal: { type: 'largest' },
-    targets: { eject: 3.65, time: 155 },
+    targets: { eject: 5.05, time: 235 },
   },
   {
     id: '1-7', chapter: 1, n: 7, rev: 3, title: 'Wirbel', family: 'welt', seed: 10,
@@ -103,13 +103,13 @@ export const LEVELS = [
       groups: [g(34, 0.12, 0.45, SW, 0.25), g(15, 0.5, 0.9, SW, 0.25), g(8, 1.1, 1.9, SW, 0.22), g(3, 2.2, 3, SW, 0.18), g(2, 0.3, 0.6, 'rand', 0.9, { vj: 0.2 }), g(1, 6, 7, SW, 0.1, { tag: 'rock', rMin: 18 })],
     },
     goal: { type: 'largest' },
-    targets: { eject: 3.55, time: 175 },
+    targets: { eject: 4.9, time: 265 },
   },
   {
     id: '1-8', chapter: 1, n: 8, rev: 3, title: 'Kometenschwarm', family: 'welt', seed: 10,
     params: { R: 50, goalType: 'mass', mass: 28, slack: 1.5, groups: [...lad(20, 0.2, [4, 2.4, 3.2]), g(3, 0.3, 0.6, 'rand', 1, { vj: 0.2 })] },
     goal: { type: 'mass' },
-    targets: { eject: 17.4, time: 320 },
+    targets: { eject: 24.05, time: 495 },
   },
 
   // Kapitel 2 "Jaeger" (P2, Paket A: lebendig): KI-Koerper (kind 'hunter'). Jaeger jagen Kleineres und fliehen vor Groesserem, auch vor dem Spieler. Stufen easy | normal | hard (tune.js T.hunter).
@@ -130,25 +130,25 @@ export const LEVELS = [
     id: '2-2', chapter: 2, n: 2, rev: 3, title: 'Verfolger', family: 'welt', seed: 34,
     params: { R: 32, goalType: 'mass', mass: 12, slack: 1.6, groups: lad(10, 0.2, [2, 2.2, 3]), hunters: [{ lo: 1.5, hi: 1.8, diff: 'easy', hMin: 10 }] },
     goal: { type: 'mass' },
-    targets: { eject: 6.85, time: 170 },
+    targets: { eject: 9.45, time: 265 },
   },
   {
     id: '2-3', chapter: 2, n: 3, rev: 3, title: 'Jagdzeit', family: 'welt', seed: 21,
     params: { R: 36, goalType: 'absorb', slack: 1.4, groups: lad(12, 0.2), hunters: [{ lo: 1.4, hi: 1.8, diff: 'normal', hMin: 12, target: true }] },
     goal: { type: 'absorb', label: 'Absorbiere den Jäger' },
-    targets: { eject: 12.2, time: 215 },
+    targets: { eject: 16.9, time: 315 },
   },
   {
     id: '2-4', chapter: 2, n: 4, rev: 3, title: 'Konkurrenz', family: 'welt', seed: 40,
     params: { R: 46, goalType: 'largest', slack: 1.4, groups: lad(15, 0.2), hunters: [{ lo: 8, hi: 9, diff: 'normal', hMin: 14 }] },
     goal: { type: 'largest' },
-    targets: { eject: 4.95, time: 185 },
+    targets: { eject: 6.85, time: 280 },
   },
   {
     id: '2-5', chapter: 2, n: 5, rev: 3, title: 'Rudel', family: 'welt', seed: 19,
     params: { R: 38, goalType: 'mass', mass: 14, slack: 1.6, groups: lad(13, 0.2), hunters: [{ lo: 1.2, hi: 1.6, diff: 'normal', hMin: 10 }, { lo: 1.2, hi: 1.6, diff: 'normal', hMin: 10 }] },
     goal: { type: 'mass' },
-    targets: { eject: 7.25, time: 190 },
+    targets: { eject: 10.05, time: 290 },
   },
   {
     id: '2-6', chapter: 2, n: 6, rev: 3, title: 'Aufräumen', family: 'welt', seed: 18,
@@ -158,19 +158,19 @@ export const LEVELS = [
       hunters: [{ lo: 0.8, hi: 1.1, diff: 'normal', hMin: 8 }, { lo: 0.5, hi: 0.8, diff: 'easy', hMin: 8 }],
     },
     goal: { type: 'last' },
-    targets: { eject: 24.1, time: 350 },
+    targets: { eject: 33.35, time: 535 },
   },
   {
     id: '2-7', chapter: 2, n: 7, rev: 3, title: 'Revier', family: 'welt', seed: 24,
     params: { R: 54, goalType: 'largest', slack: 1.4, groups: lad(18, 0.2, [4, 2.4, 3.4]), hunters: [{ lo: 6, hi: 7, diff: 'normal', hMin: 15 }, { lo: 5.5, hi: 6.5, diff: 'hard', hMin: 15 }] },
     goal: { type: 'largest' },
-    targets: { eject: 4.1, time: 165 },
+    targets: { eject: 5.7, time: 255 },
   },
   {
     id: '2-8', chapter: 2, n: 8, rev: 3, title: 'Rudelführer', family: 'welt', seed: 32,
     params: { R: 42, goalType: 'mass', mass: 22, slack: 1.5, groups: lad(16, 0.2), hunters: [{ lo: 1.8, hi: 2.4, diff: 'hard', hMin: 12 }, { lo: 1.4, hi: 1.8, diff: 'normal', hMin: 12 }] },
     goal: { type: 'mass' },
-    targets: { eject: 14.65, time: 245 },
+    targets: { eject: 19.9, time: 375 },
   },
 
   // Kapitel 3 "Protostern" (Paket B): Umlaufbahn-Modus. Der Spieler kreist auf einer Kreisbahn (r 14) um den Protostern in der Mitte (Anziehung a = gm / (d^2 + soft^2), tune.js T.orbit),
@@ -216,7 +216,7 @@ export const LEVELS = [
     id: '3-4', chapter: 3, n: 4, rev: 1, title: 'Staubgürtel', family: 'orbit', seed: 1,
     params: { rP: 14, loseR: 85, rings: [8, 14, 22, 30], goalType: 'mass', mass: 9, slack: 1.6, groups: olad(10, 7, 30) },
     goal: { type: 'mass' },
-    targets: { eject: 0.9, time: 205 },
+    targets: { eject: 1.25, time: 315 },
   },
   {
     id: '3-5', chapter: 3, n: 5, rev: 1, title: 'Kometen', family: 'orbit', seed: 5,
@@ -225,13 +225,13 @@ export const LEVELS = [
       groups: [og(1, 2.2, 2.6, 18, 26, { tag: 'target', ecc: 0.06 }), ...olad(8, 7, 30, [2, 1.8, 2.6]), og(4, 0.3, 0.6, 26, 34, { f: 0.7, phi: 12 })],
     },
     goal: { type: 'absorb' },
-    targets: { eject: 2.15, time: 190 },
+    targets: { eject: 2.95, time: 290 },
   },
   {
     id: '3-6', chapter: 3, n: 6, rev: 1, title: 'Enges System', family: 'orbit', seed: 1,
     params: { rP: 14, loseR: 70, rings: [8, 14, 20], goalType: 'last', slack: 1.4, groups: olad(8, 8, 22, [1, 1.8, 2.2]) },
     goal: { type: 'last' },
-    targets: { eject: 3.45, time: 355 },
+    targets: { eject: 4.75, time: 545 },
   },
   {
     id: '3-7', chapter: 3, n: 7, rev: 1, title: 'Planet', family: 'orbit', seed: 30,
@@ -240,7 +240,7 @@ export const LEVELS = [
       groups: [og(16, 0.12, 0.45, 8, 28), og(8, 0.5, 0.9, 8, 28), og(5, 1.1, 1.6, 8, 28), og(1, 2.6, 3, 19, 24, { tag: 'planet' })],
     },
     goal: { type: 'largest' },
-    targets: { eject: 0.4, time: 145 },
+    targets: { eject: 0.55, time: 220 },
   },
   {
     id: '3-8', chapter: 3, n: 8, rev: 1, title: 'Gegenläufer', family: 'orbit', seed: 6,
@@ -249,7 +249,7 @@ export const LEVELS = [
       groups: [...olad(14, 7, 30, [3, 2.2, 3]), og(10, 0.12, 0.45, 33, 42, { dir: -1 }), og(4, 0.5, 0.9, 33, 42, { dir: -1 }), og(2, 1.1, 1.5, 33, 42, { dir: -1 })],
     },
     goal: { type: 'mass' },
-    targets: { eject: 2.1, time: 230 },
+    targets: { eject: 2.85, time: 350 },
   },
 ];
 

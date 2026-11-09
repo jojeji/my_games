@@ -18,24 +18,69 @@ export const T = {
   rewindKeep: 10, // s Spielzeit, die der Ringpuffer haelt
   rewindBack: 3, // s vor dem Verlust
   rewindLives: 3, // Versuche je Level
+  chapterOpen: 5, // Paket F: ein Kapitel oeffnet sich, sobald im vorherigen so viele Levels geschafft sind (innerhalb eines Kapitels Level fuer Level)
   // --- Zeit ---
   timeSteps: [0.25, 1, 4, 10],
   // --- Kamera ---
-  camSpan: 12, // sichtbare halbe Breite = camSpan * Spielerradius ...
-  camMin: 6, //   ... nicht unter camMin
+  camSpan: 6.5, // Paket F: Nahbereich. sichtbare halbe Breite = camSpan * Spielerradius^camExp ...
+  camExp: 0.78, //   ... Exponent < 1: der Koerper WAECHST auf dem Bildschirm (Staubkorn -> Riese), die Welt wird kleiner, die Kamera faehrt weich heraus
+  camMin: 4, //   ... nicht unter camMin
   camMax: 66, //  ... nicht ueber camMax (Arenen bis R 56, Spieler bis ~30 Massen)
   camFollow: 5, // 1/s, exponentielles Nachziehen der Position
   camZoomRate: 2.2, // 1/s, Nachziehen des Zooms
   camGrowTau: 1.2, // s: Bezugsradius des Automatik-Zooms folgt dem WACHSENDEN Spieler zuegig ...
   camShrinkTau: 9, //   ... dem SCHRUMPFENDEN sehr traege (Schrumpfen durch Ausstoss soll sichtbar sein)
   camManualHold: 4, // s ohne Pinch, dann kehrt die Automatik zurueck
-  camBigNear: 2, // groessere Koerper in diesem Vielfachen der Sichtweite halten den Zoom offen
+  camBigNear: 0, // Arena-Kapitel (Paket F): 0 = aus, groessere Koerper ausserhalb des Bildes zeigen nur die Randpfeile (kein Herauszoomen)
   // --- Eingabe ---
   tapSlop: 14, // px, Bewegung die noch als Tippen gilt
+  // --- Auftakt (Paket F): Uebersicht der ganzen Welt, dann weiche Fahrt auf den Spieler; die Physik startet erst danach ---
+  intro: { hold: 0.35, dur: 1.7, orbitDur: 2.6, reduced: 0.45, titleHold: 1.6 }, // s (hold = Uebersicht steht, dur = Gesamtdauer, titleHold = Titel bleibt nach dem Ende der Fahrt)
   // --- Darstellung ---
   dprMax: 2,
   glowSteps: 24, // Farbstufen der vorgezeichneten Glow-Sprites
   starCount: 70,
+  // --- Effekte (Paket F, fx.js): reine Darstellung, eigener Zufall, nie in der Physik ---
+  fx: {
+    maxParticles: 320, // harte Obergrenze des Pools (Weniger Bewegung: reducedParticles)
+    reducedParticles: 70,
+    maxRings: 10,
+    flowRate: [26, 70], // Teilchen/s des Hinueberfliessens (kleiner ... groesserer Happen in Pixeln)
+    flowLife: [0.28, 0.5],
+    flowPairs: 10, // hoechstens so viele ueberlappende Paare je Bild bekommen einen Strom
+    breathGain: 4, // Anteil der Massezunahme (relativ zur eigenen Masse) -> Atmen
+    breathTau: 0.32, // s
+    breathScale: 0.11, // Skalierung des Spielers beim Atmen
+    recoilTau: 0.13, // s
+    recoilSquash: 0.17, // Stauchen in Schubrichtung
+    ringLife: 0.6, // s, Ring bei eigener Aufnahme
+    puffLife: [0.35, 0.7],
+    dangerRatio: 0.97, // ab dieser Masse (relativ zum Spieler) ist ein Koerper eine Gefahr
+    dangerT: 4.5, // s: so weit schaut der Gefahren-Hinweis (Kollisionskurs)
+    dangerRange: 7, // Welteinheiten (+ 6 Spielerradien): nur Koerper darunter zaehlen
+    dangerAttack: 6, // 1/s, Einblenden des Randgluehens
+    dangerDecay: 1.6, // 1/s, Ausblenden
+    dangerAlpha: 0.78, // Staerke des Randgluehens (Hoechstwert)
+    winSlow: 0.22, // Zeitlupe nach dem Sieg (Geschwindigkeit der Kopie)
+    winSlowT: 1.15, // s Zeitlupe ...
+    winWaveT: 1.3, //   ... Lichtwelle ...
+    winFadeT: 0.9, //   ... dann blendet die Welt aus, dann faehrt die Ergebnis-Karte ein
+    starGap: 0.42, // s zwischen den Sternen der Ergebnis-Karte
+    lossT: 1.0, // s Abdunkeln + Zeitbremse, dann der Dialog
+    rewindT: 0.95, // s, Rueckwaertslauf der letzten Sekunden
+    hudNear: 0.86, // Fortschritt, ab dem Balken und Zielzeile sanft pulsieren
+    vibe: { absorb: 9, big: 24, eject: 5, danger: [14, 70, 14], loss: 260, win: [18, 60, 18, 60, 50] }, // ms bzw. Muster
+    bigGain: 0.25, // Massezunahme (Anteil der eigenen Masse), ab der ein Happen als gross gilt
+    dangerVibeGap: 7, // s Mindestabstand zweier Gefahr-Impulse
+  },
+  // Farbwelt je Kapitel (nur Darstellung): bg = Verlauf innen/aussen, accent = UI und Arena-Ring, neb = Nebelflecken [x, y, Groesse (Anteil der Breite), Farbe r,g,b, Alpha, Parallax].
+  // Kontrast zum Groessencode der Koerper (kuehl = kleiner, warm = groesser) bleibt: Hintergruende sind dunkel und gedaempft.
+  worlds: {
+    select: { bg: ['#0d1630', '#04060e'], accent: '#6fe3ff', neb: [[0.2, 0.15, 0.9, '70,120,200', 0.14, 0.02], [0.85, 0.5, 0.8, '60,170,190', 0.1, 0.03], [0.3, 0.9, 1.0, '110,90,200', 0.1, 0.025]] },
+    1: { name: 'Staubwolke', bg: ['#0c1a33', '#03060d'], accent: '#6fe3ff', neb: [[0.15, 0.2, 0.9, '60,130,200', 0.16, 0.02], [0.8, 0.45, 0.8, '50,175,185', 0.11, 0.035], [0.35, 0.85, 1.0, '80,110,210', 0.12, 0.025], [0.9, 0.9, 0.6, '70,190,170', 0.08, 0.05]] },
+    2: { name: 'Jäger', bg: ['#1a1233', '#06040f'], accent: '#c3a2ff', neb: [[0.2, 0.25, 0.95, '120,80,200', 0.17, 0.02], [0.85, 0.6, 0.8, '170,90,190', 0.11, 0.035], [0.4, 0.9, 1.0, '80,90,210', 0.12, 0.025], [0.8, 0.1, 0.6, '150,110,230', 0.09, 0.05]] },
+    3: { name: 'Protostern', bg: ['#231428', '#07040a'], accent: '#ffc27a', neb: [[0.2, 0.2, 1.0, '170,80,110', 0.15, 0.02], [0.85, 0.55, 0.85, '190,120,70', 0.1, 0.035], [0.3, 0.9, 1.0, '110,70,150', 0.12, 0.025], [0.85, 0.1, 0.6, '200,130,90', 0.08, 0.05]] },
+  },
   // --- Kapitel 3 "Protostern" (Umlaufbahn-Modus, Paket B): Gravitation, offener Raum, Bahnvorschau ---
   orbit: {
     gm: 80, // Standardstaerke des Sterns (G x Masse): Kreisbahn r = 14 dauert ~37 s

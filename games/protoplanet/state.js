@@ -80,10 +80,28 @@ export function createProgress({ storage, now } = {}) {
       const p = state.progress[id];
       return p && p.done ? 1 + (p.eff ? 1 : 0) + (p.fast ? 1 : 0) : 0;
     },
-    /** Ein Level ist offen, wenn es das erste ist oder das davor geschafft wurde. */
+    /** Ein Level ist offen, wenn es das erste ist oder das davor (im selben Kapitel) geschafft wurde. Das ERSTE Level eines Kapitels oeffnet sich (Paket F), sobald im vorherigen Kapitel `T.chapterOpen` (5) Levels geschafft sind. */
     unlocked(id) {
       const i = LEVELS.findIndex((l) => l.id === id);
-      return i === 0 || (i > 0 && api.done(LEVELS[i - 1].id));
+      if (i <= 0) return i === 0;
+      const lv = LEVELS[i];
+      const prev = LEVELS[i - 1];
+      if (prev.chapter === lv.chapter) return api.done(prev.id);
+      return api.chapterProgress(prev.chapter).open;
+    },
+    /** Kapitel-Fortschritt: { done, total, stars, need, open } (open = genug Levels geschafft, um das NAECHSTE Kapitel zu oeffnen). */
+    chapterProgress(ch) {
+      const lvls = LEVELS.filter((l) => l.chapter === ch);
+      const done = lvls.filter((l) => api.done(l.id)).length;
+      const need = Math.min(T.chapterOpen, lvls.length);
+      return { done, total: lvls.length, stars: lvls.reduce((n, l) => n + api.stars(l.id), 0), need, open: done >= need || api.done(lvls[lvls.length - 1].id) }; // das Finale oeffnet das naechste Kapitel auf jeden Fall (alte Spielstaende)
+    },
+    /** Das Level, mit dem "Weiter spielen" weitermacht: das laufende (Schnappschuss) sonst das erste offene, noch nicht geschaffte, sonst das letzte. */
+    resumeLevel() {
+      const sn = state.snap && levelById(state.snap.levelId);
+      if (sn && api.unlocked(sn.id)) return { level: sn, running: true };
+      const next = LEVELS.find((l) => api.unlocked(l.id) && !api.done(l.id));
+      return { level: next || LEVELS[LEVELS.length - 1], running: false, all: !next };
     },
     /** Ergebnis eintragen ({time, ejected} + {eff, fast}); gibt zurueck, was neu ist. */
     record(id, res) {

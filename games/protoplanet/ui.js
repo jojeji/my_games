@@ -1,4 +1,6 @@
-// Oberflaeche: Levelauswahl, Spielbildschirm (Canvas + Kopfleiste), Pausenmenue, Verlust-Dialog, Ergebnis, Einstellungen.
+// Oberflaeche: Levelauswahl, Spielbildschirm (Canvas + Kopfleiste), Auftakt, Pausenmenue, Verlust, Sieg-Karte, Einstellungen.
+// Paket F (Spielgefuehl): Phasen eines Levels = intro (Uebersicht -> Fahrt zum Spieler, Physik steht) | play | win (Zeitlupe, Lichtwelle, Abblenden, Ergebnis-Karte)
+// | loss (Zeit bremst, Abdunkeln, dann Dialog) | rewind (sichtbarer Rueckwaertslauf). Alles Darstellung: die Physik laeuft nur in `play`, Kopien (`ghost`) nur zum Anschauen.
 import { h, txt, setCls, setStyle, svgIcon } from '../../engine/ui/dom.js';
 import { openModal, confirmDialog } from '../../engine/ui/modal.js';
 import { createToaster } from '../../engine/ui/toast.js';
@@ -6,10 +8,12 @@ import { T } from './tune.js';
 import { LEVELS, CHAPTERS, levelById, nextLevel } from './levels.js';
 import { createPlay } from './play.js';
 import { goalText, goalExplain, goalCounter, starsFor, fmtMass } from './goals.js';
-import { createCamera, updateCamera, pinchStart, pinchMove, pinchEnd, screenToWorld } from './camera.js';
-import { createRenderer } from './render.js';
+import { createCamera, updateCamera, pinchStart, pinchMove, pinchEnd, screenToWorld, introCamera } from './camera.js';
+import { createRenderer, createAmbient } from './render.js';
 import { createInput } from './input.js';
 import { createAudio } from './audio.js';
+import { createFx, blendWorlds } from './fx.js';
+import { step as physStep, snapshot, restore } from './physics.js';
 import { predictOrbit, driftState } from './orbit.js';
 import { dangerOf, sizeOf } from './audio-score.js';
 
@@ -21,47 +25,77 @@ const ICON = {
   sound: '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>',
   muted: '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
   lock: '<rect x="6" y="11" width="12" height="9" rx="2"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/>',
+  play: '<path d="M8 5.5v13l11-6.5z"/>',
+  // Ziel-Symbole (Kopfzeile): je Zieltyp ein eigenes
+  absorb: '<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>',
+  last: '<circle cx="12" cy="12" r="5.5"/><circle cx="4.5" cy="5.5" r="1.1"/><circle cx="19.5" cy="6.5" r="1.1"/><circle cx="18.5" cy="19" r="1.1"/>',
+  largest: '<path d="M5 17.5l7-11 7 11"/><path d="M8.5 21h7"/>',
+  mass: '<circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8.5"/>',
 };
 const TIME_LABEL = { 0.25: '×¼', 1: '×1', 4: '×4', 10: '×10' };
 
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const starText = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
+const smooth = (u) => {
+  const x = Math.max(0, Math.min(1, u));
+  return x * x * (3 - 2 * x);
+};
+const worldOf = (ch) => T.worlds[ch] || T.worlds[1];
 
 export function mountApp(root, progress) {
   const toasts = h('div', { class: 'pp-toasts' });
   const toast = createToaster(toasts, { max: 2 });
 
   /* ---------- Gerüst ---------- */
+  const ambientCv = h('canvas', { class: 'pp-ambient', 'aria-hidden': 'true' });
   const selectEl = h('section', { class: 'pp-select', 'aria-label': 'Levelauswahl' });
   const canvas = h('canvas', { class: 'pp-canvas', 'aria-label': 'Spielfeld' });
   const backBtn = h('button', { class: 'pp-icon-btn', type: 'button', 'aria-label': 'Zurück zur Levelauswahl' }, svgIcon(ICON.back));
   const pauseBtn = h('button', { class: 'pp-icon-btn', type: 'button', 'aria-label': 'Pause' }, svgIcon(ICON.pause));
+  const goalIco = h('span', { class: 'pp-goal-ico', 'aria-hidden': 'true' });
   const goalTxt = h('div', { class: 'pp-goal-text' });
   const goalPct = h('span', { class: 'pp-goal-pct num' });
   const barFill = h('div', { class: 'pp-bar-fill' });
-  const bar = h('header', { class: 'pp-bar' }, backBtn, h('div', { class: 'pp-goal' }, goalTxt, h('div', { class: 'pp-goal-row' }, h('div', { class: 'pp-bar-track' }, barFill), goalPct)), pauseBtn);
+  const bar = h('header', { class: 'pp-bar' }, backBtn, h('div', { class: 'pp-goal' }, h('div', { class: 'pp-goal-head' }, goalIco, goalTxt), h('div', { class: 'pp-goal-row' }, h('div', { class: 'pp-bar-track' }, barFill), goalPct)), pauseBtn);
   const helpEl = h('div', { class: 'pp-help', hidden: true });
   const massVal = h('span', { class: 'pp-mass-val' });
   const massDelta = h('span', { class: 'pp-mass-delta', 'aria-hidden': 'true' });
   const massEl = h('div', { class: 'pp-mass' }, massVal, massDelta);
   const timeBtn = h('button', { class: 'pp-time', type: 'button', 'aria-label': 'Zeitstufe' }, '×1');
   const warnEl = h('div', { class: 'pp-warn', hidden: true, role: 'status' }, 'Zu weit draußen');
-  const gameEl = h('section', { class: 'pp-game', hidden: true }, canvas, bar, helpEl, warnEl, massEl, timeBtn);
-  root.append(selectEl, gameEl, toasts);
+  const titleN = h('div', { class: 'pp-title-n' });
+  const titleH = h('h2', { class: 'pp-title-h' });
+  const titleG = h('p', { class: 'pp-title-g' });
+  const titleEl = h('div', { class: 'pp-title', 'aria-hidden': 'true' }, titleN, titleH, titleG);
+  const resumeEl = h('div', { class: 'pp-tapresume', hidden: true }, 'Tippe, um weiterzuspielen');
+  const skipEl = h('div', { class: 'pp-skip', hidden: true }, 'Tippen zum Überspringen');
+  const endEl = h('div', { class: 'pp-end', hidden: true });
+  const gameEl = h('section', { class: 'pp-game', hidden: true }, canvas, bar, titleEl, helpEl, warnEl, resumeEl, skipEl, massEl, timeBtn, endEl);
+  const veil = h('div', { class: 'pp-veil', 'aria-hidden': 'true' });
+  root.append(ambientCv, selectEl, gameEl, toasts, veil);
 
   const renderer = createRenderer(canvas);
+  const ambient = createAmbient(ambientCv);
+  const resizeAll = () => {
+    renderer.resize();
+    ambient.resize();
+  };
   let ro = null;
   if (typeof ResizeObserver !== 'undefined') {
-    ro = new ResizeObserver(() => renderer.resize());
+    ro = new ResizeObserver(() => resizeAll());
     ro.observe(canvas);
+    ro.observe(ambientCv);
   }
-  addEventListener('resize', () => renderer.resize());
+  addEventListener('resize', resizeAll);
 
   /* ---------- Zustand ---------- */
   let screen = 'select';
+  let phase = 'play'; // intro | play | win | loss | rewind
+  let phaseT0 = 0;
   let level = null;
   let play = null;
   let cam = createCamera();
+  let fx = createFx({ seed: 11 });
   let paused = false;
   let pauseModal = null;
   let endShown = false;
@@ -77,6 +111,22 @@ export function mountApp(root, progress) {
   let lastAbsorbed = 0;
   let lastVibe = 0;
   let hintGone = false;
+  // Auftakt
+  let ip = 0; // Fortschritt 0..1
+  let introRate = 1;
+  let introEndAt = -Infinity;
+  let titleTimer = 0;
+  // Sieg / Verlust / Zurückspulen (nur Darstellung)
+  let ghost = null;
+  let ghostAcc = 0;
+  let winData = null;
+  let cardShown = false;
+  let endToken = 0;
+  let rewindFrames = null;
+  let tapResume = false;
+  let lastPlayerPos = null;
+  let lastDangerVibe = -Infinity;
+  let beamVibed = false;
   // Kapitel 3: Bahnvorschau (orbit.js) und Abdrift-Warnung
   let preview = null;
   let previewAt = -Infinity;
@@ -85,6 +135,7 @@ export function mountApp(root, progress) {
   let warnShown = false;
   let lastWarnSnd = -Infinity;
   const previewStats = { n: 0, ms: 0, max: 0 }; // Kosten der Vorschau (Messung fuer docs)
+  const frameStats = { n: 0, ms: 0, max: 0 }; // Zeichenkosten (Messung fuer docs)
   // Masse-Anzeige: kurz eingeblendete Aenderung (Ausstoss rot, Absorbieren gruen), gleiche Vorzeichen innerhalb des Fensters werden summiert
   let lastMass = null;
   let deltaAcc = 0;
@@ -122,21 +173,37 @@ export function mountApp(root, progress) {
     if (v != null) return !!v;
     return typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   };
-  const vibe = (ms) => {
+  /** Haptik: `pat` = Millisekunden oder Muster; kurze Impulse werden gedrosselt, selten gewollte (Gefahr) vom Aufrufer. */
+  const vibe = (pat) => {
     if (!settings().vibrate) return;
     const t = performance.now();
-    if (ms < 60 && t - lastVibe < 150) return;
+    const len = Array.isArray(pat) ? 99 : pat;
+    if (len < 60 && t - lastVibe < 150) return;
     lastVibe = t;
     try {
-      if (navigator.vibrate) navigator.vibrate(ms);
+      if (navigator.vibrate) navigator.vibrate(pat);
     } catch {
       /* ohne Wirkung (z. B. iOS) */
     }
   };
+  const accentFor = (ch) => {
+    const a = worldOf(ch).accent;
+    document.documentElement.style.setProperty('--accent', a);
+  };
+
+  /** Weicher Wechsel zwischen Bildschirmen: kurz abblenden, dann wechseln, dann wieder aufblenden. */
+  function go(fn) {
+    if (reduceMotion()) return fn();
+    veil.classList.add('on');
+    setTimeout(() => {
+      fn();
+      requestAnimationFrame(() => requestAnimationFrame(() => veil.classList.remove('on')));
+    }, 170);
+  }
 
   function persist() {
     if (screen === 'game' && play) {
-      progress.setSnap(play.status === 'running' ? { levelId: level.id, rev: level.rev || 1, play: play.serialize(), timeScale: play.timeScale } : null);
+      progress.setSnap(play.status === 'running' && phase !== 'rewind' ? { levelId: level.id, rev: level.rev || 1, play: play.serialize(), timeScale: play.timeScale } : null);
     }
     progress.save();
   }
@@ -165,13 +232,14 @@ export function mountApp(root, progress) {
   // Der AudioContext darf erst nach einer Nutzergeste starten (iOS); danach weckt jede Geste ihn bei Bedarf wieder auf.
   for (const ev of ['pointerdown', 'touchend', 'keydown', 'click']) addEventListener(ev, () => audio.unlock(), { capture: true, passive: true });
   document.addEventListener('click', (e) => {
-    if (e.target.closest && e.target.closest('.btn, .pp-icon-btn, .pp-tile, .pp-switch')) audio.sfx.ui();
+    if (e.target.closest && e.target.closest('.btn, .pp-icon-btn, .pp-tile, .pp-switch, .pp-hero')) audio.sfx.ui();
   }, true);
   document.addEventListener('visibilitychange', () => audio.visibility(document.visibilityState !== 'hidden'));
 
   /* ---------- Levelauswahl ---------- */
   function renderSelect() {
     selectEl.replaceChildren();
+    accentFor('select');
     const snap = progress.state.snap;
     const head = h(
       'header',
@@ -181,18 +249,33 @@ export function mountApp(root, progress) {
       soundButton(),
       h('button', { class: 'pp-icon-btn', type: 'button', 'aria-label': 'Einstellungen', onClick: () => openSettings() }, svgIcon(ICON.gear)),
     );
-    selectEl.append(head, h('p', { class: 'pp-sub', text: 'Du bist ein Staubkorn in einer jungen Sternscheibe. Bewegen kannst du dich nur, indem du Masse ausstößt.' }));
-    if (snap && levelById(snap.levelId)) {
-      const lv = levelById(snap.levelId);
-      selectEl.append(h('button', { class: 'btn btn-primary btn-big pp-resume', type: 'button', onClick: () => openLevel(lv) }, `Weiterspielen · Level ${lv.id}`));
-    }
+    selectEl.append(head);
+    // Weiter spielen: das laufende Level, sonst das naechste ungeloeste
+    const res = progress.resumeLevel();
+    const rl = res.level;
+    const rw = worldOf(rl.chapter);
+    selectEl.append(
+      h(
+        'button',
+        { class: 'pp-hero', type: 'button', style: { '--ca': rw.accent, '--i': 0 }, onClick: () => go(() => openLevel(rl)) },
+        h('span', { class: 'pp-hero-ico' }, svgIcon(ICON.play)),
+        h(
+          'span',
+          { class: 'pp-hero-text' },
+          h('b', { text: res.running ? 'Weiter spielen' : res.all ? 'Noch einmal spielen' : 'Weiter spielen' }),
+          h('span', { text: `Level ${rl.id} · ${rl.title}${res.running ? ' · läuft' : ''}` }),
+        ),
+      ),
+    );
+    let idx = 1;
     for (const ch of CHAPTERS) {
       const lvls = LEVELS.filter((l) => l.chapter === ch.id);
-      const got = lvls.reduce((s, l) => s + progress.stars(l.id), 0);
-      const tiles = h('div', { class: 'pp-tiles' });
+      const cp = progress.chapterProgress(ch.id);
       const first = lvls[0];
-      const prevLv = LEVELS[LEVELS.findIndex((l) => l.id === first.id) - 1];
       const chapterLocked = !progress.unlocked(first.id);
+      const prevCp = chapterLocked ? progress.chapterProgress(ch.id - 1) : null;
+      const w = worldOf(ch.id);
+      const tiles = h('div', { class: 'pp-tiles' });
       for (const lv of lvls) {
         const open = progress.unlocked(lv.id);
         const stars = progress.stars(lv.id);
@@ -200,7 +283,7 @@ export function mountApp(root, progress) {
         tiles.append(
           h(
             'button',
-            { class: 'pp-tile' + (open ? '' : ' locked') + (stars ? ' done' : ''), type: 'button', 'aria-label': `Level ${lv.id} ${lv.title}${open ? '' : ' (gesperrt)'}`, onClick: () => openLevel(lv) },
+            { class: 'pp-tile' + (open ? '' : ' locked') + (stars ? ' done' : ''), type: 'button', style: { '--i': idx++ }, 'aria-label': `Level ${lv.id} ${lv.title}${open ? '' : ' (gesperrt)'}`, onClick: () => (open ? go(() => openLevel(lv)) : openLevel(lv)) },
             h('span', { class: 'pp-tile-n', text: String(lv.n) }),
             h('span', { class: 'pp-tile-t', text: lv.title }),
             open ? h('span', { class: 'pp-tile-s', text: starText(stars) }) : h('span', { class: 'pp-tile-lock' }, svgIcon(ICON.lock)),
@@ -208,32 +291,51 @@ export function mountApp(root, progress) {
           ),
         );
       }
+      const meta = chapterLocked
+        ? h('p', { class: 'pp-chapter-meta lock' }, svgIcon(ICON.lock), h('span', { text: `Öffnet sich, sobald du ${prevCp.need} Level in Kapitel ${ch.id - 1} geschafft hast (${prevCp.done} von ${prevCp.need}).` }))
+        : h('p', { class: 'pp-chapter-meta', text: `${cp.done} von ${cp.total} geschafft · ★ ${cp.stars} von ${cp.total * 3}` });
       selectEl.append(
-        h('section', { class: 'pp-chapter' }, h('h2', { text: `Kapitel ${ch.id} · ${ch.name}` }), h('p', { class: 'pp-chapter-meta', text: chapterLocked ? `Öffnet sich, wenn du Level ${prevLv ? prevLv.id : ''} schaffst.` : `★ ${got} von ${lvls.length * 3}` }), tiles),
+        h(
+          'section',
+          { class: 'pp-chapter' + (chapterLocked ? ' is-locked' : ''), style: { '--ca': w.accent, '--cb0': w.bg[0], '--cb1': w.bg[1], '--i': idx } },
+          h('div', { class: 'pp-chapter-head' }, h('span', { class: 'pp-chapter-n', text: String(ch.id) }), h('h2', { text: ch.name })),
+          meta,
+          h('div', { class: 'pp-chapter-bar' }, h('div', { style: { width: Math.round((cp.done / cp.total) * 100) + '%' } })),
+          tiles,
+        ),
       );
     }
     selectEl.append(h('p', { class: 'pp-note', text: 'Weitere Kapitel folgen in späteren Updates.' }));
   }
 
-  function showSelect() {
-    persist();
+  function enterSelectScreen() {
     closePauseModal();
+    endToken++;
     screen = 'select';
     play = null;
+    ghost = null;
+    rewindFrames = null;
     audio.setPaused(false);
     audio.setScene('select');
     audio.update({ danger: 0, size: 0, timeScale: 1, lift: 0 });
     gameEl.hidden = true;
+    ambientCv.hidden = false;
     selectEl.hidden = false;
     document.body.classList.remove('pp-playing');
+    resizeAll();
     renderSelect();
     selectEl.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }
+
+  function showSelect() {
+    persist();
+    enterSelectScreen();
   }
 
   function openLevel(lv) {
     if (!progress.unlocked(lv.id)) {
-      const prev = LEVELS[LEVELS.findIndex((l) => l.id === lv.id) - 1];
-      toast(`Schließe zuerst Level ${prev ? prev.id : ''} ab.`, { kind: 'warn' });
+      toast(lockMessage(lv), { kind: 'warn' });
       return;
     }
     const snap = progress.state.snap;
@@ -241,9 +343,21 @@ export function mountApp(root, progress) {
     else startLevel(lv, null);
   }
 
+  function lockMessage(lv) {
+    const i = LEVELS.findIndex((l) => l.id === lv.id);
+    const prev = LEVELS[i - 1];
+    if (prev && prev.chapter !== lv.chapter) {
+      const cp = progress.chapterProgress(prev.chapter);
+      return `Schaffe ${cp.need} Level in Kapitel ${prev.chapter} (${cp.done} von ${cp.need}).`;
+    }
+    return `Schließe zuerst Level ${prev ? prev.id : ''} ab.`;
+  }
+
   /* ---------- Spielbildschirm ---------- */
   function startLevel(lv, snap) {
     closePauseModal();
+    closeAllModals();
+    endToken++;
     level = lv;
     try {
       play = createPlay(lv, snap ? snap.play : null);
@@ -255,16 +369,24 @@ export function mountApp(root, progress) {
     play.timeScale = snap && snap.timeScale ? snap.timeScale : 1;
     timeIdx = Math.max(0, T.timeSteps.indexOf(play.timeScale));
     cam = createCamera();
+    fx = createFx({ reduce: reduceMotion(), seed: 11 + lv.n * 7 });
+    ghost = null;
+    rewindFrames = null;
+    winData = null;
+    cardShown = false;
+    tapResume = false;
     paused = false;
     endShown = false;
     beamUsed = false;
     timeChanged = false;
+    beamVibed = false;
+    lastPlayerPos = null;
+    lastDangerVibe = -Infinity;
     pointer = null;
     syncAudioCounters();
     audio.setPaused(false);
     audio.setScene(lv.chapter);
     audio.update({ danger: 0, size: sizeOf(play.world.player ? play.world.player.m : 1), timeScale: play.timeScale, lift: 0 });
-    if (!snap) audio.sfx.levelStart();
     hintGone = false;
     preview = null;
     previewAt = -Infinity;
@@ -276,16 +398,62 @@ export function mountApp(root, progress) {
     resetMassDelta();
     screen = 'game';
     selectEl.hidden = true;
+    ambientCv.hidden = true;
     gameEl.hidden = false;
     document.body.classList.add('pp-playing');
+    accentFor(lv.chapter);
+    gameEl.dataset.chapter = String(lv.chapter);
     if (!snap) progress.setSnap(null);
+    endEl.hidden = true;
+    endEl.classList.remove('in');
+    resumeEl.hidden = true;
     renderer.resize();
     helpEl.textContent = lv.hint ? hintText(lv.hint) : '';
     helpEl.hidden = !lv.hint;
     setCls(helpEl, 'gone', false);
+    goalIco.replaceChildren(svgIcon(ICON[play.goal.type] || ICON.mass));
+    titleN.textContent = `Level ${lv.id} · ${CHAPTERS.find((c) => c.id === lv.chapter).name}`;
+    titleH.textContent = lv.title;
+    titleG.textContent = goalText(play.goal);
+    clearTimeout(titleTimer);
+    setCls(titleEl, 'show', false);
+    setCls(titleEl, 'away', false);
     lastTs = 0;
     hud();
-    if (snap) pause(); // ein gesichertes Level wird pausiert fortgesetzt
+    if (snap) {
+      phase = 'play';
+      pause(); // ein gesichertes Level wird pausiert fortgesetzt
+    } else beginIntro();
+  }
+
+  /** Auftakt: Uebersicht der ganzen Welt, dann weiche Fahrt auf den Spieler. Die Physik steht, bis er zu Ende ist (oder getippt wird). */
+  function beginIntro() {
+    phase = 'intro';
+    ip = 0;
+    const reduce = reduceMotion();
+    const dur = reduce ? T.intro.reduced : play.world.arenaR <= 0 ? T.intro.orbitDur : T.intro.dur;
+    introRate = 1 / dur;
+    introEndAt = -Infinity;
+    audio.sfx.levelStart();
+    skipEl.hidden = false;
+    titleEl.classList.remove('away');
+    void titleEl.offsetWidth; // Neustart der CSS-Animation
+    titleEl.classList.add('show');
+    introCamera(cam, play.world, reduce ? 1 : 0);
+  }
+
+  function endIntro(now) {
+    phase = 'play';
+    introEndAt = now;
+    skipEl.hidden = true;
+    lastTs = 0;
+    clearTimeout(titleTimer);
+    titleTimer = setTimeout(() => titleEl.classList.add('away'), reduceMotion() ? 500 : T.intro.titleHold * 1000);
+  }
+
+  function skipIntro() {
+    if (phase !== 'intro') return;
+    introRate = Math.max(introRate, (1 - ip) / 0.28);
   }
 
   function resetMassDelta() {
@@ -305,7 +473,7 @@ export function mountApp(root, progress) {
           if (now - deltaAt > DELTA_SHOW || Math.sign(d) !== Math.sign(deltaAcc)) deltaAcc = 0;
           deltaAcc += d;
           deltaAt = now;
-          txt(massDelta, (deltaAcc > 0 ? '+' : '\u2212') + fmtMass(Math.abs(deltaAcc)));
+          txt(massDelta, (deltaAcc > 0 ? '+' : '−') + fmtMass(Math.abs(deltaAcc)));
           setCls(massDelta, 'neg', deltaAcc < 0);
           setCls(massDelta, 'pos', deltaAcc > 0);
           setCls(massDelta, 'show', true);
@@ -330,7 +498,7 @@ export function mountApp(root, progress) {
     input.cancel();
     play.setBeam(null);
     persist();
-    if (play.status !== 'running' || pauseModal) return;
+    if (play.status !== 'running' || pauseModal || phase === 'rewind') return;
     audio.setPaused(true);
     let leaving = false;
     pauseModal = modal({
@@ -347,14 +515,14 @@ export function mountApp(root, progress) {
           label: 'Neu starten',
           onClick: () => {
             leaving = true;
-            setTimeout(() => startLevel(level, null), 0);
+            setTimeout(() => go(() => startLevel(level, null)), 0);
           },
         },
         {
           label: 'Levelauswahl',
           onClick: () => {
             leaving = true;
-            setTimeout(showSelect, 0);
+            setTimeout(() => go(showSelect), 0);
           },
         },
         {
@@ -372,16 +540,27 @@ export function mountApp(root, progress) {
   function resume() {
     if (!play || play.status !== 'running') return;
     paused = false;
+    tapResume = false;
+    resumeEl.hidden = true;
     lastTs = 0;
     audio.setPaused(false);
   }
 
-  function onLoss() {
+  /* ---------- Verlust ---------- */
+  function onLoss(now) {
     endShown = true;
-    vibe(220);
+    phase = 'loss';
+    phaseT0 = now;
+    vibe(T.fx.vibe.loss);
     audio.sfx.swallowed();
     audio.update({ lift: -1, danger: 0 });
     persist();
+    ghost = restore(snapshot(play.world));
+    ghostAcc = 0;
+    if (lastPlayerPos) fx.ring(lastPlayerPos.x, lastPlayerPos.y, lastPlayerPos.r, lastPlayerPos.r * 5, 0.9, 1, 1.3);
+  }
+
+  function showLossDialog() {
     const left = play.rewindsLeft;
     const cause = play.world.lostTo;
     const lossTitle = cause === 'attractor' ? 'In den Stern gestürzt' : cause === 'drift' ? 'Abgetrieben' : 'Absorbiert';
@@ -403,71 +582,145 @@ export function mountApp(root, progress) {
               {
                 label: `Zurückspulen (noch ${left})`,
                 kind: 'primary',
-                onClick: () => {
-                  if (play.doRewind()) {
-                    endShown = false;
-                    syncAudioCounters();
-                    audio.sfx.rewind();
-                    audio.update({ lift: 0 });
-                    resetMassDelta();
-                    setTimeout(pause, 0);
-                  }
-                },
+                onClick: () => setTimeout(startRewind, 0),
               },
             ]
           : []),
-        { label: 'Neu starten', kind: left > 0 ? '' : 'primary', onClick: () => setTimeout(() => startLevel(level, null), 0) },
-        { label: 'Levelauswahl', kind: 'ghost', onClick: () => setTimeout(showSelect, 0) },
+        { label: 'Neu starten', kind: left > 0 ? '' : 'primary', onClick: () => setTimeout(() => go(() => startLevel(level, null)), 0) },
+        { label: 'Levelauswahl', kind: 'ghost', onClick: () => setTimeout(() => go(showSelect), 0) },
       ],
     });
   }
 
-  function onWin() {
+  /** Zurückspulen: die Welt springt nicht, die letzten Sekunden laufen sichtbar rückwärts (Schnappschüsse, gemischt). */
+  function startRewind() {
+    const frames = play.rewind.peek(play.world.t); // vor doRewind (das kappt den Puffer)
+    closeAllModals();
+    if (!play.doRewind()) return;
+    ghost = null;
+    endShown = false;
+    syncAudioCounters();
+    audio.sfx.rewind();
+    audio.update({ lift: 0 });
+    resetMassDelta();
+    fx.clear();
+    paused = true; // keine Eingabe waehrend des Rueckwaertslaufs
+    if (reduceMotion() || frames.length < 2) {
+      finishRewind();
+      return;
+    }
+    rewindFrames = frames.map((s) => restore(s));
+    phase = 'rewind';
+    phaseT0 = performance.now() / 1000;
+  }
+
+  function finishRewind() {
+    phase = 'play';
+    rewindFrames = null;
+    tapResume = true;
+    resumeEl.hidden = false;
+    lastTs = 0;
+  }
+
+  /* ---------- Sieg ---------- */
+  function onWin(now) {
     endShown = true;
-    vibe(60);
+    phase = 'win';
+    phaseT0 = now;
+    cardShown = false;
+    vibe(T.fx.vibe.win);
     audio.sfx.win();
     audio.update({ lift: 1, danger: 0 });
     const r = play.result;
     const st = starsFor(level, r);
+    const wasOpen = LEVELS.map((l) => progress.unlocked(l.id));
     const fresh = progress.record(level.id, { time: r.time, ejected: r.ejected, eff: st.eff, fast: st.fast });
     progress.setSnap(null);
     progress.save();
-    const info = progress.info(level.id);
-    const nxt = nextLevel(level.id);
-    const row = (ok, label, detail) => h('li', { class: ok ? 'ok' : 'no' }, h('span', { class: 'pp-star', text: ok ? '★' : '☆' }), h('span', {}, h('b', { text: label }), detail ? h('span', { class: 'muted', text: ' ' + detail }) : null));
-    const body = h(
-      'div',
-      { class: 'pp-result' },
-      h('div', { class: 'pp-result-stars', text: starText(st.count), 'aria-label': `${st.count} von 3 Sternen` }),
+    const newly = LEVELS.findIndex((l, i) => !wasOpen[i] && progress.unlocked(l.id));
+    winData = { r, st, fresh, info: progress.info(level.id), newChapter: newly >= 0 && LEVELS[newly].chapter !== level.chapter ? LEVELS[newly].chapter : 0 };
+    const reduce = reduceMotion();
+    ghost = reduce ? null : restore(snapshot(play.world));
+    ghostAcc = 0;
+    const p = play.world.player;
+    if (p) {
+      const rp = Math.sqrt(p.m);
+      fx.ring(p.x, p.y, rp, cam.half * 1.4, T.fx.winWaveT, 3, 1.5);
+      fx.ring(p.x, p.y, rp, cam.half * 0.8, T.fx.winWaveT * 0.8, 0, 1);
+      fx.burst(p.x, p.y, rp, 26, 3, 2.4);
+    }
+    cam.baseHalf = cam.half;
+  }
+
+  function showResultCard() {
+    if (cardShown) return;
+    cardShown = true;
+    const token = ++endToken;
+    const { r, st, fresh, info, newChapter } = winData;
+    const nxt0 = nextLevel(level.id);
+    const nxt = nxt0 && progress.unlocked(nxt0.id) ? nxt0 : null;
+    const need = (ok, text) => (ok ? null : h('span', { class: 'pp-need', text }));
+    const rows = [
+      h('li', { class: 'ok' }, h('span', { class: 'pp-star', text: '★' }), h('span', { class: 'pp-row-t' }, h('b', { text: 'Geschafft' }), fresh.first ? h('span', { class: 'pp-new', text: 'neu' }) : null)),
       h(
-        'ul',
-        { class: 'pp-result-list' },
-        row(true, 'Geschafft', fresh.first ? '(neu)' : ''),
-        row(st.eff, 'Effizienz', r.rewound ? 'zurückgespult, kein Stern in diesem Versuch' : `höchstens ${fmtMass(level.targets.eject)} Masse ausgestoßen`),
-        row(st.fast, 'Zeit', `höchstens ${fmtTime(level.targets.time)}`),
+        'li',
+        { class: st.eff ? 'ok' : 'no' },
+        h('span', { class: 'pp-star', text: st.eff ? '★' : '☆' }),
+        h('span', { class: 'pp-row-t' }, h('b', { text: 'Effizienz' }), h('span', { class: 'muted', text: ` höchstens ${fmtMass(level.targets.eject)} ausgestoßen` }), need(st.eff, r.rewound ? 'Ohne Zurückspulen in diesem Versuch möglich.' : `Du: ${fmtMass(r.ejected)}, also ${fmtMass(r.ejected - level.targets.eject)} zu viel.`)),
       ),
+      h(
+        'li',
+        { class: st.fast ? 'ok' : 'no' },
+        h('span', { class: 'pp-star', text: st.fast ? '★' : '☆' }),
+        h('span', { class: 'pp-row-t' }, h('b', { text: 'Zeit' }), h('span', { class: 'muted', text: ` höchstens ${fmtTime(level.targets.time)}` }), need(st.fast, `Du: ${fmtTime(r.time)}, also ${Math.ceil(r.time - level.targets.time)} s zu langsam.`)),
+      ),
+    ];
+    const starEls = [0, 1, 2].map((i) => h('span', { class: 'pp-bigstar' + (i < st.count ? ' lit' : ''), text: i < st.count ? '★' : '☆' }));
+    endEl.replaceChildren(
       h(
         'div',
-        { class: 'pp-result-stats' },
-        h('div', {}, h('span', { class: 'muted', text: 'Zeit' }), h('b', { text: fmtTime(r.time) }), h('span', { class: 'muted small', text: `Bestzeit ${fmtTime(info.bestTime)}${fresh.time ? ' (neu)' : ''}` })),
-        h('div', {}, h('span', { class: 'muted', text: 'Ausgestoßen' }), h('b', { text: fmtMass(r.ejected) }), h('span', { class: 'muted small', text: `Bestwert ${fmtMass(info.bestEject)}${fresh.eject ? ' (neu)' : ''}` })),
+        { class: 'pp-endcard' },
+        h('div', { class: 'pp-end-sub', text: `Level ${level.id} · ${level.title}` }),
+        h('h2', { class: 'pp-end-title', text: 'Geschafft' }),
+        h('div', { class: 'pp-result-stars', 'aria-label': `${st.count} von 3 Sternen` }, ...starEls),
+        h('ul', { class: 'pp-result-list' }, ...rows),
+        h(
+          'div',
+          { class: 'pp-result-stats' },
+          h('div', {}, h('span', { class: 'muted', text: 'Zeit' }), h('b', { text: fmtTime(r.time) }), h('span', { class: 'muted small', text: `Bestzeit ${fmtTime(info.bestTime)}${fresh.time ? ' (neu)' : ''}` })),
+          h('div', {}, h('span', { class: 'muted', text: 'Ausgestoßen' }), h('b', { text: fmtMass(r.ejected) }), h('span', { class: 'muted small', text: `Bestwert ${fmtMass(info.bestEject)}${fresh.eject ? ' (neu)' : ''}` })),
+        ),
+        newChapter ? h('p', { class: 'pp-unlock', text: `Kapitel ${newChapter} · ${CHAPTERS.find((c) => c.id === newChapter).name} ist offen.` }) : null,
+        h(
+          'div',
+          { class: 'pp-end-actions' },
+          nxt ? h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => go(() => startLevel(nxt, null)) }, 'Weiter') : h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => go(showSelect) }, 'Levelauswahl'),
+          h(
+            'div',
+            { class: 'pp-end-row' },
+            h('button', { class: 'btn', type: 'button', onClick: () => go(() => startLevel(level, null)) }, 'Nochmal'),
+            nxt ? h('button', { class: 'btn btn-ghost', type: 'button', onClick: () => go(showSelect) }, 'Levelauswahl') : null,
+          ),
+        ),
       ),
     );
-    modal({
-      title: 'Level ' + level.id + ' · ' + level.title,
-      body,
-      dismissible: false,
-      actions: [
-        nxt
-          ? { label: 'Weiter', kind: 'primary', onClick: () => setTimeout(() => startLevel(nxt, null), 0) }
-          : { label: 'Levelauswahl', kind: 'primary', onClick: () => setTimeout(showSelect, 0) },
-        { label: 'Nochmal', onClick: () => setTimeout(() => startLevel(level, null), 0) },
-        ...(nxt ? [{ label: 'Levelauswahl', kind: 'ghost', onClick: () => setTimeout(showSelect, 0) }] : []),
-      ],
-    });
+    endEl.hidden = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => endEl.classList.add('in')));
+    // Sterne erscheinen nacheinander, je Stern ein Ton
+    const reduce = reduceMotion();
+    for (let i = 0; i < 3; i++) {
+      if (i >= st.count) continue;
+      setTimeout(() => {
+        if (token !== endToken) return;
+        starEls[i].classList.add('on');
+        audio.sfx.star({ i });
+        if (i === st.count - 1) vibe(14);
+      }, (reduce ? 0 : 420) + i * (reduce ? 60 : T.fx.starGap * 1000));
+    }
   }
 
   /* ---------- Kopfleiste ---------- */
+  let lastCalm = null;
   function hud() {
     if (!play) return;
     const g = play.progress;
@@ -476,6 +729,13 @@ export function mountApp(root, progress) {
     txt(goalPct, goalCounter(play.goal, g));
     setCls(goalPct, 'wide', play.goal.type === 'last' || play.goal.type === 'largest');
     setStyle(barFill, 'width', pct + '%');
+    setCls(bar, 'near', g.frac >= T.fx.hudNear && play.status === 'running');
+    const calm = reduceMotion();
+    if (calm !== lastCalm) {
+      lastCalm = calm;
+      gameEl.classList.toggle('calm', calm);
+      document.body.classList.toggle('calm', calm);
+    }
     const p = play.world.player;
     txt(massVal, p ? `Masse ${fmtMass(p.m)}` : 'Masse 0,00');
     txt(timeBtn, TIME_LABEL[play.timeScale] || '×1');
@@ -497,7 +757,7 @@ export function mountApp(root, progress) {
     return { x: wx, y: wy };
   };
   const input = createInput(canvas, {
-    enabled: () => screen === 'game' && !paused && play && play.status === 'running' && !document.body.classList.contains('modal-open'),
+    enabled: () => screen === 'game' && phase === 'play' && !paused && play && play.status === 'running' && !document.body.classList.contains('modal-open'),
     tap(x, y) {
       const w = toWorld(x, y);
       if (play.ejectAt(w.x, w.y)) return;
@@ -507,6 +767,7 @@ export function mountApp(root, progress) {
     beamStart(x, y) {
       pointer = { x, y };
       beamUsed = true;
+      beamVibed = false;
       play.setBeam(toWorld(x, y));
     },
     beamMove(x, y) {
@@ -524,11 +785,18 @@ export function mountApp(root, progress) {
       cam.manualAt = performance.now() / 1000;
     },
   });
+  // Tippen im Auftakt = ueberspringen, im Sieg-Abspann = Ergebnis-Karte sofort, nach dem Zurueckspulen = weiterspielen (der Tipp selbst stoesst nichts aus)
+  canvas.addEventListener('pointerdown', () => {
+    if (screen !== 'game' || !play) return;
+    if (phase === 'intro' && !paused) skipIntro();
+    else if (phase === 'win' && !cardShown) showResultCard();
+    else if (tapResume && !pauseModal) resume();
+  });
 
-  backBtn.addEventListener('click', () => showSelect());
+  backBtn.addEventListener('click', () => go(showSelect));
   pauseBtn.addEventListener('click', () => pause());
   timeBtn.addEventListener('click', () => {
-    if (!play || paused || play.status !== 'running') return;
+    if (!play || paused || play.status !== 'running' || phase !== 'play') return;
     timeIdx = (timeIdx + 1) % T.timeSteps.length;
     play.timeScale = T.timeSteps[timeIdx];
     timeChanged = true;
@@ -563,7 +831,7 @@ export function mountApp(root, progress) {
       previewEj = ej;
     }
     warn = driftState(w);
-    const show = warn > 0 && play.status === 'running';
+    const show = warn > 0 && play.status === 'running' && phase === 'play';
     if (show !== warnShown) {
       warnShown = show;
       warnEl.hidden = !show;
@@ -577,13 +845,63 @@ export function mountApp(root, progress) {
     }
   }
 
+  /** Ereignisse des Spiels in Effekte uebersetzen (reine Darstellung): Aufnahme, Atmen, Ausstoss, Rueckstoss, Haptik. */
+  function reactToPlay(dtReal, now) {
+    const w = play.world;
+    const st = w.stats;
+    const p = w.player;
+    if (p) lastPlayerPos = { x: p.x, y: p.y, r: Math.sqrt(p.m) };
+    const gained = st.gained - lastGained;
+    const a = st.absorbed;
+    if (p && gained > 1e-6) fx.gain(gained / Math.max(p.m, 0.01));
+    if (a > lastAbsorbed) {
+      const pm = p ? p.m : 1;
+      const ratio = Math.max(0, gained) / Math.max(pm, 0.01) / (a - lastAbsorbed);
+      audio.sfx.absorb({ ratio });
+      if (p) {
+        const rp = Math.sqrt(p.m);
+        fx.ring(p.x, p.y, rp * 1.05, rp * (1.9 + Math.min(1.2, ratio * 2)), T.fx.ringLife, 0, 1);
+        fx.burst(p.x, p.y, rp, 6 + Math.round(Math.min(10, ratio * 20)), 0, 0.9);
+      }
+      lastAbsorbed = a;
+      vibe(gained / Math.max(pm, 0.01) >= T.fx.bigGain ? T.fx.vibe.big : T.fx.vibe.absorb);
+    }
+    lastGained = st.gained;
+    if (st.ejects > lastEjects) {
+      lastEjects = st.ejects;
+      audio.sfx.eject({ stream: !!play.beam });
+      if (p) {
+        let q = null;
+        for (let i = w.bodies.length - 1; i >= 0 && i > w.bodies.length - 40; i--) {
+          if (w.bodies[i].gf === p.id) {
+            q = w.bodies[i];
+            break;
+          }
+        }
+        if (q) {
+          fx.recoil(Math.atan2(q.y - p.y, q.x - p.x));
+          fx.puff(q.x, q.y, q.vx, q.vy, play.beam ? 2 : 4);
+        }
+      }
+      if (!play.beam) vibe(T.fx.vibe.eject);
+      else if (!beamVibed) {
+        beamVibed = true;
+        vibe(T.fx.vibe.eject);
+      }
+    }
+  }
+
   /* ---------- Schleife ---------- */
   function loop(ts) {
     requestAnimationFrame(loop);
-    if (screen !== 'game' || !play) return;
     const now = ts / 1000;
     const dt = lastTs ? Math.min(0.1, now - lastTs) : 0;
     lastTs = now;
+    if (screen === 'select') {
+      if (!selectEl.hidden) ambient.draw(dt, now, reduceMotion());
+      return;
+    }
+    if (screen !== 'game' || !play) return;
     frame++;
     emaDt += (dt - emaDt) * 0.05;
     // zu langsame Darstellung: nur jedes zweite Bild zeichnen (die Physik bleibt gleich)
@@ -592,38 +910,116 @@ export function mountApp(root, progress) {
       slowSince = now;
     } else if (slow && now - slowSince > 4 && emaDt < 1 / 55) slow = false;
 
-    if (!paused && play.status === 'running') {
-      if (pointer && play.beam) {
-        const w = toWorld(pointer.x, pointer.y);
-        play.beam.x = w.x;
-        play.beam.y = w.y;
+    const reduce = reduceMotion();
+    fx.state.reduce = reduce;
+    let rw = play.world; // Welt, die gezeichnet wird (Kopie/Mischung in Abspannen)
+    let fade = 0;
+    let tint = 0;
+    let flash = 0;
+
+    if (phase === 'intro') {
+      if (!paused) ip = Math.min(1, ip + dt * introRate);
+      const hold = reduce ? 0 : T.intro.hold / (play.world.arenaR <= 0 ? T.intro.orbitDur : T.intro.dur);
+      introCamera(cam, play.world, reduce ? 1 : (ip - hold) / (1 - hold));
+      if (ip >= 1) endIntro(now);
+    } else if (phase === 'play') {
+      if (!paused && play.status === 'running') {
+        if (pointer && play.beam) {
+          const w = toWorld(pointer.x, pointer.y);
+          play.beam.x = w.x;
+          play.beam.y = w.y;
+        }
+        play.advance(dt);
+        reactToPlay(dt, now);
+        if (frame % 6 === 0) audio.update({ danger: dangerOf(play.world), size: sizeOf(play.world.player ? play.world.player.m : 1), timeScale: play.timeScale });
       }
-      play.advance(dt);
-      const st = play.world.stats;
-      const a = st.absorbed;
-      if (a > lastAbsorbed) {
-        const pm = play.world.player ? play.world.player.m : 1;
-        audio.sfx.absorb({ ratio: Math.max(0, st.gained - lastGained) / Math.max(pm, 0.01) / (a - lastAbsorbed) });
-        lastAbsorbed = a;
-        vibe(18);
+      updateCamera(cam, play.world, dt, now);
+    } else if (phase === 'win') {
+      const t = now - phaseT0;
+      if (ghost && t < T.fx.winSlowT) {
+        ghostAcc += dt * T.fx.winSlow;
+        for (let n = 0; ghostAcc >= T.dt && n < 6 && ghost.player; n++) {
+          physStep(ghost);
+          ghostAcc -= T.dt;
+        }
       }
-      lastGained = st.gained;
-      if (st.ejects > lastEjects) {
-        lastEjects = st.ejects;
-        audio.sfx.eject({ stream: !!play.beam });
+      if (ghost) rw = ghost;
+      flash = Math.max(0, 1 - t / 1.0) * (reduce ? 0.4 : 1);
+      const f0 = reduce ? 0.1 : 0.8;
+      const fl = reduce ? 0.3 : T.fx.winFadeT;
+      fade = 0.86 * smooth((t - f0) / fl);
+      cam.manualHalf = (cam.baseHalf || cam.half) * (1 + 0.22 * smooth(t / 2));
+      cam.manualAt = now;
+      updateCamera(cam, rw, dt, now);
+      if (t >= f0 + fl * 0.65 && !cardShown) showResultCard();
+    } else if (phase === 'loss') {
+      const t = now - phaseT0;
+      const lt = reduce ? 0.3 : T.fx.lossT;
+      if (ghost && !reduce) {
+        ghostAcc += dt * Math.max(0.05, 0.55 * (1 - t / lt));
+        for (let n = 0; ghostAcc >= T.dt && n < 6; n++) {
+          physStep(ghost);
+          ghostAcc -= T.dt;
+        }
+        rw = ghost;
       }
-      if (frame % 6 === 0) audio.update({ danger: dangerOf(play.world), size: sizeOf(play.world.player ? play.world.player.m : 1), timeScale: play.timeScale });
+      fade = 0.66 * smooth(t / lt);
+      if (t >= lt && !modals.size) showLossDialog();
+    } else if (phase === 'rewind') {
+      const u = Math.min(1, (now - phaseT0) / T.fx.rewindT);
+      const n = rewindFrames.length;
+      const f = smooth(u) * (n - 1);
+      const i = Math.min(n - 2, Math.floor(f));
+      rw = blendWorlds(rewindFrames[i], rewindFrames[i + 1], f - i);
+      tint = Math.sin(Math.PI * Math.min(1, u * 1.08)) * 0.85 + 0.15;
+      updateCamera(cam, rw, dt, now);
+      if (u >= 1) finishRewind();
     }
-    updateCamera(cam, play.world, dt, now);
-    trackMass(now);
-    if (play.world.grav) orbitFrame(now);
+
+    // Effekte
+    if (phase === 'play' || phase === 'intro') {
+      if (phase === 'play' && !paused && play.status === 'running') {
+        fx.scanDanger(play.world, dt);
+        const vis = (x, y, r) => Math.abs(x - cam.x) < cam.half + r && Math.abs(y - cam.y) < cam.half * (view().h / view().w) + r;
+        fx.scanFlow(play.world, dt, view().w / 2 / cam.half, vis);
+        const dgr = fx.danger;
+        if (dgr > 0.62 && now - lastDangerVibe > T.fx.dangerVibeGap) {
+          lastDangerVibe = now;
+          vibe(T.fx.vibe.danger);
+        }
+      }
+    }
+    if (!paused || phase !== 'play') fx.update(dt, rw);
+    if (phase === 'play') trackMass(now);
+    if (play.world.grav && phase !== 'loss') orbitFrame(now);
     else if (preview) preview = null;
-    if (!slow || frame % 2 === 0) renderer.draw({ world: play.world, cam, now, reduceMotion: reduceMotion(), aim: pointer && play.beam ? play.beam : null, preview, warn, introRing: cam.intro ? Math.max(0, Math.min(1, (cam.intro + 2.5 - now) / 2.5)) : 0 });
+    if (!slow || frame % 2 === 0) {
+      const t0 = performance.now();
+      renderer.draw({
+        world: rw,
+        cam,
+        now,
+        reduceMotion: reduce,
+        chapter: level.chapter,
+        fx,
+        aim: pointer && play.beam ? play.beam : null,
+        preview: phase === 'loss' || phase === 'rewind' ? null : preview,
+        warn: phase === 'play' || phase === 'intro' ? warn : 0,
+        introRing: phase === 'intro' ? 1 : Math.max(0, Math.min(1, 1 - (now - introEndAt) / 0.9)),
+        fade,
+        tint,
+        flash,
+      });
+      const ms = performance.now() - t0;
+      frameStats.n++;
+      frameStats.ms += ms;
+      if (ms > frameStats.max) frameStats.max = ms;
+    }
     if (frame % 4 === 0) hud();
-    if (!endShown && play.status !== 'running') {
+    if (!endShown && play.status !== 'running' && phase === 'play') {
       hud();
-      if (play.status === 'lost') onLoss();
-      else if (play.status === 'won') onWin();
+      if (play.status === 'lost') onLoss(now);
+      else if (play.status === 'won') onWin(now);
     }
   }
 
@@ -675,8 +1071,8 @@ export function mountApp(root, progress) {
         audio.refreshVolumes();
         document.querySelectorAll('.pp-sound').forEach((b) => b.dispatchEvent(new Event('pp-sync')));
       }),
-      sw('Vibration', 'Kurz beim Absorbieren, länger beim Verlust. Auf iOS ohne Wirkung.', () => settings().vibrate, (v) => (settings().vibrate = v)),
-      sw('Weniger Bewegung', 'Kein Pulsieren, kein Parallax im Hintergrund. Standard folgt der Systemeinstellung.', reduceMotion, (v) => (settings().reduceMotion = v)),
+      sw('Vibration', 'Feine Impulse beim Absorbieren, beim Ausstoßen und bei Gefahr, länger beim Verlust. Auf iOS ohne Wirkung.', () => settings().vibrate, (v) => (settings().vibrate = v)),
+      sw('Weniger Bewegung', 'Weniger Effekte, kein Parallax, keine Zeitlupe, kürzerer Auftakt. Standard folgt der Systemeinstellung.', reduceMotion, (v) => (settings().reduceMotion = v)),
       h(
         'div',
         { class: 'btn-row' },
@@ -756,18 +1152,11 @@ export function mountApp(root, progress) {
 
   function showSelectNoPersist() {
     pauseModal = null;
-    screen = 'select';
-    play = null;
-    audio.setPaused(false);
-    audio.setScene('select');
-    audio.update({ danger: 0, size: 0, timeScale: 1, lift: 0 });
-    gameEl.hidden = true;
-    selectEl.hidden = false;
-    document.body.classList.remove('pp-playing');
-    renderSelect();
+    enterSelectScreen();
   }
 
   /* ---------- Start ---------- */
+  resizeAll();
   requestAnimationFrame(loop);
   const snap = progress.state.snap;
   const snapLevel = snap && levelById(snap.levelId);
@@ -776,5 +1165,5 @@ export function mountApp(root, progress) {
     progress.setSnap(null);
     renderSelect();
   }
-  return { startLevel, showSelect, audio, previewStats, get state() { return { screen, level, play, paused, cam, preview, warn }; } };
+  return { startLevel, showSelect, audio, previewStats, frameStats, skipIntro, get fx() { return fx; }, get state() { return { screen, level, play, paused, cam, preview, warn, phase, ghost, cardShown }; } };
 }

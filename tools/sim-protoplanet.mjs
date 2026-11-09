@@ -6,7 +6,7 @@
 //   --pick N   Seeds 1..N je Familienlevel in allen Bot-Varianten spielen und Kandidaten fuer den festen Seed nennen (alle Varianten geloest, Zeit nahe am Familien-Median)
 //   --fixed-only / --family-only, --from 7000 (erster Zufalls-Seed, Standard 1000), --variants N (Standard 3), --jobs N (Worker-Threads, Standard = Kerne)
 // Ausgabe: Loesungen je Variante (Zeit s / Ausstoss / Endmasse), Familienquote ueber Zufalls-Seeds (Median/p90 der Zeit, Median Ausstoss und Endmasse),
-// Welt-Kennzahlen (mittlere Geschwindigkeit und Zahl der Koerper beim Start) und vorgeschlagene `targets` (Bot-Median der Varianten x 1,3).
+// Welt-Kennzahlen (mittlere Geschwindigkeit und Zahl der Koerper beim Start) und vorgeschlagene `targets` (Bot-Median der Varianten: Ausstoss x 1,8, Zeit x 2).
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import os from 'node:os';
 import { LEVELS, levelById } from '../games/protoplanet/levels.js';
@@ -104,7 +104,7 @@ if (!isMainThread) {
     const times = famOk.map((r) => r.time).sort((a, b) => a - b);
     const famS = fam.length ? `${pad(`${famOk.length}/${fam.length}`, 8)} ${pad(fmt(median(times), 0), 6)} ${pad(fmt(times[Math.min(times.length - 1, Math.floor(times.length * 0.9))], 0), 6)} ${pad(fmt(median(famOk.map((r) => r.ejected)), 2), 9)} ${pad(fmt(median(famOk.map((r) => r.mass)), 1), 8)}` : '-';
     const medT = median(ok.map((r) => r.time));
-    const sug = ok.length ? `eject<=${fmt(Math.ceil(median(ok.map((r) => r.ejected)) * 1.3 * 20) / 20, 2)} time<=${Math.ceil((medT * 1.3) / 5) * 5}` : '-';
+    const sug = ok.length ? `eject<=${fmt(Math.ceil(median(ok.map((r) => r.ejected)) * 1.8 * 20) / 20, 2)} time<=${Math.ceil((medT * 2) / 5) * 5}` : '-';
     console.log(pad(l.id, 6), pad(l.goal.type, 8), pad(fmt(w.arenaR, 0), 4), pad(w.n, 3), pad(fmt(w.v, 2), 4), '|', pad(`${ok.length}/${fx.length}  ${fxs}`, 58), '|', pad(famS, 44), '|', sug, `(${l.targets.eject}/${l.targets.time})`);
     if (verbose) for (const r of fam.filter((x) => !x.solved)) console.log('   Seed', r.seed, r.lost ? 'verloren' : 'Zeitlimit', fmt(r.time, 0));
   }

@@ -23,18 +23,50 @@ function starDist(world) {
   return null;
 }
 
-/** Uebersicht fuer den Auftakt: alles bis zur aeusseren Warnschwelle bzw. dem weitesten Koerper (Kapitel 3). */
+/** Uebersicht fuer den Auftakt: die ganze Arena bzw. alles bis zum weitesten Koerper (Kapitel 3). Darf ueber camMax hinausgehen (nur der Auftakt). */
 export function overviewHalf(world) {
   let far = 0;
-  for (const b of world.bodies) far = Math.max(far, Math.hypot(b.x, b.y));
-  return Math.min(T.camMax, Math.max(T.camMin, far * 1.1));
+  for (const b of world.bodies) far = Math.max(far, Math.hypot(b.x, b.y) + Math.sqrt(b.m));
+  if (world.arenaR > 0) far = Math.max(far, world.arenaR);
+  return Math.max(T.camMin, far * 1.1);
+}
+
+/** Pose, in der die Kamera nach dem Auftakt steht (Spieler, Zoom der Automatik, in Kapitel 3 mit Blick zum Stern). */
+export function startPose(world) {
+  const p = world.player;
+  const rz = Math.sqrt(p.m);
+  let x = p.x;
+  let y = p.y;
+  if (world.arenaR <= 0) {
+    const s = starDist(world);
+    if (s) {
+      x += T.orbit.camBias * (s.x - p.x);
+      y += T.orbit.camBias * (s.y - p.y);
+    }
+  }
+  return { x, y, half: autoHalf(world, rz), rz };
+}
+
+/** Auftakt: Kamera auf der Fahrt von der Uebersicht (k = 0) zur Startpose (k = 1); k wird vom Aufrufer eingesetzt (Ease). */
+export function introCamera(cam, world, k) {
+  const a = { x: 0, y: 0, half: overviewHalf(world) };
+  const b = startPose(world);
+  const u = Math.max(0, Math.min(1, k));
+  const e = u * u * (3 - 2 * u); // smoothstep
+  const ez = Math.min(1, e * 1.12); // der Zoom eilt der Position leicht voraus
+  cam.x = a.x + (b.x - a.x) * e;
+  cam.y = a.y + (b.y - a.y) * e;
+  cam.half = Math.exp(Math.log(a.half) + (Math.log(b.half) - Math.log(a.half)) * ez);
+  cam.rz = b.rz;
+  cam.ready = true;
+  return cam;
 }
 
 export function autoHalf(world, rz = null) {
   const p = world.player;
   if (!p) return T.camSpan;
   const hi = camHi(world);
-  let half = T.camSpan * (rz == null ? Math.sqrt(p.m) : rz);
+  let half = T.camSpan * Math.pow(rz == null ? Math.sqrt(p.m) : rz, T.camExp);
   if (world.arenaR <= 0) {
     const s = starDist(world);
     if (s) {
@@ -49,7 +81,8 @@ export function autoHalf(world, rz = null) {
   for (const b of world.bodies) {
     if (b === p || b.m <= p.m || b.kind === 'attractor') continue;
     const d = Math.hypot(b.x - p.x, b.y - p.y);
-    if (d < (world.arenaR > 0 ? T.camBigNear : T.orbit.camBigNear) * half) half = Math.max(half, (d + Math.sqrt(b.m)) * 1.08);
+    const near = world.arenaR > 0 ? T.camBigNear : T.orbit.camBigNear; // Arena-Kapitel: 0 = aus (Randpfeile statt Herauszoomen)
+    if (near > 0 && d < near * half) half = Math.max(half, (d + Math.sqrt(b.m)) * 1.08);
   }
   return Math.min(hi, Math.max(T.camMin, half));
 }
@@ -63,12 +96,6 @@ export function updateCamera(cam, world, dt, now) {
     cam.y = p.y;
     cam.rz = Math.sqrt(p.m);
     cam.half = autoHalf(world, cam.rz);
-    if (world.arenaR <= 0) {
-      cam.half = overviewHalf(world); // Auftakt: erst das ganze System (Mitte = Stern), dann faehrt die Kamera auf den Spieler
-      cam.x = 0;
-      cam.y = 0;
-      cam.intro = now + T.orbit.camIntro;
-    }
     cam.ready = true;
     return cam;
   }
@@ -77,8 +104,7 @@ export function updateCamera(cam, world, dt, now) {
   const tau = rNow > cam.rz ? T.camGrowTau : T.camShrinkTau;
   cam.rz += (rNow - cam.rz) * (1 - Math.exp(-dt / tau));
   const kf = 1 - Math.exp(-T.camFollow * dt);
-  const holdCenter = cam.intro && now < cam.intro; // Auftakt: Kamera bleibt auf der Systemmitte
-  if (!holdCenter) {
+  {
     // Kapitel 3: die Kamera schaut ein Stueck zum Stern hin (Spieler und Stern bleiben im Bild, die Bahn ist besser zu lesen)
     let fx = p.x;
     let fy = p.y;
@@ -96,8 +122,7 @@ export function updateCamera(cam, world, dt, now) {
   let target = manual ? cam.manualHalf : autoHalf(world, cam.rz);
   if (!manual) cam.manualHalf = null;
   target = Math.min(camHi(world), Math.max(T.camMin * 0.6, target));
-  const intro = cam.intro && now < cam.intro; // Auftakt: die Uebersicht bleibt kurz stehen und faehrt dann langsam hinein
-  const kz = 1 - Math.exp(-(intro ? 0 : T.camZoomRate * (cam.intro && now < cam.intro + 2 ? 0.45 : 1)) * dt);
+  const kz = 1 - Math.exp(-T.camZoomRate * dt);
   cam.half = Math.exp(Math.log(cam.half) + (Math.log(target) - Math.log(cam.half)) * kz);
   return cam;
 }

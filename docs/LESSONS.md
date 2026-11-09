@@ -324,3 +324,12 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - **Leistung:** der Planer kostet ~0,35 s CPU je 480-s-Lauf (Vorhersage aller Körper einmal je Entscheidung, Radienband-Vorauswahl, Abbruch bei Abfangkurs); die vier Orbit-Testdateien laufen parallel in 14/10/9/20 s.
 - **Kamera im offenen Raum:** der alte Zoom „größere Körper in der Nähe offen halten“ zoomt in einer Welt voller Körper, die größer sind als man selbst (Massenleiter!), immer weit heraus: für Kapitel 3 nur 0,8 x Sichtweite. Auftakt: Übersicht (Mitte = Stern), 3,2 s halten, dann hineinfahren; ein Ring um den Spieler zeigt, wo er ist.
 - **UI-Fund nebenbei:** `grid-template-columns: repeat(4, 1fr)` lässt lange Titel („Kometenschwarm“) die Spalten sprengen; `minmax(0, 1fr)` + Ellipsis löst es.
+
+## Nachtrag: Protoplanet Paket F (Spielgefühl), Details: `docs/protoplanet.md` „Paket F“
+- **Effekte sind reine Darstellung.** Alles Neue (Strom, Atmen, Rückstoß, Ringe, Gefahren-Glühen, Zeitlupe, Rückwärtslauf) liest die Welt nur; Zeitlupe/Abspann laufen auf einer KOPIE (`restore(snapshot())`), nie auf der echten Welt (sonst ändern sich Ergebnis, `world.t` und das Zurückspulen). Eigener Zufall, harter Partikel-Pool.
+- **Kamera: Exponent statt Faktor.** `half = camSpan × r^0,78`: der Körper wächst auf dem Bildschirm (30 → 43 px bei m 1 → 28), die Welt schrumpft; mit Exponent 1 sieht man das Wachsen nie. Größere Körper zoomen die Arena-Kamera nicht mehr heraus, sondern bekommen Randpfeile mit „×Masse“.
+- **Auftakt braucht eine Überspring-Geste und stoppt die Physik**, sonst sterben Spieler im Vorspann. Ein Tipp im Auftakt darf nie ausstoßen (eigener `pointerdown`-Handler, `enabled()` ist dann falsch).
+- **Headless-Test:** `page.screenshot` bremst die Bildrate, die Spielzeit läuft langsamer als die Wanduhr (dt ist auf 0,1 s gedeckelt). Szenen mit Zeitabläufen (Gefahr) über `waitForFunction` auf Zustand prüfen, nicht auf Millisekunden.
+- **Freischalten:** „5 Levels des vorigen Kapitels ODER dessen Finale geschafft“: nur die erste Hälfte hätte alte Spielstände mit nur dem Finale gesperrt.
+- **Stern-Ziele für Menschen:** Bot-Median × 2 (Zeit) und × 1,8 (Ausstoß) statt × 1,3; Lehrlevels nie strenger als vorher. Die Abnahme „mindestens eine Bot-Variante schafft jedes Ziel“ bleibt unverändert und grün.
+- **UI-Fund:** vier Elemente in der Kopfzeile der Auswahl (360 px) brauchen `min-width: 0` am Titel und geringen Buchstabenabstand, sonst rutscht der letzte Knopf aus dem Bild.

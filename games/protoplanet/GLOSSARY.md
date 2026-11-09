@@ -189,3 +189,35 @@ _Avoid_: Stern (Verwechslung mit Protostern und Wertung), Glöckchen, Sparkle
 **Kette**:
 Mehrere Aufnahmen innerhalb von 1,1 s, deren Töne als Arpeggio nach oben steigen (`chainWin`, `chainMax`).
 _Avoid_: Combo, Streak
+
+## Spielgefühl (Paket F)
+
+**Auftakt**:
+Der Beginn eines Levels: Übersicht über die ganze Welt, weiche Kamerafahrt (≈ 1,7 s, Kapitel 3 2,6 s) auf den Spieler, Titel und Ziel groß eingeblendet. Die Physik steht, bis er endet oder getippt wird. Im Code `phase === 'intro'`, `beginIntro`, `introCamera`.
+_Avoid_: Intro-Film, Cutscene
+
+**Abspann**:
+Alles nach dem Ende eines Levels, nur Darstellung: Sieg = Zeitlupe, Lichtwelle, Ausblenden, **Ergebnis-Karte**; Verlust = Zeitbremse, Abdunkeln, Dialog.
+_Avoid_: Outro
+
+**Rückwärtslauf**:
+Das sichtbare Zurückspulen: die Schnappschüsse der letzten Sekunden laufen gemischt rückwärts (`blendWorlds`), danach wartet das Spiel auf einen Tipp („Tippe, um weiterzuspielen“).
+_Avoid_: Rücksprung
+
+**Strom**:
+Leuchtteilchen, die beim Absorbieren vom kleineren zum größeren Körper fließen, solange sie sich überlappen (nur Paare mit dem Spieler).
+
+**Atmen**:
+Der Spieler leuchtet und wächst nach einer Aufnahme kurz in der Darstellung (nicht in der Physik).
+
+**Gefahren-Hinweis**:
+Weiches Randglühen aus der Richtung eines Größeren auf Kollisionskurs (`dangerScan`, ≈ 4,5 s voraus). Nicht zu verwechseln mit der Abdrift-Warnung (Kapitel 3).
+
+**Randpfeil**:
+Pfeil am Bildrand für einen Körper außerhalb des Bildes: Größe = Größe des Körpers, „×2,4“ = Masse relativ zu dir, Deckkraft = Nähe. Ersetzt das Herauszoomen in den Arena-Kapiteln.
+
+**Farbwelt**:
+Dezente Darstellung je Kapitel (Hintergrundverlauf, Nebelflecken mit Parallax, Akzentfarbe von Oberfläche und Arena-Ring), `T.worlds`.
+
+**Weiter spielen**:
+Der große Knopf oben in der Levelauswahl: laufendes Level, sonst das nächste offene ungelöste.

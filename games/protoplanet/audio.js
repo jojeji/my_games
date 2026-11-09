@@ -384,6 +384,14 @@ export function createEngine(ctx, opts = {}) {
       if (!live()) return;
       for (const n of winFigure(mood())) tone({ t: t + n.dt, hz: midiToHz(n.midi), gain: 0.16, att: 0.012, dec: 1.2, oct: 0.3, send: 0.6, pan: (n.dt - 0.3) * 0.8 });
     },
+    // Ergebnis-Karte (Paket F): je Stern ein Ton, steigend in der Tonart des Kapitels
+    star({ i = 0, t = now() } = {}) {
+      if (!live()) return;
+      const m = mood();
+      const n = scaleOf(m).length;
+      const k = clamp(i, 0, 2);
+      tone({ t, hz: midiToHz(scaleMidi(m, n + [0, 2, 4][k])), gain: 0.14 + 0.02 * k, att: 0.008, dec: 0.9 + 0.3 * k, oct: 0.3, send: 0.55, pan: (k - 1) * 0.25 });
+    },
     rewind({ t = now() } = {}) {
       if (!live()) return;
       const m = mood();
@@ -571,7 +579,7 @@ export function createAudio({ settings, seed } = {}) {
     },
     sfx: {},
   };
-  for (const k of ['absorb', 'eject', 'swallowed', 'win', 'rewind', 'timeStep', 'ui', 'warn', 'levelStart']) {
+  for (const k of ['absorb', 'eject', 'swallowed', 'win', 'rewind', 'timeStep', 'ui', 'warn', 'levelStart', 'star']) {
     api.sfx[k] = (arg) => {
       if (engine && ctx.state === 'running') engine.sfx[k](arg);
     };

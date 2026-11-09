@@ -8,7 +8,7 @@ import { createRewind } from '../games/protoplanet/rewind.js';
 import { generate, buildLevel, checkRulesOrbit } from '../games/protoplanet/gen.js';
 import { LEVELS, CHAPTERS, levelById, levelsOf } from '../games/protoplanet/levels.js';
 import { goalStatus, lastRemaining } from '../games/protoplanet/goals.js';
-import { autoHalf, createCamera, updateCamera, overviewHalf } from '../games/protoplanet/camera.js';
+import { autoHalf, createCamera, updateCamera, overviewHalf, introCamera, startPose } from '../games/protoplanet/camera.js';
 import { dangerOf } from '../games/protoplanet/audio-score.js';
 import { T } from '../games/protoplanet/tune.js';
 import { createProgress } from '../games/protoplanet/state.js';
@@ -306,9 +306,12 @@ test('Kamera im offenen Raum: Auftakt zeigt das System, danach folgt sie dem Spi
   const play = createPlay(levelById('3-4'));
   const w = play.world;
   const cam = createCamera();
-  updateCamera(cam, w, 1 / 60, 0);
+  introCamera(cam, w, 0); // Paket F: der Auftakt (Uebersicht -> Spieler) laeuft ueber introCamera, die Physik steht
   assert.equal(cam.x, 0);
   assert.ok(cam.half >= overviewHalf(w) - 1e-9 && Number.isFinite(cam.half));
+  introCamera(cam, w, 1);
+  const sp = startPose(w);
+  assert.ok(Math.abs(cam.x - sp.x) < 1e-9 && Math.abs(cam.half - sp.half) < 1e-9, 'Ende des Auftakts = Startpose');
   for (let i = 0; i < 60 * 12; i++) updateCamera(cam, w, 1 / 60, i / 60);
   const p = w.player;
   const s = Math.hypot(p.x, p.y);
@@ -333,13 +336,18 @@ test('Levels Kapitel 3: acht Levels, eindeutige Namen, gemischte Ziele, Kapitel 
   }
   assert.ok(ls[0].hint.text.includes('gepunktete Linie'));
   assert.ok(ls[1].hint.text && ls[1].hint.textAim, '3-2 hat Hilfen fuer beide Steuerungen');
-  // Freischalten: 3-1 erst nach 2-8
+  // Freischalten (Paket F): 3-1 oeffnet sich, sobald in Kapitel 2 fuenf Levels geschafft sind (nicht erst mit dem Finale)
   const storage = createStorage(mem());
   const pr = createProgress({ storage });
   assert.equal(pr.unlocked('3-1'), false);
-  pr.record('2-8', { time: 100, ejected: 1, eff: false, fast: false });
+  for (const id of ['2-1', '2-2', '2-3', '2-4']) pr.record(id, { time: 100, ejected: 1, eff: false, fast: false });
+  assert.equal(pr.unlocked('3-1'), false, 'vier von fuenf');
+  pr.record('2-5', { time: 100, ejected: 1, eff: false, fast: false });
   assert.equal(pr.unlocked('3-1'), true);
-  assert.equal(pr.unlocked('3-2'), false);
+  assert.equal(pr.unlocked('3-2'), false, 'innerhalb des Kapitels Level fuer Level');
+  const pr2 = createProgress({ storage: createStorage(mem()) });
+  pr2.record('2-8', { time: 100, ejected: 1, eff: false, fast: false });
+  assert.equal(pr2.unlocked('3-1'), true, 'wer das Finale geschafft hat (alter Spielstand), hat das Kapitel offen');
 });
 
 test('Ein alter Spielstand (Version 3, ohne Kapitel 3) laedt unveraendert, ein Schnappschuss von 3-4 wird gueltig gespeichert', () => {
