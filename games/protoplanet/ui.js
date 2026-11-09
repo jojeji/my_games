@@ -9,12 +9,16 @@ import { goalText, goalExplain, goalCounter, starsFor, fmtMass } from './goals.j
 import { createCamera, updateCamera, pinchStart, pinchMove, pinchEnd, screenToWorld } from './camera.js';
 import { createRenderer } from './render.js';
 import { createInput } from './input.js';
+import { createAudio } from './audio.js';
+import { dangerOf, sizeOf } from './audio-score.js';
 
 const ICON = {
   back: '<path d="M15 5l-7 7 7 7"/>',
   pause: '<path d="M9 5v14M15 5v14"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
   hub: '<path d="M4 11l8-7 8 7M6 10v9h12v-9"/>',
+  sound: '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>',
+  muted: '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
   lock: '<rect x="6" y="11" width="12" height="9" rx="2"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/>',
 };
 const TIME_LABEL = { 0.25: '×¼', 1: '×1', 4: '×4', 10: '×10' };
@@ -93,6 +97,15 @@ export function mountApp(root, progress) {
   const closeAllModals = () => [...modals].forEach((m) => m.close());
 
   const settings = () => progress.settings;
+  const audio = createAudio({ settings });
+  let lastEjects = 0;
+  let lastGained = 0;
+  const syncAudioCounters = () => {
+    const st = play.world.stats;
+    lastAbsorbed = st.absorbed;
+    lastEjects = st.ejects;
+    lastGained = st.gained;
+  };
   const hintText = (hint) => (settings().aim && hint.textAim) || hint.text;
   const reduceMotion = () => {
     const v = settings().reduceMotion;
@@ -118,6 +131,34 @@ export function mountApp(root, progress) {
     progress.save();
   }
 
+  /* ---------- Ton ---------- */
+  /** Lautsprecher-Knopf (Ton an/aus), in der Levelauswahl und im Pausenmenue; `label` = Text neben dem Symbol. */
+  function soundButton(label = false) {
+    const btn = h('button', { class: 'pp-icon-btn pp-sound' + (label ? ' wide' : ''), type: 'button' });
+    const sync = () => {
+      const off = !!settings().mute;
+      btn.replaceChildren(svgIcon(off ? ICON.muted : ICON.sound), ...(label ? [h('span', { text: off ? 'Ton aus' : 'Ton an' })] : []));
+      btn.setAttribute('aria-label', off ? 'Ton einschalten' : 'Ton ausschalten');
+      btn.setAttribute('aria-pressed', off ? 'true' : 'false');
+      btn.classList.toggle('off', off);
+    };
+    btn.addEventListener('click', () => {
+      settings().mute = !settings().mute;
+      progress.save();
+      audio.refreshVolumes();
+      document.querySelectorAll('.pp-sound').forEach((b) => b.dispatchEvent(new Event('pp-sync')));
+    });
+    btn.addEventListener('pp-sync', sync);
+    sync();
+    return btn;
+  }
+  // Der AudioContext darf erst nach einer Nutzergeste starten (iOS); danach weckt jede Geste ihn bei Bedarf wieder auf.
+  for (const ev of ['pointerdown', 'touchend', 'keydown', 'click']) addEventListener(ev, () => audio.unlock(), { capture: true, passive: true });
+  document.addEventListener('click', (e) => {
+    if (e.target.closest && e.target.closest('.btn, .pp-icon-btn, .pp-tile, .pp-switch')) audio.sfx.ui();
+  }, true);
+  document.addEventListener('visibilitychange', () => audio.visibility(document.visibilityState !== 'hidden'));
+
   /* ---------- Levelauswahl ---------- */
   function renderSelect() {
     selectEl.replaceChildren();
@@ -127,6 +168,7 @@ export function mountApp(root, progress) {
       { class: 'pp-sel-head' },
       h('a', { class: 'pp-icon-btn', href: '../../', 'aria-label': 'Alle Spiele' }, svgIcon(ICON.hub)),
       h('h1', { text: 'Protoplanet' }),
+      soundButton(),
       h('button', { class: 'pp-icon-btn', type: 'button', 'aria-label': 'Einstellungen', onClick: () => openSettings() }, svgIcon(ICON.gear)),
     );
     selectEl.append(head, h('p', { class: 'pp-sub', text: 'Du bist ein Staubkorn in einer jungen Sternscheibe. Bewegen kannst du dich nur, indem du Masse ausstößt.' }));
@@ -168,6 +210,9 @@ export function mountApp(root, progress) {
     closePauseModal();
     screen = 'select';
     play = null;
+    audio.setPaused(false);
+    audio.setScene('select');
+    audio.update({ danger: 0, size: 0, timeScale: 1, lift: 0 });
     gameEl.hidden = true;
     selectEl.hidden = false;
     document.body.classList.remove('pp-playing');
@@ -205,7 +250,11 @@ export function mountApp(root, progress) {
     beamUsed = false;
     timeChanged = false;
     pointer = null;
-    lastAbsorbed = play.world.stats.absorbed;
+    syncAudioCounters();
+    audio.setPaused(false);
+    audio.setScene(lv.chapter);
+    audio.update({ danger: 0, size: sizeOf(play.world.player ? play.world.player.m : 1), timeScale: play.timeScale, lift: 0 });
+    if (!snap) audio.sfx.levelStart();
     hintGone = false;
     resetMassDelta();
     screen = 'game';
@@ -265,10 +314,11 @@ export function mountApp(root, progress) {
     play.setBeam(null);
     persist();
     if (play.status !== 'running' || pauseModal) return;
+    audio.setPaused(true);
     let leaving = false;
     pauseModal = modal({
       title: 'Pausiert',
-      body: h('div', {}, h('p', { class: 'muted', text: `Level ${level.id} · ${level.title}` }), h('p', { text: goalText(play.goal) }), h('p', { class: 'muted small', text: goalExplain(play.goal) })),
+      body: h('div', {}, h('p', { class: 'muted', text: `Level ${level.id} · ${level.title}` }), h('p', { text: goalText(play.goal) }), h('p', { class: 'muted small', text: goalExplain(play.goal) }), h('div', { class: 'pp-sound-row' }, soundButton(true))),
       dismissible: true,
       onClose: () => {
         pauseModal = null;
@@ -306,11 +356,14 @@ export function mountApp(root, progress) {
     if (!play || play.status !== 'running') return;
     paused = false;
     lastTs = 0;
+    audio.setPaused(false);
   }
 
   function onLoss() {
     endShown = true;
     vibe(220);
+    audio.sfx.swallowed();
+    audio.update({ lift: -1, danger: 0 });
     persist();
     const left = play.rewindsLeft;
     modal({
@@ -333,6 +386,9 @@ export function mountApp(root, progress) {
                 onClick: () => {
                   if (play.doRewind()) {
                     endShown = false;
+                    syncAudioCounters();
+                    audio.sfx.rewind();
+                    audio.update({ lift: 0 });
                     resetMassDelta();
                     setTimeout(pause, 0);
                   }
@@ -349,6 +405,8 @@ export function mountApp(root, progress) {
   function onWin() {
     endShown = true;
     vibe(60);
+    audio.sfx.win();
+    audio.update({ lift: 1, danger: 0 });
     const r = play.result;
     const st = starsFor(level, r);
     const fresh = progress.record(level.id, { time: r.time, ejected: r.ejected, eff: st.eff, fast: st.fast });
@@ -454,6 +512,8 @@ export function mountApp(root, progress) {
     timeIdx = (timeIdx + 1) % T.timeSteps.length;
     play.timeScale = T.timeSteps[timeIdx];
     timeChanged = true;
+    audio.sfx.timeStep({ idx: timeIdx });
+    audio.update({ timeScale: play.timeScale });
     hud();
   });
 
@@ -487,11 +547,20 @@ export function mountApp(root, progress) {
         play.beam.y = w.y;
       }
       play.advance(dt);
-      const a = play.world.stats.absorbed;
+      const st = play.world.stats;
+      const a = st.absorbed;
       if (a > lastAbsorbed) {
+        const pm = play.world.player ? play.world.player.m : 1;
+        audio.sfx.absorb({ ratio: Math.max(0, st.gained - lastGained) / Math.max(pm, 0.01) / (a - lastAbsorbed) });
         lastAbsorbed = a;
         vibe(18);
       }
+      lastGained = st.gained;
+      if (st.ejects > lastEjects) {
+        lastEjects = st.ejects;
+        audio.sfx.eject({ stream: !!play.beam });
+      }
+      if (frame % 6 === 0) audio.update({ danger: dangerOf(play.world), size: sizeOf(play.world.player ? play.world.player.m : 1), timeScale: play.timeScale });
     }
     updateCamera(cam, play.world, dt, now);
     trackMass(now);
@@ -520,6 +589,23 @@ export function mountApp(root, progress) {
       sync();
       return btn;
     };
+    const slider = (title, key) => {
+      const val = h('span', { class: 'pp-slider-val num' });
+      const input = h('input', { class: 'pp-slider', type: 'range', min: '0', max: '100', step: '5', 'aria-label': title });
+      input.value = String(settings()[key]);
+      const sync = () => txt(val, `${input.value} %`);
+      input.addEventListener('input', () => {
+        settings()[key] = Number(input.value);
+        sync();
+        audio.refreshVolumes();
+      });
+      input.addEventListener('change', () => {
+        progress.save();
+        if (key === 'sfx') audio.sfx.absorb({ ratio: 0.1 });
+      });
+      sync();
+      return h('label', { class: 'pp-slider-row' }, h('span', { class: 'pp-slider-head' }, h('b', { text: title }), val), input);
+    };
     const body = h(
       'div',
       { class: 'pp-settings' },
@@ -527,6 +613,13 @@ export function mountApp(root, progress) {
         settings().aim = v;
         if (play) play.invert = !v;
         if (play && level && level.hint) helpEl.textContent = hintText(level.hint);
+      }),
+      slider('Musik', 'music'),
+      slider('Effekte', 'sfx'),
+      sw('Ton', 'Alles stumm schalten.', () => !settings().mute, (v) => {
+        settings().mute = !v;
+        audio.refreshVolumes();
+        document.querySelectorAll('.pp-sound').forEach((b) => b.dispatchEvent(new Event('pp-sync')));
       }),
       sw('Vibration', 'Kurz beim Absorbieren, länger beim Verlust. Auf iOS ohne Wirkung.', () => settings().vibrate, (v) => (settings().vibrate = v)),
       sw('Weniger Bewegung', 'Kein Pulsieren, kein Parallax im Hintergrund. Standard folgt der Systemeinstellung.', reduceMotion, (v) => (settings().reduceMotion = v)),
@@ -611,6 +704,9 @@ export function mountApp(root, progress) {
     pauseModal = null;
     screen = 'select';
     play = null;
+    audio.setPaused(false);
+    audio.setScene('select');
+    audio.update({ danger: 0, size: 0, timeScale: 1, lift: 0 });
     gameEl.hidden = true;
     selectEl.hidden = false;
     document.body.classList.remove('pp-playing');
@@ -626,5 +722,5 @@ export function mountApp(root, progress) {
     progress.setSnap(null);
     renderSelect();
   }
-  return { startLevel, showSelect, get state() { return { screen, level, play, paused, cam }; } };
+  return { startLevel, showSelect, audio, get state() { return { screen, level, play, paused, cam }; } };
 }

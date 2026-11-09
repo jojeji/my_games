@@ -77,4 +77,48 @@ export const T = {
       hard: { react: [0.55, 0.95], aimNoise: 0.1, magNoise: 0.1, hesitate: 0.08, bot: { vmax: 0.9, ejectSpeed: 3 } },
     },
   },
+  // --- Klang (audio-score.js = reine Logik, audio.js = WebAudio-Graph). Keine Dateien, alles generativ. ---
+  audio: {
+    volume: { music: 70, sfx: 80 }, // Standard in Prozent (Regler 0-100, Schritt 5); gemessen wird nach Kurve gain = (v/100)^curve
+    curve: 2,
+    busMusic: 0.8, // Pegel der Busse vor dem Limiter
+    busSfx: 0.9,
+    pauseDuck: 0.35, // Musikpegel im Pausenmenue (Anteil)
+    lookahead: 2.2, // s, so weit voraus werden Klaenge geplant
+    pumpMs: 250,
+    scales: {
+      pentaMajor: [0, 2, 4, 7, 9],
+      pentaMinor: [0, 3, 5, 7, 10],
+      lydian: [0, 2, 4, 6, 7, 9, 11],
+      dorian: [0, 2, 3, 5, 7, 9, 10],
+      mixolydian: [0, 2, 4, 5, 7, 9, 10],
+      phrygian: [0, 1, 3, 5, 7, 8, 10],
+    },
+    // Stimmung je Kapitel (Schluessel = Kapitel-ID; 'select' = Levelauswahl). root = MIDI-Grundton, roots = erlaubte Akkord-Grundstufen (Skalenindex),
+    // chordEvery / starEvery = Spanne in s, bright 0..1 = Grundhelligkeit, cutLo/cutHi = Grenzfrequenzen des Teppichs (Hz), drone/chord/star = Pegel der Schichten,
+    // beat = Schwebung bei Gefahr. Neues Kapitel: einfach einen Eintrag ergaenzen (siehe docs/protoplanet-klang.md).
+    moods: {
+      select: { name: 'Levelauswahl', root: 50, scale: 'pentaMajor', roots: [0, 1, 2, 3, 4], chordEvery: [22, 38], starEvery: [9, 20], bright: 0.45, cutLo: 260, cutHi: 900, drone: 0.7, chord: 0.8, star: 0.8, beat: 0.5 },
+      1: { name: 'Staubwolke', root: 53, scale: 'lydian', roots: [0, 1, 3, 4, 5], chordEvery: [18, 34], starEvery: [7, 16], bright: 0.5, cutLo: 280, cutHi: 1000, drone: 0.8, chord: 0.85, star: 0.9, beat: 0.6 },
+      2: { name: 'Jäger', root: 52, scale: 'dorian', roots: [0, 2, 3, 4, 6], chordEvery: [15, 30], starEvery: [8, 18], bright: 0.38, cutLo: 220, cutHi: 800, drone: 0.9, chord: 0.8, star: 0.75, beat: 0.8 },
+      3: { name: 'Protostern', root: 55, scale: 'mixolydian', roots: [0, 1, 3, 4, 5], chordEvery: [20, 36], starEvery: [7, 15], bright: 0.55, cutLo: 260, cutHi: 950, drone: 0.8, chord: 0.9, star: 0.9, beat: 0.6 },
+      4: { name: 'Dunkelwolke', root: 48, scale: 'phrygian', roots: [0, 2, 3, 4], chordEvery: [24, 40], starEvery: [12, 26], bright: 0.28, cutLo: 180, cutHi: 650, drone: 1.0, chord: 0.7, star: 0.6, beat: 1.0 },
+      5: { name: 'Galaxie', root: 57, scale: 'lydian', roots: [0, 1, 2, 4, 5], chordEvery: [16, 30], starEvery: [5, 12], bright: 0.62, cutLo: 300, cutHi: 1200, drone: 0.75, chord: 0.9, star: 1.0, beat: 0.5 },
+    },
+    // Grenzen der weichen Parameter (musicParams klemmt jeden Wert hierauf)
+    limits: {
+      droneCut: [120, 1800], droneGain: [0, 0.6], beatGain: [0, 0.35], upperGain: [0, 0.3], chordCut: [350, 4500], chordGain: [0, 0.5],
+      starRate: [0.15, 3], tempo: [0.7, 1.4], lfoRate: [0.5, 2], wet: [0.15, 0.7], noteCount: [3, 5],
+    },
+    danger: { ratio: 0.97, range: 6, rangeR: 2.5 }, // ein Koerper ab 0,97 x Spielermasse; Gefahr 1 bei Beruehrung, 0 ab range + rangeR x Spielerradius Abstand
+    sizeLog: 1.3, // Spielergroesse 0..1 = log10(m) / sizeLog
+    smooth: { tau: 2.2, danger: 1.0 }, // s, Zeitkonstanten fuer Parameteraenderungen
+    sfx: {
+      // Drosselung je Art: gap = Mindestabstand (s), max = Anzahl je 1 s
+      gates: { absorb: { gap: 0.07, max: 6 }, eject: { gap: 0.09, max: 7 }, beam: { gap: 0.22, max: 4 }, ui: { gap: 0.05, max: 8 }, time: { gap: 0.1, max: 5 } },
+      chainWin: 1.1, // s: Aufnahmen innerhalb dieses Fensters steigen als Arpeggio
+      chainMax: 5,
+      absorbLoIdx: 0, absorbHiIdx: 9, // Skalenindex-Bereich (ab root + 12) fuer kleine (hoch) bis grosse (tief) Happen
+    },
+  },
 };

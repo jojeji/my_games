@@ -2,6 +2,7 @@
 // Schluessel mg:protoplanet:save (mit Sicherungskopie) ueber engine/save.js.
 import { createSaveStore, mergeDefaults } from '../../engine/save.js';
 import { LEVELS, levelById } from './levels.js';
+import { T } from './tune.js';
 
 // Version 2 (P2): Level 1-6..1-8 wurden umgebaut (Brocken, neue Ziele). Ihre alten Sterne/Bestwerte gehoeren zu anderen Leveln und werden geloescht
 // (die Level muessen neu gespielt werden; Kapitel 2 oeffnet sich mit dem neuen 1-8). Alles andere (Level 1-1..1-5, Einstellungen) bleibt.
@@ -38,7 +39,7 @@ export const snapValid = (snap) => {
 
 export const defaultState = () => ({
   progress: {}, // levelId -> { done, eff, fast, bestTime, bestEject }
-  settings: { aim: false, vibrate: true, reduceMotion: null }, // aim = Zielsteuerung (Tippen = dorthin fliegen), Standard: Masse fliegt zum Finger; reduceMotion null = folgt prefers-reduced-motion
+  settings: { aim: false, vibrate: true, reduceMotion: null, music: T.audio.volume.music, sfx: T.audio.volume.sfx, mute: false }, // music/sfx = Lautstaerke in %, mute = Ton aus; aim = Zielsteuerung (Tippen = dorthin fliegen), Standard: Masse fliegt zum Finger; reduceMotion null = folgt prefers-reduced-motion
   snap: null, // { levelId, rev, play: { snap, rewindsLeft, rewound }, timeScale }
 });
 
