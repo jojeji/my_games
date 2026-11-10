@@ -325,7 +325,7 @@ export function createRenderer(canvas) {
     // Offener Raum (Kapitel 3): feine Bahnringe als Orientierung, Warn- und Abdriftgrenze
     let star = null;
     if (orbit) {
-      for (const b of world.bodies) if (b.kind === 'attractor') star = b;
+      for (const b of world.bodies) if (b.kind === 'attractor' && !b.po) star = b;
       const g = world.grav || {};
       const cx = toX(star ? star.x : 0);
       const cy = toY(star ? star.y : 0);
@@ -334,6 +334,14 @@ export function createRenderer(canvas) {
       for (const rr of g.rings || []) {
         ctx.beginPath();
         ctx.arc(cx, cy, rr * sc, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      // Planetenbahnen (Kapitel 5): feine Ringe um den Stern
+      ctx.strokeStyle = 'rgba(245,232,190,0.12)';
+      for (const b of world.bodies) {
+        if (!b.po) continue;
+        ctx.beginPath();
+        ctx.arc(cx, cy, b.po.r * sc, 0, Math.PI * 2);
         ctx.stroke();
       }
       ctx.setLineDash([2, 9]);
@@ -380,7 +388,7 @@ export function createRenderer(canvas) {
     for (const b of world.bodies) if (b.kind === 'hunter') hunterIds.add(b.id);
 
     for (const b of world.bodies) {
-      if (b === p || b.kind === 'attractor') continue;
+      if (b === p || (b.kind === 'attractor' && !b.po)) continue;
       const r = Math.sqrt(b.m) * sc;
       const x = toX(b.x);
       const y = toY(b.y);
@@ -465,6 +473,24 @@ export function createRenderer(canvas) {
           ctx.beginPath();
           ctx.arc(x, y, r * 1.3 + 10, 0, Math.PI * 2);
           ctx.stroke();
+        }
+      }
+      if (b.po) {
+        // Planet (Kapitel 5): heller Ring um den Koerper und ein feiner Kreis = Einflussbereich (Hill-Radius: dort bestimmt der Planet deine Bahn)
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(245,232,190,0.7)';
+        ctx.beginPath();
+        ctx.arc(x, y, r + 3, 0, Math.PI * 2);
+        ctx.stroke();
+        if (star) {
+          const hill = b.po.r * Math.pow(b.gm / (3 * star.gm), 1 / 3) * 0.9;
+          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = 'rgba(245,232,190,0.3)';
+          ctx.setLineDash([3, 6]);
+          ctx.beginPath();
+          ctx.arc(x, y, hill * sc, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
         }
       }
       if (b.kind === 'hunter') {
@@ -565,7 +591,7 @@ export function createRenderer(canvas) {
         // Endpunkt der Bahn (Sturz / Abdrift): kleines Kreuz in Warnfarbe
         const ex = toX(pts[2 * pv.n - 2]);
         const ey = toY(pts[2 * pv.n - 1]);
-        ctx.strokeStyle = pv.end === 'star' ? 'rgba(255,88,70,0.95)' : 'rgba(255,176,70,0.95)';
+        ctx.strokeStyle = pv.end === 'star' || pv.end === 'planet' ? 'rgba(255,88,70,0.95)' : 'rgba(255,176,70,0.95)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(ex - 5, ey - 5);

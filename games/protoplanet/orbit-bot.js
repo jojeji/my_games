@@ -6,7 +6,8 @@
 // Geschlossener Regelkreis: nach jedem Schub wird neu geplant, ein Schub, der schon auf Kurs ist, wird nicht wiederholt (die Untaetigkeit gewinnt dann).
 // DOM-frei, deterministisch (kein Zufall), schnell genug fuer die Tests (Ausduennen ueber den Bahnbereich: nur Koerper, deren Radienband das der Kandidatenbahn beruehrt).
 import { T } from './tune.js';
-import { attractorsOf } from './orbit.js';
+import { attractorsOf, starOf } from './orbit.js';
+import { attractorAt } from './physics.js';
 import { pushFrac } from './brain.js';
 
 const soft2 = () => T.orbit.soft * T.orbit.soft;
@@ -37,7 +38,7 @@ function propagate(out, x, y, vx, vy, K, h, gm, sx, sy, s2, range, srcs = null, 
       dy = S.tr[2 * k - 1] - y;
       d2 = dx * dx + dy * dy;
       const rr = S.r + rb;
-      f = S.g / ((d2 + ss + rr * rr) * Math.sqrt(d2 + 1e-12));
+      f = S.pl ? S.g / ((d2 + s2) * Math.sqrt(d2 + 1e-12)) : S.g / ((d2 + ss + rr * rr) * Math.sqrt(d2 + 1e-12));
       ax += f * dx;
       ay += f * dy;
     }
@@ -59,7 +60,7 @@ function propagate(out, x, y, vx, vy, K, h, gm, sx, sy, s2, range, srcs = null, 
       dy = S.tr[2 * k + 1] - y;
       d2 = dx * dx + dy * dy;
       const rr = S.r + rb;
-      f = S.g / ((d2 + ss + rr * rr) * Math.sqrt(d2 + 1e-12));
+      f = S.pl ? S.g / ((d2 + s2) * Math.sqrt(d2 + 1e-12)) : S.g / ((d2 + ss + rr * rr) * Math.sqrt(d2 + 1e-12));
       ax += f * dx;
       ay += f * dy;
     }
@@ -78,7 +79,7 @@ function propagate(out, x, y, vx, vy, K, h, gm, sx, sy, s2, range, srcs = null, 
 export function planOrbit(w, p, ctx, st, P = T.orbit.plan) {
   const atts = attractorsOf(w);
   if (!atts.length) return null;
-  const A = atts[0];
+  const A = starOf(w);
   const goal = ctx.goal || null;
   const h = P.h;
   const K = Math.round(P.horizon / h);
@@ -94,23 +95,42 @@ export function planOrbit(w, p, ctx, st, P = T.orbit.plan) {
   const G = w.grav && w.grav.selfGrav > 0 ? w.grav.selfGrav * O.selfG : 0;
   const goalTarget = goal && goal.type === 'absorb' ? w.bodies.find((b) => b.tag === 'target') : null;
   const bodies = w.bodies.filter((b) => b !== p && b.kind !== 'attractor' && b.gf !== p.id);
+  // Planeten (Kapitel 5): feste Kreisbahnen, exakt vorhersagbar. Sie ziehen alle Koerper an (Attraktor-Gesetz) und sind selbst Begegnungs-Partner (Gefahr oder Beute nach Masse).
+  const plSrcs = [];
+  const planets = [];
+  for (const a of atts) {
+    if (!a.po) continue;
+    const tr = new Float64Array(2 * (K + 1));
+    const q = [0, 0];
+    let lo = Infinity;
+    let hi = 0;
+    for (let k = 0; k <= K; k++) {
+      attractorAt(a, w.t + k * h, q);
+      tr[2 * k] = q[0];
+      tr[2 * k + 1] = q[1];
+    }
+    lo = hi = a.po.r;
+    plSrcs.push({ b: a, tr, g: a.gm, r: Math.sqrt(a.m), pl: true });
+    planets.push({ b: a, tr, r: Math.sqrt(a.m), lo, hi, m: a.m });
+  }
   // Quellen der Anziehung (die schwersten, ohne den Spieler): erst allein unter dem Stern vorhergesagt, dann ziehen sie alle (auch einander) an
   const srcs = [];
   if (G > 0) {
     const heavy = bodies.filter((b) => b.m >= O.selfMin).sort((a, c) => c.m - a.m || a.id - c.id).slice(0, O.selfK);
     for (const b of heavy) {
       const tr = new Float64Array(2 * (K + 1));
-      propagate(tr, b.x, b.y, b.vx, b.vy, K, h, A.gm, A.x, A.y, s2, range);
+      propagate(tr, b.x, b.y, b.vx, b.vy, K, h, A.gm, A.x, A.y, s2, range, plSrcs, -1, Math.sqrt(b.m));
       srcs.push({ b, tr, g: G * b.m, r: Math.sqrt(b.m) });
     }
   }
-  const srcOnly = srcs.filter((S) => S.tr);
+  const srcOnly = [...srcs.filter((S) => S.tr), ...plSrcs]; // Planeten zuletzt: ein eigener Quellen-Index (si) bleibt gueltig
   for (const b of bodies) {
     const tr = new Float64Array(2 * (K + 1));
     const si = srcOnly.findIndex((S) => S.b === b);
     propagate(tr, b.x, b.y, b.vx, b.vy, K, h, A.gm, A.x, A.y, s2, range, srcOnly, si, Math.sqrt(b.m));
     others.push({ b, tr, r: Math.sqrt(b.m), lo: range[0], hi: range[1], m: b.m });
   }
+  for (const pl of planets) others.push(pl);
   const mustAll = goal && goal.type === 'last';
   const costK = goal && (goal.type === 'last' || goal.type === 'absorb') ? P.costKGoal : P.costK; // Ziel `last`/`absorb`: Fertigwerden zaehlt mehr als Masse sparen
   const wOf = (o) => {

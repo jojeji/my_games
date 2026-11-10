@@ -5,6 +5,7 @@ import { rngRoll, toSeed } from '../../engine/kit/rng.js';
 import { makeAi } from './hunter.js';
 import { T } from './tune.js';
 import { orbitState, elements } from './orbit.js';
+import { circularSpeed } from './physics.js';
 
 export const RULES = { reach: 11, clearance: 3, lookahead: 5, gap: 0.05, maxAttempts: 40 };
 
@@ -386,11 +387,17 @@ export function checkRulesOrbit({ bodies, goal, orbit }) {
   const o = orbit;
   const pl = orbitPlayer(o);
   const rest = bodies.filter((b) => b.kind !== 'attractor');
+  for (const pl of bodies.filter((b) => b.po)) {
+    if (Math.abs(pl.po.r - o.rP) < Math.sqrt(pl.m) + 6) bad.push('Planet zu nah an der Spielerbahn');
+    if (pl.po.r + Math.sqrt(pl.m) > o.loseR * 0.8) bad.push('Planet reicht in die Abdrift');
+  }
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     const ra = Math.sqrt(a.m);
     const el = elements(o.gm, a.x, a.y, a.vx, a.vy);
-    if (!el.bound) bad.push('Koerper auf Fluchtbahn');
+    if (a.moon) {
+      if (Math.hypot(a.x, a.y) < o.rS + ra + 3) bad.push('Mond im Stern');
+    } else if (!el.bound) bad.push('Koerper auf Fluchtbahn');
     else if (el.rp < o.rS + ra + 1.2) bad.push('Bahn endet im Stern');
     else if (el.ra > o.loseR * 0.8) bad.push('Bahn reicht in die Abdrift');
     if (Math.hypot(a.x - pl.x, a.y - pl.y) < 1 + ra + RULES.gap + 0.5) bad.push('ueberlappt den Spieler');
@@ -401,7 +408,7 @@ export function checkRulesOrbit({ bodies, goal, orbit }) {
   }
   const close = closestToPlayer(o, pl, rest, 10);
   rest.forEach((b, i) => {
-    if (b.m >= 0.9 && close[i] - Math.sqrt(b.m) - 1 < RULES.clearance - 0.5) bad.push('groesserer Koerper zu nah');
+    if (b.m >= 0.9 && !b.moon && close[i] - Math.sqrt(b.m) - 1 < RULES.clearance - 0.5) bad.push('groesserer Koerper zu nah');
   });
   // Futter auf einer Nachbarbahn: ein kleiner Koerper, dessen Bahnband das des Spielers fast beruehrt
   const near = rest.some((b) => {
@@ -427,6 +434,47 @@ export function checkRulesOrbit({ bodies, goal, orbit }) {
 }
 
 /**
+ * Planeten (Kapitel 5): feste Kreisbahnen um den Stern, exakt vorhersagbar. spec = { r, ang? (Grad, sonst Seed), m, gm, dir?, tag?, moons?: [{ n, lo, hi, dLo, dHi }] }.
+ * Winkelgeschwindigkeit = die einer Kreisbahn um den Stern (also bleiben Koerper derselben Bahnspur immer im gleichen Abstand zum Planeten). Monde sind gewoehnliche Koerper
+ * auf Kreisbahnen um den Planeten (Geschwindigkeit des Planeten + Kreisgeschwindigkeit um seine Anziehung). Gibt die Planeten-Koerper zurueck (schon in `bodies`).
+ */
+function addPlanets(o, p, rng, bodies) {
+  const out = [];
+  for (const spec of p.planets || []) {
+    const dir = spec.dir || 1;
+    const a0 = ((spec.ang != null ? spec.ang : uni(rng, 0, 360)) * Math.PI) / 180;
+    const w = (dir * circularSpeed(o.gm, spec.r)) / spec.r;
+    const pl = {
+      x: spec.r * Math.cos(a0), y: spec.r * Math.sin(a0), vx: -spec.r * w * Math.sin(a0), vy: spec.r * w * Math.cos(a0),
+      m: spec.m, kind: 'attractor', gm: spec.gm, po: { r: spec.r, a0, w }, ...(spec.tag ? { tag: spec.tag } : {}),
+    };
+    bodies.push(pl);
+    out.push(pl);
+    const rpl = Math.sqrt(spec.m);
+    for (const mg of spec.moons || []) {
+      for (let i = 0; i < mg.n; i++) {
+        const m = pickMass(rng, mg.lo, mg.hi, mg.skew || 1);
+        const rb = Math.sqrt(m);
+        for (let k = 0; k < 60; k++) {
+          const d = uni(rng, mg.dLo, mg.dHi) + rpl;
+          const ang = uni(rng, 0, Math.PI * 2);
+          const x = pl.x + d * Math.cos(ang);
+          const y = pl.y + d * Math.sin(ang);
+          const vc = circularSpeed(spec.gm, d) * (mg.f != null ? mg.f : 1);
+          const md = mg.dir || 1;
+          const vx = pl.vx - md * vc * Math.sin(ang);
+          const vy = pl.vy + md * vc * Math.cos(ang);
+          if (bodies.some((b) => b.kind !== 'attractor' && Math.hypot(x - b.x, y - b.y) < rb + Math.sqrt(b.m) + 0.5)) continue;
+          bodies.push({ x, y, vx, vy, m, kind: 'mote', moon: true, dir: 1 });
+          break;
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
  * Familie `orbit`. p = { gm?, rS?, rP?, loseR?, warnR?, selfGrav?, rings?, goalType?, mass?, slack?, groups[] }
  *  group = { n, lo, hi, skew?, rMin, rMax, dir? (+1/-1), ecc? (Streuung des Tempos, 0,012), phi? (Flugwinkel-Streuung in Grad), f? (festes Tempo-Verhaeltnis), tag?, minRp? }
  * Koerper stehen auf Bahnen um den Stern: innen schneller als aussen; Kreisbahnen mit leichter Streuung, Kometen (f < 1, phi) auf Ellipsen.
@@ -435,6 +483,7 @@ function orbit(p, rng) {
   const o = orbitSetup(p);
   const bodies = [orbitStar(o)];
   const pl = orbitPlayer(o);
+  const planets = addPlanets(o, p, rng, bodies);
   const groups = (p.groups || []).slice().sort((a, b) => b.hi - a.hi);
   const laneW = p.laneW || 2;
   for (const g of groups) {
@@ -444,6 +493,7 @@ function orbit(p, rng) {
       for (let k = 0; k < 80; k++) {
         let r = Math.sqrt(uni(rng, g.rMin * g.rMin, g.rMax * g.rMax));
         const comet = g.f != null;
+        if (!comet && planets.some((pl) => Math.abs(r - pl.po.r) < Math.sqrt(pl.m) + (p.planetGap || 3.5))) continue; // Futterbaender liegen nicht auf der Bahn eines Planeten (sonst frisst er sie)
         // Bahnspuren (Lanes): Kreisbahnen liegen im Abstand laneW, ausgehend von der Bahn des Spielers. Koerper in DERSELBEN Spur treffen sich nie (gleiche Geschwindigkeit),
         // Koerper in verschiedenen Spuren nur, wenn die Spuren sich ueberlappen: das verbietet die Regel unten. So bilden sich Guertel mit Luecken, und nichts verschmilzt von allein zum Riesen.
         if (!comet) r = o.rP + Math.round((r - o.rP) / laneW) * laneW;
@@ -453,12 +503,13 @@ function orbit(p, rng) {
         const s = orbitState(o.gm, r, ang, { f, dir: g.dir || 1, phi: g.phi ? uni(rng, -g.phi, g.phi) : 0 });
         if (Math.hypot(s.x - pl.x, s.y - pl.y) < 1 + rb + 2 + (m >= 0.9 ? 4 : 0)) continue;
         if (bodies.some((b) => b.kind !== 'attractor' && Math.hypot(s.x - b.x, s.y - b.y) < rb + Math.sqrt(b.m) + 0.2 + (m >= 1.4 && b.m >= 1.4 ? 6 : 0))) continue;
+        if (planets.some((pl) => Math.hypot(s.x - pl.x, s.y - pl.y) < rb + Math.sqrt(pl.m) + 4)) continue;
         if (!comet) {
           const apart = (r0, rad, dirO) => {
             const dr = Math.abs(r - r0);
             return (dr < 0.2 && dirO === (g.dir || 1)) || dr >= rb + rad + 0.3; // gleiche Spur und gleiche Richtung, oder genug Abstand
           };
-          if (!apart(o.rP, 1, o.dirP) || bodies.some((b) => b.kind !== 'attractor' && !b.comet && !apart(Math.hypot(b.x, b.y), Math.sqrt(b.m), b.dir || 1))) continue;
+          if (!apart(o.rP, 1, o.dirP) || bodies.some((b) => b.kind !== 'attractor' && !b.comet && !b.moon && !apart(Math.hypot(b.x, b.y), Math.sqrt(b.m), b.dir || 1))) continue;
         }
         bodies.push({ x: s.x, y: s.y, vx: s.vx, vy: s.vy, m, kind: 'mote', ...(g.tag ? { tag: g.tag } : {}), ...(comet ? { comet: true } : {}), dir: g.dir || 1 });
         break;

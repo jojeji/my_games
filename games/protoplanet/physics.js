@@ -41,6 +41,7 @@ export function addBody(w, b) {
     gf: b.gf || 0, //  ... fuer den Koerper mit dieser id
     ai: b.ai || null, // nur kind 'hunter': Gehirn-Zustand { seed, diff, react, next, plan } (hunter.js), Teil des Schnappschusses
     gm: b.gm || 0, // nur kind 'attractor': G x Masse (Anziehung), unabhaengig von `m`
+    po: b.po ? { r: b.po.r, a0: b.po.a0, w: b.po.w } : null, // nur Planeten (Kapitel 5): feste Kreisbahn um (0,0): Ort = r x (cos, sin)(a0 + w x t), exakt vorhersagbar
   };
   if (body.id >= w.nextId) w.nextId = body.id + 1;
   w.bodies.push(body);
@@ -105,6 +106,12 @@ export function absorb(w, a, b) {
     L = b;
     S = a;
   }
+  if (L.po) {
+    // Planet (Kapitel 5): verschluckt alles, was ihn beruehrt, ganz, und behaelt seine Masse (sonst wuerde er zum Riesen und die Welt waere nach 60 s leer gefressen)
+    if (S.kind === 'player') w.lostTo = 'planet';
+    S.m = 0;
+    return true;
+  }
   const M = L.m + S.m;
   let dm;
   if (d2 <= M) dm = S.m;
@@ -116,7 +123,7 @@ export function absorb(w, a, b) {
   }
   if (!(dm > 0)) return false;
   const full = dm >= S.m;
-  if (full && S.kind === 'player') w.lostTo = L.kind === 'attractor' ? 'attractor' : 'body';
+  if (full && S.kind === 'player') w.lostTo = L.kind === 'attractor' ? (L.po ? 'planet' : 'attractor') : 'body';
   const mNew = L.m + dm;
   if (L.gf && S.gf !== L.gf && S.kind !== 'player') L.gf = 0; // ein Teilchen, das fremde Masse schluckt, gilt nicht mehr als Ausstoss des Spielers
   if (L.kind !== 'attractor') {
@@ -354,9 +361,32 @@ export function step(w) {
     b.x += b.vx * dt;
     b.y += b.vy * dt;
   }
+  for (const b of w.bodies) {
+    if (!b.po) continue; // Planeten laufen auf ihrer festen Bahn (nichts wirkt auf sie), Geschwindigkeit = Tangente (fuer Annaeherungs-Rechnungen und Impuls beim Absorbieren)
+    const a = b.po.a0 + b.po.w * w.t;
+    const c = Math.cos(a);
+    const sn = Math.sin(a);
+    b.x = b.po.r * c;
+    b.y = b.po.r * sn;
+    b.vx = -b.po.r * b.po.w * sn;
+    b.vy = b.po.r * b.po.w * c;
+  }
   bounds(w);
   collide(w);
   if (w.grav) openSpace(w);
+}
+
+/** Ort eines Attraktors zur Zeit t (Spielzeit): Planeten laufen auf ihrer Kreisbahn, der Stern steht. */
+export function attractorAt(b, t, out = [0, 0]) {
+  if (b.po) {
+    const a = b.po.a0 + b.po.w * t;
+    out[0] = b.po.r * Math.cos(a);
+    out[1] = b.po.r * Math.sin(a);
+  } else {
+    out[0] = b.x;
+    out[1] = b.y;
+  }
+  return out;
 }
 
 /* ---------- Schnappschuss ---------- */
@@ -369,7 +399,7 @@ export function snapshot(w) {
     arenaR: w.arenaR,
     ...(w.grav ? { g: { ...w.grav } } : {}), // nur Kapitel 3: Schnappschuesse der Kapitel 1 und 2 bleiben Byte fuer Byte wie vorher
     stats: { ...w.stats },
-    b: w.bodies.map((b) => [b.id, b.x, b.y, b.vx, b.vy, b.m, b.kind, b.tag, b.gu, b.gf, b.ai ? { ...b.ai, plan: b.ai.plan ? { ...b.ai.plan } : null } : null, ...(b.gm ? [b.gm] : [])]),
+    b: w.bodies.map((b) => [b.id, b.x, b.y, b.vx, b.vy, b.m, b.kind, b.tag, b.gu, b.gf, b.ai ? { ...b.ai, plan: b.ai.plan ? { ...b.ai.plan } : null } : null, ...(b.gm || b.po ? [b.gm || 0, ...(b.po ? [[b.po.r, b.po.a0, b.po.w]] : [])] : [])]),
   };
 }
 
@@ -382,7 +412,7 @@ export function restore(s) {
     grav: s.g ? { ...s.g } : null,
     lostTo: null,
     stats: { ...s.stats },
-    bodies: s.b.map(([id, x, y, vx, vy, m, kind, tag, gu, gf, ai, gm]) => ({ id, x, y, vx, vy, m, kind, tag, gu, gf, ai: ai ? { ...ai, plan: ai.plan ? { ...ai.plan } : null } : null, gm: gm || 0 })), // Schnappschuesse aus P1 haben 10 Eintraege (ai fehlt = null), Kapitel 3 haengt `gm` an
+    bodies: s.b.map(([id, x, y, vx, vy, m, kind, tag, gu, gf, ai, gm, po]) => ({ id, x, y, vx, vy, m, kind, tag, gu, gf, ai: ai ? { ...ai, plan: ai.plan ? { ...ai.plan } : null } : null, gm: gm || 0, po: po ? { r: po[0], a0: po[1], w: po[2] } : null })), // Schnappschuesse aus P1 haben 10 Eintraege (ai fehlt = null), Kapitel 3 haengt `gm` an
     player: null,
   };
   w.player = w.bodies.find((b) => b.kind === 'player') || null;

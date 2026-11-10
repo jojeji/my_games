@@ -573,8 +573,8 @@ export function mountApp(root, progress) {
   function showLossDialog() {
     const left = play.rewindsLeft;
     const cause = play.world.lostTo;
-    const lossTitle = cause === 'attractor' ? 'In den Stern gestürzt' : cause === 'drift' ? 'Abgetrieben' : 'Absorbiert';
-    const lossText = cause === 'attractor' ? 'Deine Bahn hat den Protostern berührt. Die Vorschau färbt sich rot, wenn die Bahn im Stern endet.' : cause === 'drift' ? 'Du bist zu weit vom Protostern weggetrieben. Die Vorschau warnt, wenn die Bahn hinausführt.' : 'Ein größerer Körper hat dich absorbiert.';
+    const lossTitle = cause === 'attractor' ? 'In den Stern gestürzt' : cause === 'planet' ? 'Vom Planeten verschluckt' : cause === 'drift' ? 'Abgetrieben' : 'Absorbiert';
+    const lossText = cause === 'planet' ? 'Ein Planet hat dich berührt. Die Vorschau rechnet die Planeten auf ihren Bahnen mit und färbt sich rot, wenn dein Weg einen trifft.' : cause === 'attractor' ? 'Deine Bahn hat den Protostern berührt. Die Vorschau färbt sich rot, wenn die Bahn im Stern endet.' : cause === 'drift' ? 'Du bist zu weit vom Protostern weggetrieben. Die Vorschau warnt, wenn die Bahn hinausführt.' : 'Ein größerer Körper hat dich absorbiert.';
     modal({
       title: lossTitle,
       body: h(

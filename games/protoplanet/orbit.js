@@ -2,10 +2,12 @@
 // (vorhergesagte Bahn des Spielers unter der Sterngravitation, ohne andere Koerper). Die Vorschau rechnet mit Leapfrog und angepasster Schrittweite
 // (gleiche Kraft wie physics.js inkl. Weichheit), ist also genauer als das semi-implizite Euler der Physik und weicht trotzdem weniger als 2 % nach einem Umlauf ab (Test).
 import { T } from './tune.js';
-import { circularSpeed } from './physics.js';
+import { circularSpeed, attractorAt } from './physics.js';
 
 export const attractorsOf = (w) => w.bodies.filter((b) => b.kind === 'attractor' && b.gm > 0);
-export const starOf = (w) => w.bodies.find((b) => b.kind === 'attractor') || null;
+/** Der Stern (Attraktor ohne eigene Bahn); Planeten (`po`) sind weitere Attraktoren auf festen Kreisbahnen. */
+export const starOf = (w) => w.bodies.find((b) => b.kind === 'attractor' && !b.po) || w.bodies.find((b) => b.kind === 'attractor') || null;
+export const planetsOf = (w) => w.bodies.filter((b) => b.kind === 'attractor' && b.po);
 
 /**
  * Startzustand auf einer Bahn um (0,0): Radius r, Winkel `ang` (Grad), Geschwindigkeit = f x Kreisgeschwindigkeit,
@@ -58,7 +60,9 @@ export function predictOrbit(w, opt = {}) {
   const soft2 = T.orbit.soft * T.orbit.soft;
   const g = w.grav || {};
   const rp = Math.sqrt(p.m);
-  const A = atts[0];
+  const A = starOf(w);
+  const pls = atts.filter((a) => a.po);
+  const t0 = w.t;
   let x = p.x;
   let y = p.y;
   let vx = p.vx;
@@ -72,12 +76,14 @@ export function predictOrbit(w, opt = {}) {
   const ptsA = [];
   const tA = [];
   const fA = [];
-  const acc = (px, py) => {
+  const pp = [0, 0];
+  const acc = (px, py, tt) => {
     let ax = 0;
     let ay = 0;
     for (const a of atts) {
-      const dx = a.x - px;
-      const dy = a.y - py;
+      const q = a.po ? attractorAt(a, t0 + tt, pp) : null; // Planeten stehen zur Zeit tt dort, wo ihre Bahn sie hinfuehrt (exakt)
+      const dx = (q ? q[0] : a.x) - px;
+      const dy = (q ? q[1] : a.y) - py;
       const d2 = dx * dx + dy * dy;
       const f = a.gm / ((d2 + soft2) * Math.sqrt(d2 + 1e-12));
       ax += f * dx;
@@ -103,12 +109,12 @@ export function predictOrbit(w, opt = {}) {
     const r = Math.hypot(x - A.x, y - A.y);
     let dt = Math.min(P.dtMax, Math.max(P.dtMin, P.stepFrac * Math.sqrt((r * r * r) / A.gm)));
     if (t + dt > horizon) dt = horizon - t;
-    let [ax, ay] = acc(x, y);
+    let [ax, ay] = acc(x, y, t);
     vx += ax * dt * 0.5;
     vy += ay * dt * 0.5;
     x += vx * dt;
     y += vy * dt;
-    [ax, ay] = acc(x, y);
+    [ax, ay] = acc(x, y, t + dt);
     vx += ax * dt * 0.5;
     vy += ay * dt * 0.5;
     t += dt;
@@ -118,6 +124,16 @@ export function predictOrbit(w, opt = {}) {
     if (rr < hitR) {
       push(rr, 1);
       end = 'star';
+      break;
+    }
+    let hitPl = false;
+    for (const a of pls) {
+      const q = attractorAt(a, t0 + t, pp);
+      if (Math.hypot(x - q[0], y - q[1]) < Math.sqrt(a.m) + rp + P.starGap) hitPl = true;
+    }
+    if (hitPl) {
+      push(rr, 1);
+      end = 'planet';
       break;
     }
     if (d0 > loseR) {
