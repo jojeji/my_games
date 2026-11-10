@@ -5,6 +5,7 @@ export const CHAPTERS = [
   { id: 2, name: 'Jäger' },
   { id: 3, name: 'Protostern' },
   { id: 4, name: 'Dunkelwolke' },
+  { id: 5, name: 'Planetensystem' },
 ];
 
 const mote = (x, y, m, vx = 0, vy = 0, extra = {}) => ({ x, y, m, vx, vy, ...extra });
@@ -31,6 +32,9 @@ const orb = (r, ang, m, extra = {}, spec = {}) => ({ orbit: { r, ang, ...spec },
 const olad = (k, rMin, rMax, top = [2, 2.2, 3], extra = {}) => [
   og(Math.round(2 * k), 0.12, 0.45, rMin, rMax, extra), og(Math.round(0.9 * k), 0.5, 0.9, rMin, rMax, extra), og(Math.round(0.5 * k), 1.1, 1.9, rMin, rMax, extra), og(top[0], top[1], top[2], rMin, rMax, extra),
 ];
+
+// Kapitel 5 "Planetensystem" (Paket D): Planeten = Attraktoren auf festen Kreisbahnen (gen.js addPlanets). pl(r, m, gm, extra): Bahnradius, Masse, Anziehungsstaerke
+const pl = (r, m, gm, extra = {}) => ({ r, m, gm, ...extra });
 
 export const LEVELS = [
   {
@@ -246,7 +250,7 @@ export const LEVELS = [
   {
     id: '3-8', chapter: 3, n: 8, rev: 1, title: 'Gegenläufer', family: 'orbit', seed: 6,
     params: {
-      rP: 14, loseR: 100, rings: [8, 14, 22, 30, 38], goalType: 'mass', mass: 14, slack: 1.5,
+      rP: 14, loseR: 100, rings: [8, 14, 22, 30, 38], goalType: 'mass', mass: 16, slack: 1.5,
       groups: [...olad(14, 7, 30, [3, 2.2, 3]), og(10, 0.12, 0.45, 33, 42, { dir: -1 }), og(4, 0.5, 0.9, 33, 42, { dir: -1 }), og(2, 1.1, 1.5, 33, 42, { dir: -1 })],
     },
     goal: { type: 'mass' },
@@ -305,6 +309,61 @@ export const LEVELS = [
     params: { R: 54, goalType: 'mass', mass: 30, slack: 1.5, groups: [...lad(22, 0.2, [4, 2.4, 3.2]), g(3, 0.3, 0.6, 'rand', 1, { vj: 0.2 })], hunters: [{ lo: 1.6, hi: 2.0, diff: 'normal', hMin: 14 }] },
     goal: { type: 'mass' },
     targets: { eject: 22.7, time: 470 },
+  },
+  // Kapitel 5 "Planetensystem" (Paket D): Umlaufbahn-Modus (wie Kapitel 3) plus Planeten auf festen Kreisbahnen. Planeten ziehen an, verschlucken alles, was sie beruehren, behalten ihre Masse
+  // und zaehlen fuer die Ziele nicht. Die Bahnvorschau rechnet Stern und Planeten mit. Zahlen kalibriert mit tools/sim-protoplanet.mjs (docs/protoplanet.md, "Paket D").
+  {
+    id: '5-1', chapter: 5, n: 1, rev: 1, title: 'Der erste Planet', family: 'orbit', seed: 2,
+    params: { rP: 14, loseR: 85, rings: [8, 14, 22, 30], goalType: 'mass', mass: 6.5, slack: 1.6, planets: [pl(27, 3, 2)], groups: olad(8, 7, 20, [1, 1.4, 1.8]) },
+    goal: { type: 'mass' },
+    hint: { text: 'Planeten ziehen dich an. Die Bahnvorschau rechnet sie mit.', until: 'eject' },
+    targets: { eject: 2.2, time: 240 },
+  },
+  {
+    id: '5-2', chapter: 5, n: 2, rev: 1, title: 'Zwei Welten', family: 'orbit', seed: 1,
+    params: { rP: 14, loseR: 90, rings: [8, 14, 22, 30], goalType: 'mass', mass: 8, slack: 1.5, planets: [pl(26, 3, 1.5), pl(44, 4, 2)], groups: olad(8, 7, 20, [1, 1.5, 2]) },
+    goal: { type: 'mass' },
+    targets: { eject: 0.9, time: 165 },
+  },
+  {
+    id: '5-3', chapter: 5, n: 3, rev: 1, title: 'Vorbeiflug', family: 'orbit', seed: 17,
+    params: { rP: 14, loseR: 95, rings: [8, 14, 22, 30, 40], goalType: 'largest', slack: 1.4, planets: [pl(27, 3, 2)], groups: [...olad(18, 7, 22, [1, 7, 8]), og(6, 0.3, 0.8, 32, 40), og(3, 1.1, 1.6, 32, 40)] },
+    goal: { type: 'largest' },
+    targets: { eject: 1.75, time: 160 },
+  },
+  {
+    id: '5-4', chapter: 5, n: 4, rev: 1, title: 'Doppelplanet', family: 'orbit', seed: 4,
+    params: { rP: 14, loseR: 95, rings: [8, 14, 22, 30, 40], goalType: 'mass', mass: 12, slack: 1.5, planets: [pl(30, 3, 2, { ang: 20 }), pl(30, 3, 2, { ang: 42 })], groups: olad(10, 7, 22, [2, 1.8, 2.6]) },
+    goal: { type: 'mass' },
+    targets: { eject: 1.15, time: 165 },
+  },
+  {
+    id: '5-5', chapter: 5, n: 5, rev: 1, title: 'Kometenbahn', family: 'orbit', seed: 5,
+    params: { rP: 14, loseR: 95, rings: [8, 14, 22, 30, 40], goalType: 'absorb', slack: 1.4, planets: [pl(30, 4, 2)], groups: [og(1, 2.2, 2.6, 36, 42, { tag: 'target', ecc: 0.05 }), ...olad(9, 7, 22, [2, 1.8, 2.6]), og(3, 0.3, 0.6, 24, 34, { f: 0.7, phi: 12 })] },
+    goal: { type: 'absorb' },
+    targets: { eject: 4.2, time: 185 },
+  },
+  {
+    id: '5-6', chapter: 5, n: 6, rev: 1, title: 'Aufräumen im System', family: 'orbit', seed: 3,
+    params: { rP: 14, loseR: 80, rings: [8, 14, 20], goalType: 'last', slack: 1.4, planets: [pl(28, 3, 1.5)], groups: olad(7, 8, 20, [1, 1.8, 2.2]) },
+    goal: { type: 'last' },
+    targets: { eject: 1.55, time: 445 },
+  },
+  {
+    id: '5-7', chapter: 5, n: 7, rev: 1, title: 'Riesenplanet', family: 'orbit', seed: 6,
+    params: { rP: 14, loseR: 100, rings: [8, 14, 22, 30, 40], goalType: 'largest', slack: 1.4, planets: [pl(34, 6, 2.5)], groups: [...olad(22, 7, 24, [1, 6, 8]), og(10, 0.3, 0.8, 40, 52)] },
+    goal: { type: 'largest' },
+    targets: { eject: 2.0, time: 135 },
+  },
+  {
+    id: '5-8', chapter: 5, n: 8, rev: 1, title: 'Das Planetensystem', family: 'orbit', seed: 24,
+    params: {
+      rP: 14, loseR: 115, rings: [8, 14, 22, 30, 40, 50, 60], goalType: 'mass', mass: 16, slack: 1.5,
+      planets: [pl(28, 3, 1.5), pl(58, 5, 2)],
+      groups: [...olad(40, 7, 18, [4, 2.2, 3.2]), og(18, 0.12, 0.45, 40, 47), og(14, 0.4, 0.9, 40, 47), og(8, 1.2, 1.8, 40, 47), og(14, 0.3, 0.9, 68, 76)],
+    },
+    goal: { type: 'mass' },
+    targets: { eject: 6.4, time: 235 },
   },
 ];
 

@@ -239,6 +239,7 @@ function collide(w) {
     const b = bs[pairs[k + 1]];
     if (a.m <= 0 || b.m <= 0) continue;
     if (graceBlocks(w, a, b)) continue;
+    if (((a.po && b.kind !== 'player') || (b.po && a.kind !== 'player'))) continue; // Planeten verschlucken nur den Spieler; Monde, Futter und Jaeger ziehen unversehrt hindurch (sonst frisst ein Planet die Welt leer)
     if (absorb(w, a, b)) dead = true;
   }
   if (dead) {

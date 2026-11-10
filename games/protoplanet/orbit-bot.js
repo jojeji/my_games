@@ -111,7 +111,7 @@ export function planOrbit(w, p, ctx, st, P = T.orbit.plan) {
     }
     lo = hi = a.po.r;
     plSrcs.push({ b: a, tr, g: a.gm, r: Math.sqrt(a.m), pl: true });
-    planets.push({ b: a, tr, r: Math.sqrt(a.m), lo, hi, m: a.m });
+    planets.push({ b: a, tr, r: Math.sqrt(a.m), lo, hi, m: a.m, pl: true });
   }
   // Quellen der Anziehung (die schwersten, ohne den Spieler): erst allein unter dem Stern vorhergesagt, dann ziehen sie alle (auch einander) an
   const srcs = [];
@@ -195,11 +195,11 @@ export function planOrbit(w, p, ctx, st, P = T.orbit.plan) {
           dmin = d;
           tmin = (k + s) * h;
           vrel = Math.sqrt(dd) / h;
-          if (danger && d < rsum + P.margin + P.reactT * vrel) break;
+          if (danger && d < rsum + P.margin + (o.pl ? 0 : P.reactT * vrel)) break;
         }
       }
       if (danger) {
-        const need = rsum + P.margin + P.reactT * vrel; // schnelle Begegnungen brauchen mehr Abstand: der Planer kann nur alle `every` s reagieren
+        const need = o.pl ? rsum + P.margin : rsum + P.margin + P.reactT * vrel; // schnelle Begegnungen brauchen mehr Abstand: der Planer kann nur alle `every` s reagieren
         if (dmin < need) {
           ok = false;
           clear = Math.min(clear, dmin - need);

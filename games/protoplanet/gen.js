@@ -434,9 +434,9 @@ export function checkRulesOrbit({ bodies, goal, orbit }) {
 }
 
 /**
- * Planeten (Kapitel 5): feste Kreisbahnen um den Stern, exakt vorhersagbar. spec = { r, ang? (Grad, sonst Seed), m, gm, dir?, tag?, moons?: [{ n, lo, hi, dLo, dHi }] }.
- * Winkelgeschwindigkeit = die einer Kreisbahn um den Stern (also bleiben Koerper derselben Bahnspur immer im gleichen Abstand zum Planeten). Monde sind gewoehnliche Koerper
- * auf Kreisbahnen um den Planeten (Geschwindigkeit des Planeten + Kreisgeschwindigkeit um seine Anziehung). Gibt die Planeten-Koerper zurueck (schon in `bodies`).
+ * Planeten (Kapitel 5): feste Kreisbahnen um den Stern, exakt vorhersagbar. spec = { r, ang? (Grad, sonst Seed), m, gm, dir?, tag? }.
+ * Winkelgeschwindigkeit = die einer Kreisbahn um den Stern (also bleiben Koerper derselben Bahnspur immer im gleichen Abstand zum Planeten).
+ * Monde wurden probiert und verworfen (docs/protoplanet.md, Paket D): der Bot verbrennt Masse an den schnellen Bahnen in der Senke. Gibt die Planeten-Koerper zurueck (schon in `bodies`).
  */
 function addPlanets(o, p, rng, bodies) {
   const out = [];
@@ -450,26 +450,6 @@ function addPlanets(o, p, rng, bodies) {
     };
     bodies.push(pl);
     out.push(pl);
-    const rpl = Math.sqrt(spec.m);
-    for (const mg of spec.moons || []) {
-      for (let i = 0; i < mg.n; i++) {
-        const m = pickMass(rng, mg.lo, mg.hi, mg.skew || 1);
-        const rb = Math.sqrt(m);
-        for (let k = 0; k < 60; k++) {
-          const d = uni(rng, mg.dLo, mg.dHi) + rpl;
-          const ang = uni(rng, 0, Math.PI * 2);
-          const x = pl.x + d * Math.cos(ang);
-          const y = pl.y + d * Math.sin(ang);
-          const vc = circularSpeed(spec.gm, d) * (mg.f != null ? mg.f : 1);
-          const md = mg.dir || 1;
-          const vx = pl.vx - md * vc * Math.sin(ang);
-          const vy = pl.vy + md * vc * Math.cos(ang);
-          if (bodies.some((b) => b.kind !== 'attractor' && Math.hypot(x - b.x, y - b.y) < rb + Math.sqrt(b.m) + 0.5)) continue;
-          bodies.push({ x, y, vx, vy, m, kind: 'mote', moon: true, dir: 1 });
-          break;
-        }
-      }
-    }
   }
   return out;
 }
@@ -493,7 +473,7 @@ function orbit(p, rng) {
       for (let k = 0; k < 80; k++) {
         let r = Math.sqrt(uni(rng, g.rMin * g.rMin, g.rMax * g.rMax));
         const comet = g.f != null;
-        if (!comet && planets.some((pl) => Math.abs(r - pl.po.r) < Math.sqrt(pl.m) + (p.planetGap || 3.5))) continue; // Futterbaender liegen nicht auf der Bahn eines Planeten (sonst frisst er sie)
+        if (!comet && planets.some((pl) => Math.abs(r - pl.po.r) < Math.sqrt(pl.m) + (p.planetGap || 9))) continue; // Futterbaender liegen nicht auf der Bahn eines Planeten (sonst schleudert er sie hinaus: gemessen, mit Abstand 3,5 verliert die Welt ihr Futter an die Abdrift)
         // Bahnspuren (Lanes): Kreisbahnen liegen im Abstand laneW, ausgehend von der Bahn des Spielers. Koerper in DERSELBEN Spur treffen sich nie (gleiche Geschwindigkeit),
         // Koerper in verschiedenen Spuren nur, wenn die Spuren sich ueberlappen: das verbietet die Regel unten. So bilden sich Guertel mit Luecken, und nichts verschmilzt von allein zum Riesen.
         if (!comet) r = o.rP + Math.round((r - o.rP) / laneW) * laneW;
