@@ -768,13 +768,21 @@ export function createRenderer(canvas) {
         const tt = Math.min(tx, ty);
         const gx = W / 2 + dx * tt;
         const gy = H / 2 + dy * tt;
-        const R = Math.min(W, H) * (0.7 + 0.4 * t.k);
+        const R = Math.min(W, H) * (0.95 + 0.45 * t.k);
         const a = T.fx.dangerAlpha * t.k * (reduceMotion ? 0.8 : 0.88 + 0.12 * Math.sin(now * (3 + 5 * t.k)));
         const vg = ctx.createRadialGradient(gx, gy, 0, gx, gy, R);
-        vg.addColorStop(0, `rgba(255,86,56,${a})`);
-        vg.addColorStop(0.5, `rgba(255,70,50,${a * 0.45})`);
+        vg.addColorStop(0, `rgba(255,92,60,${Math.min(1, a * 1.15)})`);
+        vg.addColorStop(0.3, `rgba(255,80,56,${a * 0.78})`);
+        vg.addColorStop(0.65, `rgba(255,70,50,${a * 0.34})`);
         vg.addColorStop(1, 'rgba(255,60,40,0)');
         ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, W, H);
+        // heller Kern direkt am Rand: im Augenwinkel sicher zu bemerken, ohne den Bildinhalt zu verdecken
+        const R2 = Math.min(W, H) * 0.22;
+        const cg = ctx.createRadialGradient(gx, gy, 0, gx, gy, R2);
+        cg.addColorStop(0, `rgba(255,170,130,${Math.min(0.95, a * 0.9)})`);
+        cg.addColorStop(1, 'rgba(255,100,70,0)');
+        ctx.fillStyle = cg;
         ctx.fillRect(0, 0, W, H);
       }
     }

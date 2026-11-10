@@ -60,7 +60,7 @@ export const T = {
     dangerRange: 7, // Welteinheiten (+ 6 Spielerradien): nur Koerper darunter zaehlen
     dangerAttack: 6, // 1/s, Einblenden des Randgluehens
     dangerDecay: 1.6, // 1/s, Ausblenden
-    dangerAlpha: 0.78, // Staerke des Randgluehens (Hoechstwert)
+    dangerAlpha: 0.9, // Staerke des Randgluehens (Hoechstwert)
     winSlow: 0.22, // Zeitlupe nach dem Sieg (Geschwindigkeit der Kopie)
     winSlowT: 1.15, // s Zeitlupe ...
     winWaveT: 1.3, //   ... Lichtwelle ...
@@ -225,7 +225,7 @@ export const T = {
       2: { name: 'Jäger', root: 52, scale: 'dorian', roots: [0, 2, 3, 4, 6], chordEvery: [15, 30], starEvery: [8, 18], bright: 0.38, cutLo: 220, cutHi: 800, drone: 0.9, chord: 0.8, star: 0.75, beat: 0.8 },
       3: { name: 'Protostern', root: 55, scale: 'mixolydian', roots: [0, 1, 3, 4, 5], chordEvery: [20, 36], starEvery: [7, 15], bright: 0.55, cutLo: 260, cutHi: 950, drone: 0.8, chord: 0.9, star: 0.9, beat: 0.6 },
       4: { name: 'Dunkelwolke', root: 48, scale: 'phrygian', roots: [0, 2, 3, 4], chordEvery: [24, 40], starEvery: [12, 26], bright: 0.28, cutLo: 180, cutHi: 650, drone: 1.0, chord: 0.7, star: 0.6, beat: 1.0 },
-      5: { name: 'Galaxie', root: 57, scale: 'lydian', roots: [0, 1, 2, 4, 5], chordEvery: [16, 30], starEvery: [5, 12], bright: 0.62, cutLo: 300, cutHi: 1200, drone: 0.75, chord: 0.9, star: 1.0, beat: 0.5 },
+      5: { name: 'Planetensystem', root: 57, scale: 'lydian', roots: [0, 1, 2, 4, 5], chordEvery: [16, 30], starEvery: [5, 12], bright: 0.62, cutLo: 300, cutHi: 1200, drone: 0.75, chord: 0.9, star: 1.0, beat: 0.5 },
     },
     // Grenzen der weichen Parameter (musicParams klemmt jeden Wert hierauf)
     limits: {

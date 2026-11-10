@@ -64,7 +64,7 @@ body.pp-playing { position: fixed; inset: 0; overflow: hidden; }
 .pp-tile.done { border-color: color-mix(in srgb, var(--ca) 60%, var(--border)); background: color-mix(in srgb, var(--ca) 9%, var(--surface)); }
 .pp-tile.locked { opacity: 0.42; }
 .pp-tile-n { font-size: 26px; font-weight: 700; line-height: 1; }
-.pp-tile-t { font-size: 11px; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+.pp-tile-t { font-size: 11px; line-height: 1.15; color: var(--muted); max-width: 100%; overflow-wrap: anywhere; hyphens: auto; text-align: center; padding: 0 2px; min-height: 2.3em; display: flex; align-items: center; justify-content: center; }
 .pp-tile-s { font-size: 14px; color: var(--gold); letter-spacing: 1px; }
 .pp-tile-lock .icon svg { width: 18px; height: 18px; }
 .pp-tile-run { position: absolute; top: 4px; right: 6px; font-size: 10px; color: var(--ca); }
@@ -229,3 +229,36 @@ body.calm .pp-bigstar { transition: none; }
   .pp-result-stars { font-size: 46px; }
   .pp-title-h { font-size: 33px; }
 }
+
+/* Abschluss nach dem Finale: ruhig, fuenf Sterne (je Kapitel einer) gehen nacheinander auf */
+.pp-finale { text-align: center; }
+.pp-fin-stars { display: flex; justify-content: center; gap: 8px; font-size: 40px; line-height: 1; }
+.pp-fin-star { color: #2d3650; transform: scale(0.8); transition: transform 0.5s cubic-bezier(0.3, 1.6, 0.5, 1), color 0.4s, text-shadow 0.5s; }
+.pp-fin-star.on { color: var(--gold); transform: scale(1) translateY(calc((3 - var(--k)) * -2px)); text-shadow: 0 0 22px rgba(255, 215, 106, 0.7); }
+.pp-fin-line { margin: 0; font-size: 15px; }
+body.calm .pp-fin-star { transition: none; }
+
+/* Tageslevel-Karte (unter "Weiter spielen") und Serie */
+.pp-daily {
+  position: relative; width: 100%; display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 12px 14px; min-height: 76px; border-radius: 20px; cursor: pointer; text-align: left; color: var(--text);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--ca) 16%, var(--surface)), color-mix(in srgb, var(--surface) 90%, transparent)); border: 1px solid color-mix(in srgb, var(--ca) 45%, var(--border));
+  animation: pp-rise 0.5s both; animation-delay: calc(var(--i) * 40ms); transition: transform 0.12s;
+}
+.pp-daily:active { transform: scale(0.985); }
+.pp-daily-ico { flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: color-mix(in srgb, var(--ca) 22%, transparent); color: var(--ca); }
+.pp-daily-ico svg { width: 24px; height: 24px; }
+.pp-daily-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.pp-daily-kicker { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ca); }
+.pp-daily-text b { font-size: 17px; line-height: 1.2; }
+.pp-daily-goal { font-size: 13px; color: color-mix(in srgb, var(--text) 78%, transparent); }
+.pp-daily-state { font-size: 12.5px; color: var(--muted); }
+.pp-daily.done .pp-daily-state { color: var(--ca); }
+.pp-daily-streak { flex: none; display: flex; flex-direction: column; align-items: center; min-width: 44px; color: #ffb25a; }
+.pp-daily-streak svg { width: 22px; height: 22px; fill: currentColor; stroke: none; }
+.pp-daily-streak b { font-size: 17px; line-height: 1; font-variant-numeric: tabular-nums; }
+.pp-daily-streak.none { color: var(--muted); opacity: 0.7; }
+.pp-daily-streak.big { flex-direction: row; justify-content: center; gap: 8px; align-items: center; }
+.pp-daily-streak.big svg { width: 34px; height: 34px; }
+.pp-daily-streak.big b { font-size: 40px; }
+.pp-daily-streak.big span { font-size: 14px; color: var(--muted); }
+body.calm .pp-daily { animation: none; }

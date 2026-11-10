@@ -1,8 +1,9 @@
 // Speichern: Fortschritt, Einstellungen und der laufende Level als Schnappschuss (`snap`). DOM-frei.
 // Schluessel mg:protoplanet:save (mit Sicherungskopie) ueber engine/save.js.
 import { createSaveStore, mergeDefaults } from '../../engine/save.js';
-import { LEVELS, levelById } from './levels.js';
+import { LEVELS, CHAPTERS, levelById } from './levels.js';
 import { T } from './tune.js';
+import { prevKey } from './daily.js';
 
 // Version 2 (P2): Level 1-6..1-8 wurden umgebaut (Brocken, neue Ziele). Ihre alten Sterne/Bestwerte gehoeren zu anderen Leveln und werden geloescht
 // (die Level muessen neu gespielt werden; Kapitel 2 oeffnet sich mit dem neuen 1-8). Alles andere (Level 1-1..1-5, Einstellungen) bleibt.
@@ -40,6 +41,7 @@ export const snapValid = (snap) => {
 export const defaultState = () => ({
   progress: {}, // levelId -> { done, eff, fast, bestTime, bestEject }
   settings: { aim: false, vibrate: true, reduceMotion: null, music: T.audio.volume.music, sfx: T.audio.volume.sfx, mute: false }, // music/sfx = Lautstaerke in %, mute = Ton aus; aim = Zielsteuerung (Tippen = dorthin fliegen), Standard: Masse fliegt zum Finger; reduceMotion null = folgt prefers-reduced-motion
+  daily: { date: null, bestTime: null, bestEject: null, done: false, streak: 0, lastDone: null }, // Tageslevel (Paket D): Bestwerte des Tages `date`, Serie = aufeinanderfolgende geschaffte Tage, lastDone = letzter geschaffter Tag ('JJJJ-MM-TT', lokal)
   snap: null, // { levelId, rev, play: { snap, rewindsLeft, rewound }, timeScale }
 });
 
@@ -119,6 +121,39 @@ export function createProgress({ storage, now } = {}) {
     },
     setSnap(snap) {
       state.snap = snap || null;
+    },
+    /** Das Tageslevel ist ab `T.chapterOpen` geschafften Leveln in Kapitel 1 offen. */
+    dailyOpen() {
+      return api.chapterProgress(1).open;
+    },
+    /** Freischaltstufe fuer die Wahl des Tageslevels: Zahl der offenen Kapitel (1..5). */
+    dailyStage() {
+      let n = 1;
+      for (const ch of CHAPTERS) if (ch.id > 1 && api.unlocked(LEVELS.find((l) => l.chapter === ch.id).id)) n = ch.id;
+      return n;
+    },
+    /** Stand des Tageslevels fuer das Datum `key`: { done, bestTime, bestEject, streak } (Serie zaehlt nur, solange sie lebt: heute oder gestern geschafft). */
+    dailyInfo(key) {
+      const d = state.daily;
+      const same = d.date === key;
+      const alive = d.lastDone === key || d.lastDone === prevKey(key);
+      return { done: same && d.done, bestTime: same ? d.bestTime : null, bestEject: same ? d.bestEject : null, streak: alive ? d.streak : 0 };
+    },
+    /** Tageslevel geschafft ({time, ejected}); gibt zurueck, was neu ist. */
+    recordDaily(key, res) {
+      const d = state.daily;
+      if (d.date && key < d.date) return { first: false, time: false, eject: false, streak: d.streak }; // ein Level von gestern, das nach Mitternacht endet: zaehlt nicht mehr
+      if (d.date !== key) Object.assign(d, { date: key, bestTime: null, bestEject: null, done: false });
+      const first = !d.done;
+      const fresh = { first, time: d.bestTime == null || res.time < d.bestTime, eject: d.bestEject == null || res.ejected < d.bestEject };
+      d.done = true;
+      d.bestTime = d.bestTime == null ? res.time : Math.min(d.bestTime, res.time);
+      d.bestEject = d.bestEject == null ? res.ejected : Math.min(d.bestEject, res.ejected);
+      if (first) {
+        d.streak = d.lastDone === prevKey(key) ? d.streak + 1 : 1;
+        d.lastDone = key;
+      }
+      return { ...fresh, streak: d.streak };
     },
     exportString() {
       return store.exportString(state);

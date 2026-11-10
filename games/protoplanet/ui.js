@@ -16,6 +16,7 @@ import { createFx, blendWorlds } from './fx.js';
 import { step as physStep, snapshot, restore } from './physics.js';
 import { predictOrbit, driftState } from './orbit.js';
 import { dangerOf, sizeOf } from './audio-score.js';
+import { dateKey, dailyLevel } from './daily.js';
 import { fogOf, fogRadius, fogGlimmers, fogHints, fogIntro } from './fog.js';
 
 const ICON = {
@@ -27,6 +28,8 @@ const ICON = {
   muted: '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
   lock: '<rect x="6" y="11" width="12" height="9" rx="2"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/>',
   play: '<path d="M8 5.5v13l11-6.5z"/>',
+  cal: '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M8 3v4M16 3v4"/>',
+  flame: '<path d="M12 3c.8 3.2 5 5.3 5 10a5 5 0 0 1-10 0c0-2 .9-3.1 2-4 .1 1.7.9 2.6 2 2.8C10.5 8.6 11 6 12 3z"/>',
   // Ziel-Symbole (Kopfzeile): je Zieltyp ein eigenes
   absorb: '<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>',
   last: '<circle cx="12" cy="12" r="5.5"/><circle cx="4.5" cy="5.5" r="1.1"/><circle cx="19.5" cy="6.5" r="1.1"/><circle cx="18.5" cy="19" r="1.1"/>',
@@ -210,7 +213,7 @@ export function mountApp(root, progress) {
 
   function persist() {
     if (screen === 'game' && play) {
-      progress.setSnap(play.status === 'running' && phase !== 'rewind' ? { levelId: level.id, rev: level.rev || 1, play: play.serialize(), timeScale: play.timeScale } : null);
+      progress.setSnap(play.status === 'running' && phase !== 'rewind' && !level.daily ? { levelId: level.id, rev: level.rev || 1, play: play.serialize(), timeScale: play.timeScale } : null);
     }
     progress.save();
   }
@@ -274,6 +277,7 @@ export function mountApp(root, progress) {
         ),
       ),
     );
+    if (progress.dailyOpen()) selectEl.append(dailyCard());
     let idx = 1;
     for (const ch of CHAPTERS) {
       const lvls = LEVELS.filter((l) => l.chapter === ch.id);
@@ -312,8 +316,39 @@ export function mountApp(root, progress) {
         ),
       );
     }
-    selectEl.append(h('p', { class: 'pp-note', text: 'Weitere Kapitel folgen in späteren Updates.' }));
   }
+
+
+  /* ---------- Tageslevel ---------- */
+  let shownDay = null;
+  function dailyCard() {
+    const key = dateKey();
+    shownDay = key;
+    const lv = dailyLevel(key, progress.dailyStage());
+    const info = progress.dailyInfo(key);
+    const w = worldOf(lv.chapter);
+    const status = info.done ? `Heute geschafft · Bestzeit ${fmtTime(info.bestTime)} · ausgestoßen ${fmtMass(info.bestEject)}` : 'Heute noch nicht gespielt';
+    return h(
+      'button',
+      { class: 'pp-daily' + (info.done ? ' done' : ''), type: 'button', style: { '--ca': w.accent, '--i': 1 }, 'aria-label': `Tageslevel ${lv.title}. ${goalText(lv.goal)}. ${status}. Serie ${info.streak} Tage`, onClick: () => go(() => startLevel(dailyLevel(dateKey(), progress.dailyStage()), null)) },
+      h('span', { class: 'pp-daily-ico' }, svgIcon(ICON.cal)),
+      h(
+        'span',
+        { class: 'pp-daily-text' },
+        h('span', { class: 'pp-daily-kicker', text: 'Tageslevel' }),
+        h('b', { text: lv.title }),
+        h('span', { class: 'pp-daily-goal', text: goalText(lv.goal) }),
+        h('span', { class: 'pp-daily-state', text: status }),
+      ),
+      h('span', { class: 'pp-daily-streak' + (info.streak ? '' : ' none'), 'aria-hidden': 'true' }, svgIcon(ICON.flame), h('b', { text: String(info.streak) })),
+    );
+  }
+  // Wechsel um Mitternacht auch bei offener App: die Karte der Levelauswahl wird neu gebaut
+  function dayCheck() {
+    if (screen === 'select' && progress.dailyOpen() && shownDay && shownDay !== dateKey()) renderSelect();
+  }
+  setInterval(dayCheck, 20000);
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && dayCheck());
 
   function enterSelectScreen() {
     closePauseModal();
@@ -422,7 +457,7 @@ export function mountApp(root, progress) {
     helpEl.hidden = !lv.hint;
     setCls(helpEl, 'gone', false);
     goalIco.replaceChildren(svgIcon(ICON[play.goal.type] || ICON.mass));
-    titleN.textContent = `Level ${lv.id} · ${CHAPTERS.find((c) => c.id === lv.chapter).name}`;
+    titleN.textContent = lv.daily ? `Tageslevel · ${CHAPTERS.find((c) => c.id === lv.chapter).name}` : `Level ${lv.id} · ${CHAPTERS.find((c) => c.id === lv.chapter).name}`;
     titleH.textContent = lv.title;
     titleG.textContent = goalText(play.goal);
     clearTimeout(titleTimer);
@@ -513,7 +548,7 @@ export function mountApp(root, progress) {
     let leaving = false;
     pauseModal = modal({
       title: 'Pausiert',
-      body: h('div', {}, h('p', { class: 'muted', text: `Level ${level.id} · ${level.title}` }), h('p', { text: goalText(play.goal) }), h('p', { class: 'muted small', text: goalExplain(play.goal) }), h('div', { class: 'pp-sound-row' }, soundButton(true))),
+      body: h('div', {}, h('p', { class: 'muted', text: level.daily ? `Tageslevel · ${level.title}` : `Level ${level.id} · ${level.title}` }), h('p', { text: goalText(play.goal) }), h('p', { class: 'muted small', text: goalExplain(play.goal) }), h('div', { class: 'pp-sound-row' }, soundButton(true))),
       dismissible: true,
       onClose: () => {
         pauseModal = null;
@@ -642,13 +677,20 @@ export function mountApp(root, progress) {
     audio.sfx.win();
     audio.update({ lift: 1, danger: 0 });
     const r = play.result;
-    const st = starsFor(level, r);
+    if (level.daily) {
+      // Tageslevel: keine Sterne, nur Bestwerte des Tages und die Serie (Datum = der Tag, fuer den das Level gestartet wurde)
+      const fresh = progress.recordDaily(level.dateKey, { time: r.time, ejected: r.ejected });
+      progress.setSnap(null);
+      progress.save();
+      winData = { r, st: { count: 0 }, fresh, info: progress.dailyInfo(level.dateKey), daily: true };
+    } else winData = null;
+    const st = level.daily ? null : starsFor(level, r);
     const wasOpen = LEVELS.map((l) => progress.unlocked(l.id));
-    const fresh = progress.record(level.id, { time: r.time, ejected: r.ejected, eff: st.eff, fast: st.fast });
-    progress.setSnap(null);
+    const fresh = level.daily ? null : progress.record(level.id, { time: r.time, ejected: r.ejected, eff: st.eff, fast: st.fast });
+    if (!level.daily) progress.setSnap(null);
     progress.save();
     const newly = LEVELS.findIndex((l, i) => !wasOpen[i] && progress.unlocked(l.id));
-    winData = { r, st, fresh, info: progress.info(level.id), newChapter: newly >= 0 && LEVELS[newly].chapter !== level.chapter ? LEVELS[newly].chapter : 0 };
+    if (!level.daily) winData = { r, st, fresh, info: progress.info(level.id), newChapter: newly >= 0 && LEVELS[newly].chapter !== level.chapter ? LEVELS[newly].chapter : 0 };
     const reduce = reduceMotion();
     ghost = reduce ? null : restore(snapshot(play.world));
     ghostAcc = 0;
@@ -662,10 +704,35 @@ export function mountApp(root, progress) {
     cam.baseHalf = cam.half;
   }
 
+  function showDailyResult(token) {
+    const { r, fresh, info } = winData;
+    endEl.replaceChildren(
+      h(
+        'div',
+        { class: 'pp-endcard' },
+        h('div', { class: 'pp-end-sub', text: `Tageslevel · ${level.title}` }),
+        h('h2', { class: 'pp-end-title', text: fresh.first ? 'Tageslevel geschafft' : 'Geschafft' }),
+        h('div', { class: 'pp-daily-streak big' + (info.streak ? '' : ' none'), 'aria-label': `Serie ${info.streak} Tage` }, svgIcon(ICON.flame), h('b', { text: String(info.streak) }), h('span', { text: info.streak === 1 ? 'Tag in Folge' : 'Tage in Folge' })),
+        h(
+          'div',
+          { class: 'pp-result-stats' },
+          h('div', {}, h('span', { class: 'muted', text: 'Zeit' }), h('b', { text: fmtTime(r.time) }), h('span', { class: 'muted small', text: `Bestzeit heute ${fmtTime(info.bestTime)}${fresh.time && !fresh.first ? ' (neu)' : ''}` })),
+          h('div', {}, h('span', { class: 'muted', text: 'Ausgestoßen' }), h('b', { text: fmtMass(r.ejected) }), h('span', { class: 'muted small', text: `Bestwert heute ${fmtMass(info.bestEject)}${fresh.eject && !fresh.first ? ' (neu)' : ''}` })),
+        ),
+        h('p', { class: 'pp-fin-line muted', text: 'Morgen wartet ein neues Level auf dich.' }),
+        h('div', { class: 'pp-end-actions' }, h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => go(showSelect) }, 'Levelauswahl'), h('div', { class: 'pp-end-row' }, h('button', { class: 'btn', type: 'button', onClick: () => go(() => startLevel(level, null)) }, 'Nochmal'))),
+      ),
+    );
+    endEl.hidden = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => endEl.classList.add('in')));
+    setTimeout(() => token === endToken && (audio.sfx.star({ i: 2 }), vibe(14)), reduceMotion() ? 0 : 500);
+  }
+
   function showResultCard() {
     if (cardShown) return;
     cardShown = true;
     const token = ++endToken;
+    if (winData.daily) return showDailyResult(token);
     const { r, st, fresh, info, newChapter } = winData;
     const nxt0 = nextLevel(level.id);
     const nxt = nxt0 && progress.unlocked(nxt0.id) ? nxt0 : null;
@@ -704,12 +771,12 @@ export function mountApp(root, progress) {
         h(
           'div',
           { class: 'pp-end-actions' },
-          nxt ? h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => go(() => startLevel(nxt, null)) }, 'Weiter') : h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => go(showSelect) }, 'Levelauswahl'),
+          nxt ? h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => go(() => startLevel(nxt, null)) }, 'Weiter') : h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => go(showFinale) }, 'Weiter'),
           h(
             'div',
             { class: 'pp-end-row' },
             h('button', { class: 'btn', type: 'button', onClick: () => go(() => startLevel(level, null)) }, 'Nochmal'),
-            nxt ? h('button', { class: 'btn btn-ghost', type: 'button', onClick: () => go(showSelect) }, 'Levelauswahl') : null,
+            nxt0 ? h('button', { class: 'btn btn-ghost', type: 'button', onClick: () => go(showSelect) }, 'Levelauswahl') : h('button', { class: 'btn btn-ghost', type: 'button', onClick: () => go(showSelect) }, 'Levelauswahl'),
           ),
         ),
       ),
@@ -727,6 +794,57 @@ export function mountApp(root, progress) {
         if (i === st.count - 1) vibe(14);
       }, (reduce ? 0 : 420) + i * (reduce ? 60 : T.fx.starGap * 1000));
     }
+  }
+
+
+  /* ---------- Abschluss (nach dem Finale des letzten Kapitels): ruhig, ohne Erzaehlstimme ---------- */
+  function showFinale() {
+    const token = ++endToken;
+    const total = LEVELS.length;
+    const doneN = LEVELS.filter((l) => progress.done(l.id)).length;
+    const starN = LEVELS.reduce((n, l) => n + progress.stars(l.id), 0);
+    const missing = LEVELS.filter((l) => progress.done(l.id) && progress.stars(l.id) < 3);
+    const undone = total - doneN;
+    const bestSum = LEVELS.reduce((n, l) => n + (progress.info(l.id) && progress.info(l.id).bestTime != null ? progress.info(l.id).bestTime : 0), 0);
+    const all = undone === 0;
+    const lines = [];
+    if (undone) lines.push(`Es fehlen noch ${undone} Level, die du noch nicht geschafft hast.`);
+    if (missing.length) lines.push(`${3 * total - starN - 3 * undone} Sterne warten in ${missing.length} Leveln auf dich. Tippe in der Levelauswahl ein Level an, um es zu verbessern.`);
+    if (!undone && !missing.length) lines.push('Du hast jeden Stern gesammelt.');
+    const bigStars = h('div', { class: 'pp-fin-stars', 'aria-hidden': 'true' }, ...CHAPTERS.map((c) => h('span', { class: 'pp-fin-star', style: { '--k': c.id }, text: '★' })));
+    endEl.replaceChildren(
+      h(
+        'div',
+        { class: 'pp-endcard pp-finale' },
+        h('div', { class: 'pp-end-sub', text: 'Protoplanet' }),
+        h('h2', { class: 'pp-end-title', text: all ? 'Alle Kapitel geschafft' : 'Planetensystem geschafft' }),
+        bigStars,
+        h(
+          'div',
+          { class: 'pp-result-stats' },
+          h('div', {}, h('span', { class: 'muted', text: 'Sterne' }), h('b', { text: `${starN} von ${3 * total}` })),
+          h('div', {}, h('span', { class: 'muted', text: 'Level' }), h('b', { text: `${doneN} von ${total}` })),
+        ),
+        bestSum > 0 ? h('p', { class: 'pp-fin-line', text: `Summe deiner Bestzeiten: ${fmtTime(bestSum)}` }) : null,
+        ...lines.map((t) => h('p', { class: 'pp-fin-line muted', text: t })),
+        progress.dailyOpen && progress.dailyOpen() ? h('p', { class: 'pp-fin-line', text: 'Jeden Tag wartet ein neues Tageslevel auf dich.' }) : null,
+        h('div', { class: 'pp-end-actions' }, h('button', { class: 'btn btn-primary btn-big', type: 'button', onClick: () => go(showSelect) }, 'Levelauswahl')),
+      ),
+    );
+    endEl.hidden = false;
+    endEl.classList.remove('in');
+    requestAnimationFrame(() => requestAnimationFrame(() => endEl.classList.add('in')));
+    // Fuenf Sterne, je Kapitel einer, steigen als ruhiger Aufstieg (Tonleiter) auf
+    const reduce = reduceMotion();
+    CHAPTERS.forEach((c, i) =>
+      setTimeout(() => {
+        if (token !== endToken) return;
+        const el = endEl.querySelectorAll('.pp-fin-star')[i];
+        if (el) el.classList.add('on');
+        audio.sfx.star({ i });
+      }, (reduce ? 0 : 500) + i * (reduce ? 40 : 380)),
+    );
+    setTimeout(() => token === endToken && vibe(T.fx.vibe.win), reduce ? 0 : 500 + CHAPTERS.length * 380);
   }
 
   /* ---------- Kopfleiste ---------- */
