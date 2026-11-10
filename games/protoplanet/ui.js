@@ -7,6 +7,7 @@ import { createToaster } from '../../engine/ui/toast.js';
 import { T } from './tune.js';
 import { LEVELS, CHAPTERS, levelById, nextLevel } from './levels.js';
 import { createPlay } from './play.js';
+import { buildLevel } from './gen.js';
 import { goalText, goalExplain, goalCounter, starsFor, fmtMass } from './goals.js';
 import { createCamera, updateCamera, pinchStart, pinchMove, pinchEnd, screenToWorld, introCamera } from './camera.js';
 import { createRenderer, createAmbient } from './render.js';
@@ -325,19 +326,20 @@ export function mountApp(root, progress) {
     const key = dateKey();
     shownDay = key;
     const lv = dailyLevel(key, progress.dailyStage());
+    const goal = { ...(buildLevel(lv).goal || {}), ...lv.goal }; // Ziel mit Wert (Masse), wie es das Level zeigt
     const info = progress.dailyInfo(key);
     const w = worldOf(lv.chapter);
     const status = info.done ? `Heute geschafft · Bestzeit ${fmtTime(info.bestTime)} · ausgestoßen ${fmtMass(info.bestEject)}` : 'Heute noch nicht gespielt';
     return h(
       'button',
-      { class: 'pp-daily' + (info.done ? ' done' : ''), type: 'button', style: { '--ca': w.accent, '--i': 1 }, 'aria-label': `Tageslevel ${lv.title}. ${goalText(lv.goal)}. ${status}. Serie ${info.streak} Tage`, onClick: () => go(() => startLevel(dailyLevel(dateKey(), progress.dailyStage()), null)) },
+      { class: 'pp-daily' + (info.done ? ' done' : ''), type: 'button', style: { '--ca': w.accent, '--i': 1 }, 'aria-label': `Tageslevel ${lv.title}. ${goalText(goal)}. ${status}. Serie ${info.streak} Tage`, onClick: () => go(() => startLevel(dailyLevel(dateKey(), progress.dailyStage()), null)) },
       h('span', { class: 'pp-daily-ico' }, svgIcon(ICON.cal)),
       h(
         'span',
         { class: 'pp-daily-text' },
         h('span', { class: 'pp-daily-kicker', text: 'Tageslevel' }),
         h('b', { text: lv.title }),
-        h('span', { class: 'pp-daily-goal', text: goalText(lv.goal) }),
+        h('span', { class: 'pp-daily-goal', text: goalText(goal) }),
         h('span', { class: 'pp-daily-state', text: status }),
       ),
       h('span', { class: 'pp-daily-streak' + (info.streak ? '' : ' none'), 'aria-hidden': 'true' }, svgIcon(ICON.flame), h('b', { text: String(info.streak) })),
@@ -822,8 +824,8 @@ export function mountApp(root, progress) {
         h(
           'div',
           { class: 'pp-result-stats' },
-          h('div', {}, h('span', { class: 'muted', text: 'Sterne' }), h('b', { text: `${starN} von ${3 * total}` })),
-          h('div', {}, h('span', { class: 'muted', text: 'Level' }), h('b', { text: `${doneN} von ${total}` })),
+          h('div', {}, h('span', { class: 'muted', text: 'Sterne' }), h('b', { text: `${starN} / ${3 * total}` })),
+          h('div', {}, h('span', { class: 'muted', text: 'Level' }), h('b', { text: `${doneN} / ${total}` })),
         ),
         bestSum > 0 ? h('p', { class: 'pp-fin-line', text: `Summe deiner Bestzeiten: ${fmtTime(bestSum)}` }) : null,
         ...lines.map((t) => h('p', { class: 'pp-fin-line muted', text: t })),

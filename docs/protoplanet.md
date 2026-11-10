@@ -23,7 +23,7 @@ Mobile UI, PWA/Deploy und Arbeitsweise gelten. Die Abschnitte zu Prestige, Idle 
 | **P2** (umgesetzt, wartet auf Abnahme) | Ziel-Mix + große Brocken in Kapitel 1 (1-6..1-8 umbauen), Zieltyp „Werde unangreifbar“, **KI-Gegner** (Jäger) und Kapitel 2 „Jäger“ |
 | **P3** (umgesetzt als **Paket B**, wartet auf Abnahme) | Gravitation: Attraktoren (auch auf Bahnen), offener Raum mit Abdrift-Grenze, **Anziehung unter den Körpern** (nur ab Mindestmasse, weich, je Kapitel einstellbar), Kapitel 3 „Protostern“ |
 | **P4** (umgesetzt als Paket C, siehe `docs/protoplanet-klang.md`) | Generative Ambient-Musik + Effektklänge (WebAudio, keine Dateien) |
-| **P5** | Kapitel 4 „Dunkelwolke“ (begrenztes Sichtfeld), Kapitel 5 „Planetensystem“ (alles, große Levels), Tageslevel |
+| **P5** (umgesetzt als **Paket D**, wartet auf Abnahme) | Kapitel 4 „Dunkelwolke“ (begrenztes Sichtfeld), Kapitel 5 „Planetensystem“ (Planeten auf Bahnen), Tageslevel, Abschlussbildschirm |
 
 Planänderung nach dem zweiten Spielen (Besitzer, Runde Q28–Q35), ersetzt die alte P2/P3-Einteilung: siehe „Ausbau nach dem zweiten Spielen“.
 Zwischen den Paketen spielt der Besitzer (direkter Link `games/protoplanet/`, der Hub zeigt bis zur Abnahme „Bald verfügbar“).
@@ -489,3 +489,69 @@ Ziel (Besitzer: „fühlt sich noch nicht an wie ein fertiges Spiel“): sehen u
 12. **Leistung (Headless-Chromium, Desktop, vsync 60, 6 s):** 1-8 (133 Körper) ×1 und ×10: Median 16,7 ms, p95 16,7–16,8, max 16,8; 3-8 (69 Körper) ebenso. Zeichenzeit im Mittel 0,3–0,46 ms (nur JS). Pool max 320 Partikel (Weniger Bewegung 70), bis 10 Ringe, Stromteilchen nur bei ≤ 10 überlappenden Paaren. **Kein echtes Handy gemessen.**
 
 Prüfung: Playwright 390×844 und 360×740, Bildfolgen in `scratchpad/protoplanet-f/`; frischer Spielstand → 1-1 per CDP-Touch gewonnen → Karte → „Weiter“ → 1-2 startet (Auftakt); Spielstand mit Schnappschuss lädt pausiert; 0 Konsolenfehler.
+
+
+### Paket D: Kapitel 4 „Dunkelwolke“, Kapitel 5 „Planetensystem“, Tageslevel, Abschluss — umgesetzt
+
+Damit ist Protoplanet ein rundes Spiel mit 5 Kapiteln (40 Levels) plus Tageslevel. Hub-Eintrag bleibt `soon` bis zur Abnahme.
+
+**Teil 1 — Kapitel 4 (Nebel).** `fog.js` (DOM-frei, REINE DARSTELLUNG): Sichtradius `r0 × r^0,78` (wie die Kamera, ~95 % der halben Bildbreite), Körper blenden am Rand weich ein (`softIn`), Größere
+(≥ 0,97 × Spielermasse) jenseits des Randes verraten sich durch **Glimmen** (Stärke = Nähe × Größe × Annäherung, höchstens 4), Zielpfeile und letzte Körper als schwache Hinweise, Auftakt aus der Dunkelheit.
+Die Physik und der Bot kennen den Nebel nicht (der Bot prüft Lösbarkeit, nicht Fairness). Levels der Familie `welt` mit `fog: true`; Klang: leiser Glimm-Ton (`soundK`), Stimmung phrygisch.
+Tests: `tests/protoplanet-fog.test.mjs`, `sim-protoplanet-fog{,2}.test.mjs`.
+
+| Level | Titel | Ziel | Charakter | Körper | Varianten (s) | Familie 30 |
+|---|---|---|---|---|---|---|
+| 4-1 | Im Dunkeln | mass 6 | Lehrlevel, kleine Arena (R 21) | 41 | 74/74/74 | 30/30 |
+| 4-2 | Erkundung | mass 12 | R 34, Massenleiter | 68 | 143/135/136 | 30/30 |
+| 4-3 | Schattenfels | largest | ein Brocken im Dunkeln | 65 | 159/144/139 | 28/30 |
+| 4-4 | Aus dem Nebel | mass 14 | ein Jäger | 88 | 166/148/177 | 28/30 |
+| 4-5 | Fernes Licht | absorb | Ziel weit draußen | 60 | 126/124/111 | 27/30 |
+| 4-6 | Letzte Lichter | last | kleine Arena | 41 | 244/305/254 | 28/30 |
+| 4-7 | Nebelbank | largest | ein Jäger (8–9) | 100 | 125/125/126 | 28/30 |
+| 4-8 | Die Dunkelwolke | mass 30 | Finale, R 54, Kometen | 146 | 234/264/231 | 26/30 |
+
+**Teil 2 — Kapitel 5 (Planeten).** Umlaufbahn-Modus aus Kapitel 3 (Familie `orbit`, Stern, Abdrift, Bahnvorschau) plus **Planeten**: `kind: 'attractor'` mit `po = { r, a0, w }` (feste Kreisbahn um den Stern, Ort = Funktion der Zeit,
+`physics.js attractorAt`, in `step` nach der Bewegung gesetzt, Schnappschuss trägt `po` als 13. Feld, Kapitel 1–4 bleiben Byte für Byte gleich). Planeten ziehen mit `gm` an (wie der Stern), **verschlucken nur den Spieler**
+(`lostTo = 'planet'`, Text „Vom Planeten verschluckt“), alle anderen Körper (Futter, Jäger) laufen unversehrt hindurch, Planeten zählen für `last`/`largest` nicht (wie der Stern). `orbit.js predictOrbit` rechnet Stern UND Planeten
+auf ihren Bahnen (exakt vorhersagbar, Ende `planet` = rotes Kreuz), `orbit-bot.js` sagt die Planetenbahnen im Horizont voraus (als Quelle der Anziehung und als Gefahr, ohne Reaktionszuschlag: sie sind exakt). Darstellung: heller Ring um den Planeten,
+feiner Kreis = Einflussbereich (Hill-Radius, dort bestimmt der Planet deine Bahn), feine Bahnringe. Generator: `params.planets = [{ r, m, gm, ang?, dir? }]`, Futterbänder meiden die Planetenbahn (`planetGap` 9).
+Tests: `tests/protoplanet-planets.test.mjs`, `sim-protoplanet-planets{,2}.test.mjs`.
+
+*Messergebnisse, die das Design bestimmt haben (ehrlich, alles mit dem Bot gemessen):*
+1. **Monde (Körper auf Bahnen um den Planeten) probiert und verworfen:** der Bot verbrennt Masse an den schnellen Bahnen in der Senke (5-1 mit Monden 11/20, ohne 19/20). Der Code dafür ist entfernt.
+2. **Planeten, die Futter fressen, leeren die Welt** (77 → 3 Körper Masse in 400 s): deshalb durchlaufen sie alles außer dem Spieler. Auch dann schleudert ein starker Planet Futter in der Nähe seiner Bahn hinaus (Slingshot, Futter driftet ab).
+   Gegenmittel: schwache Planeten (`gm` 1,5–2 gegenüber Stern 80) und Futterbänder mit Abstand 9 zur Planetenbahn. Quote Finale 5-8: 30/30 ohne Planeten, 15/30 mit einem Planeten gm 2 und Abstand 3,5, 27/30 mit gm 1,5 und Abstand 9.
+3. **Jäger auf Bahnen entfallen** (der Jäger-Kern kennt keine Gravitation, brain.js rechnet linear); die Jäger bleiben in Kapitel 2 und 4.
+4. **Ein Level „Planet überholen und absorbieren“ entfällt** (die Planeten behalten ihre Masse, nur der Spieler wird verschluckt).
+
+| Level | Titel | Ziel | Charakter | Körper | Varianten (s) | Familie 30 / 150 (ab 7000) |
+|---|---|---|---|---|---|---|
+| 5-1 | Der erste Planet | mass 6,5 | Lehrlevel, ein Planet (r 27) | 30 | 69/70/71 | 30/30 · 149/150 |
+| 5-2 | Zwei Welten | mass 8 | zwei Planeten (r 26, 44) | 31 | 82/136/71 | 29/30 · 149/150 |
+| 5-3 | Vorbeiflug | largest | ein Planet, Brocken 7–8 | 64 | 64/80/83 | 26/30 · 128/150 |
+| 5-4 | Doppelplanet | mass 12 | zwei Planeten auf derselben Bahn (r 30) | 39 | 81/85/81 | 25/30 · 129/150 |
+| 5-5 | Kometenbahn | absorb | Komet als Ziel, Planet r 30 | 39 | 64/92/92 | 25/30 · 134/150 |
+| 5-6 | Aufräumen im System | last | schwacher Planet (gm 1,5) | 27 | 149/240/220 | 28/30 · 140/150 |
+| 5-7 | Riesenplanet | largest | größerer Planet (m 6), Brocken 6–8 | 88 | 67/79/62 | 25/30 · 127/150 |
+| 5-8 | Das Planetensystem | mass 16 | Finale: 2 Planeten, 163 Körper | 163 | 75/116/123 | 25/30 · 119/150 |
+Stern-Ziele nach Paket F (Bot-Median × 2 / × 1,8). **Abweichungen:** die Bot-Zeiten liegen bei 60–150 s (kürzer als in Kapitel 3/4: der Bot ist hier sehr effizient, Menschen brauchen ein Mehrfaches); die Quote über 150 fremde Seeds
+liegt bei 79–99 % (5-8 knapp unter 80 %: der Test prüft 30 feste Seeds und besteht mit 25/30). Mehr Härte (größere Brocken, mehr Planeten) senkte die Quote, nicht die Dauer.
+Bahnplaner-Änderung: Planeten in der Vorhersage; sonst unverändert (Kapitel 3 bleibt grün).
+
+**Abschluss.** Nach dem Finale 5-8 führt „Weiter“ zu einem ruhigen Bildschirm (`ui.js showFinale`, keine Erzählstimme): fünf Sterne (je Kapitel einer, steigende Töne), „Alle Kapitel geschafft“ (sonst „Planetensystem geschafft“ plus Hinweis auf offene Level),
+Sterne x / 120, Level x / 40, Summe der Bestzeiten, fehlende Sterne, Hinweis aufs Tageslevel.
+
+**Teil 3 — Tageslevel.** Kein Server. `games/protoplanet/daily.js` (rein) + `daily-list.js` (ERZEUGT): je Kalendertag (366, 29. Februar eingeschlossen, in jedem Jahr gleich) und je **Freischaltstufe** (höchstes offenes Kapitel 1..5)
+ein Eintrag `[Preset, Seed]`. **Presets** = benannte Parametersätze = Familie und Parameter von 22 Leveln der Kampagne (Kapitel 1: 1-4..1-7, 2: 2-2..2-5, 3: 3-4/3-5/3-7/3-8, 4: 4-2..4-5/4-7, 5: 5-1..5-5), nur mit anderem Seed
+(Titel des Levels + Datum, z. B. „Verfolger · 10. November“). Kapitel des Tages: je 5 Tage eine feste Mischung aller fünf Kapitel (`chapterOfDay`). **Freischaltung (Entscheidung):** statt Rückfall auf ein fremdes Level hat jede Stufe
+einen eigenen Eintrag: liegt das Kapitel des Tages über der Stufe, wird ein Preset aus einem Kapitel ≤ Stufe gewählt (das Einfachere, frei von Wiederholung über Tage); Stufe ≥ Kapitel = der Eintrag des Tages.
+Das Tageslevel ist offen, sobald in Kapitel 1 5 Level geschafft sind (`progress.dailyOpen`). **Prüfung:** Der Erzeuger sucht je Eintrag den ersten Seed, den der Bot in 3 von 3 Varianten löst, Zeit 60–360 s (`tools/daily-protoplanet.mjs`,
+~3 min auf 4 Kernen, 1098 verschiedene Einträge); `--verify` prüft alle erneut (~2 min, nicht in `npm test`: 0 Fehler, Zeiten 60–358 s). In `npm test`: Stichprobe von 12 Einträgen (≥ 2 von 3 Varianten, 60–360 s), Auswahl rein aus Datum + Stufe,
+Serie über Tages-/Monats-/Jahreswechsel und Schaltjahr, alter Spielstand lädt. **Nach Änderungen an Physik, Generatoren, Preset-Leveln oder tune.js die Liste neu erzeugen und `--verify` laufen lassen.**
+Spielstand `daily: { date, bestTime, bestEject, done, streak, lastDone }` (`mergeDefaults` füllt ihn, kein Versionssprung nötig). Serie = aufeinanderfolgende geschaffte Tage (lokale Zeit), sie lebt bis zum Ende des Folgetages; keine Sterne, nur Bestwerte des Tages. Kein Schnappschuss
+(das Tageslevel wird nicht fortgesetzt). Die Karte in der Auswahl (unter „Weiter spielen“) wechselt um Mitternacht auch bei offener App (Prüfung alle 20 s und beim Zurückkehren in den Tab).
+**Abweichung:** das Preset `5-7` (Riesenplanet) fehlt, weil der Erzeuger für es nie einen tragenden Seed fand (kurze Läufe unter 60 s).
+
+**Teil 4 — Schliff.** Kacheltitel zweizeilig mit Silbentrennung (alle Titel ganz lesbar bei 360 px). Gefahren-Glühen am Bildrand stärker (`dangerAlpha` 0,9, größerer Radius, heller Kern am Rand; Bildfolge geprüft: bei k ≈ 0,4 deutlich, nicht störend).
+3-7 „Planet“ bleibt unverändert (Kapitel 3 ist sim-kalibriert; ein Umbau bräuchte rev + Migration und brächte gegenüber dem Aufwand zu wenig). Kapitel 5 Klang: Stimmung `5` greift (Name „Planetensystem“, lydisch).

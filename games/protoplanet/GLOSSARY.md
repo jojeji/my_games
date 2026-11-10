@@ -221,3 +221,10 @@ Dezente Darstellung je Kapitel (Hintergrundverlauf, Nebelflecken mit Parallax, A
 
 **Weiter spielen**:
 Der große Knopf oben in der Levelauswahl: laufendes Level, sonst das nächste offene ungelöste.
+
+
+## Paket D
+- **Sichtkreis / Nebel / Glimmen** (Kapitel 4): nur ein Kreis um den Spieler ist sichtbar; ein Größerer jenseits des Randes verrät sich durch **Glimmen** (rotes Leuchten am Rand). Reine Darstellung.
+- **Planet** (Kapitel 5): Körper auf einer festen Kreisbahn um den Stern, zieht an (Stärke `gm`), verschluckt nur den Spieler, zählt für Ziele nicht. Der feine Kreis um ihn ist sein **Einflussbereich** (Hill-Radius).
+- **Tageslevel**: ein vorab geprüftes Level je Kalendertag aus einem **Preset** (benannter Parametersatz = Familie + Parameter eines Kampagnenlevels) und einem Seed; **Serie** = aufeinanderfolgende geschaffte Tage; **Freischaltstufe** = höchstes offenes Kapitel.
+- **Abschluss(bildschirm)**: ruhige Karte nach dem Finale 5-8, ohne Erzählstimme.

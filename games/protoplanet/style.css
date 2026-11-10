@@ -262,3 +262,4 @@ body.calm .pp-fin-star { transition: none; }
 .pp-daily-streak.big b { font-size: 40px; }
 .pp-daily-streak.big span { font-size: 14px; color: var(--muted); }
 body.calm .pp-daily { animation: none; }
+.pp-daily-streak:not(.none) svg { color: #ffb25a; fill: #ffb25a; }

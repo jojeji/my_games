@@ -85,3 +85,5 @@ Größter Pegelsprung zwischen Sekundenfenstern in Auswahl/Level: 3,4-7,3 dB (Be
 - iOS: `latencyHint: 'playback'`, Entsperren per Geste und Wiederaufnahme per jeder Geste sind eingebaut, aber nicht auf einem iPhone getestet.
 - Kapitel 3 hat seit Paket B Levels (Stimmung `3`, Mixolydisch, greift beim Start jedes 3-x-Levels über `audio.setScene(lv.chapter)`); Feintuning mit dem Ohr des Besitzers. Kapitel 4 und 5 haben Stimmungen, aber noch keine Level.
 - Neu in Paket B: Effekt `warn` („Zu weit draußen“: leiser tiefer Doppelton, Drosselung 2,5 s + Sperre in der Oberfläche 3,5 s) und der Verlustklang `swallowed` auch für „In den Stern gestürzt“ und „Abgetrieben“; der Protostern zählt nicht für die Gefahr-Parameter der Musik (`dangerOf`).
+
+Paket D: Stimmung 5 heißt jetzt „Planetensystem“ (lydisch, root 57); sie greift über `audio.setScene(lv.chapter)` (Kapitel 5 geprüft). Der Abschluss und das Tageslevel nutzen `sfx.star` (je Kapitel ein Stern, aufsteigend).

@@ -333,3 +333,11 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - **Freischalten:** „5 Levels des vorigen Kapitels ODER dessen Finale geschafft“: nur die erste Hälfte hätte alte Spielstände mit nur dem Finale gesperrt.
 - **Stern-Ziele für Menschen:** Bot-Median × 2 (Zeit) und × 1,8 (Ausstoß) statt × 1,3; Lehrlevels nie strenger als vorher. Die Abnahme „mindestens eine Bot-Variante schafft jedes Ziel“ bleibt unverändert und grün.
 - **UI-Fund:** vier Elemente in der Kopfzeile der Auswahl (360 px) brauchen `min-width: 0` am Titel und geringen Buchstabenabstand, sonst rutscht der letzte Knopf aus dem Bild.
+
+
+## Protoplanet Paket D (Planeten, Tageslevel)
+- Ein Planet, der Futter frisst, leert die Welt (77 -> 3 Masse in 400 s); einer, der es durchlässt, schleudert Futter in seiner Nähe hinaus. Messen statt raten: Quote des Bots mit und ohne Planet (30/30 -> 15/30) zeigte das Problem, schwache `gm` + Abstand 9 löste es.
+- Körper auf engen, schnellen Bahnen in einer Senke (Monde) sind für den Vorwärtsplaner Zufall: er verbrennt Masse. Neue Mechaniken zuerst mit dem Bot an EINEM Level messen, bevor man 8 Levels baut.
+- Medianzeit-Korridor und Lösungsquote ziehen in entgegengesetzte Richtungen (härter = länger, aber mehr Bot-Hänger). Kapitel-Finale zuletzt abstimmen und die Testmedian-Kante (59 vs 60 s) einplanen.
+- Tageslevel nie zur Laufzeit würfeln: Liste vorab erzeugen und prüfen (`tools/daily-protoplanet.mjs --verify`), je Freischaltstufe ein eigener Eintrag statt Rückfall auf Wiederholungen. Datum -> Eintrag über feste Tabelle (29. Februar immer enthalten).
+- Gefahren-Glühen: erst sichtbar, wenn die Kollisionszeit unter `dangerT` fällt; zum Prüfen einen Körper frontal auf den Spieler setzen (`y` gleich, `vx` -1,3) und ~2,5 s warten.
