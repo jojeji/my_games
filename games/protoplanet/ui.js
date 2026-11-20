@@ -37,7 +37,7 @@ const ICON = {
   largest: '<path d="M5 17.5l7-11 7 11"/><path d="M8.5 21h7"/>',
   mass: '<circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8.5"/>',
 };
-const TIME_LABEL = { 0.25: '×¼', 1: '×1', 4: '×4', 10: '×10' };
+const TIME_LABEL = { 0.25: '×¼', 0.5: '×½', 1: '×1', 2: '×2', 4: '×4', 10: '×10' };
 
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const starText = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
@@ -66,7 +66,10 @@ export function mountApp(root, progress) {
   const massVal = h('span', { class: 'pp-mass-val' });
   const massDelta = h('span', { class: 'pp-mass-delta', 'aria-hidden': 'true' });
   const massEl = h('div', { class: 'pp-mass' }, massVal, massDelta);
-  const timeBtn = h('button', { class: 'pp-time', type: 'button', 'aria-label': 'Zeitstufe' }, '×1');
+  const slowerBtn = h('button', { class: 'pp-tstep', type: 'button', 'aria-label': 'Zeit langsamer' }, '−');
+  const timeBtn = h('button', { class: 'pp-time', type: 'button', 'aria-label': 'Zeitstufe (Antippen = normal)' }, '×1');
+  const fasterBtn = h('button', { class: 'pp-tstep', type: 'button', 'aria-label': 'Zeit schneller' }, '+');
+  const timeBar = h('div', { class: 'pp-timebar' }, slowerBtn, timeBtn, fasterBtn);
   const warnEl = h('div', { class: 'pp-warn', hidden: true, role: 'status' }, 'Zu weit draußen');
   const titleN = h('div', { class: 'pp-title-n' });
   const titleH = h('h2', { class: 'pp-title-h' });
@@ -75,7 +78,7 @@ export function mountApp(root, progress) {
   const resumeEl = h('div', { class: 'pp-tapresume', hidden: true }, 'Tippe, um weiterzuspielen');
   const skipEl = h('div', { class: 'pp-skip', hidden: true }, 'Tippen zum Überspringen');
   const endEl = h('div', { class: 'pp-end', hidden: true });
-  const gameEl = h('section', { class: 'pp-game', hidden: true }, canvas, bar, titleEl, helpEl, warnEl, resumeEl, skipEl, massEl, timeBtn, endEl);
+  const gameEl = h('section', { class: 'pp-game', hidden: true }, canvas, bar, titleEl, helpEl, warnEl, resumeEl, skipEl, massEl, timeBar, endEl);
   const veil = h('div', { class: 'pp-veil', 'aria-hidden': 'true' });
   root.append(ambientCv, selectEl, gameEl, toasts, veil);
 
@@ -128,6 +131,7 @@ export function mountApp(root, progress) {
   let cardShown = false;
   let endToken = 0;
   let rewindFrames = null;
+  let rewindDur = T.fx.rewindT;
   let tapResume = false;
   let lastPlayerPos = null;
   let lastDangerVibe = -Infinity;
@@ -619,7 +623,7 @@ export function mountApp(root, progress) {
         {},
         h('p', { text: lossText }),
         left > 0
-          ? h('p', { class: 'muted small', text: `Zurückspulen setzt dich ${T.rewindBack} Sekunden zurück und kostet den Effizienz-Stern dieses Versuchs.` })
+          ? h('p', { class: 'muted small', text: `Zurückspulen kostet einen Versuch und den Effizienz-Stern dieses Versuchs. „Weit zurück“ hilft, wenn der Fehler schon früher passiert ist.` })
           : h('p', { class: 'muted small', text: 'Du hast keine Versuche zum Zurückspulen mehr.' }),
       ),
       dismissible: false,
@@ -627,9 +631,14 @@ export function mountApp(root, progress) {
         ...(left > 0
           ? [
               {
-                label: `Zurückspulen (noch ${left})`,
+                label: `${rwSteps()[0]} s zurück (noch ${left})`,
                 kind: 'primary',
-                onClick: () => setTimeout(startRewind, 0),
+                onClick: () => setTimeout(() => startRewind(rwSteps()[0]), 0),
+              },
+              {
+                label: `Weit zurück: ${rwSteps()[1]} s`,
+                kind: '',
+                onClick: () => setTimeout(() => startRewind(rwSteps()[1]), 0),
               },
             ]
           : []),
@@ -640,10 +649,14 @@ export function mountApp(root, progress) {
   }
 
   /** Zurückspulen: die Welt springt nicht, die letzten Sekunden laufen sichtbar rückwärts (Schnappschüsse, gemischt). */
-  function startRewind() {
-    const frames = play.rewind.peek(play.world.t); // vor doRewind (das kappt den Puffer)
+  /** Stufen des Zurueckspulens [kurz, weit] in s: in Gravitations-Leveln weiter (die Bahn entscheidet frueher). */
+  function rwSteps() {
+    return play && play.world.grav ? T.rewindSteps.orbit : T.rewindSteps.arena;
+  }
+  function startRewind(back = rwSteps()[0]) {
+    const frames = play.rewind.peek(play.world.t, back); // vor doRewind (das kappt den Puffer)
     closeAllModals();
-    if (!play.doRewind()) return;
+    if (!play.doRewind(back)) return;
     ghost = null;
     endShown = false;
     syncAudioCounters();
@@ -657,6 +670,7 @@ export function mountApp(root, progress) {
       return;
     }
     rewindFrames = frames.map((s) => restore(s));
+    rewindDur = Math.min(2.4, T.fx.rewindT + back * 0.045); // weiter zurueck = etwas laengerer Rueckwaertslauf
     phase = 'rewind';
     phaseT0 = performance.now() / 1000;
   }
@@ -869,6 +883,7 @@ export function mountApp(root, progress) {
     const p = play.world.player;
     txt(massVal, p ? `Masse ${fmtMass(p.m)}` : 'Masse 0,00');
     txt(timeBtn, TIME_LABEL[play.timeScale] || '×1');
+    setTimeEdges();
     if (level.hint && !hintGone) {
       const u = level.hint.until;
       const s = play.world.stats;
@@ -925,15 +940,26 @@ export function mountApp(root, progress) {
 
   backBtn.addEventListener('click', () => go(showSelect));
   pauseBtn.addEventListener('click', () => pause());
-  timeBtn.addEventListener('click', () => {
+  /** Zeitstufe setzen: -1 langsamer, +1 schneller, 0 = zurueck auf x1. */
+  function setTime(dir) {
     if (!play || paused || play.status !== 'running' || phase !== 'play') return;
-    timeIdx = (timeIdx + 1) % T.timeSteps.length;
+    const one = T.timeSteps.indexOf(1);
+    const next = dir === 0 ? one : Math.max(0, Math.min(T.timeSteps.length - 1, timeIdx + dir));
+    if (next === timeIdx) return;
+    timeIdx = next;
     play.timeScale = T.timeSteps[timeIdx];
     timeChanged = true;
     audio.sfx.timeStep({ idx: timeIdx });
     audio.update({ timeScale: play.timeScale });
     hud();
-  });
+  }
+  function setTimeEdges() {
+    slowerBtn.disabled = timeIdx <= 0;
+    fasterBtn.disabled = timeIdx >= T.timeSteps.length - 1;
+  }
+  slowerBtn.addEventListener('click', () => setTime(-1));
+  fasterBtn.addEventListener('click', () => setTime(+1));
+  timeBtn.addEventListener('click', () => setTime(0));
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
@@ -1097,7 +1123,7 @@ export function mountApp(root, progress) {
       fade = 0.66 * smooth(t / lt);
       if (t >= lt && !modals.size) showLossDialog();
     } else if (phase === 'rewind') {
-      const u = Math.min(1, (now - phaseT0) / T.fx.rewindT);
+      const u = Math.min(1, (now - phaseT0) / rewindDur);
       const n = rewindFrames.length;
       const f = smooth(u) * (n - 1);
       const i = Math.min(n - 2, Math.floor(f));

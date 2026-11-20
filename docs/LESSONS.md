@@ -341,3 +341,7 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - Medianzeit-Korridor und Lösungsquote ziehen in entgegengesetzte Richtungen (härter = länger, aber mehr Bot-Hänger). Kapitel-Finale zuletzt abstimmen und die Testmedian-Kante (59 vs 60 s) einplanen.
 - Tageslevel nie zur Laufzeit würfeln: Liste vorab erzeugen und prüfen (`tools/daily-protoplanet.mjs --verify`), je Freischaltstufe ein eigener Eintrag statt Rückfall auf Wiederholungen. Datum -> Eintrag über feste Tabelle (29. Februar immer enthalten).
 - Gefahren-Glühen: erst sichtbar, wenn die Kollisionszeit unter `dangerT` fällt; zum Prüfen einen Körper frontal auf den Spieler setzen (`y` gleich, `vx` -1,3) und ~2,5 s warten.
+
+## Nachtrag: Protoplanet nach dem Live-Gang (Besitzer spielt 3-5)
+- **Zurückspulen muss so weit reichen wie die Ursache des Fehlers.** In Umlaufbahn-Leveln entscheidet ein Schub den Sturz oft eine halbe Bahn vorher; 3 s zurück setzte den Spieler wieder in die schon verlorene Lage. Jetzt zwei Stufen im Verlust-Dialog (Arena 5 | 15 s, Umlaufbahn 10 | 30 s).
+- **Steuerungen, die nur reihum schalten, nerven**, sobald es mehr als zwei Stufen gibt: Zeit braucht − und + (plus Antippen = Normal).

@@ -87,9 +87,9 @@ export function createPlay(level, saved = null) {
     return n;
   };
   /** Nach einem Verlust zurueckspulen. */
-  play.doRewind = () => {
+  play.doRewind = (back = T.rewindBack) => {
     if (play.status !== 'lost' || play.rewindsLeft <= 0) return false;
-    const snap = play.rewind.pick(play.world.t);
+    const snap = play.rewind.pick(play.world.t, back);
     if (!snap) return false;
     play.world = restore(snap);
     play.rewindsLeft--;

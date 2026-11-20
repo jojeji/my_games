@@ -74,9 +74,9 @@ Alle Zahlen stehen in `tune.js`; die Werte unten sind **Startwerte**, kalibriert
 - Körper außerhalb des Bildes, die größer als der Spieler sind und sich nähern, zeigen einen kleinen warmen Pfeil am Bildrand.
 
 ## Zeit
-- **Zeitstufen** ×¼ → ×1 → ×4 → ×10, eine Taste unten rechts (≥ 44 px), Beschriftung = aktuelle Stufe, Tippen schaltet reihum. Jedes Level startet mit ×1.
+- **Zeitstufen** ×¼, ×½, ×1, ×2, ×4, ×10 (Besitzerwunsch nach dem Spielen: in beide Richtungen): Leiste unten rechts mit **−** (langsamer), Anzeige der Stufe (Antippen = zurück auf ×1) und **+** (schneller); am Ende der Skala ist die jeweilige Taste ausgegraut. Jedes Level startet mit ×1.
 - **Pause**: eigene Taste (oben rechts) und automatisch beim Verlassen der App (`visibilitychange`/`pagehide`). Ein gesichertes Level wird pausiert fortgesetzt.
-- **Zurückspulen**: `rewind.js` hält einen Ringpuffer von Schnappschüssen (alle 0,5 s Spielzeit, die letzten 10 s). Wird der Spieler absorbiert (oder treibt er in P2 ab), erscheint
+- **Zurückspulen** (Besitzerwunsch: weiter zurück, die Fehler in 3-5 passieren früher): Ringpuffer 40 s; der Verlust-Dialog bietet zwei Stufen `T.rewindSteps` – Arena-Kapitel 5 s | 15 s, Gravitations-Level 10 s | 30 s (die Bahn entscheidet früher); beide kosten einen Versuch. Ursprünglich: `rewind.js` hält einen Ringpuffer von Schnappschüssen (alle 0,5 s Spielzeit, die letzten 10 s). Wird der Spieler absorbiert (oder treibt er in P2 ab), erscheint
   ein Dialog: „Zurückspulen (noch n)“, „Neu starten“, „Levelauswahl“. Zurückspulen setzt auf den Schnappschuss ≥ 3 s vor dem Verlust zurück, pausiert.
   **3 Mal pro Level**; wer zurückspult, verliert den Effizienz-Stern für diesen Versuch. Neustart setzt alles zurück.
 

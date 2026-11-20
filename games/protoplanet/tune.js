@@ -15,12 +15,14 @@ export const T = {
   gridMinBodies: 24, // ab so vielen Koerpern Sweep statt Paarvergleich (Name aus der Rasterzeit)
   // --- Zurueckspulen ---
   rewindEvery: 0.5, // s Spielzeit zwischen Schnappschuessen
-  rewindKeep: 10, // s Spielzeit, die der Ringpuffer haelt
-  rewindBack: 3, // s vor dem Verlust
+  rewindKeep: 40, // s Spielzeit, die der Ringpuffer haelt (muss >= der weitesten Stufe in rewindSteps sein)
+  rewindBack: 5, // s vor dem Verlust (Standard, Arena-Kapitel kurz)
+  // Zwei Stufen im Verlust-Dialog: kurz | weit. In Gravitations-Leveln entscheidet sich ein Sturz viel frueher (Bahn), deshalb weiter.
+  rewindSteps: { arena: [5, 15], orbit: [10, 30] },
   rewindLives: 3, // Versuche je Level
   chapterOpen: 5, // Paket F: ein Kapitel oeffnet sich, sobald im vorherigen so viele Levels geschafft sind (innerhalb eines Kapitels Level fuer Level)
   // --- Zeit ---
-  timeSteps: [0.25, 1, 4, 10],
+  timeSteps: [0.25, 0.5, 1, 2, 4, 10], // Tasten langsamer | schneller, Antippen der Anzeige = x1
   // --- Kamera ---
   camSpan: 6.5, // Paket F: Nahbereich. sichtbare halbe Breite = camSpan * Spielerradius^camExp ...
   camExp: 0.78, //   ... Exponent < 1: der Koerper WAECHST auf dem Bildschirm (Staubkorn -> Riese), die Welt wird kleiner, die Kamera faehrt weich heraus

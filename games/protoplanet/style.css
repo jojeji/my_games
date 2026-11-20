@@ -126,12 +126,18 @@ body.calm .pp-bar.near .pp-bar-fill, body.calm .pp-bar.near .pp-goal-pct { anima
 .pp-mass-delta.show { opacity: 1; transform: translateY(0); transition: opacity 0.08s, transform 0.12s; }
 .pp-mass-delta.neg { color: #ff6b6b; }
 .pp-mass-delta.pos { color: #6be39a; }
-.pp-time {
-  position: absolute; right: var(--pad-r); bottom: calc(14px + env(safe-area-inset-bottom)); width: 64px; height: 64px; border-radius: 50%; cursor: pointer;
-  background: rgba(14, 22, 42, 0.82); border: 2px solid var(--accent); color: var(--text); font-size: 19px; font-weight: 700; touch-action: manipulation;
-  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 28%, transparent); transition: transform 0.12s;
+.pp-timebar {
+  position: absolute; right: var(--pad-r); bottom: calc(14px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 6px;
+  padding: 4px; border-radius: 40px; background: rgba(14, 22, 42, 0.72); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 22%, transparent);
 }
-.pp-time:active { transform: scale(0.95); }
+.pp-time, .pp-tstep { cursor: pointer; touch-action: manipulation; transition: transform 0.12s, opacity 0.15s; color: var(--text); }
+.pp-time {
+  width: 60px; height: 56px; border-radius: 28px; background: rgba(14, 22, 42, 0.9); border: 2px solid var(--accent); font-size: 18px; font-weight: 700;
+}
+.pp-tstep { width: 48px; height: 48px; border-radius: 50%; background: transparent; border: 1px solid rgba(255, 255, 255, 0.18); font-size: 24px; font-weight: 600; line-height: 1; }
+.pp-time:active, .pp-tstep:active { transform: scale(0.93); }
+.pp-tstep:disabled { opacity: 0.3; cursor: default; }
 
 .pp-toasts { position: fixed; left: 0; right: 0; top: 76px; z-index: 200; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 12px; pointer-events: none; }
 .pp-toasts .toast { pointer-events: auto; }

@@ -89,7 +89,7 @@ _Avoid_: Fressen (nur umgangssprachlich), Verschmelzen, Einsaugen
 ## Zeit
 
 **Zeitstufe**:
-Wie schnell die Spielzeit läuft: ×¼, ×1, ×4 oder ×10. Ändert nur, wie viele feste Physikschritte pro Bild gerechnet werden.
+Wie schnell die Spielzeit läuft: ×¼, ×½, ×1, ×2, ×4 oder ×10 (Tasten − und +, Antippen der Anzeige = ×1). Ändert nur, wie viele feste Physikschritte pro Bild gerechnet werden.
 _Avoid_: Zeitraffer, Speed, Tempo
 
 **Spielzeit**:
@@ -97,7 +97,7 @@ Die im Level vergangene Zeit in Physik-Sekunden (unabhängig von der Zeitstufe).
 _Avoid_: Echtzeit, Laufzeit
 
 **Zurückspulen**:
-Nach einem Verlust einige Sekunden zurück auf einen Schnappschuss. 3 Mal pro Level, kostet den Effizienz-Stern.
+Nach einem Verlust zurück auf einen Schnappschuss, kurz oder weit (Arena 5 | 15 s, Umlaufbahn 10 | 30 s). 3 Mal pro Level, kostet den Effizienz-Stern.
 _Avoid_: Undo, Rewind (im UI), Leben, Continue
 
 **Schnappschuss**:

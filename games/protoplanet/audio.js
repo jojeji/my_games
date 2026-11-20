@@ -418,7 +418,7 @@ export function createEngine(ctx, opts = {}) {
     timeStep({ idx = 1, t = now() } = {}) {
       if (!gate.allow('time', t).ok || !live()) return;
       const m = mood();
-      tone({ t, hz: midiToHz(scaleMidi(m, scaleOf(m).length * 2 + clamp(idx, 0, 3) * 2)), gain: 0.1, att: 0.006, dec: 0.2, oct: 0.1, send: 0.2 });
+      tone({ t, hz: midiToHz(scaleMidi(m, scaleOf(m).length * 2 + clamp(Math.round(idx), 0, 5))), gain: 0.1, att: 0.006, dec: 0.2, oct: 0.1, send: 0.2 });
     },
     ui({ t = now() } = {}) {
       if (!gate.allow('ui', t).ok || !live()) return;

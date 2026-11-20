@@ -96,3 +96,25 @@ test('Stern-Ziele fuer Menschen: Normallevels grosszuegiger als Bot x 1,3 (Zeit 
   assert.ok(LEVELS.find((l) => l.id === '1-4').targets.time >= 300);
   assert.ok(LEVELS.find((l) => l.id === '1-8').targets.time >= 450);
 });
+
+test('Zurückspulen: zwei Stufen, die weite geht entsprechend weiter zurück (Puffer reicht)', async () => {
+  const { createPlay } = await import('../games/protoplanet/play.js');
+  const { levelById } = await import('../games/protoplanet/levels.js');
+  for (const [id, kind] of [['1-4', 'arena'], ['3-5', 'orbit']]) {
+    const [near, far] = T.rewindSteps[kind];
+    assert.ok(far <= T.rewindKeep && near < far, `${id}: Stufen ${near}/${far} passen in den Puffer ${T.rewindKeep}`);
+    for (const back of [near, far]) {
+      const p = createPlay(levelById(id));
+      p.advanceSteps(Math.round((far + 8) / T.dt));
+      const t = p.world.t;
+      p.status = 'lost';
+      assert.ok(p.doRewind(back), `${id}: Zurückspulen ${back} s`);
+      assert.ok(p.world.t <= t - back + 1e-9 && p.world.t > t - back - T.rewindEvery - 1e-9, `${id}: ${back} s zurück, war ${t.toFixed(2)} -> ${p.world.t.toFixed(2)}`);
+    }
+  }
+});
+
+test('Zeitstufen: x1 ist enthalten, Stufen aufsteigend', () => {
+  assert.ok(T.timeSteps.includes(1));
+  for (let i = 1; i < T.timeSteps.length; i++) assert.ok(T.timeSteps[i] > T.timeSteps[i - 1]);
+});
