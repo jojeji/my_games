@@ -224,13 +224,21 @@ export const LEVELS = [
     targets: { eject: 1.25, time: 315 },
   },
   {
-    id: '3-5', chapter: 3, n: 5, rev: 1, title: 'Kometen', family: 'orbit', seed: 5,
+    // rev 2 (nach dem Live-Gang, Rueckmeldung "super schwer"): das Ziel kreist auf der Nachbarspur (r 20, Kreisbahn) ein Stueck VOR dem Spieler und ist leichter (1,5-1,8);
+    // hoechstens EIN Koerper ist schwerer als das Ziel und liegt weit draussen (r >= 25), nichts ausser dem Ziel ist beim Start deutlich schwerer als du; die Kometen bleiben
+    // (flachere Ellipsen: sie kreuzen die Spuren des Spielers und des Ziels nicht mehr und fressen das Ziel nicht weg), sind aber nie schwerer als der Spieler beim Start.
+    id: '3-5', chapter: 3, n: 5, rev: 2, title: 'Kometen', family: 'orbit', seed: 30,
     params: {
       rP: 14, loseR: 90, rings: [8, 14, 22, 30], goalType: 'absorb', slack: 1.4,
-      groups: [og(1, 2.2, 2.6, 18, 26, { tag: 'target', ecc: 0.06 }), ...olad(8, 7, 30, [2, 1.8, 2.6]), og(4, 0.3, 0.6, 26, 34, { f: 0.7, phi: 12 })],
+      groups: [og(1, 1.5, 1.8, 19.5, 20.5, { tag: 'target', ecc: 0, ang: [60, 130] }), og(1, 2.0, 2.4, 25, 30), og(16, 0.12, 0.45, 7, 30), og(7, 0.5, 0.9, 7, 30), og(3, 0.8, 1.0, 7, 30), og(4, 0.3, 0.6, 26, 34, { f: 0.9, phi: 5 })],
     },
     goal: { type: 'absorb' },
-    targets: { eject: 2.95, time: 290 },
+    hint: {
+      text: 'Das Ziel kreist weiter außen. Tippe hinter dich, um die Bahn zu heben, wenn es vor dir liegt. Grüner Treffpunkt = es passt.',
+      textAim: 'Das Ziel kreist weiter außen. Tippe in Flugrichtung, um die Bahn zu heben, wenn es vor dir liegt. Grüner Treffpunkt = es passt.',
+      until: 'absorb',
+    },
+    targets: { eject: 1.5, time: 135 },
   },
   {
     id: '3-6', chapter: 3, n: 6, rev: 1, title: 'Enges System', family: 'orbit', seed: 1,

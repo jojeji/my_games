@@ -63,7 +63,7 @@ export function introCamera(cam, world, k, fog = false) {
   return cam;
 }
 
-export function autoHalf(world, rz = null) {
+export function autoHalf(world, rz = null, cam = null) {
   const p = world.player;
   if (!p) return T.camSpan;
   const hi = camHi(world);
@@ -78,6 +78,14 @@ export function autoHalf(world, rz = null) {
       const extent = el.bound ? Math.max(el.ra, s.d) : s.d * 1.3;
       half = Math.max(half, T.orbit.camOrbit * extent + 0.5 * s.r);
     }
+  }
+  if (cam && cam.keep && cam.keep.length && world.arenaR <= 0) {
+    // Treffpunkt (Ziel `absorb`): die Marker (Spieler dort, Geisterort des Ziels) muessen im Bild bleiben; sichtbar sind half in x und half x Seitenverhaeltnis in y
+    const st = starDist(world);
+    const fx = p.x + (st ? T.orbit.camBias * (st.x - p.x) : 0);
+    const fy = p.y + (st ? T.orbit.camBias * (st.y - p.y) : 0);
+    const asp = cam.aspect > 0 ? cam.aspect : 1.6;
+    for (const k of cam.keep) half = Math.max(half, Math.max(Math.abs(k.x - fx), Math.abs(k.y - fy) / asp) * 1.15 + k.r);
   }
   for (const b of world.bodies) {
     if (b === p || b.m <= p.m || b.kind === 'attractor') continue;
@@ -120,7 +128,7 @@ export function updateCamera(cam, world, dt, now) {
     cam.y += (fy - cam.y) * kf;
   }
   const manual = cam.manualHalf != null && (cam.pinchStartHalf != null || now - cam.manualAt < T.camManualHold);
-  let target = manual ? cam.manualHalf : autoHalf(world, cam.rz);
+  let target = manual ? cam.manualHalf : autoHalf(world, cam.rz, cam);
   if (!manual) cam.manualHalf = null;
   target = Math.min(camHi(world), Math.max(T.camMin * 0.6, target));
   const kz = 1 - Math.exp(-T.camZoomRate * dt);

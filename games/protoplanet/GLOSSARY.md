@@ -56,6 +56,10 @@ _Avoid_: Orbit (nur im Code), Umlaufbahn (nur im Titel von 3-1), Trajektorie
 Die gepunktete, verblassende Linie vom Spieler aus: seine vorhergesagte Bahn für etwa 1,25 Umläufe unter der Anziehung des Protosterns (ohne andere Körper), nach jedem Ausstoß sofort neu berechnet. Rot dort, wo die Bahn im Stern endet, bernstein jenseits der Warnschwelle.
 _Avoid_: Flugbahn-Anzeige, Ghost, Trail
 
+**Treffpunkt**:
+Bei Ziel „Absorbiere …“ (3-3, 3-5, 5-5) der Marker auf der Bahnvorschau: dort, wo deine vorhergesagte Bahn dem Zielkörper am nächsten kommt, ein Ring (du) und ein gestrichelter Geisterring (wo das Ziel dann steht) mit einer feinen Linie. Gedämpftes Gelb mit „Abstand …“; grün mit „Treffer in … s“, wenn sich beide dort berühren und du schwerer bist; korallenrot mit „Noch zu klein“, wenn das Ziel schwerer ist. Erscheint erst, wenn der Abstand unter 14 fällt. Nur Stern und Planeten sind eingerechnet.
+_Avoid_: Abfangpunkt, Zielmarker, Ghost
+
 **Anziehung unter den Körpern**:
 Schwere Körper (ab `selfMin` 2 Massen, höchstens die `selfK` schwersten) ziehen andere weich an, Stärke je Level über `selfGrav` 0..1. Der Spieler zieht nie. In Kapitel 1 und 2 gibt es sie nicht.
 _Avoid_: Schwerkraft zwischen Körpern, N-Körper

@@ -4,6 +4,7 @@ import { T } from './tune.js';
 import { createPlay } from './play.js';
 import { think, pushFrac } from './brain.js';
 import { planOrbit } from './orbit-bot.js';
+import { rngNext } from '../../engine/kit/rng.js';
 
 const B = T.bot;
 const OB = { ...T.bot, maxFrac: T.orbit.plan.maxFrac }; // Kapitel 3: groessere Schuebe erlaubt
@@ -16,7 +17,25 @@ function push(play, dvx, dvy) {
 }
 
 export function createBot() {
-  return { plan: null };
+  return { plan: null, noise: 4242 };
+}
+
+/** Menschen-Probe (nur Messung, T.bot.human = { angSd, magSd } > 0): ein Schub wird ungenau ausgefuehrt (Winkel- und Staerkefehler, deterministisch aus dem Bot-Zustand). */
+function blur(a, st) {
+  const H = T.bot.human;
+  if (!H || !(H.angSd > 0 || H.magSd > 0)) return a;
+  const gauss = () => {
+    let u1;
+    let u2;
+    [u1, st.noise] = rngNext(st.noise);
+    [u2, st.noise] = rngNext(st.noise);
+    return Math.sqrt(-2 * Math.log(Math.max(1e-9, u1))) * Math.cos(2 * Math.PI * u2);
+  };
+  const ang = gauss() * H.angSd;
+  const k = Math.max(0.2, 1 + gauss() * H.magSd);
+  const c = Math.cos(ang);
+  const sn = Math.sin(ang);
+  return { ...a, dx: (a.dx * c - a.dy * sn) * k, dy: (a.dx * sn + a.dy * c) * k };
 }
 
 /** Eine Entscheidung. Gibt die Zahl der Tippen zurueck (zu Testzwecken). */
@@ -25,7 +44,9 @@ export function botAct(play, st) {
   if (!p) return 0;
   // Gravitationslevels (Kapitel 3): Planer mit Vorwaertssimulation, sonst das gemeinsame Gehirn mit linearer Abfangrechnung
   const a = play.world.grav ? planOrbit(play.world, p, { goal: play.goal }, st) : think(play.world, p, { B, goal: play.goal }, st);
-  return a ? push(play, a.dx, a.dy) : 0;
+  if (!a) return 0;
+  const b = blur(a, st);
+  return push(play, b.dx, b.dy);
 }
 
 /** Ein Level mit dem Bot spielen. Gibt {solved, lost, time, ejected, ejects} zurueck. */

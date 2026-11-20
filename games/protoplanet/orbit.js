@@ -160,3 +160,113 @@ export function predictOrbit(w, opt = {}) {
   });
   return { pts, t: tt, flag, n: keep.length, end, rmin, rmax, period: el.period, bound: el.bound, steps, el };
 }
+
+/**
+ * Vorhergesagter Weg eines KOERPERS (Zielkoerper) zu den Zeitpunkten `times` (s ab jetzt, aufsteigend): nur Stern + Planeten auf ihren Bahnen,
+ * keine anderen Koerper (wie die Spielervorschau). Leapfrog mit eigener Schrittweite (angepasst an den Sternabstand des Koerpers), genau auf die Zeitpunkte gesetzt.
+ * Rueckgabe Float64Array [x0,y0,x1,y1,...] (zwei Werte je Zeitpunkt).
+ */
+export function predictTrack(w, body, times) {
+  const atts = attractorsOf(w);
+  const out = new Float64Array(times.length * 2);
+  if (!atts.length || !body) return out;
+  const P = T.orbit.preview;
+  const soft2 = T.orbit.soft * T.orbit.soft;
+  const A = starOf(w);
+  const t0 = w.t;
+  const pp = [0, 0];
+  let x = body.x;
+  let y = body.y;
+  let vx = body.vx;
+  let vy = body.vy;
+  const A2 = [0, 0]; // Rueckgabe von acc ohne neue Felder je Aufruf (GC)
+  const acc = (px, py, tt) => {
+    let ax = 0;
+    let ay = 0;
+    for (const a of atts) {
+      const q = a.po ? attractorAt(a, t0 + tt, pp) : null;
+      const dx = (q ? q[0] : a.x) - px;
+      const dy = (q ? q[1] : a.y) - py;
+      const d2 = dx * dx + dy * dy;
+      const f = a.gm / ((d2 + soft2) * Math.sqrt(d2 + 1e-12));
+      ax += f * dx;
+      ay += f * dy;
+    }
+    A2[0] = ax;
+    A2[1] = ay;
+    return A2;
+  };
+  let t = 0;
+  for (let i = 0; i < times.length; i++) {
+    const goal = times[i];
+    while (t < goal - 1e-9) {
+      const r = Math.max(1, Math.hypot(x - A.x, y - A.y));
+      const dt = Math.min(goal - t, Math.min(P.dtMax, Math.max(P.dtMin, P.stepFrac * Math.sqrt((r * r * r) / A.gm))));
+      let q = acc(x, y, t);
+      vx += q[0] * dt * 0.5;
+      vy += q[1] * dt * 0.5;
+      x += vx * dt;
+      y += vy * dt;
+      q = acc(x, y, t + dt);
+      vx += q[0] * dt * 0.5;
+      vy += q[1] * dt * 0.5;
+      t += dt;
+    }
+    out[2 * i] = x;
+    out[2 * i + 1] = y;
+  }
+  return out;
+}
+
+/**
+ * TREFFPUNKT: wo kommt die Spielerbahn (Vorschau `pv`) dem Zielkoerper am naechsten, wenn beide ihren Bahnen folgen (ohne andere Koerper)?
+ * Gesucht wird der kleinste Abstand ueber dieselben Zeitpunkte wie die Vorschau, die Lage zwischen den Punkten verfeinert eine Parabel durch die drei Nachbarn.
+ * Rueckgabe { i (naechster Vorschaupunkt), t (s ab jetzt), px, py (Spieler dort), tx, ty (Geisterort des Ziels), d (Abstand der Mittelpunkte), rsum (Radiensumme jetzt),
+ * hit (d < rsum), bigger (Spieler jetzt schwerer als das Ziel) } oder null. opt.prefer = Weltzeit des letzten Treffpunkts: ein lokales Minimum in dessen Naehe
+ * wird bevorzugt, solange es kaum schlechter ist (ruhige Anzeige, kein Springen zwischen zwei Begegnungen).
+ */
+export function predictMeeting(w, pv, target, opt = {}) {
+  const p = w.player;
+  if (!p || !pv || pv.n < 2 || !target || !(target.m > 0)) return null;
+  const n = pv.n;
+  const tr = predictTrack(w, target, pv.t);
+  const dist = new Float64Array(n);
+  for (let i = 0; i < n; i++) dist[i] = Math.hypot(pv.pts[2 * i] - tr[2 * i], pv.pts[2 * i + 1] - tr[2 * i + 1]);
+  let best = -1;
+  const mins = [];
+  for (let i = 0; i < n; i++) {
+    const l = i > 0 ? dist[i - 1] : Infinity;
+    const r = i < n - 1 ? dist[i + 1] : Infinity;
+    if (dist[i] <= l && dist[i] <= r) {
+      mins.push(i);
+      if (best < 0 || dist[i] < dist[best]) best = i;
+    }
+  }
+  if (best < 0) return null;
+  if (opt.prefer != null && mins.length > 1) {
+    let alt = -1;
+    for (const i of mins) if (Math.abs(w.t + pv.t[i] - opt.prefer) <= 4 && dist[i] <= dist[best] * 1.25 + 0.3 && (alt < 0 || dist[i] < dist[alt])) alt = i;
+    if (alt >= 0) best = alt;
+  }
+  let f = 0; // Lage des Minimums zwischen den Punkten, -0,5..0,5 Punktabstaende
+  if (best > 0 && best < n - 1) {
+    const a = dist[best - 1] * dist[best - 1];
+    const b = dist[best] * dist[best];
+    const c = dist[best + 1] * dist[best + 1];
+    const den = a - 2 * b + c;
+    const t1 = pv.t[best] - pv.t[best - 1];
+    const t2 = pv.t[best + 1] - pv.t[best];
+    if (den > 1e-12 && Math.abs(t1 - t2) < 0.35 * Math.max(t1, t2)) f = Math.max(-0.5, Math.min(0.5, (0.5 * (a - c)) / den));
+  }
+  const j0 = f < 0 ? best - 1 : best;
+  const u = f < 0 ? 1 + f : f;
+  const j1 = Math.min(n - 1, j0 + 1);
+  const lerp = (arr, o) => arr[2 * j0 + o] + (arr[2 * j1 + o] - arr[2 * j0 + o]) * u;
+  const px = lerp(pv.pts, 0);
+  const py = lerp(pv.pts, 1);
+  const tx = lerp(tr, 0);
+  const ty = lerp(tr, 1);
+  const d = Math.hypot(px - tx, py - ty);
+  const rsum = Math.sqrt(p.m) + Math.sqrt(target.m);
+  return { i: best, t: pv.t[j0] + (pv.t[j1] - pv.t[j0]) * u, px, py, tx, ty, d, rsum, hit: d < rsum, bigger: p.m > target.m };
+}

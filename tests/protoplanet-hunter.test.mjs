@@ -285,7 +285,7 @@ test('Spielstand der Version 2 (Paket A): wird beim Laden migriert, Kapitel 2 bl
     snap: { levelId: '1-3', play: createPlay(levelById('1-3')).serialize(), timeScale: 1 },
   });
   const pr = createProgress({ storage });
-  assert.equal(SAVE_VERSION, 3);
+  assert.equal(SAVE_VERSION, 4);
   assert.equal(pr.stars('1-1'), 3);
   assert.equal(pr.stars('1-3'), 3);
   for (const id of ['1-4', '1-8', '2-2', '2-8']) {

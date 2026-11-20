@@ -602,6 +602,56 @@ export function createRenderer(canvas) {
       }
     }
 
+    // Treffpunkt (Ziel `absorb`, Gravitationslevels): auf der Vorschaubahn ein Ring (Spieler dann), dort, wo das Ziel dann sein wird, ein gestrichelter Geisterring, dazwischen eine feine Linie.
+    // Gruen, wenn sich beide dort beruehren UND du schwerer bist; bernsteinfarben, wenn sie sich beruehren, du aber noch kleiner bist; sonst gedaempft mit Abstand und Zeit.
+    const mt = s.meet;
+    if (p && mt) {
+      const ax = toX(mt.px);
+      const ay = toY(mt.py);
+      const gx = toX(mt.tx);
+      const gy = toY(mt.ty);
+      const rg = Math.max(6, (mt.rsum - Math.sqrt(p.m)) * sc); // Radius des Ziels
+      const rm = Math.max(5, Math.sqrt(p.m) * sc);
+      const col = mt.hit ? (mt.bigger ? '120,255,170' : '255,128,108') : '255,226,140'; // gruen = Treffer, korallenrot = Treffer, aber du bist noch kleiner, sonst wie der Zielring (gedaempft gelb)
+      const a0 = mt.hit ? 0.95 : 0.55;
+      const len = Math.hypot(gx - ax, gy - ay);
+      if (len > rm + rg + 3) {
+        const ux = (gx - ax) / len;
+        const uy = (gy - ay) / len;
+        ctx.strokeStyle = `rgba(${col},${a0 * 0.7})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ax + ux * (rm + 2), ay + uy * (rm + 2));
+        ctx.lineTo(gx - ux * (rg + 2), gy - uy * (rg + 2));
+        ctx.stroke();
+      }
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = `rgba(${col},${a0})`;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(ax, ay, rm, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(${col},${mt.hit ? 0.22 : 0.08})`;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(gx, gy, rg, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const label = mt.hit ? (mt.bigger ? `Treffer in ${Math.round(mt.t)} s` : 'Noch zu klein') : `Abstand ${mt.d.toFixed(1).replace('.', ',')}`;
+      ctx.font = '700 12px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const hw = ctx.measureText(label).width / 2 + 6;
+      const lx = Math.max(hw, Math.min(W - hw, gx)); // die Beschriftung bleibt im Bild
+      const ly = gy < ay ? gy - rg - 12 : gy + rg + 12;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(4,6,12,0.7)';
+      ctx.strokeText(label, lx, ly);
+      ctx.fillStyle = `rgba(${col},${Math.min(1, a0 + 0.1)})`;
+      ctx.fillText(label, lx, ly);
+    }
+
     // Effekte unter dem Spieler: Strom, Abgas, Ringe (additiv)
     if (fx) fx.draw(ctx, toX, toY, sc, dots, dotSize, W, H);
 

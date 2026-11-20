@@ -456,7 +456,7 @@ function addPlanets(o, p, rng, bodies) {
 
 /**
  * Familie `orbit`. p = { gm?, rS?, rP?, loseR?, warnR?, selfGrav?, rings?, goalType?, mass?, slack?, groups[] }
- *  group = { n, lo, hi, skew?, rMin, rMax, dir? (+1/-1), ecc? (Streuung des Tempos, 0,012), phi? (Flugwinkel-Streuung in Grad), f? (festes Tempo-Verhaeltnis), tag?, minRp? }
+ *  group = { n, lo, hi, skew?, rMin, rMax, ang? ([von, bis] Grad), dir? (+1/-1), ecc? (Streuung des Tempos, 0,012), phi? (Flugwinkel-Streuung in Grad), f? (festes Tempo-Verhaeltnis), tag?, minRp? }
  * Koerper stehen auf Bahnen um den Stern: innen schneller als aussen; Kreisbahnen mit leichter Streuung, Kometen (f < 1, phi) auf Ellipsen.
  */
 function orbit(p, rng) {
@@ -478,7 +478,7 @@ function orbit(p, rng) {
         // Koerper in verschiedenen Spuren nur, wenn die Spuren sich ueberlappen: das verbietet die Regel unten. So bilden sich Guertel mit Luecken, und nichts verschmilzt von allein zum Riesen.
         if (!comet) r = o.rP + Math.round((r - o.rP) / laneW) * laneW;
         if (r < g.rMin - laneW / 2 || r > g.rMax + laneW / 2 || r < o.rS + rb + 2) continue;
-        const ang = uni(rng, 0, 360);
+        const ang = g.ang ? uni(rng, g.ang[0], g.ang[1]) : uni(rng, 0, 360); // g.ang = [von, bis] Grad: Startwinkel eingegrenzt (z. B. Ziel ein Stueck VOR dem Spieler)
         const f = comet ? g.f * uni(rng, 0.985, 1.015) : 1 + (g.ecc || 0) * uni(rng, -1, 1);
         const s = orbitState(o.gm, r, ang, { f, dir: g.dir || 1, phi: g.phi ? uni(rng, -g.phi, g.phi) : 0 });
         if (Math.hypot(s.x - pl.x, s.y - pl.y) < 1 + rb + 2 + (m >= 0.9 ? 4 : 0)) continue;

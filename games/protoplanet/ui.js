@@ -15,7 +15,7 @@ import { createInput } from './input.js';
 import { createAudio } from './audio.js';
 import { createFx, blendWorlds } from './fx.js';
 import { step as physStep, snapshot, restore } from './physics.js';
-import { predictOrbit, driftState } from './orbit.js';
+import { predictOrbit, predictMeeting, driftState } from './orbit.js';
 import { dangerOf, sizeOf } from './audio-score.js';
 import { dateKey, dailyLevel } from './daily.js';
 import { fogOf, fogRadius, fogGlimmers, fogHints, fogIntro } from './fog.js';
@@ -146,6 +146,10 @@ export function mountApp(root, progress) {
   let preview = null;
   let previewAt = -Infinity;
   let previewEj = -1;
+  let meet = null; // Treffpunkt (orbit.js predictMeeting) bei Ziel `absorb`: wo die Vorschaubahn dem Zielkoerper am naechsten kommt
+  let meetAbs = null; // Weltzeit des letzten Treffpunkts (ruhige Anzeige)
+  let meetShown = false; // Treffpunkt ist gerade sichtbar (Schwelle mit Spielraum)
+  const meetStats = { n: 0, ms: 0, max: 0 };
   let warn = 0;
   let warnShown = false;
   let lastWarnSnd = -Infinity;
@@ -442,6 +446,9 @@ export function mountApp(root, progress) {
     preview = null;
     previewAt = -Infinity;
     previewEj = -1;
+    meet = null;
+    meetAbs = null;
+    meetShown = false;
     warn = 0;
     warnShown = false;
     setCls(warnEl, 'lose', false);
@@ -985,7 +992,26 @@ export function mountApp(root, progress) {
       if (ms > previewStats.max) previewStats.max = ms;
       previewAt = now;
       previewEj = ej;
+      meet = null;
+      const tg = play.goal && play.goal.type === 'absorb' && preview ? w.bodies.find((b) => b.tag === 'target' && b.m > 0) : null;
+      if (tg) {
+        const t1 = performance.now();
+        meet = predictMeeting(w, preview, tg, { prefer: meetAbs });
+        const ms1 = performance.now() - t1;
+        meetStats.n++;
+        meetStats.ms += ms1;
+        if (ms1 > meetStats.max) meetStats.max = ms1;
+      }
+      if (meet) {
+        const lim = meetShown ? T.orbit.meet.hideD : T.orbit.meet.showD; // Schwelle mit Spielraum: nichts springt an der Grenze
+        if (meet.d > lim) meet = null;
+      }
+      meetShown = !!meet;
+      meetAbs = meet ? w.t + meet.t : null;
     }
+    // die Kamera haelt die Marker (Spieler dort, Geisterort des Ziels) im Bild
+    cam.keep = meet && phase === 'play' ? [{ x: meet.px, y: meet.py, r: Math.sqrt(p.m) + 1 }, { x: meet.tx, y: meet.ty, r: meet.rsum + 2 }] : null;
+    cam.aspect = renderer.view.h / Math.max(1, renderer.view.w);
     warn = driftState(w);
     const show = warn > 0 && play.status === 'running' && phase === 'play';
     if (show !== warnShown) {
@@ -1149,7 +1175,10 @@ export function mountApp(root, progress) {
     if (!paused || phase !== 'play') fx.update(dt, rw);
     if (phase === 'play') trackMass(now);
     if (play.world.grav && phase !== 'loss') orbitFrame(now);
-    else if (preview) preview = null;
+    else if (preview) {
+      preview = null;
+      meet = null;
+    }
     // Nebel: Sichtradius (Auftakt: waechst aus der Dunkelheit, Sieg: lichtet sich), Glimmen mit Glaettung, Hinweise
     let fogState = null;
     if (fogCfg && rw.player) {
@@ -1202,6 +1231,7 @@ export function mountApp(root, progress) {
         fx,
         aim: pointer && play.beam ? play.beam : null,
         preview: phase === 'loss' || phase === 'rewind' ? null : preview,
+        meet: phase === 'play' ? meet : null,
         warn: phase === 'play' || phase === 'intro' ? warn : 0,
         introRing: phase === 'intro' ? 1 : Math.max(0, Math.min(1, 1 - (now - introEndAt) / 0.9)),
         fade,
@@ -1363,5 +1393,5 @@ export function mountApp(root, progress) {
     progress.setSnap(null);
     renderSelect();
   }
-  return { startLevel, showSelect, audio, previewStats, frameStats, skipIntro, get fx() { return fx; }, get state() { return { screen, level, play, paused, cam, preview, warn, phase, ghost, cardShown }; } };
+  return { startLevel, showSelect, audio, previewStats, meetStats, frameStats, skipIntro, get fx() { return fx; }, get state() { return { screen, level, play, paused, cam, preview, meet, warn, phase, ghost, cardShown }; } };
 }

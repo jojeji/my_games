@@ -9,9 +9,12 @@ import { prevKey } from './daily.js';
 // (die Level muessen neu gespielt werden; Kapitel 2 oeffnet sich mit dem neuen 1-8). Alles andere (Level 1-1..1-5, Einstellungen) bleibt.
 // Version 3 (Paket A, lebendige Welten): 1-4..1-8 und 2-2..2-8 wurden neu gebaut. Ihre Sterne und Bestwerte gehoeren zu anderen Leveln und werden geloescht;
 // `done` BLEIBT (wer Kapitel 2 schon offen hat, behaelt es offen, Freischalten haengt am Geschafft-Haken des Levels davor). Laufende Schnappschuesse dieser Level gehen weg.
-export const SAVE_VERSION = 3;
+// Version 4 (nach dem Live-Gang, 3-5 Kometen rev 2): das Ziel liegt jetzt auf der Nachbarspur und ist leichter. Sterne und Bestwerte von 3-5 gehoeren zu einem anderen Level und werden geloescht,
+// `done` BLEIBT (die Kapitelfreischaltung haengt daran). Ein laufender Schnappschuss von 3-5 geht weg (snapValid verwirft ihn ohnehin ueber `rev`).
+export const SAVE_VERSION = 4;
 export const REBUILT_V3 = ['1-4', '1-5', '1-6', '1-7', '1-8', '2-2', '2-3', '2-4', '2-5', '2-6', '2-7', '2-8'];
 export const REBUILT_V2 = ['1-6', '1-7', '1-8'];
+export const REBUILT_V4 = ['3-5'];
 export const MIGRATIONS = {
   1: (data) => {
     if (data && data.progress) for (const id of REBUILT_V2) delete data.progress[id];
@@ -27,6 +30,17 @@ export const MIGRATIONS = {
       }
     }
     if (data && data.snap && REBUILT_V3.includes(data.snap.levelId)) data.snap = null;
+    return data;
+  },
+  3: (data) => {
+    if (data && data.progress) {
+      for (const id of REBUILT_V4) {
+        const p = data.progress[id];
+        if (p && p.done) data.progress[id] = { done: true, eff: false, fast: false, bestTime: null, bestEject: null };
+        else delete data.progress[id];
+      }
+    }
+    if (data && data.snap && REBUILT_V4.includes(data.snap.levelId)) data.snap = null;
     return data;
   },
 };

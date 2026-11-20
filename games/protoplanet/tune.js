@@ -105,6 +105,8 @@ export const T = {
       every: 0.1, // s echte Zeit zwischen zwei Neuberechnungen (nach einem Ausstoss sofort)
       starGap: 0.3, // Bahnpunkt gilt als "im Stern", wenn r < Sternradius + Spielerradius + starGap
     },
+    // Treffpunkt (Ziel `absorb`, orbit.js predictMeeting): erscheint, wenn die Vorschaubahn dem Ziel naeher als showD (Welteinheiten) kommt, verschwindet erst jenseits hideD (kein Flackern an der Schwelle)
+    meet: { showD: 14, hideD: 16 },
     camBias: 0.4, // Orbit-Kamera schaut um diesen Anteil des Weges zum Stern vom Spieler weg
     camBigNear: 0.8, // Orbit-Kamera: groessere Koerper halten den Zoom nur innerhalb dieses Vielfachen der Sichtweite offen (viele Koerper sind groesser als du: sonst zoomt sie immer heraus)
     camOrbit: 0.72, // ... und mindestens camOrbit x Apoapsis der aktuellen Bahn (die ganze Ellipse im Bild)
@@ -162,6 +164,7 @@ export const T = {
   },
   // --- Bot ---
   bot: {
+    human: { angSd: 0, magSd: 0 }, // Menschen-Probe (nur Messung, tools/sim-protoplanet.mjs --tune): Winkel- (rad) und Staerkefehler (Anteil) jedes Schubs; 0 = exakter Bot
     every: 30, // Physikschritte je Entscheidung (0,25 s)
     horizon: 9, // s Vorhersage fuer Gefahren
     margin: 0.5, // Sicherheitsabstand (Welteinheiten) zusaetzlich zur Radiensumme

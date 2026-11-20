@@ -555,3 +555,51 @@ Spielstand `daily: { date, bestTime, bestEject, done, streak, lastDone }` (`merg
 
 **Teil 4 — Schliff.** Kacheltitel zweizeilig mit Silbentrennung (alle Titel ganz lesbar bei 360 px). Gefahren-Glühen am Bildrand stärker (`dangerAlpha` 0,9, größerer Radius, heller Kern am Rand; Bildfolge geprüft: bei k ≈ 0,4 deutlich, nicht störend).
 3-7 „Planet“ bleibt unverändert (Kapitel 3 ist sim-kalibriert; ein Umbau bräuchte rev + Migration und brächte gegenüber dem Aufwand zu wenig). Kapitel 5 Klang: Stimmung `5` greift (Name „Planetensystem“, lydisch).
+
+
+### Nach dem Live-Gang: 3-5 „Kometen“ (rev 2) und der Treffpunkt — umgesetzt
+
+**Rückmeldung des Besitzers (Handy):** 3-5 „super schwer“. Er scheitert (b) daran, den Zielkörper zu erwischen, und (c) daran, dass ein größerer Körper ihn wegfrisst. Der Bot löste 3-5 in 1–2,5 min, für Menschen ist Bahnmechanik ein Vielfaches schwerer (der Bot kennt die Zukunft aller Körper, ein Mensch nicht).
+
+**1. Treffpunkt** (Bahnvorschau, Ziel `absorb`, alle Gravitations-Levels: 3-3, 3-5, 5-5). `orbit.js`: `predictTrack(w, body, times)` sagt einen beliebigen Körper (Stern + Planeten auf ihren Bahnen, keine anderen Körper, eigene Leapfrog-Schrittweite, genau auf die Zeitpunkte gesetzt) für DIESELBEN Zeitpunkte voraus wie `predictOrbit` (`pv.t`, unverändert, keine neuen Felder). `predictMeeting(w, pv, target, {prefer})` sucht den kleinsten Abstand über alle Vorschaupunkte, verfeinert die Lage zwischen den Punkten mit einer Parabel durch die drei Nachbarn und liefert `{ t, px,py (Spieler dann), tx,ty (Geisterort des Ziels), d, rsum, hit (d < Radiensumme), bigger (Spieler jetzt schwerer) }`. `prefer` = Weltzeit des letzten Treffpunkts: ein lokales Minimum nahe daran wird bevorzugt, solange es kaum schlechter ist (kein Springen zwischen zwei Begegnungen).
+- **Darstellung** (`render.js`): auf der Vorschaubahn ein Ring (Spielergröße, mindestens 5 px), dort, wo das Ziel dann steht, ein gestrichelter Geisterring in Zielgröße, dazwischen eine feine Linie. **Gedämpftes Gelb** (Farbe des Zielrings) mit „Abstand 4,0“; **grün** mit „Treffer in 58 s“, wenn sie sich berühren UND du dann schwerer bist; **korallenrot** mit „Noch zu klein“, wenn sie sich berühren, das Ziel aber schwerer ist (sonst würde es dich fressen, grün wäre eine Falle). Die Beschriftung bleibt im Bild.
+- **Takt/Ruhe** (`ui.js orbitFrame`): wird zusammen mit der Vorschau neu berechnet (sofort nach jedem Ausstoß, sonst alle 0,1 s), also gleiches Verfahren, kein Flackern. Der Marker erscheint erst, wenn der Abstand unter `T.orbit.meet.showD` (14) fällt und bleibt bis `hideD` (16): in 5-5 liegt das Ziel am Start 24 entfernt, dort wäre „Abstand 24,3“ mit langer Linie nur Lärm. **Kamera:** `cam.keep` (nur wenn der Marker sichtbar ist) hält Spieler-Marker und Geisterort im Bild (`camera.js autoHalf`, Seitenverhältnis aus der Ansicht); ohne das lag der Treffpunkt im ersten Test am Bildrand außerhalb.
+- **Kosten:** Node (warm) 0,025 ms je Treffpunkt (Vorschau allein 0,055 ms), im Test-Limit < 0,3 ms; Browser (Headless, 390×844, `ui.js meetStats`): Mittel 0,09 ms (13–15 ms über ~150 Berechnungen), Maximum 0,9–2,3 ms (Timer-Auflösung 0,1 ms, einzelne GC-Ausreißer, Vorschau allein hat dieselben). Die Zeichenzeit je Bild blieb bei Mittel 0,7 ms.
+- **Abweichung zur echten Simulation:** Test (3 Konfigurationen, nur Stern + Spieler + Ziel, echte Physik): Spieler UND Ziel liegen an den Zeitpunkten der Vorschau bis zum Treffpunkt innerhalb 2 % des Bahnradius; kleinster Abstand der echten Simulation = vorhergesagter ± 4 %. Rückwärts konstruierter Treffer (Ziel wird durch Zeitumkehr so gesetzt, dass es sich in 20 s mit dem Spieler trifft): `hit`, Zeitpunkt ± 1,5 s, die echte Simulation bestätigt (Abstand < 1,5). Grenze: andere Körper (Kleinzeug, das der Spieler unterwegs schluckt) verschieben die echte Bahn unvorhergesehen, der Marker ändert sich dann mit der nächsten Neuberechnung.
+
+**2. 3-5 rev 2** (`levels.js`; Familie `orbit` bekam `ang: [von, bis]` je Gruppe, ein Zufallsaufruf wie vorher, alle anderen Levels bleiben Byte für Byte gleich: geprüft für alle Levels + Zufallsseeds gegen den alten Code).
+
+| | alt (rev 1) | neu (rev 2) |
+|---|---|---|
+| Zielkörper | Masse 2,2–2,6, Bahnband r 18–26, leicht elliptisch (`ecc` 0,06) | Masse 1,5–1,8, Spur r 20 (Kreisbahn, `ecc` 0), Start 60–130° VOR dem Spieler |
+| Schwerere Körper | 2 Große 1,8–2,6 + 4 Mittlere 1,1–1,9 überall (r 7–30) | EIN Großer 2,0–2,4 bei r 25–30; Mittlere 0,8–1,0 (nicht größer als du) |
+| Kometen | 4 × 0,3–0,6, `f` 0,7, `phi` 12 (kreuzen alle Spuren, lösen Kettenreaktionen aus) | 4 × 0,3–0,6, `f` 0,9, `phi` 5 (Periapsis ~22: berühren Spieler- und Zielspur nicht) |
+| Körper | 35 | 33 |
+| Sterne | 2,95 Ausstoß / 290 s | 1,5 Ausstoß / 135 s (Bot-Median × 1,8 / × 2) |
+| Hilfe | – | zweizeilig, beide Steuerungen, bis zum ersten Absorbieren; „Grüner Treffpunkt = es passt.“ |
+| fester Seed (3 Bot-Varianten) | Seed 5: 143 / 63 / 143 s | Seed 30: 67 / 74 / 64 s (Ausstoß 0,81 / 0,82 / 0,21) |
+| Familie 30 Seeds (1000..) | 30/30, Median 97 s | 30/30, Median 74 s, p90 141 s |
+| 150 fremde Seeds (7000..) | 149/150 = 99 %, Median 102 s | 150/150 = 100 %, Median 74 s, p90 134 s |
+| Endmasse (Median) | 9,0 | 5,3 |
+| Ziel ohne Zutun gefressen (300 s, 300 Seeds) | 12 (4 %) | 2 (0,7 %) |
+
+**Gegen (c), wie gemessen:** Ursache des Wegfressens waren die Kometen: ein Komet, der in eine Spur einschlägt, macht einen Körper exzentrisch, der danach alle Spuren kreuzt und ein Schneeball wird (Verursacher 3–5 Massen nach 100–250 s). Ohne Kometen: 0 von 100 Zielen weg; Kometen `f` 0,7: 9–12; `f` 0,85: 2 %; `f` 0,9 mit `phi` 5: 0,3–0,7 %. Verworfen: dünnere Gürtel (10 %), leichtere Kometen (2 %). Ein Großer bleibt (die Bedrohung, die der Besitzer kennt), liegt aber weit außen. **Mittlere unter 1,0:** senkte die Verluste der verschlechterten Bots (Tabelle unten) von 13 auf 7–9 je 150 und ist für Menschen angenehmer, kostete aber Bot-Zeit (Median 59–65 s, Rand zum Korridor 60 s); mit Spur r 20 statt 18 liegt der Median bei 74 s. Spur 22 wäre noch länger (83 s), das Hohmann-Manöver dorthin ist aber deutlich schwerer. Der Bot wartet nicht auf die Phase, deshalb verlängert ein größerer Startwinkel die Bot-Zeit nicht.
+**„Endmasse ≥ 6“ (Abnahme „Welt lebt“) nicht erfüllt, bewusst:** das Ziel wiegt 1,5–1,8, der Bot hört nach dem Absorbieren auf; Mindest-Endmasse 4 in `tests/sim-protoplanet-orbit2.test.mjs` (wie 3-7 mit 3,5). Alles andere der Abnahme unverändert (fest ≥ 2 von 3, Zeit 60–420 s, Familie ≥ 80 %, Stern-Ziele erreichbar, Welt lebt Geschwindigkeit).
+
+**3. „Menschen-Probe“** (grob, kein Ersatz für Spieler): `T.bot.human = { angSd, magSd }` (nur Messung, Standard 0) macht jeden Schub des Bots ungenau (Winkelfehler in rad, Staerkefehler als Anteil, deterministisch), dazu über `--tune` eine längere Reaktionszeit und gröberen Planer. 150 fremde Seeds (7000..), alt gegen neu, Zahlen „gelöst / davon in ≤ 150 s / verloren / Median-Zeit / Ausstoß“:
+
+| Probe | Einstellung | rev 1 | rev 2 |
+|---|---|---|---|
+| exakt | – | 149 / 128 / 0 / 102 s / 1,56 | 150 / 141 / 0 / 74 s / 0,82 |
+| leicht | Winkel 0,12, Stärke 25 %, Entscheidung alle 2,5 s | 149 / 121 / 1 / 114 s / 1,66 | 149 / 140 / 1 / 79 s / 0,85 |
+| mittel | Winkel 0,5, Stärke 60 %, alle 6 s, Planer 8 Richtungen, Horizont 20 s | 119 (79 %) / 52 / 14 / 160 s / 2,98 | 138 (92 %) / 86 / 7 / 126 s / 1,62 |
+| stark | Winkel 0,8, Stärke 80 %, alle 8 s, Horizont 15 s | 59 (39 %) / 20 / 49 / 188 s / 2,24 | 86 (57 %) / 42 / 40 / 151 s / 1,59 |
+
+Lesart (ehrlich): die neue Fassung ist für ungenaue Spieler deutlich schneller und sparsamer (Ausstoß halbiert, 1,6- bis 2,1-mal so viele Läufe unter 150 s) und wird um 13 bzw. 18 Punkte öfter gelöst; die Verluste (vom Stern, von der Abdrift, von größeren Körpern gefressen) gehen nur bei „mittel“ zurück, bei „stark“ kaum. Das Ziel wurde in diesen Läufen nie weggefressen (0 von 150). Der Bot nutzt den Treffpunkt nicht, die Probe misst also die Geometrie des Levels, nicht die Hilfe: dass ein Mensch den Marker versteht, zeigen die Screenshots (unten), nicht die Zahlen.
+
+**4. Spielstand:** `SAVE_VERSION` 4, Migration `3` löscht Sterne und Bestwerte von 3-5 und behält `done` (Kapitelfreischaltung), ein Schnappschuss von 3-5 geht weg (`snapValid` verwirft ohnehin `rev` 1). Test mit ECHTEM Spielstand der Version 3 (`tests/fixtures/protoplanet-v3.json`, mit dem Code vor der Änderung geschrieben: Kapitel 1–2, 3-1..3-4 geschafft, 3-5 geschafft mit Bestwerten, laufender Schnappschuss in 3-5): `tests/protoplanet-save-v4.test.mjs`.
+
+**5. Tageslevel:** das Preset „Kometen“ (`daily.js`, Level 3-5) nutzt automatisch die neue Fassung (es ist deren Familie und Parameter). Der alte Bestand hatte Einträge mit Bot-Zeiten unter 60 s (17 Fehler bei `--verify`), Liste neu erzeugt (165 s) und `--verify` mit 0 Fehlern bestanden (Zeiten 60–358 s). Entscheidung: neue Fassung, weil die alte genau die ist, die der Besitzer „super schwer“ nannte und ein Tageslevel für alle spielbar bleiben soll.
+
+**6. Browser** (Playwright, 390×844 und 360×740, Touch per CDP für einen Schub): 3-5 Start mit Hilfe, neutraler Treffpunkt („Abstand 4,0“), grüner Treffpunkt („Treffer in 58 s“, per Suche nach einem passenden Schub erzeugt), „Noch zu klein“ (Spielermasse auf 1 gesetzt), nach echtem Touch-Schub, 5-5 mit Treffpunkt (nach Suche, „Abstand 4,9“) und ohne (am Start zu weit weg), 3-3; 0 Konsolenfehler. Screenshots nur im Arbeitsverzeichnis der Sitzung (nicht im Repo).
+**7. Offen.** Gefühl für Menschen ungeprüft (kein Handy-Test). Die Hilfe-Box deckt am Start den unteren Bildteil ab, dort steht der Zielkörper in 3-5. Der Marker kennt nur Stern und Planeten: unterwegs geschlucktes Kleinzeug verschiebt die echte Bahn.
