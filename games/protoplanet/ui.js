@@ -449,6 +449,11 @@ export function mountApp(root, progress) {
     meet = null;
     meetAbs = null;
     meetShown = false;
+    if (meetCapable() && !progress.state.meetToast && progress.settings.meetHelp === 'auto' && progress.meetHelp(lv.id)) {
+      progress.state.meetToast = true;
+      progress.save();
+      setTimeout(() => toast('Hilfe aktiv: Der Treffpunkt zeigt, ob deine Bahn das Ziel erreicht.', { kind: 'good' }), 900);
+    }
     warn = 0;
     warnShown = false;
     setCls(warnEl, 'lose', false);
@@ -573,6 +578,7 @@ export function mountApp(root, progress) {
           label: 'Neu starten',
           onClick: () => {
             leaving = true;
+            countFail();
             setTimeout(() => go(() => startLevel(level, null)), 0);
           },
         },
@@ -604,11 +610,23 @@ export function mountApp(root, progress) {
     audio.setPaused(false);
   }
 
+  /* ---------- Fehlversuche (Treffpunkt-Hilfe) ---------- */
+  /** Verlust oder Neustart nach mindestens `T.orbit.meet.minPlay` s Spielzeit zaehlt als Fehlversuch dieses Levels (nicht im Tageslevel). */
+  function countFail() {
+    if (!level || level.daily || !play || play.world.t < T.orbit.meet.minPlay) return;
+    progress.addFail(level.id);
+    progress.save();
+  }
+  const meetCapable = () => !!(play && play.goal && play.goal.type === 'absorb' && play.world.grav);
+  /** Ist der Treffpunkt in diesem Level gerade an? (Aus: predictTrack/predictMeeting werden gar nicht gerechnet.) */
+  const meetOn = () => !!level && meetCapable() && (level.daily ? progress.settings.meetHelp === 'always' : progress.meetHelp(level.id));
+
   /* ---------- Verlust ---------- */
   function onLoss(now) {
     endShown = true;
     phase = 'loss';
     phaseT0 = now;
+    countFail();
     vibe(T.fx.vibe.loss);
     audio.sfx.swallowed();
     audio.update({ lift: -1, danger: 0 });
@@ -878,7 +896,8 @@ export function mountApp(root, progress) {
     const pct = Math.floor(g.frac * 100);
     txt(goalTxt, goalText(play.goal));
     txt(goalPct, goalCounter(play.goal, g));
-    setCls(goalPct, 'wide', play.goal.type === 'last' || play.goal.type === 'largest');
+    setCls(goalPct, 'wide', play.goal.type === 'last' || play.goal.type === 'largest' || (play.goal.type === 'absorb' && g.tm != null));
+    setCls(goalPct, 'warn', g.edible === false);
     setStyle(barFill, 'width', pct + '%');
     setCls(bar, 'near', g.frac >= T.fx.hudNear && play.status === 'running');
     const calm = reduceMotion();
@@ -993,7 +1012,7 @@ export function mountApp(root, progress) {
       previewAt = now;
       previewEj = ej;
       meet = null;
-      const tg = play.goal && play.goal.type === 'absorb' && preview ? w.bodies.find((b) => b.tag === 'target' && b.m > 0) : null;
+      const tg = preview && meetOn() ? w.bodies.find((b) => b.tag === 'target' && b.m > 0) : null;
       if (tg) {
         const t1 = performance.now();
         meet = predictMeeting(w, preview, tg, { prefer: meetAbs });
@@ -1268,6 +1287,24 @@ export function mountApp(root, progress) {
       sync();
       return btn;
     };
+    /** Treffpunkt-Hilfe: Automatisch (nach 2 Fehlversuchen im Level) | Immer | Aus. */
+    const meetChoice = () => {
+      const opts = [['auto', 'Automatisch'], ['always', 'Immer'], ['off', 'Aus']];
+      const btns = opts.map(([v, label]) =>
+        h('button', { class: 'pp-seg', type: 'button', role: 'radio', onClick: () => {
+          settings().meetHelp = v;
+          sync();
+          progress.save();
+        } }, label),
+      );
+      const sync = () => btns.forEach((b, i) => {
+        const on = (settings().meetHelp || 'auto') === opts[i][0];
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.classList.toggle('on', on);
+      });
+      sync();
+      return h('div', { class: 'pp-choice' }, h('span', { class: 'pp-slider-head' }, h('b', { text: 'Treffpunkt-Hilfe' })), h('span', { class: 'muted small', text: 'Zeigt in Bahn-Leveln mit Zielkörper, ob deine Bahn ihn trifft. Automatisch: erst nach zwei Fehlversuchen im Level.' }), h('div', { class: 'pp-segs', role: 'radiogroup' }, ...btns));
+    };
     const slider = (title, key) => {
       const val = h('span', { class: 'pp-slider-val num' });
       const input = h('input', { class: 'pp-slider', type: 'range', min: '0', max: '100', step: '5', 'aria-label': title });
@@ -1300,6 +1337,7 @@ export function mountApp(root, progress) {
         audio.refreshVolumes();
         document.querySelectorAll('.pp-sound').forEach((b) => b.dispatchEvent(new Event('pp-sync')));
       }),
+      meetChoice(),
       sw('Vibration', 'Feine Impulse beim Absorbieren, beim Ausstoßen und bei Gefahr, länger beim Verlust. Auf iOS ohne Wirkung.', () => settings().vibrate, (v) => (settings().vibrate = v)),
       sw('Weniger Bewegung', 'Weniger Effekte, kein Parallax, keine Zeitlupe, kürzerer Auftakt. Standard folgt der Systemeinstellung.', reduceMotion, (v) => (settings().reduceMotion = v)),
       h(

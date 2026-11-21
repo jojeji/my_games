@@ -350,3 +350,10 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - **Kometen auf kreuzenden Ellipsen sind Kettenreaktionen:** ein Komet, der eine Spur trifft, macht den Körper exzentrisch, der danach alles frisst (Schneeball). Ein Ziel, das nicht weggefressen werden soll, braucht Kometen, die seine Spur nicht kreuzen (Periapsis > Spur): 4 % -> 0,7 % gefressen in 300 s. Messen mit einem passiven Lauf (Spieler tut nichts) über 300 Seeds.
 - **Menschen-Probe ohne Menschen:** den Bot ungenau machen (Winkel-/Stärkefehler, längere Reaktionszeit, gröberer Planer) und vergleichen, wie oft er in 150 s fertig wird und wie viel Masse er ausstößt. Die Lösungsquote allein trennt alt und neu kaum (99 % vs 100 %), Zeit und Ausstoß schon.
 - **Ein einfacheres Level liegt schnell unter dem Zeitkorridor des Bots (60 s)**, und die Tageslevel-Liste, die dasselbe Preset nutzt, kippt mit (17 Fehler bei `--verify`): nach jeder Level-Änderung `tools/daily-protoplanet.mjs` neu laufen lassen.
+
+
+## Protoplanet: Hilfen auf Bedarf (Treffpunkt, 3-5)
+- Ein Abfang-Lernlevel darf nicht zusätzlich Wachstum verlangen: ist das Ziel schwerer als der Spieler, bleibt jede Bahnhilfe nutzlos. Zeige den Massenvergleich ausdrücklich im HUD („Ziel x – wachse zuerst“) und am Zielkörper (Farbe/Schloss).
+- Bahnmanöver kosten einen Menschen ein Vielfaches an Masse gegenüber dem Bot (jede Korrektur ~8 %, ungenaue Schübe mehr). Bot-Zeiten und -Quoten sagen wenig über die Spielbarkeit, die Menschen-Probe (`T.bot.human`) nur grob.
+- Eine Hilfe, die ständig neu rechnet und springt (Treffpunkt samt Kamera-Verfolgung), wirkt auf dem Handy als Ruckeln, auch wenn die Rechenzeit klein ist: Kamera nie einem berechneten, springenden Punkt folgen lassen. Hilfen lieber erst nach Fehlversuchen einblenden (Zähler je Level im Spielstand, Einstellung Automatisch | Immer | Aus) und im Aus-Zustand gar nicht rechnen.
+- Wenn der Besitzer ein Level nach einer Entschärfung schafft und es „gefühlt leichter“ nennt: nicht weiter entschärfen, sondern die Hilfen verbessern.

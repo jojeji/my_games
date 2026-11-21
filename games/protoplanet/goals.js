@@ -24,6 +24,7 @@ export function goalExplain(goal) {
 export function goalCounter(goal, status) {
   if (goal.type === 'last') return `Noch ${status.n == null ? '–' : status.n} Körper`;
   if (goal.type === 'largest') return status.n == null ? '–' : status.n === 1 ? 'Noch 1 größerer' : `Noch ${status.n} größere`;
+  if (goal.type === 'absorb' && status.tm != null) return status.edible ? `Ziel ${fmtMass(status.tm)} · du ${fmtMass(status.pm)}` : `Ziel ${fmtMass(status.tm)} – wachse zuerst`;
   return Math.floor(status.frac * 100) + ' %';
 }
 
@@ -62,10 +63,10 @@ export function goalStatus(world, goal) {
     const t = world.bodies.find((b) => b.tag === 'target');
     if (!t) return { done: true, frac: 1 };
     // erst Masse aufbauen (bis 50 %), dann dem Zielkoerper naeherkommen (bis 99 %)
-    if (p.m <= t.m) return { done: false, frac: 0.5 * (p.m / t.m) };
+    if (p.m <= t.m) return { done: false, frac: 0.5 * (p.m / t.m), tm: t.m, pm: p.m, edible: false };
     const d = Math.hypot(t.x - p.x, t.y - p.y);
     if (goal.d0 == null || d > goal.d0) goal.d0 = d;
-    return { done: false, frac: 0.5 + 0.49 * (1 - Math.min(1, d / goal.d0)) };
+    return { done: false, frac: 0.5 + 0.49 * (1 - Math.min(1, d / goal.d0)), tm: t.m, pm: p.m, edible: true };
   }
   // largest ("Werde unangreifbar"): im Moment ist kein anderer Koerper (auch Jaeger, Attraktoren, eigene Teilchen) groesser als der Spieler.
   // Anzeige: Zahl der groesseren Koerper (n, "Noch 2 groessere"); der Balken zeigt eigene Masse / Masse des groessten anderen Koerpers.

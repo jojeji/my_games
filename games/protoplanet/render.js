@@ -506,13 +506,24 @@ export function createRenderer(canvas) {
       }
       if (b.tag === 'target') {
         ctx.lineWidth = 2;
-        ctx.strokeStyle = 'rgba(255,224,130,0.95)';
+        // Ring nach Fressbarkeit: gruen = du bist schwerer (kannst ihn schlucken), korallenrot mit Schloss = noch zu gross (waechst erst)
+        const locked = !p || b.m >= p.m;
+        ctx.strokeStyle = locked ? 'rgba(255,112,96,0.95)' : 'rgba(120,235,160,0.95)';
         ctx.setLineDash([7, 6]);
         ctx.lineDashOffset = reduceMotion ? 0 : -now * 12;
         ctx.beginPath();
         ctx.arc(x, y, r * 1.55 + 8, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
+        if (locked) {
+          const ly = y - (r * 1.55 + 8) - 9; // kleines Schloss ueber dem Ring
+          ctx.fillStyle = 'rgba(255,112,96,0.95)';
+          ctx.fillRect(x - 6, ly - 2, 12, 9);
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x, ly - 2, 4, Math.PI, 0);
+          ctx.stroke();
+        }
       }
     }
 

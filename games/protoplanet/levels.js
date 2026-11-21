@@ -234,8 +234,8 @@ export const LEVELS = [
     },
     goal: { type: 'absorb' },
     hint: {
-      text: 'Das Ziel kreist weiter außen. Tippe hinter dich, um die Bahn zu heben, wenn es vor dir liegt. Grüner Treffpunkt = es passt.',
-      textAim: 'Das Ziel kreist weiter außen. Tippe in Flugrichtung, um die Bahn zu heben, wenn es vor dir liegt. Grüner Treffpunkt = es passt.',
+      text: 'Das Ziel kreist weiter außen. Tippe hinter dich, um die Bahn zu heben, wenn es vor dir liegt.',
+      textAim: 'Das Ziel kreist weiter außen. Tippe in Flugrichtung, um die Bahn zu heben, wenn es vor dir liegt.',
       until: 'absorb',
     },
     targets: { eject: 1.5, time: 135 },

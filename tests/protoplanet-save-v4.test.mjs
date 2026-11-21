@@ -21,7 +21,7 @@ test('Fixture ist ein echter Spielstand der Version 3 mit Schnappschuss in 3-5 (
   assert.equal(raw.data.snap.rev, 1);
   assert.equal(raw.data.progress['3-5'].done, true);
   assert.ok(raw.data.progress['3-5'].bestTime > 0);
-  assert.equal(SAVE_VERSION, 4);
+  assert.equal(SAVE_VERSION, 4, 'die Treffpunkt-Hilfe braucht keinen Versionssprung');
   assert.equal(levelById('3-5').rev, 2);
 });
 
@@ -37,7 +37,7 @@ test('Spielstand v3 -> v4: 3-5 behaelt "geschafft", verliert Sterne/Bestwerte un
     if (l.id === '3-5' || !raw.data.progress[l.id]) continue;
     assert.deepEqual(pr.info(l.id), raw.data.progress[l.id], l.id + ' unveraendert');
   }
-  assert.deepEqual(pr.state.settings, raw.data.settings);
+  assert.deepEqual(pr.state.settings, { ...raw.data.settings, meetHelp: 'auto' }, 'neue Einstellung kommt ueber mergeDefaults dazu');
   assert.deepEqual(pr.state.daily, raw.data.daily);
 });
 

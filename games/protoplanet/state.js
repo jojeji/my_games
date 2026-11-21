@@ -54,8 +54,10 @@ export const snapValid = (snap) => {
 
 export const defaultState = () => ({
   progress: {}, // levelId -> { done, eff, fast, bestTime, bestEject }
-  settings: { aim: false, vibrate: true, reduceMotion: null, music: T.audio.volume.music, sfx: T.audio.volume.sfx, mute: false }, // music/sfx = Lautstaerke in %, mute = Ton aus; aim = Zielsteuerung (Tippen = dorthin fliegen), Standard: Masse fliegt zum Finger; reduceMotion null = folgt prefers-reduced-motion
+  settings: { aim: false, vibrate: true, reduceMotion: null, music: T.audio.volume.music, sfx: T.audio.volume.sfx, mute: false, meetHelp: 'auto' }, // music/sfx = Lautstaerke in %, mute = Ton aus; aim = Zielsteuerung (Tippen = dorthin fliegen), Standard: Masse fliegt zum Finger; reduceMotion null = folgt prefers-reduced-motion
   daily: { date: null, bestTime: null, bestEject: null, done: false, streak: 0, lastDone: null }, // Tageslevel (Paket D): Bestwerte des Tages `date`, Serie = aufeinanderfolgende geschaffte Tage, lastDone = letzter geschaffter Tag ('JJJJ-MM-TT', lokal)
+  fails: {}, // levelId -> Fehlversuche (Verlust oder Neustart nach >= T.orbit.meet.minPlay s Spielzeit); ab T.orbit.meet.failsNeeded zeigt der Modus 'auto' den Treffpunkt (kein Versionssprung: mergeDefaults fuellt es)
+  meetToast: false, // der Hinweis "Hilfe aktiv" wurde schon einmal gezeigt
   snap: null, // { levelId, rev, play: { snap, rewindsLeft, rewound }, timeScale }
 });
 
@@ -132,6 +134,21 @@ export function createProgress({ storage, now } = {}) {
       const fresh = { first: !old.done, eff: next.eff && !old.eff, fast: next.fast && !old.fast, time: old.bestTime == null || res.time < old.bestTime, eject: old.bestEject == null || res.ejected < old.bestEject };
       state.progress[id] = next;
       return fresh;
+    },
+    /** Fehlversuche eines Levels (Treffpunkt-Hilfe). */
+    fails(id) {
+      return state.fails[id] || 0;
+    },
+    addFail(id) {
+      state.fails[id] = (state.fails[id] || 0) + 1;
+      return state.fails[id];
+    },
+    /** Ist die Treffpunkt-Hilfe fuer dieses Level an? Einstellung 'always' | 'off' | 'auto' (Standard: nach `T.orbit.meet.failsNeeded` Fehlversuchen, bleibt danach auch nach dem Schaffen an). */
+    meetHelp(id) {
+      const m = state.settings.meetHelp;
+      if (m === 'always') return true;
+      if (m === 'off') return false;
+      return api.fails(id) >= T.orbit.meet.failsNeeded;
     },
     setSnap(snap) {
       state.snap = snap || null;

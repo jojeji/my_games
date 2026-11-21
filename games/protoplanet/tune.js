@@ -106,7 +106,7 @@ export const T = {
       starGap: 0.3, // Bahnpunkt gilt als "im Stern", wenn r < Sternradius + Spielerradius + starGap
     },
     // Treffpunkt (Ziel `absorb`, orbit.js predictMeeting): erscheint, wenn die Vorschaubahn dem Ziel naeher als showD (Welteinheiten) kommt, verschwindet erst jenseits hideD (kein Flackern an der Schwelle)
-    meet: { showD: 14, hideD: 16 },
+    meet: { showD: 14, hideD: 16, failsNeeded: 2, minPlay: 15 }, // Treffpunkt-Hilfe erst nach Fehlversuchen (Verlust/Neustart nach minPlay s Spielzeit)
     camBias: 0.4, // Orbit-Kamera schaut um diesen Anteil des Weges zum Stern vom Spieler weg
     camBigNear: 0.8, // Orbit-Kamera: groessere Koerper halten den Zoom nur innerhalb dieses Vielfachen der Sichtweite offen (viele Koerper sind groesser als du: sonst zoomt sie immer heraus)
     camOrbit: 0.72, // ... und mindestens camOrbit x Apoapsis der aktuellen Bahn (die ganze Ellipse im Bild)
