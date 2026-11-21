@@ -37,7 +37,7 @@ test('Spielstand v3 -> v4: 3-5 behaelt "geschafft", verliert Sterne/Bestwerte un
     if (l.id === '3-5' || !raw.data.progress[l.id]) continue;
     assert.deepEqual(pr.info(l.id), raw.data.progress[l.id], l.id + ' unveraendert');
   }
-  assert.deepEqual(pr.state.settings, { ...raw.data.settings, meetHelp: 'auto' }, 'neue Einstellung kommt ueber mergeDefaults dazu');
+  assert.deepEqual(pr.state.settings, { ...raw.data.settings, meetHelp: 'auto', courseHelp: 'auto' }, 'neue Einstellung kommt ueber mergeDefaults dazu');
   assert.deepEqual(pr.state.daily, raw.data.daily);
 });
 

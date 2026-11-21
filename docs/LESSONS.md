@@ -357,3 +357,8 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - Bahnmanöver kosten einen Menschen ein Vielfaches an Masse gegenüber dem Bot (jede Korrektur ~8 %, ungenaue Schübe mehr). Bot-Zeiten und -Quoten sagen wenig über die Spielbarkeit, die Menschen-Probe (`T.bot.human`) nur grob.
 - Eine Hilfe, die ständig neu rechnet und springt (Treffpunkt samt Kamera-Verfolgung), wirkt auf dem Handy als Ruckeln, auch wenn die Rechenzeit klein ist: Kamera nie einem berechneten, springenden Punkt folgen lassen. Hilfen lieber erst nach Fehlversuchen einblenden (Zähler je Level im Spielstand, Einstellung Automatisch | Immer | Aus) und im Aus-Zustand gar nicht rechnen.
 - Wenn der Besitzer ein Level nach einer Entschärfung schafft und es „gefühlt leichter“ nennt: nicht weiter entschärfen, sondern die Hilfen verbessern.
+
+## Protoplanet: Zeitstufe ×20, Kurs-Spuren
+- Eine Obergrenze für Schritte je Bild (`maxStepsPerFrame`) muss zur höchsten Zeitstufe passen UND Reserve für 30 fps haben: ×20 bei 60 fps = 40 Schritte, die alte Grenze 40 hätte jede Bildverzögerung in Zeitlupe verwandelt. Die Physik selbst kostet bei ×20 nur ~0,2–0,7 ms je Bild; die Bildzeit bestimmt das Zeichnen.
+- Hilfs-Vorhersagen für Körper, die sich langsam bewegen (Arena v ≈ 0,15), müssen in Weglänge gedacht werden, nicht in Sekunden: 10 s Vorschau sind dort kürzer als der Körperradius und damit unsichtbar. Beim Anzeigen immer einen Screenshot ansehen, die Zahlen sagen nichts über Sichtbarkeit.
+- Vorhersagen, die zwischen zwei Neuberechnungen weiterlaufen, an der Spielzeit der Berechnung festmachen (Zeitversatz `world.t - t0`) und bei hoher Zeitstufe nach Spielzeit, nicht nur nach echter Zeit, neu rechnen.

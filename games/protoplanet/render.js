@@ -569,6 +569,76 @@ export function createRenderer(canvas) {
       }
     }
 
+    // Kurs-Spuren (course.js, Hilfe nach Fehlversuchen): feine, verblassende Punktspur des kuenftigen Wegs von Koerpern in deiner Groessenklasse (kuehl = kleiner = Beute,
+    // warm = groesser = Gefahr), viel zurueckhaltender als die eigene Bahnvorschau. Die Punkte haengen mit festem Pixelabstand am Koerper (wandern mit, kein Flackern).
+    // Die Kamera nimmt darauf KEINE Ruecksicht. Gravitations-Kapitel: kleine Marke dort, wo eine Gefahren-Spur deine Vorschaubahn zeitgleich kreuzt.
+    const cs = s.course;
+    if (p && cs && cs.data) {
+      const C = T.course;
+      const u0 = world.t - cs.data.t0; // Alter der Berechnung (s Spielzeit)
+      const step = cs.data.step;
+      for (const tk of cs.data.tracks) {
+        const b = world.bodies.find((q) => q.id === tk.id);
+        if (!b || b.m <= 0) continue;
+        if (s.fog && Math.hypot(b.x - p.x, b.y - p.y) > s.fog.R) continue; // im Nebel sieht man auch keine Spur
+        const col = tk.kind === 'danger' ? '255,150,96' : '120,226,196'; // Beute: Blaugruen (die eigene Bahnvorschau ist hellblau)
+        const tr = tk.pts;
+        const nPts = tr.length / 2;
+        // Linie: aktueller Ort, dann die Spurpunkte ab dem aktuellen Zeitpunkt bis `show` s voraus
+        const k0 = Math.min(nPts - 1, Math.floor(u0 / step) + 1);
+        const show = tk.show || C.show;
+        const kEnd = Math.min(nPts - 1, Math.floor((u0 + show) / step));
+        let px = toX(b.x);
+        let py = toY(b.y);
+        let carry = Math.max(3, Math.sqrt(b.m) * sc) + C.gap * 0.5; // px bis zum naechsten Punkt (der erste liegt kurz hinter dem Rand des Koerpers)
+        for (let k = k0; k <= kEnd; k++) {
+          const qx = toX(tr[2 * k]);
+          const qy = toY(tr[2 * k + 1]);
+          const tEnd = k * step - u0; // Spurzeit am Ende des Segments (s ab jetzt)
+          const seg = Math.hypot(qx - px, qy - py);
+          if (seg > 1e-6 && seg < 4000) {
+            const tStart = Math.max(0, tEnd - step);
+            while (carry <= seg) {
+              const f = carry / seg;
+              const fade = Math.min(1, 1.7 * Math.max(0, 1 - (tStart + (tEnd - tStart) * f) / show)); // voll bis ~40 %, dann verblassend
+              const x = px + (qx - px) * f;
+              const y = py + (qy - py) * f;
+              if (x > -20 && x < W + 20 && y > -20 && y < H + 20) {
+                ctx.fillStyle = `rgba(${col},${(C.alpha * fade).toFixed(3)})`;
+                ctx.beginPath();
+                ctx.arc(x, y, 1.6, 0, Math.PI * 2);
+                ctx.fill();
+              }
+              carry += C.gap;
+            }
+            carry -= seg;
+          }
+          px = qx;
+          py = qy;
+        }
+      }
+      const cr = cs.cross;
+      if (cr) {
+        const ax = toX(cr.x);
+        const ay = toY(cr.y);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(255,150,96,0.7)';
+        ctx.beginPath();
+        ctx.arc(ax, ay, Math.max(6, Math.sqrt(p.m) * sc + 3), 0, Math.PI * 2);
+        ctx.stroke();
+        const label = `in ${Math.max(1, Math.round(cr.t))} s`;
+        ctx.font = '600 11px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(4,6,12,0.7)';
+        const ly = ay < H / 2 ? ay + Math.max(6, Math.sqrt(p.m) * sc + 3) + 11 : ay - Math.max(6, Math.sqrt(p.m) * sc + 3) - 11;
+        ctx.strokeText(label, ax, ly);
+        ctx.fillStyle = 'rgba(255,170,120,0.85)';
+        ctx.fillText(label, ax, ly);
+      }
+    }
+
     // Bahnvorschau: gepunktete Linie vom Spieler aus, Punktabstand fest in Pixeln (die Punkte wandern mit dem Spieler: ruhig, kein Flackern), verblassend,
     // rot dort, wo die Bahn in den Stern fuehrt, bernstein jenseits der Warnschwelle
     const pv = s.preview;

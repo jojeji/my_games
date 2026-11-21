@@ -54,9 +54,10 @@ export const snapValid = (snap) => {
 
 export const defaultState = () => ({
   progress: {}, // levelId -> { done, eff, fast, bestTime, bestEject }
-  settings: { aim: false, vibrate: true, reduceMotion: null, music: T.audio.volume.music, sfx: T.audio.volume.sfx, mute: false, meetHelp: 'auto' }, // music/sfx = Lautstaerke in %, mute = Ton aus; aim = Zielsteuerung (Tippen = dorthin fliegen), Standard: Masse fliegt zum Finger; reduceMotion null = folgt prefers-reduced-motion
+  settings: { aim: false, vibrate: true, reduceMotion: null, music: T.audio.volume.music, sfx: T.audio.volume.sfx, mute: false, meetHelp: 'auto', courseHelp: 'auto' }, // music/sfx = Lautstaerke in %, mute = Ton aus; aim = Zielsteuerung (Tippen = dorthin fliegen), Standard: Masse fliegt zum Finger; reduceMotion null = folgt prefers-reduced-motion
   daily: { date: null, bestTime: null, bestEject: null, done: false, streak: 0, lastDone: null }, // Tageslevel (Paket D): Bestwerte des Tages `date`, Serie = aufeinanderfolgende geschaffte Tage, lastDone = letzter geschaffter Tag ('JJJJ-MM-TT', lokal)
   fails: {}, // levelId -> Fehlversuche (Verlust oder Neustart nach >= T.orbit.meet.minPlay s Spielzeit); ab T.orbit.meet.failsNeeded zeigt der Modus 'auto' den Treffpunkt (kein Versionssprung: mergeDefaults fuellt es)
+  courseToast: false, // dito fuer die Kurs-Spuren
   meetToast: false, // der Hinweis "Hilfe aktiv" wurde schon einmal gezeigt
   snap: null, // { levelId, rev, play: { snap, rewindsLeft, rewound }, timeScale }
 });
@@ -149,6 +150,13 @@ export function createProgress({ storage, now } = {}) {
       if (m === 'always') return true;
       if (m === 'off') return false;
       return api.fails(id) >= T.orbit.meet.failsNeeded;
+    },
+    /** Sind die Kurs-Spuren fuer dieses Level an? Einstellung 'always' | 'off' | 'auto' (Standard: nach `T.course.failsNeeded` Fehlversuchen, gleicher Zaehler wie die Treffpunkt-Hilfe). */
+    courseHelp(id) {
+      const m = state.settings.courseHelp;
+      if (m === 'always') return true;
+      if (m === 'off') return false;
+      return api.fails(id) >= T.course.failsNeeded;
     },
     setSnap(snap) {
       state.snap = snap || null;

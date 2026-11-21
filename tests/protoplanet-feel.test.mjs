@@ -116,5 +116,6 @@ test('Zurückspulen: zwei Stufen, die weite geht entsprechend weiter zurück (Pu
 
 test('Zeitstufen: x1 ist enthalten, Stufen aufsteigend', () => {
   assert.ok(T.timeSteps.includes(1));
+  assert.ok(T.timeSteps.includes(20), 'x20 ist eine Stufe');
   for (let i = 1; i < T.timeSteps.length; i++) assert.ok(T.timeSteps[i] > T.timeSteps[i - 1]);
 });

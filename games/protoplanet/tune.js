@@ -2,7 +2,7 @@
 export const T = {
   // --- Physik ---
   dt: 1 / 120, // fester Zeitschritt in Sekunden Spielzeit (Zeitstufen aendern nur die Schrittzahl pro Bild)
-  maxStepsPerFrame: 40, // ist das Geraet zu langsam, laeuft das Spiel langsamer, die Physik bleibt gleich
+  maxStepsPerFrame: 80, // x20 bei 60 fps = 40 Schritte je Bild, bei 30 fps 80; ist das Geraet noch langsamer, laeuft das Spiel langsamer, die Physik bleibt gleich
   minMass: 0.0004, // darunter verschwindet ein Koerper
   minPlayerMass: 0.08, // darunter stoesst der Spieler nichts mehr aus
   ejectFrac: 0.028, // Tippen: Anteil der aktuellen Spielermasse (bestimmt nur die Groesse eines Tippens, nicht den Preis je Geschwindigkeit)
@@ -21,8 +21,33 @@ export const T = {
   rewindSteps: { arena: [5, 15], orbit: [10, 30] },
   rewindLives: 3, // Versuche je Level
   chapterOpen: 5, // Paket F: ein Kapitel oeffnet sich, sobald im vorherigen so viele Levels geschafft sind (innerhalb eines Kapitels Level fuer Level)
+  // --- Kurs-Spuren (course.js): Hilfe fuer Koerper in deiner Groessenklasse, erst nach Fehlversuchen (Einstellung courseHelp) ---
+  course: {
+    failsNeeded: 2, // Fehlversuche im Level (gleicher Zaehler wie die Treffpunkt-Hilfe, progress.fails)
+    massLo: 0.6, // Auswahl: Masse relativ zum Spieler ...
+    massHi: 2, //   ... von massLo bis massHi
+    stay: 0.85, // Hysterese: wer schon gewaehlt ist, bleibt im Bereich [massLo x stay, massHi / stay]
+    max: 4, // hoechstens so viele Spuren
+    reach: 18, // Arena: Koerper kommen in Frage, wenn sie dem Spieler (jetzt oder geradeaus in lookT s) naeher als reach kommen (Mittelpunkte)
+    reachOrbit: 30, // Gravitations-Kapitel: aktueller Abstand
+    stayReach: 1.3, // Hysterese Abstand
+    keepBonus: 0.8, // bereits gewaehlte Koerper werden bei gleicher Naehe bevorzugt
+    lookT: 12, // s
+    show: 10, // s gezeigt (die Spur verblasst nach vorn); berechnet wird show + maxAge + 2 Schritte, der Rest ist Reserve zwischen zwei Berechnungen
+    minLen: 5, // Welteinheiten: langsame Koerper (Arena v ~ 0,15) bekommen eine laengere Spur, damit mindestens so viel Weg zu sehen ist ...
+    showMax: 30, //   ... aber hoechstens so viele Sekunden
+    step: 0.25, // s zwischen Spurpunkten
+    hFine: 1 / 60, // s Teilschritt der Randabprall-Rechnung (Spiegelung wie die Physik)
+    every: 0.3, // s echte Zeit zwischen zwei Berechnungen
+    maxAge: 2, // s Spielzeit: danach auf jeden Fall neu rechnen (bei x20 sonst zu alt)
+    dangerRatio: 0.97, // ab dieser Masse relativ zum Spieler warm (Gefahr), sonst kuehl (Beute)
+    crossShow: 1.2, // Kreuzungs-Marke (Gravitations-Kapitel): erscheint, wenn der Abstand zur Bahnvorschau unter Radiensumme + crossShow faellt ...
+    crossHide: 2.2, //   ... und verschwindet erst darueber
+    alpha: 0.62, // hoechste Deckkraft der Punkte (die eigene Bahnvorschau hat 0,8)
+    gap: 12, // px Punktabstand
+  },
   // --- Zeit ---
-  timeSteps: [0.25, 0.5, 1, 2, 4, 10], // Tasten langsamer | schneller, Antippen der Anzeige = x1
+  timeSteps: [0.25, 0.5, 1, 2, 4, 10, 20], // Tasten langsamer | schneller, Antippen der Anzeige = x1
   // --- Kamera ---
   camSpan: 6.5, // Paket F: Nahbereich. sichtbare halbe Breite = camSpan * Spielerradius^camExp ...
   camExp: 0.78, //   ... Exponent < 1: der Koerper WAECHST auf dem Bildschirm (Staubkorn -> Riese), die Welt wird kleiner, die Kamera faehrt weich heraus

@@ -208,3 +208,8 @@ Fünftes Spiel, **kein Inkrementalspiel**: ruhiges Physik-Levelspiel (Ausstoß =
 ### Protoplanet: Treffpunkt-Hilfe und Massenvergleich (Details: `docs/protoplanet.md` „Treffpunkt-Hilfe erst nach Fehlversuchen“)
 - 3-5 bleibt **rev 2** (Besitzer hat sie geschafft, nicht weiter entschärfen). Der Treffpunkt erscheint nur nach 2 Fehlversuchen im Level (`progress.fails`, `progress.meetHelp(id)`, Einstellung `meetHelp` auto|always|off, `T.orbit.meet`); ohne Hilfe wird `predictMeeting` gar nicht gerechnet. **Die Kamera folgt dem Treffpunkt nicht** (`cam.keep = null`, nicht wieder einführen: Ruckeln).
 - HUD bei Ziel `absorb`: „Ziel x · du y“ / „Ziel x – wachse zuerst“ (Warnfarbe), Zielring grün bzw. korallenrot mit Schloss. Tests `tests/protoplanet-meethelp.test.mjs` (echter v4-Spielstand `tests/fixtures/protoplanet-v4.json`).
+
+
+### Protoplanet: Zeitstufe ×20 und Kurs-Spuren (Details: `docs/protoplanet.md` „Zeitstufe ×20 und Kurs-Spuren“)
+- `T.timeSteps` endet bei ×20, `T.maxStepsPerFrame` 80 (×20 bei 60 fps = 40 Schritte je Bild; nur Oberfläche, nicht Bot/Tageslevel). Kosten gemessen: 5-8 ×20 0,65 ms/Bild (Node).
+- `course.js` (DOM-frei): Kurs-Spuren für Körper mit 0,6–2× Spielermasse (max. 4, Hysterese), Arena = gerade mit Randabprall, Gravitation = `predictTrack`; `T.course` in tune.js. Hilfe nach Fehlversuchen wie der Treffpunkt (`settings.courseHelp` auto|always|off, gleicher Zähler `progress.fails`, `progress.courseHelp(id)`, `state.courseToast`), aus = keine Rechnung. Neuberechnung alle 0,3 s echt oder 2 s Spielzeit (×20!). **Die Kamera folgt den Spuren nicht.** Test `tests/protoplanet-course.test.mjs`.

@@ -16,6 +16,7 @@ import { createAudio } from './audio.js';
 import { createFx, blendWorlds } from './fx.js';
 import { step as physStep, snapshot, restore } from './physics.js';
 import { predictOrbit, predictMeeting, driftState } from './orbit.js';
+import { createCourse } from './course.js';
 import { dangerOf, sizeOf } from './audio-score.js';
 import { dateKey, dailyLevel } from './daily.js';
 import { fogOf, fogRadius, fogGlimmers, fogHints, fogIntro } from './fog.js';
@@ -37,7 +38,7 @@ const ICON = {
   largest: '<path d="M5 17.5l7-11 7 11"/><path d="M8.5 21h7"/>',
   mass: '<circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8.5"/>',
 };
-const TIME_LABEL = { 0.25: '×¼', 0.5: '×½', 1: '×1', 2: '×2', 4: '×4', 10: '×10' };
+const TIME_LABEL = { 0.25: '×¼', 0.5: '×½', 1: '×1', 2: '×2', 4: '×4', 10: '×10', 20: '×20' };
 
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const starText = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
@@ -150,6 +151,9 @@ export function mountApp(root, progress) {
   let meetAbs = null; // Weltzeit des letzten Treffpunkts (ruhige Anzeige)
   let meetShown = false; // Treffpunkt ist gerade sichtbar (Schwelle mit Spielraum)
   const meetStats = { n: 0, ms: 0, max: 0 };
+  const course = createCourse(); // Kurs-Spuren (course.js): nur gerechnet, wenn die Hilfe an ist
+  let courseAt = -Infinity;
+  let coursePv = -1; // previewAt, zu dem die Kreuzungs-Marke zuletzt bestimmt wurde
   let warn = 0;
   let warnShown = false;
   let lastWarnSnd = -Infinity;
@@ -449,6 +453,14 @@ export function mountApp(root, progress) {
     meet = null;
     meetAbs = null;
     meetShown = false;
+    course.reset();
+    courseAt = -Infinity;
+    coursePv = -1;
+    if (courseOn() && !progress.state.courseToast && progress.settings.courseHelp === 'auto') {
+      progress.state.courseToast = true;
+      progress.save();
+      setTimeout(() => toast('Hilfe aktiv: Feine Spuren zeigen, wohin Körper deiner Größe ziehen.', { kind: 'good' }), meetCapable() && progress.meetHelp(lv.id) ? 2800 : 900);
+    }
     if (meetCapable() && !progress.state.meetToast && progress.settings.meetHelp === 'auto' && progress.meetHelp(lv.id)) {
       progress.state.meetToast = true;
       progress.save();
@@ -620,6 +632,28 @@ export function mountApp(root, progress) {
   const meetCapable = () => !!(play && play.goal && play.goal.type === 'absorb' && play.world.grav);
   /** Ist der Treffpunkt in diesem Level gerade an? (Aus: predictTrack/predictMeeting werden gar nicht gerechnet.) */
   const meetOn = () => !!level && meetCapable() && (level.daily ? progress.settings.meetHelp === 'always' : progress.meetHelp(level.id));
+
+  /** Sind die Kurs-Spuren in diesem Level gerade an? (Aus: course.js wird gar nicht gerechnet.) Im Tageslevel nur mit 'Immer'. */
+  const courseOn = () => !!level && (level.daily ? progress.settings.courseHelp === 'always' : progress.courseHelp(level.id));
+
+  /** Pro Bild: Kurs-Spuren auffrischen (alle `T.course.every` s echte Zeit oder wenn sie zu alt sind) und die Kreuzungs-Marke mit der Bahnvorschau bestimmen. */
+  function courseFrame(now) {
+    const w = play.world;
+    if (!courseOn() || !w.player) {
+      if (course.data || course.cross) course.reset();
+      return;
+    }
+    const running = play.status === 'running' && !paused;
+    if (courseAt === -Infinity || (running && (now - courseAt >= T.course.every || course.stale(w)))) {
+      course.update(w);
+      courseAt = now;
+      coursePv = -1;
+    }
+    if (w.grav && coursePv !== previewAt) {
+      course.updateCross(w, preview);
+      coursePv = previewAt;
+    } else if (!w.grav) course.cross = null;
+  }
 
   /* ---------- Verlust ---------- */
   function onLoss(now) {
@@ -1195,6 +1229,8 @@ export function mountApp(root, progress) {
     if (!paused || phase !== 'play') fx.update(dt, rw);
     if (phase === 'play') trackMass(now);
     if (play.world.grav && phase !== 'loss') orbitFrame(now);
+    if (phase === 'play') courseFrame(now);
+    else if (course.data) course.reset();
     else if (preview) {
       preview = null;
       meet = null;
@@ -1252,6 +1288,7 @@ export function mountApp(root, progress) {
         aim: pointer && play.beam ? play.beam : null,
         preview: phase === 'loss' || phase === 'rewind' ? null : preview,
         meet: phase === 'play' ? meet : null,
+        course: phase === 'play' && course.data ? course : null,
         warn: phase === 'play' || phase === 'intro' ? warn : 0,
         introRing: phase === 'intro' ? 1 : Math.max(0, Math.min(1, 1 - (now - introEndAt) / 0.9)),
         fade,
@@ -1287,24 +1324,26 @@ export function mountApp(root, progress) {
       sync();
       return btn;
     };
-    /** Treffpunkt-Hilfe: Automatisch (nach 2 Fehlversuchen im Level) | Immer | Aus. */
-    const meetChoice = () => {
+    /** Hilfe mit drei Stufen: Automatisch (nach 2 Fehlversuchen im Level) | Immer | Aus. */
+    const helpChoice = (key, title, text) => {
       const opts = [['auto', 'Automatisch'], ['always', 'Immer'], ['off', 'Aus']];
       const btns = opts.map(([v, label]) =>
         h('button', { class: 'pp-seg', type: 'button', role: 'radio', onClick: () => {
-          settings().meetHelp = v;
+          settings()[key] = v;
           sync();
           progress.save();
         } }, label),
       );
       const sync = () => btns.forEach((b, i) => {
-        const on = (settings().meetHelp || 'auto') === opts[i][0];
+        const on = (settings()[key] || 'auto') === opts[i][0];
         b.setAttribute('aria-checked', on ? 'true' : 'false');
         b.classList.toggle('on', on);
       });
       sync();
-      return h('div', { class: 'pp-choice' }, h('span', { class: 'pp-slider-head' }, h('b', { text: 'Treffpunkt-Hilfe' })), h('span', { class: 'muted small', text: 'Zeigt in Bahn-Leveln mit Zielkörper, ob deine Bahn ihn trifft. Automatisch: erst nach zwei Fehlversuchen im Level.' }), h('div', { class: 'pp-segs', role: 'radiogroup' }, ...btns));
+      return h('div', { class: 'pp-choice' }, h('span', { class: 'pp-slider-head' }, h('b', { text: title })), h('span', { class: 'muted small', text }), h('div', { class: 'pp-segs', role: 'radiogroup' }, ...btns));
     };
+    const meetChoice = () => helpChoice('meetHelp', 'Treffpunkt-Hilfe', 'Zeigt in Bahn-Leveln mit Zielkörper, ob deine Bahn ihn trifft. Automatisch: erst nach zwei Fehlversuchen im Level.');
+    const courseChoice = () => helpChoice('courseHelp', 'Kurse anzeigen', 'Zeigt eine feine Spur, wohin Körper ungefähr deiner Größe in den nächsten Sekunden ziehen. Automatisch: erst nach zwei Fehlversuchen im Level.');
     const slider = (title, key) => {
       const val = h('span', { class: 'pp-slider-val num' });
       const input = h('input', { class: 'pp-slider', type: 'range', min: '0', max: '100', step: '5', 'aria-label': title });
@@ -1338,6 +1377,7 @@ export function mountApp(root, progress) {
         document.querySelectorAll('.pp-sound').forEach((b) => b.dispatchEvent(new Event('pp-sync')));
       }),
       meetChoice(),
+      courseChoice(),
       sw('Vibration', 'Feine Impulse beim Absorbieren, beim Ausstoßen und bei Gefahr, länger beim Verlust. Auf iOS ohne Wirkung.', () => settings().vibrate, (v) => (settings().vibrate = v)),
       sw('Weniger Bewegung', 'Weniger Effekte, kein Parallax, keine Zeitlupe, kürzerer Auftakt. Standard folgt der Systemeinstellung.', reduceMotion, (v) => (settings().reduceMotion = v)),
       h(
@@ -1432,5 +1472,5 @@ export function mountApp(root, progress) {
     progress.setSnap(null);
     renderSelect();
   }
-  return { startLevel, showSelect, audio, previewStats, meetStats, frameStats, skipIntro, get fx() { return fx; }, get state() { return { screen, level, play, paused, cam, preview, meet, warn, phase, ghost, cardShown }; } };
+  return { startLevel, showSelect, audio, previewStats, meetStats, frameStats, skipIntro, get fx() { return fx; }, course, get state() { return { screen, level, play, paused, cam, preview, meet, warn, phase, ghost, cardShown }; } };
 }

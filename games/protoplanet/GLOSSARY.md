@@ -60,6 +60,10 @@ _Avoid_: Flugbahn-Anzeige, Ghost, Trail
 Bei Ziel „Absorbiere …“ (3-3, 3-5, 5-5) der Marker auf der Bahnvorschau: dort, wo deine vorhergesagte Bahn dem Zielkörper am nächsten kommt, ein Ring (du) und ein gestrichelter Geisterring (wo das Ziel dann steht) mit einer feinen Linie. Gedämpftes Gelb mit „Abstand …“; grün mit „Treffer in … s“, wenn sich beide dort berühren und du schwerer bist; korallenrot mit „Noch zu klein“, wenn das Ziel schwerer ist. Erscheint erst, wenn der Abstand unter 14 fällt. Nur Stern und Planeten sind eingerechnet.
 _Avoid_: Abfangpunkt, Zielmarker, Ghost
 
+**Kurs-Spur** (kurz: Kurs):
+Eine feine, verblassende Punktspur hinter einem Körper in deiner Größenklasse (0,6× bis 2× deiner Masse, höchstens vier, die nächsten): wohin er in den nächsten ~10 s (langsame Körper bis 30 s) zieht. Kühl (blaugrün) = kleiner = Beute, warm (orange) = größer oder gleich = Gefahr. Nur der geradlinige Weg mit Randabprall bzw. Stern + Planeten, ohne Kollisionen. Erscheint erst nach zwei Fehlversuchen im Level (Einstellung „Kurse anzeigen“: Automatisch | Immer | Aus). In Bahn-Leveln kann an der Stelle, wo eine warme Spur deine Bahnvorschau zeitgleich kreuzt, ein Ring „in N s“ erscheinen. Die Kamera folgt den Spuren nicht.
+_Avoid_: Prediction, Flugbahn, Ghost, Trail (die **Bahnvorschau** ist die eigene Bahn, die Kurs-Spur die der anderen)
+
 **Anziehung unter den Körpern**:
 Schwere Körper (ab `selfMin` 2 Massen, höchstens die `selfK` schwersten) ziehen andere weich an, Stärke je Level über `selfGrav` 0..1. Der Spieler zieht nie. In Kapitel 1 und 2 gibt es sie nicht.
 _Avoid_: Schwerkraft zwischen Körpern, N-Körper
@@ -93,7 +97,7 @@ _Avoid_: Fressen (nur umgangssprachlich), Verschmelzen, Einsaugen
 ## Zeit
 
 **Zeitstufe**:
-Wie schnell die Spielzeit läuft: ×¼, ×½, ×1, ×2, ×4 oder ×10 (Tasten − und +, Antippen der Anzeige = ×1). Ändert nur, wie viele feste Physikschritte pro Bild gerechnet werden.
+Wie schnell die Spielzeit läuft: ×¼, ×½, ×1, ×2, ×4, ×10 oder ×20 (Tasten − und +, Antippen der Anzeige = ×1). Ändert nur, wie viele feste Physikschritte pro Bild gerechnet werden.
 _Avoid_: Zeitraffer, Speed, Tempo
 
 **Spielzeit**:
