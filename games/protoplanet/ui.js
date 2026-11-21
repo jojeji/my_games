@@ -1009,8 +1009,9 @@ export function mountApp(root, progress) {
       meetShown = !!meet;
       meetAbs = meet ? w.t + meet.t : null;
     }
-    // die Kamera haelt die Marker (Spieler dort, Geisterort des Ziels) im Bild
-    cam.keep = meet && phase === 'play' ? [{ x: meet.px, y: meet.py, r: Math.sqrt(p.m) + 1 }, { x: meet.tx, y: meet.ty, r: meet.rsum + 2 }] : null;
+    // Die Kamera folgt dem Treffpunkt NICHT mehr: der Punkt wird alle 0,1 s neu berechnet und springt, die Kamera zoomte mit (Besitzer: "ruckelt ganz dolle").
+    // Liegt er ausserhalb des Bilds, zeigt ihn die Bahnvorschau trotzdem an ihrer Stelle; Herauszoomen per Pinch bleibt.
+    cam.keep = null;
     cam.aspect = renderer.view.h / Math.max(1, renderer.view.w);
     warn = driftState(w);
     const show = warn > 0 && play.status === 'running' && phase === 'play';
