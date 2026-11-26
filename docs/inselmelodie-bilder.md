@@ -53,3 +53,21 @@ Zum Schluss, als einziges NICHT quadratisches Bild:
 ```
 
 Zuordnung Inseltiere: C Chamäleon (7), D Delfin (8), E Eule (9), F Flamingo (10), G Gecko (11), A Affe (12), H Hummer (13), hohes C Clownfisch (14).
+
+## Stand (2026-11-26): alle 23 Motive geliefert
+
+Erzeugt vom Besitzer mit ChatGPT nach dem Prompt oben, echte Transparenz, saubere Ränder, einheitlicher Stil. Abgelegt als WebP in
+`games/inselmelodie/img/` (quadratische Motive 512 px, Qualität 86; Meer 1920×1080, Qualität 80; zusammen ~740 KB statt 18 MB PNG).
+Die 1024-px-Originale liegen beim Besitzer, nicht im Repo; für größere Darstellungen (z. B. Begleiter im Vollbild) dort neu umwandeln.
+
+| Datei | Motiv |
+|---|---|
+| `papagei-neutral/-jubel/-zeigt/-staunt/-troestet.webp` | Begleiter in fünf Stimmungen |
+| `boot.webp` | Segelboot (Figur auf der Inselkarte) |
+| `tier-c-chamaeleon`, `tier-d-delfin`, `tier-e-eule`, `tier-f-flamingo`, `tier-g-gecko`, `tier-a-affe`, `tier-h-hummer`, `tier-c2-clownfisch` | Inseltiere (Buchstabe = Tonname, `c2` = hohes C) |
+| `insel-palme`, `insel-wasserfall`, `insel-vulkan`, `insel-leuchtturm`, `insel-hoehle` | Inseln (Zuordnung zu Insel 0–4 beim Bau der Karte) |
+| `truhe`, `muschel`, `schneckenhaus`, `seestern`, `stern` | Sammelstücke und Sterne |
+| `meer.webp` | Hintergrund der Inselkarte (nicht transparent) |
+
+Offener Punkt: Chamäleon (C) und Gecko (G) sind beide grüne Echsen und auf dem Tablet leicht zu verwechseln. Für eine Merkhilfe
+sollten sich die Tiere klar unterscheiden.

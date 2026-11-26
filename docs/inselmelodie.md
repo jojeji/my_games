@@ -36,7 +36,7 @@ Entstanden aus einer Befragungsrunde mit dem Besitzer (2026-11-26). Alles unter 
 | Ton aus dem Tablet | Beim Spielen in der ersten Fassung **keine Begleitmusik** (das Mikrofon würde sie mithören). „Anhören“ vor dem Stück, Effektklänge und Animationen bei Erfolgen ja. Begleitmusik später als Versuch. |
 | Klang | Im Browser synthetisiert (WebAudio, Glockenspiel-/Spieluhr-Charakter). Echte Klavier-Samples mit freier Lizenz erst später. |
 | Welt | **Inselkette**: Inselkarte, jede Insel ein Kapitel, je neue Note ein **Inseltier** mit dem Tonnamen als Anfangsbuchstaben. Begleiter ist ein Papagei mit Segelboot, **den die Spielerin beim ersten Start selbst benennt**. |
-| Grafik | Zuerst SVG (von uns gezeichnet). KI-Bilder des Besitzers (Prompt in `docs/inselmelodie-bilder.md`) ersetzen sie später als WebP, fehlende Bilder fallen auf das SVG zurück (wie die Porträts bei Merlin). |
+| Grafik | KI-Bilder des Besitzers (Prompt und Dateiliste in `docs/inselmelodie-bilder.md`, alle 23 Motive geliefert) als WebP in `games/inselmelodie/img/`. SVG nur noch als Ersatz, falls ein Bild fehlt oder nicht lädt (wie die Porträts bei Merlin). |
 | Belohnung | 1–3 Sterne je Stück (nach Fehlgriffen; Schwellen nach den ersten Tests), Sammelstücke (Muscheln, Tiere im Inselalbum). Tagesserie nur sanft, nichts geht verloren. |
 | Ablauf | Großer Knopf **„Weiter üben“** führt zur nächsten sinnvollen Aufgabe, Inselkarte für freie Wahl daneben. Eine Übungseinheit ~10–15 min, dann „Für heute geschafft“, weiterspielen erlaubt. |
 | Notenpult | Tablet 50–70 cm vor ihr: Notensystem ~⅓ der Bildhöhe, Bildschirm bleibt an (Wake Lock), Querformat fest. Beim Spielen keine Hand am Tablet nötig: Start und Weiter über einen gespielten Ton. |
