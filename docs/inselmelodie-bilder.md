@@ -69,5 +69,5 @@ Die 1024-px-Originale liegen beim Besitzer, nicht im Repo; für größere Darste
 | `truhe`, `muschel`, `schneckenhaus`, `seestern`, `stern` | Sammelstücke und Sterne |
 | `meer.webp` | Hintergrund der Inselkarte (nicht transparent) |
 
-Offener Punkt: Chamäleon (C) und Gecko (G) sind beide grüne Echsen und auf dem Tablet leicht zu verwechseln. Für eine Merkhilfe
-sollten sich die Tiere klar unterscheiden.
+Chamäleon (C) und Gecko (G) sind beide grüne Echsen. Der Besitzer hat entschieden, dass beide so bleiben (2026-11-26). Beim Bau
+darauf achten, dass die beiden immer mit Namen und Notenfarbe zusammen erscheinen, nie als Bild allein.
