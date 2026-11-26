@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Inselmelodie – Mikrofon-Probe</title>
+  <meta name="theme-color" content="#0f5e6e">
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="probe.css">
+</head>
+<body>
+  <header>
+    <h1>Mikrofon-Probe</h1>
+    <span id="status">Mikrofon aus</span>
+    <button id="start" class="primary">Mikrofon starten</button>
+  </header>
+  <main>
+    <section id="live" class="card">
+      <div id="note">–</div>
+      <div id="sci">&nbsp;</div>
+      <div class="meter" title="Abweichung"><div class="mid"></div><div id="cents-bar"></div></div>
+      <div class="row small"><span>zu tief</span><span id="cents">0 Cent</span><span>zu hoch</span></div>
+      <div class="meter level"><div id="level-bar"></div><div id="gate-mark"></div></div>
+      <div class="row small"><span>Pegel</span><span id="clarity">Klarheit –</span></div>
+      <div id="flash" class="small">&nbsp;</div>
+    </section>
+
+    <section class="card">
+      <h2>1. Kalibrieren</h2>
+      <p class="small">Spiel das <b>Mittel-C</b> (das C links neben den zwei schwarzen Tasten in der Mitte des Klaviers) drei- bis viermal und lass es jeweils kurz klingen.</p>
+      <button id="cal">Kalibrierung starten</button>
+      <p id="cal-out" class="small">Verstimmung: noch nicht gemessen</p>
+
+      <h2>2. Treffertest</h2>
+      <label class="small">Übung
+        <select id="seq"></select>
+      </label>
+      <div id="target-wrap"><span class="small">Spiel jetzt:</span> <span id="target">–</span> <span id="target-sci" class="small"></span></div>
+      <div id="seq-line" class="small"></div>
+      <div class="row">
+        <button id="miss">Gespielt, aber nichts kam (+1)</button>
+        <button id="restart">Neu starten</button>
+      </div>
+      <p id="stats" class="small"></p>
+    </section>
+
+    <section class="card">
+      <h2>Protokoll</h2>
+      <ol id="log" class="small"></ol>
+      <details>
+        <summary class="small">Einstellungen</summary>
+        <label class="small">Tor (× Grundrauschen) <input id="s-gate" type="range" min="1.5" max="8" step="0.5"><span></span></label>
+        <label class="small">Mindest-Klarheit <input id="s-clar" type="range" min="0.6" max="0.97" step="0.01"><span></span></label>
+        <label class="small">Anschlag-Sprung <input id="s-onset" type="range" min="1.2" max="2.5" step="0.1"><span></span></label>
+      </details>
+      <button id="report" class="primary">Bericht kopieren</button>
+      <textarea id="report-text" readonly hidden></textarea>
+    </section>
+  </main>
+  <script type="module" src="probe.js"></script>
+</body>
+</html>

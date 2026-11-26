@@ -1,0 +1,55 @@
+# Inselmelodie: Bilder (Prompt für eine Bild-KI)
+
+Bis die Bilder da sind, zeichnet die App alles als SVG. Fertige Bilder kommen als WebP nach `games/inselmelodie/img/`
+(Zuschneiden, Verkleinern, Umwandeln übernimmt der Agent); fehlt ein Bild, nimmt die App das SVG (wie die Porträts bei Merlin).
+
+**Vorgehen:** alles im **selben Chat** erzeugen, zuerst den Papagei als Stilvorlage, dann jedes weitere Bild mit „im exakt gleichen Stil“.
+Frontale 2D-Einzelbilder genügen; 3D-Renderings aus mehreren Blickwinkeln braucht die App nicht. Kein Text im Bild (Bild-KIs
+schreiben schlecht, und alle Texte sind Teil der App). Dateien beim Hochladen mit der Nummer aus der Liste benennen.
+
+```
+Du erstellst Illustrationen für eine kindgerechte Klavier-Lern-App (Zielgruppe: 10-jähriges Mädchen).
+Thema: eine fröhliche tropische Inselkette. Ein kleiner Papagei mit Segelboot begleitet durch die App.
+
+STIL (für ALLE Bilder exakt gleich halten):
+- Moderne, freundliche 2D-Kinderbuch-Illustration, weiche runde Formen, leichte Schattierung (kein Fotorealismus, kein 3D-Plastiklook)
+- Kräftige, aber warme Farben: Türkis, Sonnengelb, Korallenrot, Palmengrün, Sandbeige
+- Klare, gut lesbare Silhouette, auch klein (64 px) noch erkennbar
+- Große, freundliche Augen, lächelnd, niemals gruselig
+
+TECHNIK (sehr wichtig):
+- Jedes Motiv als EIGENES Bild, quadratisch 1024×1024
+- Transparenter Hintergrund (PNG); falls nicht möglich: einfarbig reinweiß, ohne Boden-Schatten
+- Motiv zentriert, ringsum ca. 8 % Rand frei, nichts abgeschnitten
+- KEIN Text, keine Buchstaben, keine Zahlen, keine Noten im Bild, kein Rahmen
+
+Beginne nur mit Bild 1. Ich sage dann "weiter", und du erstellst das nächste im exakt gleichen Stil.
+
+1. Der Papagei (Begleiter), Vorderansicht, neutral-freundlich, sitzt aufrecht
+2. Derselbe Papagei: jubelt mit ausgebreiteten Flügeln
+3. Derselbe Papagei: zeigt mit einem Flügel nach rechts (erklärt etwas)
+4. Derselbe Papagei: staunt / "Oh!"-Gesicht
+5. Derselbe Papagei: tröstet, legt den Flügel aufs Herz, sanftes Lächeln
+6. Ein kleines Segelboot mit türkisem Segel, seitlich
+7. Ein Chamäleon
+8. Ein Delfin, springend
+9. Eine Eule
+10. Ein Flamingo
+11. Ein Gecko
+12. Ein Affe
+13. Ein Hummer (freundlich, nicht bedrohlich)
+14. Ein Clownfisch
+15. Insel 1: winzige Sandinsel mit einer Palme (von schräg oben, ganze Insel sichtbar)
+16. Insel 2: grüne Insel mit Bäumen und Wasserfall
+17. Insel 3: Insel mit kleinem Vulkan (friedlich, rauchend)
+18. Insel 4: Insel mit Leuchtturm
+19. Insel 5: Insel mit Felsen und Höhle
+20. Eine Schatztruhe, offen, mit glitzernden Muscheln
+21. Drei verschiedene Muscheln einzeln (je ein Bild: Jakobsmuschel, Schneckenhaus, Seestern)
+22. Ein goldener Stern mit Gesicht, strahlend
+
+Zum Schluss, als einziges NICHT quadratisches Bild:
+23. Meereshintergrund im Querformat 1920×1080, Draufsicht, ruhiges türkises Wasser mit sanften Wellen, ohne Inseln (die setze ich selbst darauf), NICHT transparent
+```
+
+Zuordnung Inseltiere: C Chamäleon (7), D Delfin (8), E Eule (9), F Flamingo (10), G Gecko (11), A Affe (12), H Hummer (13), hohes C Clownfisch (14).
