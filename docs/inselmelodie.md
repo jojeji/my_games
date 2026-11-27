@@ -162,3 +162,22 @@ mehr Energie, Animationen mit Liebe, Prüfung durch spielende Agenten in mehrere
   schneller (`travel(id, {fast})`), Zurück nach „Fortschritt löschen“ führt zum Start.
 - Notenspiel: drei **Notenfische** (Notenkopf mit Schwanzflosse und Auge, ohne Hals) schwimmen gestaffelt heran.
 - Erstes Stück heißt „Lang und kurz“ (C in Vierteln, Halben, Ganzen statt 7× derselbe Wert).
+
+## Fassung 3 (2026-11-27): Höhleninsel und Brückeninsel
+
+Nach „fühlt sich schon gut an, gerne so weiter“ (Besitzer): die nächsten zwei Inseln, ohne neue Technik am Mikrofon
+(weiterhin ein Ton gleichzeitig; Akkorde und beide Hände gleichzeitig warten auf den Bericht vom echten Klavier).
+
+- **Notensystem** (`staff.js`): `staffLayout(midis)` wählt Violinschlüssel (nur ab Mittel-C), Bassschlüssel (nur darunter) oder
+  beide Zeilen (Klaviersystem, Höhe 560 statt 400). `clefFor`: Mittel-C gehört zur rechten Hand (oben). Bassschlüssel als
+  gezeichneter F-Schlüssel (Punkt + Bogen + zwei Punkte um die F-Linie). Hilfslinien allgemein über die Stufe relativ zur untersten Linie.
+- **Fingersatz** (`music.js fingerOf`): rechts C4..G4 = 1..5, links C3..G3 = 5..1. Stücke ab der Höhle bleiben in diesen
+  Fünf-Finger-Lagen (Test).
+- **Höhleninsel**: Rundgang „Die linke Hand“ (Bassschlüssel, gespiegelte Hand, tiefes C), Lernen C3/D3/E3 → Notenspiel → „Tropfen“ →
+  F3/G3 → Notenspiel → „Höhlenecho“, „Hänschen klein (links)“, „Ode an die Freude (links)“. Tierkarten der tiefen Töne mit eigenen
+  Texten zur Lage im Bassschlüssel (gleiches Tier wie oben, nicht doppelt im Album).
+- **Brückeninsel**: Rundgang „Zwei Zeilen, zwei Hände“, Notenspiel über beide Zeilen, „Wellenschaukel“, „Frage und Antwort“,
+  „Hänschen klein mit Echo“, „Ode an die Freude (zwei Hände)“: die Melodie wandert zwischen den Händen, nie beide zugleich.
+- **Karte**: 6 Inseln (`mapgeo.js`, `L` 3450); Sammelstücke Höhlenkristall und Kompass; Abschlussfeier nach der Brückeninsel
+  (`p.finale` = Anzahl Inseln bei der letzten Feier: kommen Inseln dazu, gibt es am neuen Ende wieder eine Feier).
+- **Bilder**: Platzhalter für Brückeninsel, Kristall, Kompass (Prompt in `docs/inselmelodie-bilder.md` „Nachlieferung“).

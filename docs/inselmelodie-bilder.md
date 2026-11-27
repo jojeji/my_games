@@ -71,3 +71,20 @@ Die 1024-px-Originale liegen beim Besitzer, nicht im Repo; für größere Darste
 
 Chamäleon (C) und Gecko (G) sind beide grüne Echsen. Der Besitzer hat entschieden, dass beide so bleiben (2026-11-26). Beim Bau
 darauf achten, dass die beiden immer mit Namen und Notenfarbe zusammen erscheinen, nie als Bild allein.
+
+## Nachlieferung (2026-11-27): Höhle und Brücke
+
+Für die Höhleninsel (linke Hand) und die neue Brückeninsel (beide Hände) fehlen drei Motive. Bis sie da sind, stehen
+gezeichnete Platzhalter im Ordner (`insel-bruecke.webp`, `kristall.webp`, `kompass.webp`); echte Bilder ersetzen sie 1:1.
+Im **selben Chat** wie die ersten Bilder weitermachen (gleicher Stil), sonst den Stil-Block oben noch einmal mitschicken:
+
+```
+Bitte noch drei Bilder im exakt gleichen Stil wie die bisherigen (2D-Kinderbuch-Illustration, weiche Formen,
+warme kräftige Farben, transparenter Hintergrund, 1024×1024, Motiv zentriert mit 8 % Rand, KEIN Text):
+
+24. Insel 6: zwei kleine Sandinseln mit je einer Palme, verbunden durch eine kleine Hängebrücke aus Holz und Seil (von schräg oben, beide Inseln ganz sichtbar)
+25. Ein leuchtender Höhlenkristall: drei Kristallsäulen in Lila, Türkis und Rosa auf einem kleinen Stein, mit Glitzern
+26. Ein alter Messing-Kompass mit roter Nadel, freundlich und glänzend
+```
+
+Dateinamen beim Hochladen: `24-insel-bruecke`, `25-kristall`, `26-kompass`.
