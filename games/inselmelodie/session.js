@@ -1,0 +1,113 @@
+// Ablauf einer Aufgabe im Wartemodus und Fortschritt (DOM-frei).
+import { rngNext } from '../../engine/kit/rng.js';
+import { ISLANDS, findTask } from './world.js';
+
+/** Sterne nach Fehlgriffen: 0 -> 3, bis 10 % (mind. 1) -> 2, sonst 1. */
+export function starsFor(misses, n) {
+  if (misses === 0) return 3;
+  if (misses <= Math.max(1, Math.round(n * 0.1))) return 2;
+  return 1;
+}
+
+/**
+ * Wartemodus: die Noten warten, bis der richtige Ton kommt. Ein falscher Ton ist ein Fehlgriff (zählt nur für die Sterne).
+ * @param {{midi:number, beats:number}[]} notes
+ */
+export function createRun(notes) {
+  const st = { i: 0, misses: 0, missAt: new Set() };
+  return {
+    notes,
+    get index() { return st.i; },
+    get misses() { return st.misses; },
+    get done() { return st.i >= notes.length; },
+    get want() { return st.i < notes.length ? notes[st.i].midi : null; },
+    missedAt: (i) => st.missAt.has(i),
+    /** @returns {{result:'hit'|'miss'|'done', index:number, want:number|null}} */
+    input(midi) {
+      if (st.i >= notes.length) return { result: 'done', index: st.i, want: null };
+      const want = notes[st.i].midi;
+      if (midi === want) return { result: 'hit', index: st.i++, want };
+      st.misses++;
+      st.missAt.add(st.i);
+      return { result: 'miss', index: st.i, want };
+    },
+    stars: () => starsFor(st.misses, notes.length),
+  };
+}
+
+/** Noten für das Notenspiel: jede Note des Vorrats kommt vor, nie zweimal dieselbe hintereinander, fester Seed. */
+export function noteGameNotes(pool, count, seed) {
+  let s = seed >>> 0;
+  const rnd = () => {
+    const [v, n] = rngNext(s);
+    s = n;
+    return v;
+  };
+  const out = [];
+  const bag = [];
+  while (out.length < count) {
+    if (!bag.length) bag.push(...pool);
+    let k = Math.floor(rnd() * bag.length);
+    if (out.length && bag[k] === out[out.length - 1].midi && bag.length > 1) k = (k + 1) % bag.length;
+    out.push({ midi: bag.splice(k, 1)[0], beats: 1, bar: false });
+  }
+  return out;
+}
+
+// ---- Fortschritt ----------------------------------------------------------
+
+export const COLLECT = { i0: 'muschel', i1: 'seestern', i2: 'schneckenhaus', i3: 'truhe' };
+
+export function defaultProgress() {
+  return {
+    birdName: '',
+    tasks: {}, // id -> {stars, plays}
+    collect: [],
+    settings: {
+      input: 'touch', // 'touch' | 'mic'
+      sound: true,
+      allOpen: true, // Vorschau: alle Inseln offen
+      help: { colors: true, names: true, fingers: true, keys: true },
+    },
+    calib: { offset: 0, done: false },
+    boat: 'i0',
+  };
+}
+
+export const taskDone = (p, id) => !!p.tasks[id];
+export const islandDone = (p, isl) => isl.tasks.length > 0 && isl.tasks.every((t) => taskDone(p, t.id));
+
+export function islandOpen(p, idx) {
+  const isl = ISLANDS[idx];
+  if (!isl || isl.soon) return false;
+  if (idx === 0 || p.settings.allOpen) return true;
+  return islandDone(p, ISLANDS[idx - 1]);
+}
+
+/** Nächste sinnvolle Aufgabe ("Weiter üben"): die erste offene, noch nicht geschaffte, in Reihenfolge. */
+export function nextTask(p) {
+  for (let i = 0; i < ISLANDS.length; i++) {
+    if (!islandOpen(p, i) && !(i === 0)) continue;
+    for (const t of ISLANDS[i].tasks) if (!taskDone(p, t.id)) return { island: ISLANDS[i], task: t };
+  }
+  return null;
+}
+
+/** Ergebnis eintragen. Liefert, was neu ist: {first, better, islandDone, collect}. */
+export function record(p, taskId, stars) {
+  const prev = p.tasks[taskId];
+  const first = !prev;
+  const better = !!prev && stars > prev.stars;
+  p.tasks[taskId] = { stars: Math.max(stars, prev ? prev.stars : 0), plays: (prev ? prev.plays : 0) + 1 };
+  const { island } = findTask(taskId);
+  let collect = null;
+  const done = islandDone(p, island);
+  if (done && COLLECT[island.id] && !p.collect.includes(COLLECT[island.id])) {
+    collect = COLLECT[island.id];
+    p.collect.push(collect);
+  }
+  p.boat = island.id;
+  return { first, better, islandDone: done && !!collect, collect };
+}
+
+export const starsTotal = (p) => Object.values(p.tasks).reduce((s, t) => s + (t.stars || 0), 0);

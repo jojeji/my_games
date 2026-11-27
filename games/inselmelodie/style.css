@@ -1,0 +1,316 @@
+/* Inselmelodie: helles Insel-Thema, Querformat auf dem Notenpult (Tablet), funktioniert auch hochkant. */
+:root {
+  --bg: #e6f7f6;
+  --bg2: #f6fcfb;
+  --surface: #ffffff;
+  --surface2: #f1f8f7;
+  --border: #cfe6e4;
+  --text: #1d3b45;
+  --muted: #5f7b82;
+  --accent: #ff7a59;
+  --accent-ink: #ffffff;
+  --good: #3aa64b;
+  --warn: #e2a400;
+  --bad: #e2553f;
+  --sea: #1fa9b5;
+  --sand: #fff4d9;
+  --ink: #1d3b45;
+  --staff-bg: #fffdf6;
+  --gold: #ffc21a;
+  --radius: 18px;
+  --font: 'Nunito', ui-rounded, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+html, body { background: var(--bg); height: 100%; }
+body { overflow: hidden; user-select: none; -webkit-user-select: none; }
+#app { height: 100dvh; position: relative; overflow: hidden; }
+#app .screen { height: 100%; display: flex; flex-direction: column; animation: fade 0.25s ease; }
+#app .screen > * { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+@keyframes fade { from { opacity: 0; } }
+
+/* ---------- Bausteine ---------- */
+#app .btn {
+  min-height: 52px; padding: 0 22px; border-radius: 999px; border: 2px solid var(--border);
+  background: #fff; color: var(--ink); font-weight: 800; font-size: 18px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 3px 0 #0001; cursor: pointer;
+}
+#app .btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+#app .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 4px 0 #c9502f; }
+#app .btn.big { min-height: 64px; font-size: 22px; padding: 0 30px; }
+#app .btn.small { min-height: 44px; font-size: 16px; padding: 0 16px; }
+#app .btn.danger { color: var(--bad); border-color: #f3c3ba; }
+#app .btn.on { background: var(--sea); color: #fff; border-color: var(--sea); }
+#app .btn[hidden] { display: none; }
+#app .icon-btn {
+  width: 52px; height: 52px; border-radius: 50%; border: 0; background: #fffc; color: var(--ink);
+  display: grid; place-items: center; box-shadow: 0 2px 6px #0002; cursor: pointer; flex: none;
+}
+#app .ico svg { width: 26px; height: 26px; display: block; }
+#app .pill {
+  display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; border-radius: 999px;
+  background: #fff; font-weight: 800; box-shadow: 0 2px 6px #0001; white-space: nowrap;
+}
+#app .st { color: #d8e2e1; font-size: 1.1em; line-height: 1; }
+#app .st.on { color: var(--gold); text-shadow: 0 1px 0 #c98f00; }
+#app .stars { display: inline-flex; gap: 2px; }
+#app .stars.big { font-size: 64px; gap: 10px; }
+#app .stars .st.pop { animation: starpop 0.5s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes starpop { 0% { transform: scale(0) rotate(-60deg); } 100% { transform: scale(1) rotate(0); } }
+#app .card { background: #fff; border-radius: var(--radius); padding: 18px 20px; box-shadow: 0 4px 16px #0001; border: 0; }
+#app .row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+#app .muted { color: var(--muted); }
+#app .pic.fallback { display: grid; place-items: center; background: var(--sea); color: #fff; font-weight: 900; font-size: 32px; border-radius: 50%; aspect-ratio: 1; }
+
+/* Kopfzeile */
+#app .topbar {
+  flex: none; display: flex; align-items: center; gap: 12px; padding: 8px max(14px, env(safe-area-inset-left)); min-height: 64px;
+}
+#app .topbar h1 { flex: 1; font-size: 24px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app .topbar .right { display: flex; gap: 10px; align-items: center; }
+
+/* Papagei mit Sprechblase */
+#app .parrot { display: flex; align-items: flex-end; gap: 6px; flex: none; }
+#app .parrot .bird { width: 110px; height: 110px; object-fit: contain; flex: none; filter: drop-shadow(0 3px 4px #0002); }
+#app .parrot.hop .bird { animation: hop 0.5s ease; }
+@keyframes hop { 30% { transform: translateY(-14px) rotate(-4deg); } 60% { transform: translateY(0); } 80% { transform: translateY(-5px); } }
+#app .bubble {
+  position: relative; background: #fff; border-radius: 18px; padding: 10px 16px; font-weight: 700; font-size: 18px;
+  box-shadow: 0 3px 12px #0002; margin-bottom: 46px; max-width: 420px;
+}
+#app .bubble::before { content: ''; position: absolute; left: -10px; bottom: 14px; border: 10px solid transparent; border-right-color: #fff; border-left: 0; }
+#app .bubble.in { animation: pop 0.3s ease; }
+@keyframes pop { from { transform: scale(0.9); opacity: 0.3; } }
+#app .parrot.big .bird { width: min(34vh, 260px); height: min(34vh, 260px); }
+#app .parrot.big .bubble { font-size: 22px; }
+#app .parrot.small .bird { width: 84px; height: 84px; }
+#app .parrot.small .bubble { font-size: 16px; margin-bottom: 30px; }
+
+/* ---------- Start ---------- */
+#app .welcome {
+  align-items: center; justify-content: center; gap: 16px; padding: 16px;
+  background: linear-gradient(#bfeff0, #e6f7f6 60%, var(--sand));
+}
+#app .logo { font-weight: 900; font-size: clamp(36px, 7vh, 60px); color: var(--sea); letter-spacing: 0.5px; text-shadow: 0 3px 0 #fff; }
+#app .logo.small { font-size: 26px; text-shadow: 0 2px 0 #fff8; color: #fff; filter: drop-shadow(0 2px 3px #0004); }
+#app .name-box { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+#app .name-input {
+  font-size: 24px; font-weight: 800; padding: 12px 20px; border-radius: 16px; border: 3px solid var(--sea);
+  width: min(420px, 80vw); text-align: center; background: #fff; color: var(--ink); user-select: text; -webkit-user-select: text;
+}
+#app .name-input.shake { animation: shake 0.35s; }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+#app .chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+#app .chip { display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 2px solid var(--border); background: #fff; font-weight: 800; font-size: 17px; cursor: pointer; }
+
+/* ---------- Inselkarte ---------- */
+#app .map-wrap { position: relative; }
+#app .map { position: absolute; inset: 0; background-size: cover; background-position: center; }
+#app .route { position: absolute; inset: 0; width: 100%; height: 100%; }
+#app .route polyline { fill: none; stroke: #ffffffb0; stroke-width: 0.6; stroke-dasharray: 1.4 1.6; stroke-linecap: round; vector-effect: non-scaling-stroke; stroke-width: 5px; stroke-dasharray: 10 12; }
+#app .island {
+  position: absolute; transform: translate(-50%, -50%); background: none; border: 0; padding: 0; cursor: pointer;
+  width: clamp(120px, 24vh, 230px); display: flex; flex-direction: column; align-items: center;
+}
+#app .island .isl-img { width: 100%; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 8px 6px #0003); transition: transform 0.2s; }
+#app .island:active .isl-img { transform: scale(0.95); }
+#app .island .isl-name { margin-top: -10%; background: #fff; border-radius: 999px; padding: 4px 14px; font-weight: 900; font-size: 16px; box-shadow: 0 2px 6px #0002; white-space: nowrap; }
+#app .island .badge { margin-top: 4px; background: #1d3b45cc; color: #fff; border-radius: 999px; padding: 2px 10px; font-weight: 800; font-size: 14px; display: inline-flex; align-items: center; gap: 4px; }
+#app .island .badge .ico svg { width: 16px; height: 16px; }
+#app .island.locked .isl-img, #app .island.soon .isl-img { filter: grayscale(0.85) brightness(1.05) drop-shadow(0 6px 5px #0002); opacity: 0.8; }
+#app .island.done .isl-name { background: #fff6cf; }
+#app .boat { position: absolute; width: clamp(60px, 11vh, 110px); transform: translate(-50%, -50%); animation: bob 3s ease-in-out infinite; pointer-events: none; }
+#app .boat .pic { width: 100%; filter: drop-shadow(0 4px 3px #0003); }
+@keyframes bob { 50% { transform: translate(-50%, -58%) rotate(3deg); } }
+#app .map-top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 10px max(14px, env(safe-area-inset-left)); }
+#app .map-top .right { display: flex; gap: 10px; align-items: center; }
+#app .map-bird { position: absolute; left: max(8px, env(safe-area-inset-left)); bottom: 8px; }
+#app .map-bird .bird { width: clamp(80px, 18vh, 140px); height: clamp(80px, 18vh, 140px); }
+#app .btn.go { position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: 16px; flex-direction: row; text-align: left; line-height: 1.1; }
+#app .btn.go small { display: block; font-size: 14px; font-weight: 700; opacity: 0.9; }
+#app .btn.go .ico svg { width: 30px; height: 30px; }
+
+/* ---------- Insel ---------- */
+#app .island-view { background: linear-gradient(#c9f1f1, var(--sand)); }
+#app .island-body { flex: 1; min-height: 0; display: flex; gap: 20px; padding: 0 20px 16px; }
+#app .island-left { flex: 0 0 34%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+#app .isl-big { width: min(100%, 46vh); aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 10px 8px #0003); }
+#app .island-left .parrot .bird { width: 90px; height: 90px; }
+#app .island-left .bubble { font-size: 16px; margin-bottom: 30px; }
+#app .tasks { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; align-content: start; padding: 4px; }
+#app .task {
+  display: flex; align-items: center; gap: 12px; min-height: 76px; padding: 8px 14px; border-radius: 18px;
+  background: #fff; border: 0; box-shadow: 0 3px 10px #0001; text-align: left; cursor: pointer; color: var(--ink);
+}
+#app .task:active { transform: scale(0.98); }
+#app .task.done { background: #f5fff2; }
+#app .task-pic { width: 58px; height: 58px; object-fit: contain; flex: none; }
+#app .task-ico { width: 58px; height: 58px; border-radius: 16px; display: grid; place-items: center; flex: none; color: #fff; }
+#app .task-ico .ico svg { width: 32px; height: 32px; }
+#app .task-ico.k-tour { background: #6c7ae0; }
+#app .task-ico.k-song { background: var(--accent); }
+#app .task-ico.k-game { background: var(--sea); }
+#app .task-txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+#app .task-txt b { font-size: 18px; font-weight: 900; }
+#app .task-txt small { color: var(--muted); font-size: 14px; }
+#app .task .ok { color: var(--good); }
+#app .task .stars { font-size: 22px; }
+
+/* ---------- Spielen: Notenzeile + Tastatur ---------- */
+#app .play, #app .learn, #app .calib, #app .tour { background: linear-gradient(#d4f3f3, var(--bg)); }
+#app .prog { flex: none; height: 8px; margin: 0 20px; border-radius: 4px; background: #fff; overflow: hidden; }
+#app .prog .bar { height: 100%; width: 0; background: linear-gradient(90deg, var(--sea), var(--good)); transition: width 0.3s; border-radius: 4px; }
+#app .stage { flex: 1; min-height: 0; position: relative; margin: 10px 20px 6px; }
+#app .staff-host { position: absolute; inset: 0; background: var(--staff-bg); border-radius: 22px; box-shadow: inset 0 0 0 3px #f0e4c4; overflow: hidden; }
+#app .stage .parrot { position: absolute; right: 10px; top: 6px; flex-direction: row-reverse; pointer-events: none; }
+#app .stage .parrot .bubble.in { animation: pop 0.3s ease, bubble-life 4.5s ease forwards; }
+@keyframes bubble-life { 0%, 80% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+#app .stage .parrot .bubble { margin-bottom: 0; margin-top: 10px; align-self: flex-start; }
+#app .stage .parrot .bubble::before { left: auto; right: -10px; border-right: 0; border-left: 10px solid #fff; top: 16px; bottom: auto; }
+#app svg.staff { width: 100%; height: 100%; display: block; }
+#app .staff .line { stroke: #4a6670; stroke-width: 2.5; }
+#app .staff .clef-bg { fill: var(--staff-bg); }
+#app .staff .clef { fill: none; stroke: var(--ink); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+#app .staff .nowband { fill: #ffe8a3; opacity: 0.55; }
+#app .staff .track { transition: transform 0.45s cubic-bezier(.3, .8, .3, 1); }
+#app .staff .note .head { fill: var(--c); stroke: #0004; stroke-width: 2; }
+#app .staff .note .head.hollow { fill: #fff; stroke: var(--c); stroke-width: 7; }
+#app .staff .note .stem { stroke: var(--c); stroke-width: 5; }
+#app .staff .note .dot { fill: var(--c); }
+#app .staff .note .ledger, #app .staff .ghost .ledger { stroke: #4a6670; stroke-width: 2.5; }
+#app .staff .note .name { font-size: 34px; font-weight: 900; text-anchor: middle; fill: var(--c); }
+#app .staff .note .finger { font-size: 26px; font-weight: 800; text-anchor: middle; fill: var(--muted); }
+#app .staff .sharp { font-size: 40px; font-weight: 700; fill: var(--ink); }
+#app .staff .bar { stroke: #4a6670; stroke-width: 2.5; }
+#app .staff .bar.end { stroke-width: 7; }
+#app .staff .note.done { opacity: 0.28; }
+#app .staff .note.now .head { filter: drop-shadow(0 0 6px var(--c)); }
+#app .staff .note { transform-box: fill-box; transform-origin: center; }
+#app .staff .note.pop { animation: notepop 0.5s ease; }
+@keyframes notepop { 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+#app .staff .ghost ellipse { fill: #9aa9ad; opacity: 0.85; }
+#app .staff .ghost { animation: ghost 1.4s ease forwards; }
+#app .staff .ghost-name { font-size: 30px; font-weight: 900; text-anchor: middle; fill: #9aa9ad; }
+@keyframes ghost { 0% { opacity: 0; } 12% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+
+#app .kbd-host { flex: 0 0 auto; height: clamp(110px, 27vh, 240px); margin: 0 20px 12px; position: relative; }
+#app .kbd-host.listening::after { content: '🎤 hört zu'; position: absolute; right: 8px; top: -30px; font-weight: 800; color: var(--sea); }
+#app .mic-err { position: absolute; left: 0; right: 0; top: -36px; text-align: center; color: var(--bad); font-weight: 700; }
+#app .kbd { position: absolute; inset: 0; }
+#app .kbd .key { position: absolute; top: 0; padding: 0; border: 0; cursor: default; }
+#app .kbd.playable .key { cursor: pointer; }
+#app .kbd .key.white {
+  height: 100%; background: #fff; border: 2px solid #c7d6d4; border-top: 0; border-radius: 0 0 14px 14px;
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;
+}
+#app .kbd .key.white .lbl { font-weight: 900; font-size: clamp(16px, 3vh, 26px); color: var(--c); }
+#app .kbd .key.white.middle::after { content: ''; position: absolute; bottom: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--c); opacity: 0.5; }
+#app .kbd .key.black { height: 60%; background: linear-gradient(#2d3a40, #11181c); border-radius: 0 0 8px 8px; z-index: 2; box-shadow: 0 3px 3px #0004; }
+#app .kbd .key.white.target { background: color-mix(in srgb, var(--c) 35%, #fff); border-color: var(--c); animation: glow 1.1s ease-in-out infinite; }
+#app .kbd .key.black.target { background: linear-gradient(#7a8a90, #4a5a60); }
+@keyframes glow { 50% { box-shadow: inset 0 -10px 18px color-mix(in srgb, var(--c) 60%, transparent); } }
+#app .kbd .key.good { background: #c8f2c3 !important; }
+#app .kbd .key.black.good { background: #3aa64b !important; }
+#app .kbd .key.bad { background: #e3e8e9 !important; }
+#app .kbd .key.black.bad { background: #8a9aa0 !important; }
+#app .kbd.playable .key.white:active { background: #eef6f5; }
+#app .kbd .key.black.g2 { background: linear-gradient(#3b8fe0, #1c5fa6); }
+#app .kbd .key.black.g3 { background: linear-gradient(#f39a2a, #c06a0a); }
+
+/* Neue Note */
+#app .learn-body { flex: 1; min-height: 0; display: flex; gap: 16px; padding: 0 20px 10px; }
+#app .animal-card { flex: 0 0 36%; background: #fff; border-radius: 22px; padding: 14px; display: flex; gap: 12px; align-items: center; box-shadow: 0 4px 14px #0001; border: 4px solid var(--c); min-height: 0; }
+#app .animal-card .animal { width: 40%; max-height: 100%; object-fit: contain; }
+#app .animal-txt { flex: 1; display: flex; flex-direction: column; gap: 6px; font-size: 16px; overflow: auto; max-height: 100%; }
+#app .animal-txt h2 { font-size: 22px; font-weight: 900; }
+#app .big-letter { color: var(--c); font-size: 1.6em; }
+#app .learn-right { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+#app .learn-right .staff-host { position: relative; flex: 1; min-height: 0; }
+#app .learn-row { display: flex; align-items: center; gap: 16px; justify-content: space-between; }
+#app .learn-row .parrot .bubble { margin-bottom: 20px; }
+#app .count { display: flex; gap: 8px; }
+#app .count span { width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 3px #cfe6e4; }
+#app .count span.on { background: var(--good); box-shadow: none; animation: starpop 0.4s; }
+
+/* Rundgang */
+#app .tour-card { flex: 1; min-height: 0; display: flex; gap: 24px; align-items: center; padding: 0 28px; }
+#app .tour-art { flex: 0 0 55%; height: 70%; position: relative; display: grid; place-items: center; }
+#app .tour-art .kbd { inset: 10% 0; }
+#app .tour-txt { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+#app .tour-txt h2 { font-size: 30px; font-weight: 900; color: var(--sea); }
+#app .tour-txt p { font-size: 20px; line-height: 1.45; }
+#app .tour-nav { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 10px 28px 16px; }
+#app .dots { display: flex; gap: 8px; }
+#app .dots span { width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px var(--border); }
+#app .dots span.on { background: var(--sea); box-shadow: none; }
+#app svg.hand { width: 90%; height: 100%; }
+#app svg.hand .palm, #app svg.hand .finger { fill: #ffd9b8; stroke: #d9a679; stroke-width: 3; }
+#app svg.hand text { font-size: 26px; font-weight: 900; text-anchor: middle; fill: var(--accent); }
+#app .tour-bird { height: 100%; object-fit: contain; }
+
+/* Ergebnis */
+#app .overlay { position: absolute; inset: 0; background: #1d3b4566; display: grid; place-items: center; z-index: 20; animation: fade 0.2s; }
+#app .result { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: min(520px, 90vw); text-align: center; position: relative; z-index: 2; max-height: 94vh; overflow: auto; }
+#app .result h2 { font-size: 26px; font-weight: 900; }
+#app .pop-in { animation: popin 0.4s cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes popin { from { transform: scale(0.6); opacity: 0; } }
+#app .result .parrot .bird { width: 100px; height: 100px; }
+#app .result .bubble { margin-bottom: 30px; font-size: 17px; }
+#app .collect-pic { width: min(36vh, 220px); }
+#app .spin-in { animation: spinin 0.9s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes spinin { from { transform: scale(0) rotate(-200deg); } }
+#app .confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+#app .confetti i { position: absolute; top: -20px; width: 12px; height: 18px; border-radius: 3px; animation: fall 2.6s ease-in forwards; transform: rotate(var(--r)); }
+@keyframes fall { to { transform: translateY(110vh) rotate(calc(var(--r) + 540deg)); } }
+
+/* Album, Einstellungen, Kalibrierung */
+#app .album { background: linear-gradient(#c9f1f1, var(--sand)); }
+#app .album-body, #app .more-body { flex: 1; overflow-y: auto; padding: 0 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+#app .album-body h2 { font-size: 22px; font-weight: 900; }
+#app .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+#app .album-item { background: #fff; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 800; }
+#app .album-item .album-pic { width: 100%; aspect-ratio: 1; object-fit: contain; }
+#app .album-item.missing .album-pic { filter: brightness(0) opacity(0.15); }
+#app .album-item.missing span { color: var(--muted); }
+#app .more-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-content: start; }
+#app .more-body h2 { font-size: 20px; font-weight: 900; margin-bottom: 10px; }
+#app .more-body .row { justify-content: space-between; margin-top: 10px; }
+#app .more-body p { margin-top: 8px; }
+#app .more-body .small { font-size: 14px; }
+#app .seg { display: flex; gap: 6px; background: var(--surface2); padding: 4px; border-radius: 999px; border: 0; }
+#app .seg button { flex: 1; min-height: 48px; border-radius: 999px; border: 0; background: transparent; font-weight: 800; cursor: pointer; color: var(--ink); }
+#app .seg button.on { background: var(--sea); color: #fff; }
+#app .set-row { display: flex; align-items: center; justify-content: space-between; min-height: 52px; font-weight: 700; font-size: 17px; }
+#app .switch { width: 60px; height: 34px; border-radius: 999px; background: #cfdcdb; border: 0; position: relative; cursor: pointer; padding: 0; flex: none; }
+#app .switch::after { content: ''; position: absolute; left: 4px; top: 4px; width: 26px; height: 26px; border-radius: 50%; background: #fff; transition: left 0.2s; box-shadow: 0 1px 3px #0003; }
+#app .switch.on { background: var(--good); }
+#app .switch.on::after { left: 30px; }
+#app .calib-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+#app .cal-meter { width: min(520px, 80vw); height: 18px; border-radius: 9px; background: #fff; overflow: hidden; }
+#app .cal-meter .bar { height: 100%; width: 0; background: var(--good); transition: width 0.15s; }
+
+#app .rotate-hint { display: none; }
+/* Hochkant (z. B. Handy beim Durchklicken): Spalten untereinander */
+@media (orientation: portrait) {
+  #app .rotate-hint { display: block; position: absolute; top: 64px; left: 12px; right: 12px; background: #fff; border-radius: 14px; padding: 8px 12px; font-weight: 800; text-align: center; box-shadow: 0 2px 8px #0002; }
+  #app .island { width: clamp(90px, 24vw, 160px); }
+  #app .map-bird .bubble { display: none; }
+  #app .island-body, #app .learn-body, #app .tour-card { flex-direction: column; }
+  #app .island-left { flex: none; flex-direction: row; }
+  #app .isl-big { width: 30vw; }
+  #app .animal-card { flex: none; }
+  #app .tour-art { flex: none; width: 100%; height: 34vh; }
+}
+/* Flache Handys quer */
+@media (max-height: 460px) {
+  #app .map-bird .bubble { display: none; }
+  #app .island { width: clamp(90px, 26vh, 150px); }
+  #app .topbar { min-height: 48px; padding-top: 4px; padding-bottom: 4px; }
+  #app .topbar h1 { font-size: 20px; }
+  #app .icon-btn { width: 44px; height: 44px; }
+  #app .parrot.small .bird, #app .island-left .parrot .bird { width: 60px; height: 60px; }
+  #app .bubble { font-size: 14px !important; padding: 6px 12px; }
+  #app .btn.big { min-height: 52px; font-size: 18px; }
+  #app .animal-txt { font-size: 13px; }
+  #app .tour-txt p { font-size: 16px; }
+  #app .tour-txt h2 { font-size: 22px; }
+}

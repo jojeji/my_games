@@ -100,3 +100,23 @@ Fehlbild sofort eingeordnet werden kann.
 - Meldung ~126 ms nach dem Anschlag (Fenster 2048 Werte + 2 stabile Fenster).
 - Chromium (Desktop): 1,2 ms Rechenzeit je Fenster bei 60 Fenstern/s; Kalibrierung auf 3 Cent genau, danach alle Noten bei 1–2 Cent.
 - **Noch nicht gemessen: echtes Klavier, echtes Tablet-Mikrofon, Raumgeräusche.** Das ist die Aufgabe der Probe.
+
+## Vorschau (2026-11-27): Spielwelt ohne Klavier
+
+Auf Wunsch des Besitzers vor dem Bericht der Mikrofon-Probe gebaut, damit er die Welt sehen und durchklicken kann (er hat selbst kein
+Klavier; geübt wird bei der Schwester). Direkter Link `games/inselmelodie/`, **nicht im Hub** (`games.json`) und nicht im Precache.
+
+- **Eingabe „Bildschirm-Tastatur“ (Standard der Vorschau)**: die Mini-Tastatur ist spielbar und klingt (Glockenspiel). Umschalter in den
+  Einstellungen auf „Mikrofon (Klavier)“ nutzt `mic.js` (= Probe-Erkennung) mit Kalibrierung „Mittel-C finden“ vor der ersten Aufgabe.
+  Im Mikrofon-Modus spielt die App während des Zuhörens keine Töne (ADR 0004); „Anhören“ schaltet die Erkennung so lange stumm.
+- **Inhalt**: Inseln 0–3 vollständig (Rundgang, 8 Noten mit Inseltier, 3 Notenspiele, 12 Stücke), Insel 4 „Höhleninsel“ als „bald“.
+  Schalter „Alle Inseln offen (Vorschau)“ steht an; ausgeschaltet öffnet eine Insel erst, wenn die vorige geschafft ist.
+- **Farben je Tonname** (`music.js NOTE_COLORS`) passen zu den Tieren: C grün, D blau, E orange, F pink, **G gelb** (damit Chamäleon und
+  Gecko über die Farbe unterscheidbar sind), A braun, H rot.
+- **Fingernummern** nur in der C-Lage (C1 … G5); A, H, hohes C ohne Nummer, bis Lagenwechsel geplant sind (offener Punkt).
+- **Notenspiel**: ohne Notennamen und ohne leuchtende Taste (sonst wird abgelesen statt gelesen); die Taste leuchtet erst nach einem Fehlgriff.
+- **Sterne**: 0 Fehlgriffe = 3, bis 10 % (mind. 1) = 2, sonst 1. **Sammelstück** je geschaffter Insel (Muschel, Seestern, Schneckenhaus, Truhe).
+- Geprüft mit Playwright bei 1280×800 (Ziel), 844×390 und 390×844 (hochkant: Hinweis „quer halten“, nutzbar, aber eng).
+- Dateien: `music.js`, `world.js` (alle Inhalte und Sätze des Papageis), `session.js` (Wartemodus, Notenspiel, Fortschritt), `staff.js`
+  (SVG-Notenzeile, eigener Violinschlüssel als Linie, da 𝄞 auf Android nicht sicher vorhanden ist), `keyboard.js`, `audio.js`, `mic.js`,
+  `ui.js`, `main.js`. Tests: `tests/inselmelodie-world.test.mjs` (u. a. „jedes Stück nutzt nur bis dahin eingeführte Noten“).

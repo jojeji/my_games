@@ -1,0 +1,18 @@
+{
+  "id": "./?app=inselmelodie",
+  "name": "Inselmelodie",
+  "short_name": "Inselmelodie",
+  "description": "Klavier üben auf einer Inselkette: Noten lesen lernen mit einem Papagei, der zuhört.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#1fa9b5",
+  "theme_color": "#1fa9b5",
+  "categories": ["games", "education", "music"],
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

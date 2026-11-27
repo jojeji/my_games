@@ -96,6 +96,10 @@ _Avoid_: Fehler, Leben, Strafe
 Die App spielt das Stück vor (synthetisierter Klang), nie während sie selbst spielt.
 _Avoid_: Vorspielen, Demo
 
+**Bildschirm-Tastatur**:
+Eingabe ohne Klavier: die Mini-Tastatur ist antippbar und klingt. Gegenstück zur Mikrofon-Eingabe; Umschalter in den Einstellungen.
+_Avoid_: Touch-Modus, virtuelles Klavier
+
 ## Tonerkennung
 
 **Fenster**:
