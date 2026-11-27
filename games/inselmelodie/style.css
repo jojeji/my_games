@@ -251,7 +251,7 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 #app .stage { flex: 1; min-height: 0; display: flex; gap: 10px; margin: 6px var(--gutter) 6px; }
 #app .coach-col { flex: 0 0 clamp(130px, 17%, 210px); display: flex; align-items: flex-end; justify-content: center; min-width: 0; }
 #app .coach-col .parrot { width: 100%; }
-#app .coach-col .bubble { font-size: 16px; text-align: center; width: 100%; }
+#app .coach-col .bubble { font-size: 17px; text-align: center; width: 100%; }
 #app .coach-col .bird { width: 80px; height: 80px; }
 #app .staff-host { position: relative; flex: 1; min-width: 0; background: var(--staff-bg); border-radius: 22px; box-shadow: inset 0 0 0 3px #f0e4c4, 0 3px 10px #0000000f; overflow: hidden; }
 #app svg.staff { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -278,8 +278,21 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 @keyframes notepop { 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
 #app .staff .note { transition: opacity 0.4s; }
 #app .staff .note.far { opacity: 0; }
-#app .staff .note.swim-in { animation: swimin 0.7s cubic-bezier(.3, 1.3, .5, 1); }
-@keyframes swimin { from { transform: translateX(160px); opacity: 0; } }
+#app .staff .note.arrive { animation: arrive 2.4s cubic-bezier(.15, .6, .3, 1); }
+@keyframes arrive { 0% { transform: translateX(520px); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateX(0); } }
+#app .staff .bub { fill: #9fdde3; opacity: 0; }
+#app .staff .note.arrive .bub { animation: bub 1.2s ease-out 3; }
+#app .staff .note.arrive .bub:nth-of-type(2) { animation-delay: 0.3s; }
+#app .staff .note.arrive .bub:nth-of-type(3) { animation-delay: 0.6s; }
+@keyframes bub { 0% { opacity: 0.9; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
+#app .staff.swimming .note.done { opacity: 0; }
+#app .staff-host.water { background: linear-gradient(180deg, var(--staff-bg) 55%, #e2f6f6 100%); }
+#app .staff-host.water::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 26px; pointer-events: none; opacity: 0.7;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='26'%3E%3Cpath d='M0 14 Q 20 2 40 14 T 80 14 V26 H0Z' fill='%23bfe9ec'/%3E%3C/svg%3E") repeat-x;
+  animation: waves 4s linear infinite;
+}
+@keyframes waves { to { background-position: 80px 0; } }
 #app .staff.swimming .note:not(.done):not(.now) .hw { animation: wobble 1.6s ease-in-out infinite; }
 @keyframes wobble { 50% { transform: translateY(-5px) rotate(-6deg); } }
 #app .staff .ghost ellipse { fill: #9aa9ad; opacity: 0.85; }
@@ -351,7 +364,7 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 #app svg.hand { width: 90%; height: 100%; }
 #app svg.hand .palm, #app svg.hand .finger { fill: #ffd9b8; stroke: #d9a679; stroke-width: 3; }
 #app svg.hand text { font-size: 26px; font-weight: 900; text-anchor: middle; fill: var(--accent); }
-#app svg.hand .fing { animation: wiggle 2.4s ease-in-out infinite; animation-delay: var(--d); transform-box: fill-box; transform-origin: bottom; }
+#app svg.hand .fing { animation: wiggle 2.4s ease-in-out infinite; animation-delay: var(--d); } /* kein transform-origin: das würde die Drehung der Finger (transform-Attribut) verschieben */
 @keyframes wiggle { 0%, 80%, 100% { translate: 0 0; } 88% { translate: 0 -10px; } }
 #app .tour-bird { max-width: 100%; max-height: 100%; object-fit: contain; }
 
@@ -373,6 +386,11 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 @keyframes fall { to { transform: translateY(110vh) rotate(calc(var(--r) + 540deg)); } }
 
 /* Album, Einstellungen, Kalibrierung */
+#app .album-hint { align-self: flex-start; font-size: 17px; }
+#app .adults summary { font-weight: 900; font-size: 18px; cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+#app .adults .row { justify-content: flex-start; }
+#app .finale-row { display: flex; gap: 10px; justify-content: center; }
+#app .finale-pic { width: min(15vh, 96px); }
 #app .album { background: linear-gradient(#c9f1f1, var(--sand)); }
 #app .album-body, #app .more-body { flex: 1; overflow-y: auto; padding: 0 var(--gutter) 20px; display: flex; flex-direction: column; gap: 12px; }
 #app .album-body h2 { font-size: 22px; font-weight: 900; }
@@ -428,9 +446,12 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
   #app .learn-right { flex: none; }
   #app .animal-card .animal { height: auto; width: 30%; max-height: 100%; }
   #app .coach-row .parrot { flex-basis: 100%; }
-  #app .staff-host { flex: 0 1 auto; height: 34vh; align-self: stretch; }
+  #app .staff-host { flex: 0 1 auto; height: 30vh; align-self: stretch; }
+  #app .animal-modal-body { flex-direction: column; height: auto; }
+  #app .animal-modal-body .animal { height: 18vh; max-width: 60%; }
+  #app .staff-host.mini { width: 100%; height: 150px; flex: none; }
   #app .learn-right .staff-host { height: 17vh; flex: none; min-height: 0; }
-  #app .stage { justify-content: flex-end; }
+  #app .stage { justify-content: center; }
   #app .tour-card { flex-direction: column; justify-content: center; gap: 16px; padding: 0 18px; }
   #app .tour-art { flex: none; width: 100%; height: 30vh; }
   #app .tour-txt h2 { font-size: 24px; }
@@ -440,6 +461,12 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
   #app .map-coach .bubble { font-size: 15px; }
   #app .map-bottom { flex-direction: column; align-items: stretch; }
   #app .btn.go { justify-content: center; }
+}
+/* Kleine Tablets quer (z. B. 1024x600) */
+@media (max-height: 700px) and (orientation: landscape) {
+  #app .animal-card .animal { height: 30%; }
+  #app .animal-txt { font-size: 14px; gap: 4px; }
+  #app .animal-txt h2 { font-size: 19px; }
 }
 /* Flache Handys quer */
 @media (max-height: 460px) and (orientation: landscape) {

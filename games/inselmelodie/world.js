@@ -141,6 +141,17 @@ export const SAY = {
   soon: 'Hier kommen wir später hin. Erst lernen wir die Töne der anderen Inseln.',
   doneToday: 'Für heute hast du richtig viel geschafft. Du darfst aber gern weiterspielen.',
 };
+/** Abwechselnde Sätze (eine Variante je Anlass, reihum, damit es nicht leiert). {N} = gesuchte Note. */
+export const LINES = {
+  perfect: ['Wow, ohne einen einzigen Fehlgriff!', 'Fehlerfrei! Das klang richtig schön.', 'Alles getroffen. Ich bin baff!'],
+  almost: ['Fast perfekt, nur ein kleiner Wackler!', 'Fast fehlerfrei, super!'],
+  good: ['Richtig gut gespielt!', 'Das wird immer sicherer!', 'Schön! Mit etwas Übung holst du alle Sterne.'],
+  ok: ['Geschafft! Nochmal spielen bringt mehr Sterne.', 'Du hast durchgehalten, das zählt! Probier es gleich nochmal.'],
+  wrong: ['Fast! Schau, wo dein Ton war, und such das {N}.', 'Knapp daneben. Das {N} ist gesucht.', 'Hoppla! Wo wohnt das {N}?', 'Nicht ganz. Such das {N} auf der Tastatur.'],
+  gameWrong: ['Knapp daneben! Schau genau: Linie oder Zwischenraum?', 'Nicht ganz. Die richtige Taste leuchtet jetzt.', 'Hoppla! Lies die Note noch einmal.'],
+  welcome: ['Schön, dass du wieder da bist!', 'Da bist du ja! Wollen wir weiter?', 'Ahoi! Die Inseln haben auf dich gewartet.'],
+};
+
 /** Lob bei Serien (wechselt, damit es nicht leiert). */
 export const PRAISE = ['Super!', 'Weiter so!', 'Klasse!', 'Du bist richtig drin!', 'Wow!', 'Spitze!', 'So schön!', 'Ganz sicher!'];
 
@@ -151,6 +162,9 @@ export const MAP_SAY = {
   arrived: 'Land in Sicht! Die {I} gehört jetzt dir.',
   locked: 'Da kommen wir noch hin. Erst schaffen wir die {I}.',
   here: 'Tipp auf die {I}, dann geht es weiter.',
+  sailTip: 'Leinen los! Auf zur {I}! Tipp aufs Wasser, dann segeln wir schneller.',
+  finale: 'Du hast alle Inseln geschafft! Die Höhleninsel öffnet bald. Bis dahin kannst du Sterne sammeln.',
+  allDone: 'Alle Inseln geschafft! Hol dir noch fehlende Sterne.',
 };
 
 export const NAME_IDEAS = ['Kiki', 'Coco', 'Pepe', 'Lori', 'Mango'];

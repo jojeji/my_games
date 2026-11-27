@@ -2,10 +2,10 @@
 // Layout-Regel: Der Papagei hat überall einen EIGENEN Platz im Layout (Spalte oder Zeile) und liegt nie über Inhalt.
 import { h } from '../../engine/ui/dom.js';
 import { confirmDialog } from '../../engine/ui/modal.js';
-import { ISLANDS, islandById, findTask, say, NAME_IDEAS, ANIMALS, PRAISE, MAP_SAY } from './world.js';
+import { ISLANDS, islandById, findTask, say, NAME_IDEAS, ANIMALS, PRAISE, MAP_SAY, LINES } from './world.js';
 import {
   createRun, noteGameNotes, record, islandOpen, islandDone, nextTask, taskDone, starsTotal, COLLECT,
-  defaultProgress, islandShown, pendingReveal,
+  defaultProgress, islandShown, pendingReveal, weakestTask, allDone,
 } from './session.js';
 import { createStaff } from './staff.js';
 import { createKeyboard } from './keyboard.js';
@@ -49,6 +49,7 @@ const ICONS = {
   gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
   album: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 15l5-5 4 4 3-3 4 4"/>',
   check: '<path d="M5 13l4 4 10-10"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
   piano: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v14M13 5v14M18 5v14"/><path d="M6 5v8h3V5M11 5v8h3V5M16 5v8h3V5" fill="currentColor"/>',
   note: '<circle cx="8" cy="17" r="3" fill="currentColor"/><path d="M11 17V4l8 3"/>',
   fish: '<path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0zM18 12l3-3v6z"/><circle cx="8" cy="11" r="1" fill="currentColor"/>',
@@ -69,6 +70,9 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
   const B = () => p.birdName || 'Papagei';
   const sayB = (k, v = {}) => say(k, { B: B(), ...v });
   const fill = (t, v) => t.replace(/\{(\w)\}/g, (_, k) => v[k] ?? '');
+  const turns = {};
+  /** nächste Variante eines Satzes (reihum) */
+  const pick = (k, v = {}) => { const arr = LINES[k]; const i = (turns[k] = ((turns[k] ?? -1) + 1) % arr.length); return fill(arr[i], v); };
 
   function setScreen(node, cls, dir = 'fwd') {
     cleanup?.();
@@ -182,11 +186,15 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     return { have, max };
   }
 
+  let greeted = false;
   function showMap() {
     const host = h('div', { class: 'map-host' });
     const coach = parrot('zeigt', '', 'map-coach row');
-    const nx = nextTask(p);
-    const goBtn = h('button', { class: 'btn primary big go' }, icon('play'), h('span', { class: 'go-txt' }, 'Weiter üben', h('small', { text: nx ? nx.task.title : '' })));
+    const finished = allDone(p);
+    const nx = nextTask(p) || weakestTask(p);
+    const fresh = !Object.keys(p.tasks).length;
+    const goLabel = fresh ? 'Los geht’s' : finished ? 'Sterne sammeln' : 'Weiter üben';
+    const goBtn = h('button', { class: 'btn primary big go' }, icon('play'), h('span', { class: 'go-txt' }, goLabel, h('small', { text: nx ? nx.task.title : '' })));
     goBtn.hidden = !nx;
     setScreen(h('div', { class: 'map-wrap' },
       host,
@@ -213,11 +221,14 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     cleanup = () => map.destroy();
 
     const here = islandById(p.boat);
-    coach.say(!p.tasks.tour ? MAP_SAY.start : fill(MAP_SAY.here, { I: here.name }));
+    let line = fresh ? MAP_SAY.start : finished ? MAP_SAY.allDone : fill(MAP_SAY.here, { I: (nx?.island || here).name });
+    if (!greeted && !fresh) line = pick('welcome') + ' ' + line;
+    greeted = true;
+    coach.say(line);
 
     async function sailTo(isl) {
       if (p.boat === isl.id) return;
-      coach.say(fill(MAP_SAY.sail, { I: isl.name }), 'zeigt');
+      coach.say(fill(MAP_SAY.sailTip, { I: isl.name }), 'zeigt');
       await map.travel(isl.id);
       p.boat = isl.id;
       save();
@@ -234,7 +245,8 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       go(showIsland, isl.id);
     }
     goBtn.addEventListener('click', async () => {
-      if (map.busy || !nx) return;
+      if (map.busy) { map.hurry(); return; }
+      if (!nx) return;
       await sailTo(nx.island);
       stack.push([showIsland, [nx.island.id]]);
       history.pushState({ d: stack.length }, '');
@@ -243,9 +255,8 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
 
     if (pending) {
       (async () => {
-        goBtn.disabled = true;
         await wait(700);
-        coach.say(fill(MAP_SAY.sail, { I: pending.name }), 'jubel');
+        coach.say(fill(MAP_SAY.sailTip, { I: pending.name }), 'jubel');
         await map.travel(pending.id);
         p.boat = pending.id;
         p.revealed.push(pending.id);
@@ -253,9 +264,27 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         await map.reveal(pending, ISLANDS.indexOf(pending));
         audio.sfx.unlock();
         coach.say(fill(MAP_SAY.arrived, { I: pending.name }), 'jubel');
-        goBtn.disabled = false;
       })();
+    } else if (finished && !p.finale) {
+      p.finale = true;
+      save();
+      setTimeout(() => showFinale(), 600);
     }
+  }
+
+  /** Alle Inseln geschafft: einmalige Feier. */
+  function showFinale() {
+    audio.sfx.collect();
+    setTimeout(() => audio.sfx.win(), 500);
+    const overlay = h('div', { class: 'overlay' },
+      h('div', { class: 'result card pop-in finale' },
+        h('h2', { text: 'Alle Inseln geschafft!' }),
+        h('div', { class: 'finale-row' }, ...Object.values(COLLECT).map((c, i) => pic(c, 'finale-pic spin-in', COLLECT_NAMES[c]))),
+        parrot('jubel', fill(MAP_SAY.finale, {}), 'row'),
+        h('button', { class: 'btn primary big', text: 'Juhu!', onClick: () => overlay.remove() })),
+      confetti());
+    root.append(overlay);
+    overlay.querySelectorAll('.finale-pic').forEach((el, i) => { el.style.animationDelay = i * 0.18 + 's'; setTimeout(() => burst(el, '#ffc21a', 14, 90), 400 + i * 180); });
   }
 
   // ---- Insel: Aufgaben als Pfad aus Trittsteinen -----------------------------
@@ -352,7 +381,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         box.append(h('div', { class: 'legend' }, h('span', { class: 'lg g2', text: 'zwei' }), h('span', { class: 'lg g3', text: 'drei' })));
       } else kb.setTarget(60);
     } else if (kind === 'hand') {
-      box.innerHTML = `<svg viewBox="0 0 300 220" class="hand">
+      box.innerHTML = `<svg viewBox="-40 -10 380 240" class="hand">
         <rect x="70" y="110" width="160" height="100" rx="40" class="palm"/>
         ${[[40, 120, 1, -35], [92, 40, 2, -6], [137, 28, 3, 0], [182, 40, 4, 6], [222, 70, 5, 12]].map(([x, y, n, r]) =>
           `<g class="fing" style="--d:${n * 0.12}s" transform="rotate(${r} ${x + 18} ${y + 60})"><rect x="${x}" y="${y}" width="36" height="${n === 1 ? 70 : 100}" rx="18" class="finger"/><text x="${x + 18}" y="${y + 34}">${n}</text></g>`).join('')}
@@ -469,7 +498,8 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       voyage,
       h('div', { class: 'stage' }, h('div', { class: 'coach-col' }, coach), staffHost),
       kbHost), 'play-screen');
-    const staff = createStaff(staffHost, { notes, help, reveal: isGame ? 2 : 0 });
+    if (isGame) staffHost.classList.add('water');
+    const staff = createStaff(staffHost, { notes, help, reveal: isGame ? 1 : 0 });
     let kb = null;
     let missHere = 0;
     let streak = 0;
@@ -494,6 +524,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       if (listenLbl) listenLbl.textContent = 'Anhören';
       staff.setIndex(run.index);
       showTarget();
+      coach.say(sayB('songStart'), 'neutral');
       if (p.settings.input === 'mic') mic.mute(400);
     }
     function hear() {
@@ -506,11 +537,12 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       hearTimer = setTimeout(stopHear, dur * 1000 + 300);
     }
     function onNote(m) {
-      if (playing) stopHear(); // eine Taste beendet das Vorspielen, der Ton zählt
+      if (playing) { stopHear(); return; } // eine Taste beendet nur das Vorspielen, sie wird nicht gewertet
       if (run.done) return;
       const r = run.input(m);
       if (r.result === 'hit') {
         const head = staff.head(r.index);
+        staff.clearGhost();
         burst(head, noteColor(m), 12, 70);
         staff.pop(r.index);
         kb?.flash(m, 'good');
@@ -526,7 +558,8 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         }
         if (streak > 0 && streak % 5 === 0) {
           audio.sfx.streak(streak / 5);
-          floatText(streakChip, `Serie ${streak}!`, '#c25e00', 'big');
+          const sr = staffHost.getBoundingClientRect();
+          floatText({ x: sr.left + sr.width * 0.62, y: sr.top + sr.height * 0.5 }, `Serie ${streak}!`, '#c25e00', 'big');
           coach.say(PRAISE[praise++ % PRAISE.length], 'jubel');
         } else if (run.index === Math.floor(notes.length / 2)) coach.say('Halb geschafft!', 'jubel');
         showTarget();
@@ -540,7 +573,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         kb?.flash(m, 'bad');
         buzz(35);
         showTarget();
-        coach.say(wrongLine(m, r.want) || sayB('wrong', { N: noteLabel(r.want) }), 'staunt');
+        coach.say(isGame ? pick('gameWrong') : wrongLine(m, r.want) || pick('wrong', { N: noteLabel(r.want) }), 'staunt');
       }
     }
     async function finish() {
@@ -548,6 +581,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       const st = run.stars();
       const res = record(p, task.id, st);
       save();
+      stars.querySelector('b').textContent = String(starsTotal(p));
       staff.wave();
       coach.say('Geschafft!', 'jubel');
       await wait(900);
@@ -559,14 +593,14 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     audio.sfx.win();
     const row = starRow(0, 3, 'big');
     const total = starPill();
-    const coach = parrot('jubel', sayB(nStars === 3 ? 'stars3' : nStars === 2 ? 'stars2' : 'stars1'), 'row');
+    const coach = parrot('jubel', pick(misses === 0 ? 'perfect' : nStars === 3 ? 'almost' : nStars === 2 ? 'good' : 'ok'), 'row');
     const again = h('button', { class: 'btn', text: 'Nochmal', onClick: () => { overlay.remove(); showTask(task.id); } });
     const next = h('button', { class: 'btn primary', text: res.collect ? 'Belohnung abholen' : 'Weiter', onClick: () => { overlay.remove(); afterTask(task.id, res); } });
     const overlay = h('div', { class: 'overlay' },
       h('div', { class: 'result card pop-in' },
         h('div', { class: 'result-top' }, h('h2', { text: task.title }), total),
         row,
-        h('p', { class: 'muted', text: misses === 0 ? 'Kein Fehlgriff' : misses === 1 ? '1 Fehlgriff' : `${misses} Fehlgriffe` }),
+        h('p', { class: 'muted', text: misses === 0 ? 'Alle Noten auf Anhieb getroffen' : misses === 1 ? '1 Note mit Fehlgriff' : `${misses} Noten mit Fehlgriff` }),
         coach,
         h('div', { class: 'row' }, again, next)),
       confetti());
@@ -608,9 +642,17 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
 
   // ---- Album -------------------------------------------------------------------
   function showAlbum() {
+    const hint = h('p', { class: 'album-hint bubble', text: 'Tipp ein Tier an, dann erzählt es dir, wo seine Note wohnt.' });
     const items = Object.values(COLLECT).map((c) => {
       const have = p.collect.includes(c);
-      return h('div', { class: 'album-item' + (have ? '' : ' missing') }, pic(c, 'album-pic', COLLECT_NAMES[c]), h('span', { text: have ? COLLECT_NAMES[c] : '?' }));
+      const from = ISLANDS.find((i) => COLLECT[i.id] === c);
+      return h('button', { class: 'album-item' + (have ? '' : ' missing'), onClick: (e) => {
+        audio.sfx.tap();
+        kick(e.currentTarget, 'hop', 600);
+        if (have) burst(e.currentTarget.querySelector('.album-pic'), '#ffc21a', 12, 80);
+        hint.textContent = have ? `${COLLECT_NAMES[c]}: gefunden auf der ${from.name}.` : `Das gibt es, wenn du die ${from.name} schaffst.`;
+        kick(hint, 'in', 400);
+      } }, pic(c, 'album-pic', COLLECT_NAMES[c]), h('span', { text: have ? COLLECT_NAMES[c] : '?' }));
     });
     const animals = Object.entries(ANIMALS).map(([k, a]) => {
       const have = taskDone(p, 'learn-' + k);
@@ -620,7 +662,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     setScreen(h('div', { class: 'album' },
       topbar({ title: 'Inselalbum', right: [starPill()] }),
       h('div', { class: 'album-body' },
-        h('h2', { text: 'Sammelstücke' }), h('div', { class: 'album-grid' }, ...items),
+        h('h2', { text: 'Sammelstücke' }), h('div', { class: 'album-grid' }, ...items), hint,
         h('h2', { text: 'Inseltiere' }), h('div', { class: 'album-grid' }, ...animals))), 'album-screen');
   }
 
@@ -633,7 +675,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     const overlay = h('div', { class: 'overlay', onClick: (e) => { if (e.target === overlay) overlay.remove(); } },
       h('div', { class: 'result card pop-in animal-modal', style: { '--c': noteColor(midi) } },
         h('div', { class: 'result-top' }, h('h2', {}, h('span', { class: 'big-letter', text: k === 'C5' ? 'hohes C' : k[0] }), ` wie ${a.name}`),
-          h('button', { class: 'icon-btn', 'aria-label': 'Schließen', onClick: () => overlay.remove() }, icon('check'))),
+          h('button', { class: 'icon-btn', 'aria-label': 'Schließen', onClick: () => overlay.remove() }, icon('close'))),
         h('div', { class: 'animal-modal-body' }, pic(a.img, 'animal', a.name), staffBox),
         h('p', { text: a.where }), h('p', { text: a.key })));
     root.append(overlay);
@@ -670,8 +712,10 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
           h('h2', { text: 'Sonstiges' }),
           toggle('Töne und Effekte', () => p.settings.sound, (v) => { p.settings.sound = v; audio.enabled = v; }),
           toggle('Vibration', () => p.settings.haptics, (v) => { p.settings.haptics = v; setHaptics(v); }),
-          toggle('Alle Inseln offen (Vorschau)', () => p.settings.allOpen, (v) => (p.settings.allOpen = v)),
-          h('div', { class: 'row' }, h('button', { class: 'btn', text: `${B()} umbenennen`, onClick: () => go(showWelcome, true) })),
+          h('div', { class: 'row' }, h('button', { class: 'btn', text: `${B()} umbenennen`, onClick: () => go(showWelcome, true) }))),
+        h('details', { class: 'card adults' },
+          h('summary', { text: 'Für Erwachsene' }),
+          toggle('Alle Inseln offen (zum Ausprobieren)', () => p.settings.allOpen, (v) => (p.settings.allOpen = v)),
           h('div', { class: 'row' }, h('button', { class: 'btn danger', text: 'Fortschritt löschen', onClick: async () => {
             if (await confirmDialog('Alle Sterne, Sammelstücke und der Name des Papageis werden gelöscht.', { ok: 'Löschen', danger: true })) {
               Object.assign(p, defaultProgress());

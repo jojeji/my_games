@@ -9,7 +9,8 @@ const H = 400;
 const NOW_X = 330; // hier steht die aktuelle Note
 const GAP = 132; // Abstand je Note
 const BEAT_EXTRA = 34; // zusätzlicher Abstand je weiterem Schlag
-const MIN_W = 950; // so breit ist der sichtbare Ausschnitt mindestens (Einheiten)
+const MIN_W = 950;
+let fadeId = 0; // so breit ist der sichtbare Ausschnitt mindestens (Einheiten)
 
 const el = (tag, attrs = {}, parent) => {
   const e = document.createElementNS(NS, tag);
@@ -39,7 +40,8 @@ export function createStaff(host, opt) {
     // mindestens MIN_W Einheiten breit: auf schmalen Flächen (hochkant) wird die Zeile kleiner, zeigt aber mehr Noten
     let w = (H * r.width) / r.height;
     let vh = H;
-    if (w < MIN_W) { vh = (H * MIN_W) / w; w = MIN_W; }
+    const minW = r.width < 520 ? 720 : MIN_W; // schmale Handys: größer, dafür etwas weniger Noten
+    if (w < minW) { vh = (H * minW) / w; w = minW; }
     svg.setAttribute('viewBox', `0 ${Math.round(-(vh - H) / 2)} ${Math.round(w)} ${Math.round(vh)}`);
   };
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
@@ -49,7 +51,13 @@ export function createStaff(host, opt) {
   const track = el('g', { class: 'track' }, svg);
   const ghosts = el('g', { class: 'ghosts' }, svg);
   // Abdeckung links: gespielte Noten verschwinden hinter dem Schlüssel
-  el('rect', { x: 0, y: 0, width: 150, height: H, class: 'clef-bg' }, svg);
+  el('rect', { x: 0, y: -H, width: 150, height: 3 * H, class: 'clef-bg' }, svg);
+  // weicher Übergang statt harter Kante, an der gespielte Noten verschwinden
+  const defs = el('defs', {}, svg);
+  const lg = el('linearGradient', { id: 'clef-fade-' + (++fadeId), x1: 0, x2: 1, y1: 0, y2: 0 }, defs);
+  el('stop', { offset: 0, 'stop-color': 'var(--staff-bg)', 'stop-opacity': 1 }, lg);
+  el('stop', { offset: 1, 'stop-color': 'var(--staff-bg)', 'stop-opacity': 0 }, lg);
+  el('rect', { x: 149, y: -H, width: 70, height: 3 * H, fill: `url(#clef-fade-${fadeId})` }, svg);
   for (let i = 0; i < 5; i++) el('line', { class: 'line', x1: 0, x2: 150, y1: BOTTOM - i * S, y2: BOTTOM - i * S }, svg);
   el('path', { d: CLEF, class: 'clef' }, svg);
 
@@ -57,7 +65,7 @@ export function createStaff(host, opt) {
   let x = 0;
   const groups = opt.notes.map((n, i) => {
     xs.push(x);
-    const g = drawNote(n, x, opt.help, track);
+    const g = drawNote(n, x, { ...opt.help, bubbles: !!opt.reveal }, track);
     if (n.bar && !opt.single && i < opt.notes.length - 1) {
       const bx = x + (GAP + (n.beats - 1) * BEAT_EXTRA) / 2 + 6;
       el('line', { class: 'bar', x1: bx, x2: bx, y1: BOTTOM - 4 * S, y2: BOTTOM }, track);
@@ -76,11 +84,14 @@ export function createStaff(host, opt) {
       g.classList.toggle('done', k < i);
       g.classList.toggle('now', k === i);
       if (opt.reveal) {
-        // Notenspiel: nur die nächsten Noten sind zu sehen, neue schwimmen heran
-        const far = k > i + opt.reveal;
-        if (!far && g.classList.contains('far')) {
+        // Notenspiel: nur `reveal` Noten sind zu sehen; jede neue schwimmt langsam von rechts heran
+        const far = k > i + opt.reveal - 1;
+        if (!far && (g.classList.contains('far') || (instant && k === i))) {
           g.classList.remove('far');
-          if (!instant) { g.classList.add('swim-in'); setTimeout(() => g.classList.remove('swim-in'), 700); }
+          g.classList.remove('arrive');
+          void g.getBoundingClientRect();
+          g.classList.add('arrive');
+          setTimeout(() => g.classList.remove('arrive'), 2600);
         } else if (far) g.classList.add('far');
       }
     });
@@ -123,7 +134,7 @@ export function createStaff(host, opt) {
     void svg.getBoundingClientRect();
     svg.classList.add('shake');
   }
-  return { svg, setIndex, ghost, pop, groups, head, wave, shake, destroy: () => ro?.disconnect() };
+  return { svg, setIndex, ghost, clearGhost: () => ghosts.replaceChildren(), pop, groups, head, wave, shake, destroy: () => ro?.disconnect() };
 }
 
 function ledgers(step, cx, g) {
@@ -153,6 +164,7 @@ function drawNote(n, x, help, parent) {
     const t = el('text', { x, y: 372, class: 'name' }, g);
     t.textContent = noteName(n.midi);
   }
+  if (help.bubbles) for (const [dx, dy, r] of [[30, -14, 6], [42, -38, 4], [34, -60, 3]]) el('circle', { class: 'bub', cx: x + dx, cy: cy + dy, r }, g);
   const f = fingerOf(n.midi);
   if (help.fingers && f) {
     const t = el('text', { x, y: 52, class: 'finger' }, g);

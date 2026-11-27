@@ -65,6 +65,7 @@ test('Texte: kein fester Name für den Papagei, Platzhalter werden ersetzt', () 
 test('Wartemodus: Treffer, Fehlgriffe, Sterne', () => {
   const run = createRun(parseMelody('C4 D4 E4'));
   assert.equal(run.input(62).result, 'miss');
+  assert.equal(run.input(62).result, 'miss'); // dieselbe Note: zählt einmal
   assert.equal(run.index, 0);
   assert.equal(run.input(60).result, 'hit');
   assert.equal(run.input(62).result, 'hit');
@@ -72,10 +73,15 @@ test('Wartemodus: Treffer, Fehlgriffe, Sterne', () => {
   assert.ok(run.done);
   assert.equal(run.input(60).result, 'done');
   assert.equal(run.misses, 1);
+  assert.equal(run.wrongPresses, 2);
   assert.equal(starsFor(0, 24), 3);
-  assert.equal(starsFor(2, 24), 2);
+  assert.equal(starsFor(3, 16), 2); // Hänschen klein mit 3 verfehlten Noten: noch 2 Sterne
+  assert.equal(starsFor(4, 16), 2);
+  assert.equal(starsFor(5, 16), 1);
   assert.equal(starsFor(1, 5), 2);
-  assert.equal(starsFor(4, 24), 1);
+  assert.equal(starsFor(1, 16, true), 3);
+  assert.equal(starsFor(5, 16, true), 2);
+  assert.equal(starsFor(6, 16, true), 1);
 });
 
 test('Notenspiel: jede Note des Vorrats kommt vor, keine direkte Wiederholung, fester Seed', () => {

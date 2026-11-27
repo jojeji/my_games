@@ -2,11 +2,14 @@
 import { rngNext } from '../../engine/kit/rng.js';
 import { ISLANDS, findTask } from './world.js';
 
-/** Sterne nach Fehlgriffen: 0 -> 3, bis 10 % (mind. 1) -> 2, sonst 1. */
+/**
+ * Sterne nach Fehlgriffen. Gezählt werden NOTEN mit mindestens einem Fehlgriff (wer dreimal dieselbe falsche Taste drückt,
+ * verliert nicht dreimal). Stück: 0 -> 3, bis 25 % (mind. 1) -> 2, sonst 1. Notenspiel (lenient): bis 1 -> 3, bis 30 % -> 2.
+ */
 export function starsFor(misses, n, lenient = false) {
-  if (lenient) return misses <= 1 ? 3 : misses <= Math.max(3, Math.round(n * 0.25)) ? 2 : 1; // Notenspiel
+  if (lenient) return misses <= 1 ? 3 : misses <= Math.max(3, Math.round(n * 0.3)) ? 2 : 1;
   if (misses === 0) return 3;
-  if (misses <= Math.max(1, Math.round(n * 0.1))) return 2;
+  if (misses <= Math.max(1, Math.round(n * 0.25))) return 2;
   return 1;
 }
 
@@ -15,11 +18,14 @@ export function starsFor(misses, n, lenient = false) {
  * @param {{midi:number, beats:number}[]} notes
  */
 export function createRun(notes, { lenient = false } = {}) {
-  const st = { i: 0, misses: 0, missAt: new Set() };
+  const st = { i: 0, presses: 0, missAt: new Set() };
   return {
     notes,
     get index() { return st.i; },
-    get misses() { return st.misses; },
+    /** Noten mit mindestens einem Fehlgriff */
+    get misses() { return st.missAt.size; },
+    /** alle falschen Tastendrücke */
+    get wrongPresses() { return st.presses; },
     get done() { return st.i >= notes.length; },
     get want() { return st.i < notes.length ? notes[st.i].midi : null; },
     missedAt: (i) => st.missAt.has(i),
@@ -28,11 +34,11 @@ export function createRun(notes, { lenient = false } = {}) {
       if (st.i >= notes.length) return { result: 'done', index: st.i, want: null };
       const want = notes[st.i].midi;
       if (midi === want) return { result: 'hit', index: st.i++, want };
-      st.misses++;
+      st.presses++;
       st.missAt.add(st.i);
       return { result: 'miss', index: st.i, want };
     },
-    stars: () => starsFor(st.misses, notes.length, lenient),
+    stars: () => starsFor(st.missAt.size, notes.length, lenient),
   };
 }
 
@@ -73,6 +79,7 @@ export function defaultProgress() {
     },
     calib: { offset: 0, done: false },
     boat: 'i0', // hier liegt das Boot
+    finale: false, // Abschluss aller Inseln schon gefeiert
     revealed: ['i0'], // Inseln, deren Freischaltung schon gezeigt wurde
   };
 }
@@ -123,5 +130,17 @@ export function pendingReveal(p) {
   for (let i = 1; i < ISLANDS.length; i++) if (islandOpen(p, i) && !p.revealed.includes(ISLANDS[i].id)) return ISLANDS[i];
   return null;
 }
+
+/** Aufgabe mit den wenigsten Sternen (zum Nachspielen, wenn alles geschafft ist). */
+export function weakestTask(p) {
+  let best = null;
+  for (const isl of ISLANDS) for (const t of isl.tasks) {
+    if (t.kind !== 'song' && t.kind !== 'game') continue;
+    const s = p.tasks[t.id]?.stars ?? 0;
+    if (s < 3 && (!best || s < best.s)) best = { island: isl, task: t, s };
+  }
+  return best;
+}
+export const allDone = (p) => ISLANDS.every((isl) => isl.soon || islandDone(p, isl));
 
 export const starsTotal = (p) => Object.values(p.tasks).reduce((s, t) => s + (t.stars || 0), 0);

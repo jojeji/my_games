@@ -273,6 +273,7 @@ export function createMap(host, opt) {
   return {
     travel,
     reveal,
+    hurry: () => { if (busy) hurry = true; },
     get busy() { return busy; },
     focusIsland: (id, smooth) => focusPoint(harbor(id), smooth),
     destroy() {
