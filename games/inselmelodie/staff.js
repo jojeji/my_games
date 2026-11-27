@@ -9,6 +9,7 @@ const H = 400;
 const NOW_X = 330; // hier steht die aktuelle Note
 const GAP = 132; // Abstand je Note
 const BEAT_EXTRA = 34; // zusätzlicher Abstand je weiterem Schlag
+const MIN_W = 950; // so breit ist der sichtbare Ausschnitt mindestens (Einheiten)
 
 const el = (tag, attrs = {}, parent) => {
   const e = document.createElementNS(NS, tag);
@@ -34,7 +35,12 @@ export function createStaff(host, opt) {
   // Breite des Ausschnitts folgt der Form des Platzes (Höhe ist fest 400 Einheiten)
   const fit = () => {
     const r = host.getBoundingClientRect();
-    if (r.width && r.height) svg.setAttribute('viewBox', `0 0 ${Math.max(700, Math.round((H * r.width) / r.height))} ${H}`);
+    if (!r.width || !r.height) return;
+    // mindestens MIN_W Einheiten breit: auf schmalen Flächen (hochkant) wird die Zeile kleiner, zeigt aber mehr Noten
+    let w = (H * r.width) / r.height;
+    let vh = H;
+    if (w < MIN_W) { vh = (H * MIN_W) / w; w = MIN_W; }
+    svg.setAttribute('viewBox', `0 ${Math.round(-(vh - H) / 2)} ${Math.round(w)} ${Math.round(vh)}`);
   };
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
   ro?.observe(host);
@@ -97,7 +103,18 @@ export function createStaff(host, opt) {
 
   setIndex(0, true);
   fit();
-  return { svg, setIndex, ghost, pop, groups, destroy: () => ro?.disconnect() };
+  /** Kopf der Note i (für Funken und Effekte). */
+  const head = (i) => groups[i]?.querySelector('.head') || null;
+  /** Alle Noten hüpfen nacheinander (Abschluss eines Stücks). */
+  function wave() {
+    groups.forEach((g, k) => setTimeout(() => { g.classList.remove('pop'); void g.getBBox; g.classList.add('pop'); }, k * 45));
+  }
+  function shake() {
+    svg.classList.remove('shake');
+    void svg.getBBox;
+    svg.classList.add('shake');
+  }
+  return { svg, setIndex, ghost, pop, groups, head, wave, shake, destroy: () => ro?.disconnect() };
 }
 
 function ledgers(step, cx, g) {

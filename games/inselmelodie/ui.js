@@ -1,22 +1,29 @@
 // Oberfläche: Bildschirme der Inselkette. Logik liegt in session.js/world.js/music.js (DOM-frei).
+// Layout-Regel: Der Papagei hat überall einen EIGENEN Platz im Layout (Spalte oder Zeile) und liegt nie über Inhalt.
 import { h } from '../../engine/ui/dom.js';
 import { confirmDialog } from '../../engine/ui/modal.js';
-import { ISLANDS, islandById, findTask, say, NAME_IDEAS, ANIMALS } from './world.js';
-import { createRun, noteGameNotes, record, islandOpen, islandDone, nextTask, taskDone, starsTotal, COLLECT, defaultProgress } from './session.js';
+import { ISLANDS, islandById, findTask, say, NAME_IDEAS, ANIMALS, PRAISE, MAP_SAY } from './world.js';
+import {
+  createRun, noteGameNotes, record, islandOpen, islandDone, nextTask, taskDone, starsTotal, COLLECT,
+  defaultProgress, islandShown, pendingReveal,
+} from './session.js';
 import { createStaff } from './staff.js';
 import { createKeyboard } from './keyboard.js';
+import { createMap } from './map-view.js';
+import { initFx, burst, buzz, floatText, flyTo, kick, wait, setHaptics } from './fx.js';
 import { noteName, sciName, calibrate, MITTEL_C } from './notes.js';
-import { noteColor, valueName } from './music.js';
+import { noteColor } from './music.js';
 
 const IMG = (name) => `img/${name}.webp`;
 const noteLabel = (midi) => (midi === 72 ? 'hohe C' : noteName(midi));
+const COLLECT_NAMES = { muschel: 'Muschel', seestern: 'Seestern', schneckenhaus: 'Schneckenhaus', truhe: 'Schatztruhe' };
+const ARTIKEL = { muschel: 'eine', seestern: 'einen', schneckenhaus: 'ein', truhe: 'eine' };
 
 /** Bild mit Ersatz: fehlt die Datei, bleibt ein farbiger Kreis mit Anfangsbuchstaben. */
 function pic(name, cls = '', alt = '') {
   const im = h('img', { class: 'pic ' + cls, src: IMG(name), alt, draggable: false });
   im.addEventListener('error', () => {
-    const f = h('div', { class: 'pic fallback ' + cls, text: (alt || name).slice(0, 1).toUpperCase() });
-    im.replaceWith(f);
+    im.replaceWith(h('div', { class: 'pic fallback ' + cls, text: (alt || name).slice(0, 1).toUpperCase() }));
   }, { once: true });
   return im;
 }
@@ -32,11 +39,11 @@ const ICONS = {
   ear: '<path d="M6 10a6 6 0 1 1 12 0c0 3-2 4-3 5s-1 3-3 4M9 10a3 3 0 0 1 6 0" />',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
   album: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 15l5-5 4 4 3-3 4 4"/>',
-  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   check: '<path d="M5 13l4 4 10-10"/>',
   piano: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v14M13 5v14M18 5v14"/><path d="M6 5v8h3V5M11 5v8h3V5M16 5v8h3V5" fill="currentColor"/>',
   note: '<circle cx="8" cy="17" r="3" fill="currentColor"/><path d="M11 17V4l8 3"/>',
   fish: '<path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0zM18 12l3-3v6z"/><circle cx="8" cy="11" r="1" fill="currentColor"/>',
+  map: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
 };
 const icon = (k) => {
   const s = h('span', { class: 'ico', 'aria-hidden': 'true' });
@@ -48,16 +55,19 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
   let cleanup = null;
   let wake = null;
   const stack = [];
+  initFx(document.body, { vibrate: p.settings.haptics });
 
   const B = () => p.birdName || 'Papagei';
   const sayB = (k, v = {}) => say(k, { B: B(), ...v });
+  const fill = (t, v) => t.replace(/\{(\w)\}/g, (_, k) => v[k] ?? '');
 
-  function setScreen(node, cls) {
+  function setScreen(node, cls, dir = 'fwd') {
     cleanup?.();
     cleanup = null;
-    root.replaceChildren(h('div', { class: 'screen ' + (cls || '') }, node));
+    root.replaceChildren(h('div', { class: `screen ${cls || ''} enter-${dir}` }, node));
   }
   function go(fn, ...args) {
+    audio.sfx.tap();
     stack.push([fn, args]);
     history.pushState({ d: stack.length }, '');
     fn(...args);
@@ -65,6 +75,12 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
   function back() {
     if (stack.length > 1) history.back();
     else showMap();
+  }
+  function home() {
+    stack.length = 0;
+    stack.push([showMap, []]);
+    history.pushState({ d: 1 }, '');
+    showMap();
   }
   addEventListener('popstate', () => {
     if (stack.length > 1) stack.pop();
@@ -79,34 +95,30 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     } catch { /* nicht schlimm */ }
   }
 
+  /** Papagei mit Sprechblase. Die Blase steht NEBEN (row) oder ÜBER (col) dem Vogel, nie über fremdem Inhalt. */
   function parrot(mood, text, cls = '') {
-    const bubble = h('div', { class: 'bubble in', text });
-    const box = h('div', { class: 'parrot ' + cls }, pic('papagei-' + mood, 'bird', 'Papagei'), bubble);
+    const bubble = h('div', { class: 'bubble', text });
+    const img = pic('papagei-' + mood, 'bird', B());
+    const box = h('div', { class: 'parrot ' + cls }, img, bubble);
     box.say = (t, m) => {
       bubble.textContent = t;
-      bubble.classList.remove('in');
-      void bubble.offsetWidth;
-      bubble.classList.add('in');
-      if (m) {
-        const im = box.querySelector('.bird');
-        if (im && im.tagName === 'IMG') im.src = IMG('papagei-' + m);
-        box.classList.remove('hop');
-        void box.offsetWidth;
-        box.classList.add('hop');
-      }
+      kick(bubble, 'in', 400);
+      if (m && img.tagName === 'IMG') img.src = IMG('papagei-' + m);
+      if (m) kick(box, 'hop', 600);
     };
+    img.addEventListener('click', () => { kick(box, 'hop', 600); audio.sfx.tap(); });
     return box;
   }
 
   function topbar({ title, onBack = back, right = [] }) {
     return h('header', { class: 'topbar' },
-      onBack ? h('button', { class: 'icon-btn', 'aria-label': 'Zurück', onClick: onBack }, icon('back')) : h('span'),
+      onBack ? h('button', { class: 'icon-btn', 'aria-label': 'Zurück', onClick: () => { audio.sfx.tap(); onBack(); } }, icon('back')) : h('span'),
       h('h1', { text: title }),
-      h('div', { class: 'right' }, ...right));
+      h('div', { class: 'right' }, ...right.filter(Boolean)));
   }
+  const starPill = () => h('span', { class: 'pill star-pill' }, h('span', { class: 'st on', text: '★' }), h('b', { text: String(starsTotal(p)) }));
 
   // ---- Eingabe: Bildschirm-Tastatur oder Mikrofon -------------------------
-  /** Startet die Eingabe für eine Aufgabe. handler(midi) bekommt jeden Anschlag. */
   async function listen(kbdHost, range, handler, { labels }) {
     const touch = p.settings.input !== 'mic';
     const kbd = createKeyboard(kbdHost, {
@@ -115,9 +127,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     });
     if (!touch) {
       const err = await mic.start(p.calib.offset);
-      if (err) {
-        kbdHost.prepend(h('div', { class: 'mic-err', text: err + ' Du kannst in den Einstellungen auf die Bildschirm-Tastatur umstellen.' }));
-      }
+      if (err) kbdHost.prepend(h('div', { class: 'mic-err', text: err + ' In den Einstellungen kannst du auf die Bildschirm-Tastatur umstellen.' }));
       mic.onNote = handler;
       kbdHost.classList.add('listening');
     }
@@ -129,108 +139,175 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
 
   // ---- Start: Papagei benennen ---------------------------------------------
   function showWelcome(rename = false) {
-    const pr = parrot('neutral', rename ? `Wie soll ich ab jetzt heißen? Gerade heiße ich ${B()}.` : say('hello'), 'big');
-    const input = h('input', { class: 'name-input', type: 'text', maxLength: 14, placeholder: 'Name für den Papagei', value: rename ? p.birdName : '', autocomplete: 'off' });
+    const pr = parrot('neutral', rename ? `Wie soll ich ab jetzt heißen? Gerade heiße ich ${B()}.` : say('hello'), 'big row');
+    const input = h('input', { class: 'name-input', type: 'text', maxLength: 14, placeholder: 'Name für den Papagei', value: rename ? p.birdName : '', autocomplete: 'off', enterKeyHint: 'done' });
     const ok = h('button', { class: 'btn primary big', text: 'Fertig', onClick: done });
-    function done() {
+    async function done() {
       const n = input.value.trim().replace(/\s+/g, ' ').slice(0, 14);
-      if (!n) { input.focus(); input.classList.add('shake'); setTimeout(() => input.classList.remove('shake'), 400); return; }
+      if (!n) { kick(input, 'shake', 400); input.focus(); return; }
+      input.blur();
       p.birdName = n;
       save();
       audio.sfx.collect();
+      burst(pr.querySelector('.bird'), '#ffc21a', 24, 160);
       pr.say(sayB('named'), 'jubel');
       ok.disabled = true;
-      setTimeout(() => (rename ? back() : (stack.length = 0, go(showMap))), 1800);
+      await wait(1900);
+      if (rename) back(); else home();
     }
     input.addEventListener('keydown', (e) => e.key === 'Enter' && done());
+    const title = h('div', { class: 'logo' }, ...[...'Inselmelodie'].map((c, i) => h('span', { text: c, style: { animationDelay: i * 0.06 + 's' } })));
     setScreen(h('div', { class: 'welcome' },
-      h('div', { class: 'title-art' }, h('span', { class: 'logo', text: 'Inselmelodie' })),
+      title,
       pr,
       h('div', { class: 'name-box' },
         input,
-        h('div', { class: 'chips' }, ...NAME_IDEAS.map((n) => h('button', { class: 'chip', text: n, onClick: () => { input.value = n; audio.sfx.tap(); } }))),
+        h('div', { class: 'chips' }, ...NAME_IDEAS.map((n) => h('button', { class: 'chip', text: n, onClick: () => { input.value = n; audio.sfx.tap(); kick(input, 'flash', 400); } }))),
         ok)), 'welcome-screen');
   }
 
   // ---- Inselkarte -------------------------------------------------------------
   function islandStars(isl) {
-    let have = 0;
-    let max = 0;
-    for (const t of isl.tasks) {
-      if (t.kind === 'song' || t.kind === 'game') { max += 3; have += p.tasks[t.id]?.stars || 0; }
-    }
+    let have = 0, max = 0;
+    for (const t of isl.tasks) if (t.kind === 'song' || t.kind === 'game') { max += 3; have += p.tasks[t.id]?.stars || 0; }
     return { have, max };
   }
 
   function showMap() {
-    const map = h('div', { class: 'map' });
-    map.style.backgroundImage = `url(${IMG('meer')})`;
-    const route = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    route.setAttribute('class', 'route');
-    route.setAttribute('viewBox', '0 0 100 100');
-    route.setAttribute('preserveAspectRatio', 'none');
-    const pts = ISLANDS.map((i) => `${i.x},${i.y}`).join(' ');
-    route.innerHTML = `<polyline points="${pts}" />`;
-    map.append(route);
-    ISLANDS.forEach((isl, idx) => {
-      const open = islandOpen(p, idx);
-      const { have, max } = islandStars(isl);
-      const done = islandDone(p, isl);
-      const btn = h('button', {
-        class: 'island' + (open ? '' : ' locked') + (isl.soon ? ' soon' : '') + (done ? ' done' : ''),
-        style: { left: isl.x + '%', top: isl.y + '%' },
-        'aria-label': isl.name,
-        onClick: () => (open ? go(showIsland, isl.id) : bird.say(isl.soon ? sayB('soon') : `Erst die ${ISLANDS[idx - 1].name} schaffen, dann geht es hierher.`, 'staunt')),
-      },
-      pic(isl.img, 'isl-img', isl.name),
-      h('span', { class: 'isl-name', text: isl.name }),
-      isl.soon ? h('span', { class: 'badge', text: 'bald' })
-        : !open ? h('span', { class: 'badge lock' }, icon('lock'))
-          : max ? h('span', { class: 'badge' }, h('span', { class: 'st on', text: '★' }), ` ${have}/${max}`) : done ? h('span', { class: 'badge' }, icon('check')) : null);
-      map.append(btn);
-    });
-    const at = islandById(p.boat) || ISLANDS[0];
-    map.append(h('div', { class: 'boat', style: { left: at.x + 8 + '%', top: at.y - 11 + '%' } }, pic('boot', '', 'Boot')));
-    const bird = parrot('zeigt', sayB('mapHint'), 'map-bird');
+    const host = h('div', { class: 'map-host' });
+    const coach = parrot('zeigt', '', 'map-coach row');
     const nx = nextTask(p);
+    const goBtn = h('button', { class: 'btn primary big go' }, icon('play'), h('span', { class: 'go-txt' }, 'Weiter üben', h('small', { text: nx ? nx.task.title : '' })));
+    goBtn.hidden = !nx;
     setScreen(h('div', { class: 'map-wrap' },
-      map,
+      host,
       h('header', { class: 'map-top' },
         h('div', { class: 'logo small', text: 'Inselmelodie' }),
         h('div', { class: 'right' },
-          h('span', { class: 'pill' }, h('span', { class: 'st on', text: '★' }), ' ' + starsTotal(p)),
+          starPill(),
           h('button', { class: 'icon-btn', 'aria-label': 'Album', onClick: () => go(showAlbum) }, icon('album')),
           h('button', { class: 'icon-btn', 'aria-label': 'Einstellungen', onClick: () => go(showMore) }, icon('gear')))),
-      bird,
-      h('div', { class: 'rotate-hint', text: 'Am schönsten ist es quer: dreh das Gerät einmal.' }),
-      nx ? h('button', { class: 'btn primary big go', onClick: () => go(showIsland, nx.island.id, nx.task.id) }, icon('play'), h('span', {}, 'Weiter üben', h('small', { text: nx.task.title }))) : null), 'map-screen');
-  }
+      h('div', { class: 'map-bottom' }, coach, goBtn)), 'map-screen', 'fade');
 
-  // ---- Insel ----------------------------------------------------------------
-  function taskIcon(t) {
-    if (t.kind === 'learn') return pic(ANIMALS[t.noteKey].img, 'task-pic', ANIMALS[t.noteKey].name);
-    return h('span', { class: 'task-ico k-' + t.kind }, icon({ tour: 'piano', song: 'note', game: 'fish' }[t.kind]));
-  }
+    const pending = pendingReveal(p);
+    const map = createMap(host, {
+      islands: ISLANDS,
+      boatAt: p.boat,
+      reached: p.revealed[p.revealed.length - 1] || 'i0',
+      audio,
+      state: (isl, idx) => ({
+        open: islandOpen(p, idx), soon: !!isl.soon, done: islandDone(p, isl),
+        revealed: islandShown(p, idx), ...islandStars(isl),
+      }),
+      onTap: (isl, idx) => tapIsland(isl, idx),
+    });
+    cleanup = () => map.destroy();
 
-  function showIsland(id, autoTask) {
-    const isl = islandById(id);
-    if (autoTask) { // "Weiter üben": direkt in die Aufgabe, die Insel liegt im Zurück-Stapel
-      stack[stack.length - 1] = [showIsland, [id]];
-      return go(showTask, autoTask);
+    const here = islandById(p.boat);
+    coach.say(!p.tasks.tour ? MAP_SAY.start : fill(MAP_SAY.here, { I: here.name }));
+
+    async function sailTo(isl) {
+      if (p.boat === isl.id) return;
+      coach.say(fill(MAP_SAY.sail, { I: isl.name }), 'zeigt');
+      await map.travel(isl.id);
+      p.boat = isl.id;
+      save();
     }
-    const list = h('div', { class: 'tasks' }, ...isl.tasks.map((t) => {
+    async function tapIsland(isl, idx) {
+      if (map.busy) return;
+      if (isl.soon) { coach.say(sayB('soon'), 'staunt'); buzz(20); return; }
+      if (!islandShown(p, idx)) {
+        coach.say(fill(MAP_SAY.locked, { I: ISLANDS[idx - 1].name }), 'staunt');
+        buzz(20);
+        return;
+      }
+      await sailTo(isl);
+      go(showIsland, isl.id);
+    }
+    goBtn.addEventListener('click', async () => {
+      if (map.busy || !nx) return;
+      await sailTo(nx.island);
+      stack.push([showIsland, [nx.island.id]]);
+      history.pushState({ d: stack.length }, '');
+      go(showTask, nx.task.id);
+    });
+
+    if (pending) {
+      (async () => {
+        goBtn.disabled = true;
+        await wait(700);
+        coach.say(fill(MAP_SAY.sail, { I: pending.name }), 'jubel');
+        await map.travel(pending.id);
+        p.boat = pending.id;
+        p.revealed.push(pending.id);
+        save();
+        await map.reveal(pending, ISLANDS.indexOf(pending));
+        audio.sfx.unlock();
+        coach.say(fill(MAP_SAY.arrived, { I: pending.name }), 'jubel');
+        goBtn.disabled = false;
+      })();
+    }
+  }
+
+  // ---- Insel: Aufgaben als Pfad aus Trittsteinen -----------------------------
+  function taskIcon(t) {
+    if (t.kind === 'learn') return pic(ANIMALS[t.noteKey].img, 'stone-pic', ANIMALS[t.noteKey].name);
+    return h('span', { class: 'stone-ico k-' + t.kind }, icon({ tour: 'piano', song: 'note', game: 'fish' }[t.kind]));
+  }
+
+  function showIsland(id) {
+    const isl = islandById(id);
+    const nextId = isl.tasks.find((t) => !taskDone(p, t.id))?.id;
+    const stones = isl.tasks.map((t, i) => {
       const rec = p.tasks[t.id];
-      const sub = t.kind === 'song' ? (t.own ? 'Eigenes Inselstück' : t.trad) : t.kind === 'game' ? 'Noten erkennen' : t.kind === 'learn' ? ANIMALS[t.noteKey].name : 'Rundgang';
-      return h('button', { class: 'task' + (rec ? ' done' : ''), onClick: () => go(showTask, t.id) },
-        taskIcon(t),
-        h('span', { class: 'task-txt' }, h('b', { text: t.title }), h('small', { text: sub })),
-        t.kind === 'song' || t.kind === 'game' ? starRow(rec?.stars || 0) : rec ? h('span', { class: 'ok' }, icon('check')) : h('span'));
-    }));
+      const sub = t.kind === 'song' ? (t.own ? 'Inselstück' : t.trad) : t.kind === 'game' ? 'Noten erkennen' : t.kind === 'learn' ? ANIMALS[t.noteKey].name : 'Rundgang';
+      const state = rec ? 'done' : t.id === nextId ? 'next' : 'todo';
+      return h('button', { class: `stone ${state} k-${t.kind}`, style: { '--i': i }, onClick: () => go(showTask, t.id) },
+        h('span', { class: 'stone-disc' }, taskIcon(t), rec ? h('span', { class: 'stone-check' }, icon('check')) : null),
+        h('span', { class: 'stone-title', text: t.title }),
+        h('span', { class: 'stone-sub', text: sub }),
+        t.kind === 'song' || t.kind === 'game' ? starRow(rec?.stars || 0) : h('span', { class: 'stars-gap' }),
+        state === 'next' ? h('span', { class: 'next-flag', text: 'Hier weiter' }) : null);
+    });
+    const done = islandDone(p, isl);
+    const msg = done ? 'Alles geschafft hier! Für mehr Sterne kannst du jedes Stück nochmal spielen.' : isl.intro;
+    const { have, max } = islandStars(isl);
     setScreen(h('div', { class: 'island-view' },
-      topbar({ title: isl.name, right: [h('span', { class: 'pill' }, h('span', { class: 'st on', text: '★' }), ` ${islandStars(isl).have}/${islandStars(isl).max}`)] }),
+      topbar({ title: isl.name, onBack: home, right: [h('span', { class: 'pill' }, h('span', { class: 'st on', text: '★' }), ` ${have}/${max}`)] }),
       h('div', { class: 'island-body' },
-        h('div', { class: 'island-left' }, pic(isl.img, 'isl-big', isl.name), parrot('neutral', isl.intro, 'side')),
-        list)), 'island-screen');
+        h('div', { class: 'island-side' }, pic(isl.img, 'isl-big', isl.name), parrot(done ? 'jubel' : 'neutral', msg, 'col')),
+        h('div', { class: 'trail' }, ...stones))), 'island-screen');
+    drawTrail(root.querySelector('.trail'));
+  }
+
+  /** Gepunkteter Weg hinter den Trittsteinen (nach dem Layout gemessen, folgt Umbrüchen und Drehen). */
+  function drawTrail(trail) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'trail-line');
+    trail.prepend(svg);
+    const draw = () => {
+      const tr = trail.getBoundingClientRect();
+      const pts = [...trail.querySelectorAll('.stone-disc')].map((d) => {
+        const r = d.getBoundingClientRect();
+        return [r.left - tr.left + trail.scrollLeft + r.width / 2, r.top - tr.top + trail.scrollTop + r.height / 2];
+      });
+      svg.setAttribute('width', trail.scrollWidth);
+      svg.setAttribute('height', trail.scrollHeight);
+      let d = '';
+      pts.forEach(([x, y], i) => {
+        if (!i) { d = `M${x},${y}`; return; }
+        const [px, py] = pts[i - 1];
+        const mx = (px + x) / 2, my = (py + y) / 2 - 24;
+        d += ` Q${mx},${my} ${x},${y}`;
+      });
+      svg.innerHTML = `<path d="${d}" />`;
+    };
+    requestAnimationFrame(draw);
+    const ro = new ResizeObserver(draw);
+    ro.observe(trail);
+    const prev = cleanup;
+    cleanup = () => { prev?.(); ro.disconnect(); };
   }
 
   function showTask(taskId) {
@@ -241,8 +318,9 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     return showPlay(task);
   }
 
-  /** Nach einer Aufgabe: die nächste noch offene Aufgabe derselben Insel, sonst zurück zur Insel. */
-  function afterTask(taskId) {
+  /** Nach einer Aufgabe: Insel geschafft -> Sammelstück -> Karte (dort fährt das Boot weiter). Sonst nächste Aufgabe der Insel. */
+  function afterTask(taskId, res) {
+    if (res?.collect) return showCollect(res.collect);
     const { island, task } = findTask(taskId);
     const i = island.tasks.indexOf(task);
     const nx = [...island.tasks.slice(i + 1), ...island.tasks.slice(0, i)].find((t) => !taskDone(p, t.id));
@@ -256,19 +334,22 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
   function tourArt(kind) {
     const box = h('div', { class: 'tour-art art-' + kind });
     if (kind === 'groups' || kind === 'middlec') {
-      const kb = createKeyboard(box, { lo: 48, hi: 83, labels: false, playable: true, onKey: (m) => audio.note(m) });
+      const kbBox = h('div', { class: 'tour-kbd' });
+      box.append(kbBox);
+      const kb = createKeyboard(kbBox, { lo: 48, hi: 83, labels: kind === 'middlec', playable: true, onKey: (m) => { audio.note(m); if (kind === 'middlec' && m === 60) { burst(kbBox.querySelector('.key.target'), noteColor(60), 16); buzz(15); } } });
       if (kind === 'groups') {
         kb.mark([49, 51, 61, 63, 73, 75], 'g2');
         kb.mark([54, 56, 58, 66, 68, 70, 78, 80, 82], 'g3');
+        box.append(h('div', { class: 'legend' }, h('span', { class: 'lg g2', text: 'zwei' }), h('span', { class: 'lg g3', text: 'drei' })));
       } else kb.setTarget(60);
     } else if (kind === 'hand') {
       box.innerHTML = `<svg viewBox="0 0 300 220" class="hand">
         <rect x="70" y="110" width="160" height="100" rx="40" class="palm"/>
         ${[[40, 120, 1, -35], [92, 40, 2, -6], [137, 28, 3, 0], [182, 40, 4, 6], [222, 70, 5, 12]].map(([x, y, n, r]) =>
-          `<g transform="rotate(${r} ${x + 18} ${y + 60})"><rect x="${x}" y="${y}" width="36" height="${n === 1 ? 70 : 100}" rx="18" class="finger"/><text x="${x + 18}" y="${y + 34}">${n}</text></g>`).join('')}
+          `<g class="fing" style="--d:${n * 0.12}s" transform="rotate(${r} ${x + 18} ${y + 60})"><rect x="${x}" y="${y}" width="36" height="${n === 1 ? 70 : 100}" rx="18" class="finger"/><text x="${x + 18}" y="${y + 34}">${n}</text></g>`).join('')}
       </svg>`;
     } else {
-      box.append(pic('papagei-zeigt', 'tour-bird', 'Papagei'));
+      box.append(pic('papagei-zeigt', 'tour-bird', B()));
     }
     return box;
   }
@@ -277,17 +358,19 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     let i = 0;
     const view = h('div', { class: 'tour-card' });
     const dots = h('div', { class: 'dots' });
-    const prev = h('button', { class: 'btn', text: 'Zurück', onClick: () => { if (i > 0) { i--; render(); } } });
+    const prev = h('button', { class: 'btn', text: 'Zurück', onClick: () => { if (i > 0) { i--; render(-1); audio.sfx.tap(); } } });
     const next = h('button', { class: 'btn primary', onClick: () => {
-      if (i < task.cards.length - 1) { i++; render(); return; }
-      record(p, task.id, 0);
+      audio.sfx.tap();
+      if (i < task.cards.length - 1) { i++; render(1); return; }
+      const res = record(p, task.id, 0);
       save();
       audio.sfx.win();
-      afterTask(task.id);
+      afterTask(task.id, res);
     } });
-    function render() {
+    function render(dir = 0) {
       const c = task.cards[i];
       view.replaceChildren(tourArt(c.art), h('div', { class: 'tour-txt' }, h('h2', { text: c.title }), h('p', { text: c.text })));
+      if (dir) kick(view, dir > 0 ? 'slide-l' : 'slide-r', 450);
       dots.replaceChildren(...task.cards.map((_, k) => h('span', { class: k === i ? 'on' : '' })));
       prev.disabled = i === 0;
       next.textContent = i < task.cards.length - 1 ? 'Weiter' : 'Los geht’s';
@@ -302,47 +385,55 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     const label = noteLabel(task.note);
     const need = 3;
     let got = 0;
-    const count = h('div', { class: 'count' }, ...Array.from({ length: need }, () => h('span')));
-    const bird = parrot('zeigt', sayB('learnPlay', { N: label }), 'side small');
+    const count = h('div', { class: 'count', 'aria-label': 'Treffer' }, ...Array.from({ length: need }, () => h('span')));
+    const coach = parrot('zeigt', sayB('learnPlay', { N: label }), 'row coach');
     const staffHost = h('div', { class: 'staff-host single' });
     const kbHost = h('div', { class: 'kbd-host' });
-    const cont = h('button', { class: 'btn primary big', text: 'Weiter', hidden: true, onClick: () => afterTask(task.id) });
+    const cont = h('button', { class: 'btn primary big', text: 'Weiter', hidden: true });
+    const animal = pic(a.img, 'animal', a.name);
     const card = h('div', { class: 'animal-card', style: { '--c': noteColor(task.note) } },
-      pic(a.img, 'animal', a.name),
+      animal,
       h('div', { class: 'animal-txt' },
         h('h2', {}, h('span', { class: 'big-letter', text: noteName(task.note) }), ` wie ${a.name}`),
         h('p', { text: a.where }),
         h('p', { text: a.key })));
     setScreen(h('div', { class: 'learn' },
       topbar({ title: task.title }),
-      h('div', { class: 'learn-body' }, card, h('div', { class: 'learn-right' }, staffHost, h('div', { class: 'learn-row' }, bird, count, cont))),
+      h('div', { class: 'learn-body' }, card, h('div', { class: 'learn-right' }, staffHost, h('div', { class: 'coach-row' }, coach, count, cont))),
       kbHost), 'learn-screen');
     const help = { ...p.settings.help, names: true, colors: true, fingers: true };
     const staff = createStaff(staffHost, { notes: [{ midi: task.note, beats: 1 }], help, single: true });
+    let kb = null;
     const isl = findTask(task.id).island;
-    listen(kbHost, isl.range, onNote, { labels: p.settings.help.names }).then((kb) => {
-      kb.setTarget(task.note);
-      staff.kb = kb;
-    });
+    let res = null;
+    cont.addEventListener('click', () => afterTask(task.id, res));
+    listen(kbHost, isl.range, onNote, { labels: p.settings.help.names }).then((k) => { kb = k; kb.setTarget(task.note); });
     function onNote(m) {
       if (got >= need) return;
       if (m === task.note) {
         got++;
         count.children[got - 1].classList.add('on');
         staff.pop(0);
-        staff.kb?.flash(m, 'good');
+        kb?.flash(m, 'good');
+        burst(staff.head(0), noteColor(m), 14);
+        kick(animal, 'hop', 600);
+        buzz(12);
         if (got === need) {
-          record(p, task.id, 0);
+          res = record(p, task.id, 0);
           save();
           if (p.settings.input === 'mic') mic.stop();
           audio.sfx.win();
-          bird.say(sayB('learnDone', { N: label }), 'jubel');
+          burst(animal, noteColor(m), 26, 170);
+          coach.say(sayB('learnDone', { N: label }), 'jubel');
           cont.hidden = false;
-        } else bird.say(got === 1 ? 'Ja! Noch zweimal.' : 'Super, noch einmal!', 'jubel');
+          kick(cont, 'pop-in', 500);
+        } else coach.say(got === 1 ? 'Ja! Noch zweimal.' : 'Super, noch einmal!', 'jubel');
       } else {
         staff.ghost(m);
-        staff.kb?.flash(m, 'bad');
-        bird.say(`Das war ein ${noteName(m)}. Wir suchen das ${label}.`, 'staunt');
+        staff.shake();
+        kb?.flash(m, 'bad');
+        buzz(35);
+        coach.say(`Das war ein ${noteName(m)}. Wir suchen das ${label}.`, 'staunt');
       }
     }
   }
@@ -353,29 +444,34 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     const notes = isGame ? noteGameNotes(task.pool, task.count, Date.now() & 0xffffffff) : task.notes;
     const run = createRun(notes);
     const help = { ...p.settings.help };
-    if (isGame) { help.names = false; help.keys = false; } // im Notenspiel wird gelesen, nicht abgelesen
+    if (isGame) { help.names = false; help.keys = false; help.fingers = false; } // im Notenspiel wird gelesen, nicht abgelesen
     const isl = findTask(task.id).island;
-    const prog = h('div', { class: 'prog' }, h('div', { class: 'bar' }));
-    const counter = h('span', { class: 'pill', text: `0/${notes.length}` });
-    const listenBtn = isGame ? null : h('button', { class: 'btn small', onClick: hear }, icon('ear'), ' Anhören');
-    const bird = parrot('neutral', isGame ? sayB('gameStart') : sayB('songStart'), 'side small');
+    const voyage = h('div', { class: 'voyage', 'aria-hidden': 'true' },
+      h('div', { class: 'voyage-sea' }, h('div', { class: 'voyage-done' })),
+      pic('boot', 'voyage-boat', ''), pic(isl.img, 'voyage-goal', ''));
+    const streakChip = h('span', { class: 'pill streak', hidden: true });
+    const stars = starPill();
+    const listenBtn = isGame ? null : h('button', { class: 'btn small', onClick: hear }, icon('ear'), h('span', { class: 'lbl-wide', text: 'Anhören' }));
+    const coach = parrot('neutral', isGame ? sayB('gameStart') : sayB('songStart'), 'col coach');
     const staffHost = h('div', { class: 'staff-host' });
     const kbHost = h('div', { class: 'kbd-host' });
     setScreen(h('div', { class: 'play' },
-      topbar({ title: task.title, right: [listenBtn, counter].filter(Boolean) }),
-      prog,
-      h('div', { class: 'stage' }, staffHost, bird),
+      topbar({ title: task.title, right: [streakChip, listenBtn, stars] }),
+      voyage,
+      h('div', { class: 'stage' }, h('div', { class: 'coach-col' }, coach), staffHost),
       kbHost), 'play-screen');
     const staff = createStaff(staffHost, { notes, help });
     let kb = null;
     let missHere = 0;
-    listen(kbHost, isl.range, onNote, { labels: p.settings.help.names && !isGame }).then((k) => {
-      kb = k;
-      showTarget();
-    });
+    let streak = 0;
+    let praise = 0;
+    listen(kbHost, isl.range, onNote, { labels: p.settings.help.names && !isGame }).then((k) => { kb = k; showTarget(); });
     function showTarget() {
-      if (!kb) return;
-      kb.setTarget(help.keys || missHere > 0 ? run.want : null);
+      kb?.setTarget(help.keys || missHere > 0 ? run.want : null);
+    }
+    function setVoyage() {
+      const f = run.index / notes.length;
+      voyage.style.setProperty('--f', f);
     }
     let playing = false;
     function hear() {
@@ -396,72 +492,100 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       if (playing || run.done) return;
       const r = run.input(m);
       if (r.result === 'hit') {
+        const head = staff.head(r.index);
+        burst(head, noteColor(m), 12, 70);
         staff.pop(r.index);
         kb?.flash(m, 'good');
+        buzz(10);
         staff.setIndex(run.index);
+        if (missHere === 0) streak++;
         missHere = 0;
-        prog.firstChild.style.width = (run.index / notes.length) * 100 + '%';
-        counter.textContent = `${run.index}/${notes.length}`;
-        if (run.index === Math.floor(notes.length / 2)) bird.say('Halb geschafft!', 'jubel');
+        setVoyage();
+        if (streak >= 3) {
+          streakChip.hidden = false;
+          streakChip.textContent = `🔥 ${streak}`;
+          kick(streakChip, 'bump', 300);
+        }
+        if (streak > 0 && streak % 5 === 0) {
+          audio.sfx.streak(streak / 5);
+          floatText(head || staffHost, `Serie ${streak}!`, noteColor(m), 'big');
+          coach.say(PRAISE[praise++ % PRAISE.length], 'jubel');
+        } else if (run.index === Math.floor(notes.length / 2)) coach.say('Halb geschafft!', 'jubel');
         showTarget();
         if (run.done) finish();
       } else if (r.result === 'miss') {
         missHere++;
+        streak = 0;
+        streakChip.hidden = true;
         staff.ghost(m);
+        staff.shake();
         kb?.flash(m, 'bad');
+        buzz(35);
         showTarget();
-        bird.say(sayB('wrong', { N: noteLabel(r.want) }), 'staunt');
+        coach.say(sayB('wrong', { N: noteLabel(r.want) }), 'staunt');
       }
     }
-    function finish() {
+    async function finish() {
       if (p.settings.input === 'mic') mic.stop();
-      const stars = run.stars();
-      const res = record(p, task.id, stars);
+      const st = run.stars();
+      const res = record(p, task.id, st);
       save();
-      setTimeout(() => showResult(task, stars, run.misses, res), 500);
+      staff.wave();
+      coach.say('Geschafft!', 'jubel');
+      await wait(900);
+      showResult(task, st, run.misses, res);
     }
   }
 
-  function showResult(task, stars, misses, res) {
+  function showResult(task, nStars, misses, res) {
     audio.sfx.win();
     const row = starRow(0, 3, 'big');
-    const bird = parrot('jubel', sayB(stars === 3 ? 'stars3' : stars === 2 ? 'stars2' : 'stars1'), 'result-bird');
+    const total = starPill();
+    const coach = parrot('jubel', sayB(nStars === 3 ? 'stars3' : nStars === 2 ? 'stars2' : 'stars1'), 'row');
+    const again = h('button', { class: 'btn', text: 'Nochmal', onClick: () => { overlay.remove(); showTask(task.id); } });
+    const next = h('button', { class: 'btn primary', text: res.collect ? 'Belohnung abholen' : 'Weiter', onClick: () => { overlay.remove(); afterTask(task.id, res); } });
     const overlay = h('div', { class: 'overlay' },
       h('div', { class: 'result card pop-in' },
-        h('h2', { text: task.title }),
+        h('div', { class: 'result-top' }, h('h2', { text: task.title }), total),
         row,
         h('p', { class: 'muted', text: misses === 0 ? 'Kein Fehlgriff' : misses === 1 ? '1 Fehlgriff' : `${misses} Fehlgriffe` }),
-        bird,
-        h('div', { class: 'row' },
-          h('button', { class: 'btn', text: 'Nochmal', onClick: () => { overlay.remove(); showTask(task.id); } }),
-          h('button', { class: 'btn primary', text: 'Weiter', onClick: () => { overlay.remove(); if (res.collect) showCollect(res.collect, task.id); else afterTask(task.id); } }))),
+        coach,
+        h('div', { class: 'row' }, again, next)),
       confetti());
     root.append(overlay);
     [...row.children].forEach((s, i) => {
-      if (i < stars) setTimeout(() => { s.classList.add('on', 'pop'); audio.sfx.star(i); }, 500 + i * 450);
+      if (i >= nStars) return;
+      setTimeout(() => {
+        s.classList.add('on', 'pop');
+        audio.sfx.star(i);
+        burst(s, '#ffc21a', 10, 60);
+        buzz(15);
+      }, 450 + i * 420);
     });
   }
 
   function confetti() {
     const box = h('div', { class: 'confetti', 'aria-hidden': 'true' });
-    const cols = Object.values({ a: '#4fae2f', b: '#2b86d9', c: '#f08c12', d: '#e2559c', e: '#e2b616', f: '#dc3f2c' });
-    for (let i = 0; i < 36; i++) {
-      box.append(h('i', { style: { left: (i * 97) % 100 + '%', background: cols[i % cols.length], animationDelay: (i % 9) * 0.12 + 's', '--r': (i * 47) % 360 + 'deg' } }));
+    const cols = ['#4fae2f', '#2b86d9', '#f08c12', '#e2559c', '#e2b616', '#dc3f2c'];
+    for (let i = 0; i < 40; i++) {
+      box.append(h('i', { style: { left: (i * 97) % 100 + '%', background: cols[i % cols.length], animationDelay: (i % 10) * 0.11 + 's', '--r': (i * 47) % 360 + 'deg' } }));
     }
     return box;
   }
 
-  const COLLECT_NAMES = { muschel: 'Muschel', seestern: 'Seestern', schneckenhaus: 'Schneckenhaus', truhe: 'Schatztruhe' };
-  function showCollect(item, taskId) {
+  function showCollect(item) {
     audio.sfx.collect();
+    buzz(30);
+    const img = pic(item, 'collect-pic spin-in', COLLECT_NAMES[item]);
     const overlay = h('div', { class: 'overlay' },
       h('div', { class: 'result card pop-in' },
-        h('h2', { text: 'Neues Sammelstück!' }),
-        pic(item, 'collect-pic spin-in', COLLECT_NAMES[item]),
-        h('p', { text: `${COLLECT_NAMES[item]} für dein Inselalbum. ${say('islandDone')}` }),
-        h('button', { class: 'btn primary big', text: 'Weiter', onClick: () => { overlay.remove(); afterTask(taskId); } })),
+        h('h2', { text: 'Insel geschafft!' }),
+        h('div', { class: 'collect-glow' }, img),
+        h('p', { text: `Du bekommst ${ARTIKEL[item]} ${COLLECT_NAMES[item]} für dein Inselalbum.` }),
+        h('button', { class: 'btn primary big', onClick: () => { overlay.remove(); home(); } }, icon('map'), ' Zur Karte: Leinen los!')),
       confetti());
     root.append(overlay);
+    setTimeout(() => burst(img, '#ffc21a', 26, 170), 600);
   }
 
   // ---- Album -------------------------------------------------------------------
@@ -475,7 +599,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       return h('div', { class: 'album-item' + (have ? '' : ' missing') }, pic(a.img, 'album-pic', a.name), h('span', { text: have ? `${k === 'C5' ? 'hohes C' : k[0]} · ${a.name}` : '?' }));
     });
     setScreen(h('div', { class: 'album' },
-      topbar({ title: 'Inselalbum', right: [h('span', { class: 'pill' }, h('span', { class: 'st on', text: '★' }), ' ' + starsTotal(p))] }),
+      topbar({ title: 'Inselalbum', right: [starPill()] }),
       h('div', { class: 'album-body' },
         h('h2', { text: 'Sammelstücke' }), h('div', { class: 'album-grid' }, ...items),
         h('h2', { text: 'Inseltiere' }), h('div', { class: 'album-grid' }, ...animals))), 'album-screen');
@@ -483,11 +607,11 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
 
   // ---- Einstellungen -----------------------------------------------------------
   function toggle(label, get, set) {
-    const b = h('button', { class: 'switch', role: 'switch' });
+    const b = h('button', { class: 'switch', role: 'switch', 'aria-label': label });
     const sync = () => { b.setAttribute('aria-checked', String(get())); b.classList.toggle('on', get()); };
-    b.addEventListener('click', () => { set(!get()); save(); sync(); });
+    b.addEventListener('click', () => { set(!get()); save(); sync(); audio.sfx.tap(); });
     sync();
-    return h('label', { class: 'set-row' }, h('span', { text: label }), b);
+    return h('div', { class: 'set-row' }, h('span', { text: label }), b);
   }
   function showMore() {
     const seg = h('div', { class: 'seg' },
@@ -510,6 +634,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         h('section', { class: 'card' },
           h('h2', { text: 'Sonstiges' }),
           toggle('Töne und Effekte', () => p.settings.sound, (v) => { p.settings.sound = v; audio.enabled = v; }),
+          toggle('Vibration', () => p.settings.haptics, (v) => { p.settings.haptics = v; setHaptics(v); }),
           toggle('Alle Inseln offen (Vorschau)', () => p.settings.allOpen, (v) => (p.settings.allOpen = v)),
           h('div', { class: 'row' }, h('button', { class: 'btn', text: `${B()} umbenennen`, onClick: () => go(showWelcome, true) })),
           h('div', { class: 'row' }, h('button', { class: 'btn danger', text: 'Fortschritt löschen', onClick: async () => {
@@ -525,12 +650,12 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
 
   // ---- Kalibrierung -------------------------------------------------------------
   function showCalibrate(then) {
-    const bird = parrot('zeigt', 'Spiel das Mittel-C ein paar Mal hintereinander. Ich höre genau hin, wie dein Klavier klingt.', 'side');
+    const coach = parrot('zeigt', 'Spiel das Mittel-C ein paar Mal hintereinander. Ich höre genau hin, wie dein Klavier klingt.', 'row');
     const meter = h('div', { class: 'cal-meter' }, h('div', { class: 'bar' }));
     const out = h('p', { class: 'muted', text: '' });
     const kbHost = h('div', { class: 'kbd-host' });
     const done = h('button', { class: 'btn primary big', text: 'Weiter', hidden: true, onClick: () => (then ? then() : back()) });
-    setScreen(h('div', { class: 'calib' }, topbar({ title: 'Mittel-C finden' }), h('div', { class: 'calib-body' }, bird, meter, out, done), kbHost), 'calib-screen');
+    setScreen(h('div', { class: 'calib' }, topbar({ title: 'Mittel-C finden' }), h('div', { class: 'calib-body' }, coach, meter, out, done), kbHost), 'calib-screen');
     const kb = createKeyboard(kbHost, { lo: 48, hi: 84, labels: false, playable: false });
     kb.setTarget(MITTEL_C);
     const samples = [];
@@ -548,7 +673,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         mic.onFrame = null;
         mic.stop();
         audio.sfx.win();
-        bird.say(Math.abs(off) > 50 ? `Gefunden! Dein Klavier ist etwas ${off < 0 ? 'tiefer' : 'höher'} gestimmt als normal, das merke ich mir.` : 'Gefunden! Jetzt kenne ich dein Klavier.', 'jubel');
+        coach.say(Math.abs(off) > 50 ? `Gefunden! Dein Klavier ist etwas ${off < 0 ? 'tiefer' : 'höher'} gestimmt als normal, das merke ich mir.` : 'Gefunden! Jetzt kenne ich dein Klavier.', 'jubel');
         out.textContent = `Verstimmung: ${off > 0 ? '+' : ''}${off.toFixed(0)} Cent (${sciName(MITTEL_C)})`;
         done.hidden = false;
       }

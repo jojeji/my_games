@@ -140,6 +140,18 @@ export const SAY = {
   soon: 'Hier kommen wir später hin. Erst lernen wir die Töne der anderen Inseln.',
   doneToday: 'Für heute hast du richtig viel geschafft. Du darfst aber gern weiterspielen.',
 };
+/** Lob bei Serien (wechselt, damit es nicht leiert). */
+export const PRAISE = ['Super!', 'Weiter so!', 'Klasse!', 'Du bist richtig drin!', 'Wow!', 'Spitze!', 'So schön!', 'Ganz sicher!'];
+
+/** Sätze auf der Karte. */
+export const MAP_SAY = {
+  start: 'Unsere erste Insel! Tipp drauf, dann legen wir an.',
+  sail: 'Leinen los! Auf zur {I}!',
+  arrived: 'Land in Sicht! Die {I} gehört jetzt dir.',
+  locked: 'Da kommen wir noch hin. Erst schaffen wir die {I}.',
+  here: 'Tipp auf die {I}, dann geht es weiter.',
+};
+
 export const NAME_IDEAS = ['Kiki', 'Coco', 'Pepe', 'Lori', 'Mango'];
 
 export const say = (key, vars = {}) => SAY[key].replace(/\{(\w)\}/g, (_, k) => vars[k] ?? '');

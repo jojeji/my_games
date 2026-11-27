@@ -39,7 +39,35 @@ export function createAudio() {
     }
   }
 
+  /** Rauschen mit Filter: Wind und Wellen für die Bootsfahrt. */
+  function whoosh(dur = 2.2, vol = 0.12) {
+    if (!enabled || !ensure()) return;
+    const n = Math.floor(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const f = ctx.createBiquadFilter();
+    f.type = 'bandpass';
+    f.Q.value = 0.8;
+    const t0 = ctx.currentTime;
+    f.frequency.setValueAtTime(300, t0);
+    f.frequency.linearRampToValueAtTime(900, t0 + dur * 0.5);
+    f.frequency.linearRampToValueAtTime(400, t0 + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + dur * 0.3);
+    g.gain.linearRampToValueAtTime(0, t0 + dur);
+    src.connect(f).connect(g).connect(master);
+    src.start(t0);
+  }
+
   const sfx = {
+    sail: () => { whoosh(2.4, 0.1); [67, 72].forEach((m, i) => bell(m, i * 0.18, 1, 0.12)); },
+    arrive: () => [72, 79, 84].forEach((m, i) => bell(m, i * 0.1, 1.1, 0.18)),
+    streak: (n) => bell(84 + Math.min(12, n), 0, 0.5, 0.16),
+    unlock: () => { whoosh(0.6, 0.08); [76, 81, 84, 88].forEach((m, i) => bell(m, 0.2 + i * 0.09, 1.3, 0.2)); },
     hit: () => bell(96, 0, 0.35, 0.12),
     win: () => [72, 76, 79, 84].forEach((m, i) => bell(m, i * 0.12, 1.4, 0.26)),
     star: (i) => bell(84 + [0, 4, 7][i % 3], 0, 0.9, 0.22),

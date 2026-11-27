@@ -66,11 +66,13 @@ export function defaultProgress() {
     settings: {
       input: 'touch', // 'touch' | 'mic'
       sound: true,
-      allOpen: true, // Vorschau: alle Inseln offen
+      allOpen: false, // Vorschau-Schalter: alle Inseln offen
+      haptics: true, // Vibration bei Treffern (Android)
       help: { colors: true, names: true, fingers: true, keys: true },
     },
     calib: { offset: 0, done: false },
-    boat: 'i0',
+    boat: 'i0', // hier liegt das Boot
+    revealed: ['i0'], // Inseln, deren Freischaltung schon gezeigt wurde
   };
 }
 
@@ -106,8 +108,19 @@ export function record(p, taskId, stars) {
     collect = COLLECT[island.id];
     p.collect.push(collect);
   }
-  p.boat = island.id;
-  return { first, better, islandDone: done && !!collect, collect };
+  const idx = ISLANDS.indexOf(island);
+  const next = done && collect ? ISLANDS[idx + 1] : null;
+  return { first, better, islandDone: done && !!collect, collect, next: next && !next.soon ? next.id : null };
+}
+
+/** Insel offen UND ihre Freischaltung schon gezeigt (oder Vorschau-Schalter). */
+export const islandShown = (p, idx) => islandOpen(p, idx) && (p.settings.allOpen || p.revealed.includes(ISLANDS[idx].id));
+
+/** Die nächste Insel, die geöffnet, aber noch nicht feierlich freigeschaltet wurde (Bootsfahrt auf der Karte). */
+export function pendingReveal(p) {
+  if (p.settings.allOpen) return null;
+  for (let i = 1; i < ISLANDS.length; i++) if (islandOpen(p, i) && !p.revealed.includes(ISLANDS[i].id)) return ISLANDS[i];
+  return null;
 }
 
 export const starsTotal = (p) => Object.values(p.tasks).reduce((s, t) => s + (t.stars || 0), 0);
