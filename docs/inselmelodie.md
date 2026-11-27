@@ -120,3 +120,34 @@ Klavier; geübt wird bei der Schwester). Direkter Link `games/inselmelodie/`, **
 - Dateien: `music.js`, `world.js` (alle Inhalte und Sätze des Papageis), `session.js` (Wartemodus, Notenspiel, Fortschritt), `staff.js`
   (SVG-Notenzeile, eigener Violinschlüssel als Linie, da 𝄞 auf Android nicht sicher vorhanden ist), `keyboard.js`, `audio.js`, `mic.js`,
   `ui.js`, `main.js`. Tests: `tests/inselmelodie-world.test.mjs` (u. a. „jedes Stück nutzt nur bis dahin eingeführte Noten“).
+
+## Fassung 2 (2026-11-27): Abenteuerkarte, Führung, Spielgefühl
+
+Rückmeldung des Besitzers zur ersten Vorschau: zu statisch und lieblos, der Papagei überdeckte Text („darf überhaupt nicht
+passieren“), nach einer geschafften Insel fehlte die Führung zur nächsten; gewünscht: verschiebbare Karte mit Pfad, Bootsfahrt,
+mehr Energie, Animationen mit Liebe, Prüfung durch spielende Agenten in mehreren Runden. Umgesetzt und in drei Spieltest-Runden
+(Sonnet-Agenten spielen per Playwright, Berichte eingearbeitet) geprüft:
+
+- **Karte** (`mapgeo.js` DOM-frei + `map-view.js`): Welt größer als der Bildschirm (quer waagrecht, hochkant senkrecht scrollbar,
+  Maus: ziehen + Rad), Seeweg als Catmull-Rom-Kurve durch Wegpunkte, geschaffter Teil gold, Wellen/Felsen/Möwen, ab und zu ein
+  springender Delfin. Inselgröße folgt der Bildschirmhöhe, Abstände so, dass sich Inseln nie überlappen (Test). Oben/unten Zonen
+  für Kopfleiste und Papagei/Knopf (`padTop/padBottom`), damit Inseln dort nicht liegen.
+- **Boot und Hafen**: das Boot liegt im Hafen NEBEN der Insel (nie auf dem Schild, unter der Inselebene), legt beim Fahren ab,
+  folgt dem Weg und legt an; Kamera folgt; Tippen aufs Wasser oder „Weiter üben“ beschleunigt die Fahrt.
+- **Führung**: Inseln öffnen nacheinander (`allOpen` nur noch unter „Für Erwachsene“). Letzte Aufgabe einer Insel → Ergebnis →
+  Sammelstück („Leinen los!“) → Karte → Bootsfahrt → Freischaltung (Schloss springt weg, Insel wird bunt, Funken). `p.revealed`
+  merkt sich gezeigte Freischaltungen, `p.boat` den Hafen. Nach allen Inseln einmalige Abschlussfeier (`p.finale`), danach
+  „Sterne sammeln“ = Aufgabe mit den wenigsten Sternen (`weakestTask`). Spielstand Version 2 (Migration setzt alte Vorschau-
+  Spielstände auf geführt zurück, Sterne bleiben).
+- **Insel**: Aufgaben als Trittsteine mit gepunktetem Weg, „Hier weiter“ an der nächsten.
+- **Spielen**: Fortschritt als Boot, Serien-Flamme mit Lob alle 5 Treffer, Funken beim Treffer, sanftes Wackeln beim Fehlgriff,
+  Vibration (Android, abschaltbar), Abschluss-Welle über alle Noten, Sterne einzeln mit Klang. Fehlgriff = Geisternote (immer nur
+  eine), Satz des Papageis erklärt gleiche Note in falscher Oktave („zu hoch, weiter links“). „Anhören“ ist abbrechbar (eine
+  Taste stoppt nur, wird nicht gewertet).
+- **Notenspiel**: ohne Namen, Fingernummern und leuchtende Taste; jede Note schwimmt von rechts heran (Bläschen, Wellen), darf
+  schon beim Heranschwimmen gespielt werden; 16 Noten.
+- **Sterne fairer**: gezählt werden Noten mit Fehlgriff, nicht Tastendrücke. Stück: 0 → 3, bis 25 % → 2; Notenspiel: bis 1 → 3,
+  bis 30 % → 2. Lob passend zur Fehlgriffzahl, Sätze in Varianten (`LINES` in world.js, reihum).
+- **Layout-Regel**: der Papagei hat überall eine eigene Spalte/Zeile. `tools/ui-inselmelodie.cjs` spielt den Ablauf in
+  beliebiger Größe durch und meldet verdeckte oder abgeschnittene Texte (geprüft: 1280×800, 1024×600, 844×390, 390×844, 360×740).
+- **Album**: Tiere antippbar (Karte mit Note im Notensystem und Ton), Sammelstücke sagen, woher sie stammen.

@@ -362,3 +362,18 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - Eine Obergrenze für Schritte je Bild (`maxStepsPerFrame`) muss zur höchsten Zeitstufe passen UND Reserve für 30 fps haben: ×20 bei 60 fps = 40 Schritte, die alte Grenze 40 hätte jede Bildverzögerung in Zeitlupe verwandelt. Die Physik selbst kostet bei ×20 nur ~0,2–0,7 ms je Bild; die Bildzeit bestimmt das Zeichnen.
 - Hilfs-Vorhersagen für Körper, die sich langsam bewegen (Arena v ≈ 0,15), müssen in Weglänge gedacht werden, nicht in Sekunden: 10 s Vorschau sind dort kürzer als der Körperradius und damit unsichtbar. Beim Anzeigen immer einen Screenshot ansehen, die Zahlen sagen nichts über Sichtbarkeit.
 - Vorhersagen, die zwischen zwei Neuberechnungen weiterlaufen, an der Spielzeit der Berechnung festmachen (Zeitversatz `world.t - t0`) und bei hoher Zeitstufe nach Spielzeit, nicht nur nach echter Zeit, neu rechnen.
+
+## Nachtrag: Inselmelodie Fassung 2 (Spieltest mit Agenten, Layout-Prüfung)
+
+- **CSS `transform-origin`/`transform-box` auf SVG-Elementen mit `transform`-Attribut verschiebt deren Drehung/Lage** (Notenköpfe mit
+  `rotate(-20 x y)` und gedrehte Finger sprangen weg). Animationen immer auf eine Hülle `<g>` legen, das Element selbst nicht anfassen.
+- `void el.getBBox` (ohne Klammern) erzwingt KEIN Neuberechnen: Animation-Neustart mit `void el.getBoundingClientRect()`.
+- `align-content: center` in einem scrollenden Raster schneidet bei Überlänge den Anfang unerreichbar ab: `safe center`.
+- Bild-KI-Hintergründe kacheln nicht nahtlos: Bild + Spiegelbild aneinanderhängen (quer waagrecht, hochkant gedreht + senkrecht).
+- Ein Filter (`drop-shadow`) oder eine Animation macht ein Element zu einer eigenen Ebene über nicht positionierten Geschwistern:
+  Schilder, die das Bild überlappen, brauchen `position: relative; z-index`.
+- **Automatische Überdeckungsprüfung** (`tools/ui-inselmelodie.cjs`: `elementFromPoint` an 5 Punkten jedes Textes) findet, was
+  Screenshots übersehen; sie fand u. a. einen Knopf unter der Tastatur (hochkant) und ein abgeschnittenes Fähnchen (360 px).
+- **Spieltest-Agenten** (Sonnet, Playwright, Screenshots selbst ansehen, nur berichten) finden andere Dinge als die Prüfung:
+  Sackgassen am Ende, widersprüchliche Texte („ohne Fehlgriff“ bei einem), zu strenge Sterne (Mehrfachdruck zählte mehrfach),
+  bestrafte Mitspielversuche beim Vorspielen. Wörtlich genommene Wünsche („Energie“ als Anzeige) vor dem Einarbeiten aussortieren.
