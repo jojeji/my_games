@@ -181,3 +181,7 @@ Nach „fühlt sich schon gut an, gerne so weiter“ (Besitzer): die nächsten z
 - **Karte**: 6 Inseln (`mapgeo.js`, `L` 3450); Sammelstücke Höhlenkristall und Kompass; Abschlussfeier nach der Brückeninsel
   (`p.finale` = Anzahl Inseln bei der letzten Feier: kommen Inseln dazu, gibt es am neuen Ende wieder eine Feier).
 - **Bilder**: Platzhalter für Brückeninsel, Kristall, Kompass (Prompt in `docs/inselmelodie-bilder.md` „Nachlieferung“).
+- Spieltest (Sonnet-Agent, beide Inseln komplett): Musik, Notenlage, Fingersätze und Tierkarten korrekt. Eingearbeitet: Abschluss-
+  feier in 3×2 (sechs Sammelstücke), Rundgang „sieben weiße Tasten“ statt „acht“ und Legendenfarben, neue Karte „Das Mittel-C wohnt
+  dazwischen“ (`layout: 'grand'` erzwingt das Klaviersystem), Finger der linken Hand unter der Bass-Zeile, kürzere Notenspiel-Titel,
+  hochkant: Klaviersystem höher (42vh) und Tastatur mit mindestens 44 px je weißer Taste, scrollt zur gesuchten Taste.

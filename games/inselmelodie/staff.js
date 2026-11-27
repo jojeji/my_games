@@ -29,10 +29,10 @@ const TREBLE =
   'C 38 246 74 262 96 248 C 116 234 108 196 82 198 C 62 200 60 228 78 232';
 
 /** Aufbau je nach Noten: welche Zeilen, wo ihre unterste Linie liegt, Gesamthöhe. */
-export function staffLayout(midis) {
+export function staffLayout(midis, force) {
   const low = midis.some((m) => m < MITTEL_C);
   const high = midis.some((m) => m >= MITTEL_C);
-  if (low && high) return { kind: 'grand', H: 560, bottoms: { t: 230, b: 446 }, nameY: 538, fingerY: 40 };
+  if ((low && high) || force === 'grand') return { kind: 'grand', H: 580, bottoms: { t: 230, b: 446 }, nameY: 566, fingerY: 40, fingerYL: 524 };
   if (low) return { kind: 'bass', H: 400, bottoms: { b: 250 }, nameY: 372, fingerY: 52 };
   return { kind: 'treble', H: 400, bottoms: { t: 250 }, nameY: 372, fingerY: 52 };
 }
@@ -44,7 +44,7 @@ export const clefFor = (lay, midi) => (lay.kind === 'grand' ? (midi >= MITTEL_C 
  * @param {{notes:{midi:number,beats:number,bar?:boolean}[], help:{colors,names,fingers}, single?:boolean, reveal?:number, fish?:boolean}} opt
  */
 export function createStaff(host, opt) {
-  const lay = staffLayout(opt.notes.map((n) => n.midi));
+  const lay = staffLayout(opt.notes.map((n) => n.midi), opt.layout);
   const H = lay.H;
   const yOf = (step, c) => lay.bottoms[c] - (step - BASE[c]) * (S / 2);
   const clefs = Object.keys(lay.bottoms);
@@ -141,7 +141,8 @@ export function createStaff(host, opt) {
     if (help.bubbles) for (const [dx, dy, r] of [[30, -14, 6], [42, -38, 4], [34, -60, 3]]) el('circle', { class: 'bub', cx: nx + dx, cy: cy + dy, r }, g);
     const fg = fingerOf(n.midi);
     if (help.fingers && fg) {
-      const t = el('text', { x: nx, y: lay.fingerY, class: 'finger' + (n.midi < MITTEL_C ? ' left' : '') }, g);
+      // Klaviersystem: Finger der linken Hand UNTER der Bass-Zeile, damit sie zu ihren Noten gehören
+      const t = el('text', { x: nx, y: n.midi < MITTEL_C && lay.fingerYL ? lay.fingerYL : lay.fingerY, class: 'finger' + (n.midi < MITTEL_C ? ' left' : '') }, g);
       t.textContent = fg;
     }
     return g;

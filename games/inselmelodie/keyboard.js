@@ -16,6 +16,7 @@ export function createKeyboard(host, opt) {
   for (let m = opt.lo; m <= opt.hi; m++) if (!BLACK.has(m % 12)) whites.push(m);
   const keys = new Map();
   const ww = 100 / whites.length;
+  wrap.style.setProperty('--whites', whites.length);
   whites.forEach((m, i) => {
     const k = document.createElement('button');
     k.type = 'button';
@@ -61,7 +62,13 @@ export function createKeyboard(host, opt) {
     setTarget(midi) {
       if (target !== null) keys.get(target)?.classList.remove('target');
       target = midi;
-      if (midi !== null) keys.get(midi)?.classList.add('target');
+      if (midi !== null) {
+        const k = keys.get(midi);
+        k?.classList.add('target');
+        // schmale Bildschirme: die Tastatur scrollt, dann die gesuchte Taste ins Bild holen
+        const sc = host.scrollWidth > host.clientWidth + 2 ? host : null;
+        if (sc && k) sc.scrollTo({ left: k.offsetLeft + k.offsetWidth / 2 - sc.clientWidth / 2, behavior: 'smooth' });
+      }
     },
     flash(midi, cls) {
       const k = keys.get(midi);

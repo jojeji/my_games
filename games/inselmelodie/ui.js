@@ -403,16 +403,16 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       const kbBox = h('div', { class: 'tour-kbd' + (innerWidth < 700 ? ' few-labels' : '') });
       box.append(kbBox);
       const kb = createKeyboard(kbBox, { lo: kind === 'lowc' ? 36 : 48, hi: kind === 'lowc' ? 71 : 67, labels: true, playable: true, onKey: (m) => { audio.note(m); if (kind === 'lowc' && m === 48) { burst(kbBox.querySelector('.key.target'), noteColor(48), 16); buzz(15); } } });
-      if (kind === 'lowc') { kb.setTarget(48); kb.mark([60], 'mc'); }
+      if (kind === 'lowc') { kb.setTarget(48); kb.mark([60], 'mcb'); }
       else { kb.mark([48, 50, 52, 53, 55], 'lh'); kb.mark([60, 62, 64, 65, 67], 'rh'); }
       box.append(h('div', { class: 'legend' }, ...(kind === 'lowc'
-        ? [h('span', { class: 'lg g2', text: 'tiefes C' }), h('span', { class: 'lg mc', text: 'Mittel-C' })]
+        ? [h('span', { class: 'lg lc', text: 'tiefes C' }), h('span', { class: 'lg g2', text: 'Mittel-C' })]
         : [h('span', { class: 'lg g3', text: 'linke Hand' }), h('span', { class: 'lg g2', text: 'rechte Hand' })])));
-    } else if (kind === 'bass' || kind === 'grand') {
+    } else if (kind === 'bass' || kind === 'grand' || kind === 'midc') {
       const sh = h('div', { class: 'staff-host tour-staff' });
       box.append(sh);
-      const notes = kind === 'bass' ? [{ midi: 53, beats: 1 }] : [{ midi: 48, beats: 2 }, { midi: 60, beats: 2 }, { midi: 55, beats: 2 }, { midi: 67, beats: 2 }];
-      createStaff(sh, { notes, help: { colors: true, names: true, fingers: true }, single: kind === 'bass' });
+      const notes = kind === 'bass' ? [{ midi: 53, beats: 1 }] : kind === 'midc' ? [{ midi: 60, beats: 1 }] : [{ midi: 48, beats: 2 }, { midi: 60, beats: 2 }, { midi: 55, beats: 2 }, { midi: 67, beats: 2 }];
+      createStaff(sh, { notes, help: { colors: true, names: true, fingers: true }, single: kind !== 'grand', layout: kind === 'midc' ? 'grand' : undefined });
     } else {
       box.append(pic('papagei-zeigt', 'tour-bird', B()));
     }
@@ -543,6 +543,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       kbHost), 'play-screen');
     if (isGame) staffHost.classList.add('water');
     const staff = createStaff(staffHost, { notes, help, reveal: isGame ? 3 : 0, fish: isGame });
+    staffHost.classList.add('lay-' + staff.layout.kind);
     let kb = null;
     let missHere = 0;
     let streak = 0;
