@@ -13,8 +13,10 @@ export function createMic() {
   let onNote = null;
   let onFrame = null;
   let mutedUntil = 0;
+  let context = null;
 
   function loop() {
+    if (!stream || !ctx) return; // gestoppt (auch mitten in einem Durchlauf, z. B. am Ende eines Stücks)
     analyser.getFloatTimeDomainData(buf);
     const t = performance.now();
     const p = detectPitch(buf, ctx.sampleRate, { nsdf });
@@ -22,7 +24,7 @@ export function createMic() {
     const ev = tracker.push(f);
     onFrame?.(f, tracker);
     if (ev && t > mutedUntil) onNote?.(ev.midi, ev);
-    raf = requestAnimationFrame(loop);
+    if (stream) raf = requestAnimationFrame(loop); // onNote kann das Mikrofon gestoppt haben
   }
 
   return {
@@ -30,6 +32,7 @@ export function createMic() {
     /** @returns {Promise<string|null>} Fehlermeldung oder null */
     async start(offsetCents = 0) {
       tracker = createTracker({ offsetCents });
+      tracker.setContext(context);
       if (stream) return null;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -60,5 +63,7 @@ export function createMic() {
     set onNote(fn) { onNote = fn; },
     set onFrame(fn) { onFrame = fn; },
     setOffset(c) { tracker.setOffset(c); },
+    /** Spielkontext für die Störfestigkeit: {want, lo, hi} (gesuchte Note, Tastenbereich) oder null. */
+    setContext(c) { context = c; tracker.setContext(c); },
   };
 }

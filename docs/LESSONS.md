@@ -377,3 +377,13 @@ und Offline-Zusammenfassung sind Kernfeatures, keine Extras. Idle-Pacing (z. B. 
 - **Spieltest-Agenten** (Sonnet, Playwright, Screenshots selbst ansehen, nur berichten) finden andere Dinge als die Prüfung:
   Sackgassen am Ende, widersprüchliche Texte („ohne Fehlgriff“ bei einem), zu strenge Sterne (Mehrfachdruck zählte mehrfach),
   bestrafte Mitspielversuche beim Vorspielen. Wörtlich genommene Wünsche („Energie“ als Anzeige) vor dem Einarbeiten aussortieren.
+
+## Nachtrag: Inselmelodie – Störfestigkeit gegen Sprache (Mikrofon)
+
+- Gerede im Raum ergab im Wartemodus viele falsche Töne. Wirksam (synthetisch gemessen, 100+ → ≤ 1 Fehlgriffe/min): Tonhöhe muss
+  stillstehen (Sprache gleitet), Tastenbereich der Aufgabe, Stimmung nach Kalibrierung, und vor allem **Asymmetrie mit Spielkontext**:
+  die gesuchte Note schnell annehmen, eine falsche erst nach mehr Beweisen. Fehlalarme kosten Sterne, eine um 35 ms spätere Meldung
+  einer falschen Note merkt niemand.
+- Filter, die ein schief gestimmtes altes Klavier treffen könnten, nie auf die gesuchte Note anwenden (sonst Sackgasse).
+- Erst messbar machen (künstliche Sprache als Testsignal, Zähler vorher/nachher), dann Varianten vergleichen; eine plausible Regel
+  („Klavier klingt ab“) brachte nichts und flog wieder raus.

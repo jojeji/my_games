@@ -146,7 +146,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       kbdHost.classList.add('listening');
     }
     const prev = cleanup;
-    cleanup = () => { prev?.(); if (!touch) mic.stop(); keepAwake(false); };
+    cleanup = () => { prev?.(); if (!touch) mic.stop(); mic.setContext(null); keepAwake(false); };
     keepAwake(true);
     return kbd;
   }
@@ -488,6 +488,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     let res = null;
     cont.addEventListener('click', () => afterTask(task.id, res));
     listen(kbHost, isl.range, onNote, { labels: p.settings.help.names }).then((k) => { kb = k; kb.setTarget(task.note); });
+    mic.setContext({ want: task.note, lo: isl.range[0], hi: isl.range[1] });
     function onNote(m) {
       if (got >= need) return;
       if (m === task.note) {
@@ -551,6 +552,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     listen(kbHost, isl.range, onNote, { labels: p.settings.help.names && !isGame }).then((k) => { kb = k; showTarget(); });
     function showTarget() {
       kb?.setTarget(help.keys || missHere > 0 ? run.want : null);
+      mic.setContext({ want: run.want, lo: isl.range[0], hi: isl.range[1] });
     }
     function setVoyage() {
       const f = run.index / notes.length;

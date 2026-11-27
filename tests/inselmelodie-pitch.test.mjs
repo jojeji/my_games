@@ -94,3 +94,48 @@ test('Rechenzeit je Fenster bleibt klein (Tablet hat ~10x weniger Leistung)', ()
   const ms = (performance.now() - t0) / 200;
   assert.ok(ms < 2, `${ms.toFixed(2)} ms je Fenster`);
 });
+
+// ---- Störfestigkeit gegen Sprache im Raum (Rückmeldung vom echten Klavier: Gerede ergab falsche Töne) ----
+import { speech, mix } from './helpers/piano-synth.mjs';
+
+const VOICES = { Maenner: [90, 170], Frauen: [170, 260], Kinder: [240, 400] };
+
+test('Gerede im Raum ergibt im Spiel (fast) keine Fehlgriffe mehr', () => {
+  for (const [name, f0] of Object.entries(VOICES)) {
+    let wrong = 0, before = 0;
+    for (let seed = 1; seed <= 3; seed++) {
+      const sp = speech({ seconds: 20, seed, f0, level: 0.05 });
+      wrong += runSignal(sp, { ctx: { want: 60, lo: 60, hi: 72 } }).events.filter((e) => e.midi !== 60).length;
+      before += runSignal(sp).events.length;
+    }
+    const perMin = (wrong * 60) / 60;
+    assert.ok(perMin <= 2, `${name}: ${perMin.toFixed(1)} Fehlgriffe/min (ohne Kontext ${before})`);
+    assert.ok(before > 20, `${name}: Testsignal muss ohne Filter Fehlgriffe erzeugen (${before})`);
+  }
+});
+
+test('Klavier mit Gerede: jede richtige Note und jeder echte Fehlgriff wird erkannt', () => {
+  const song = [67, 64, 64, 65, 62, 62, 60, 62, 64, 65, 67, 67, 67];
+  for (const [name, f0] of Object.entries(VOICES)) {
+    const notes = [];
+    let t = 0.4;
+    let realWrong = 0;
+    song.forEach((m, i) => {
+      if (i % 4 === 3) { notes.push({ midi: m + 2, at: t, dur: 0.6, vel: 0.15 }); realWrong++; t += 0.7; }
+      notes.push({ midi: m, at: t, dur: 0.7, vel: 0.15 });
+      t += 0.75;
+    });
+    const sig = mix(render(notes, { seconds: t + 0.6, seed: 3 }), speech({ seconds: t + 0.6, seed: 23, f0, level: 0.04 }));
+    const { events } = runSignal(sig, { ctx: (evs) => { let k = 0; for (const e of evs) if (e.midi === song[k]) k++; return { want: song[k] ?? null, lo: 60, hi: 72 }; } });
+    let j = 0, w = 0;
+    for (const e of events) { if (e.midi === song[j]) j++; else w++; }
+    assert.equal(j, song.length, `${name}: alle Noten getroffen`);
+    assert.ok(w >= realWrong && w <= realWrong + 1, `${name}: ${w} Fehlgriffe gemeldet, ${realWrong} echt`);
+  }
+});
+
+test('Stimmungsfilter: ohne Kalibrierung spielt er nicht mit (Probe/Kalibrierung ohne Kontext unverändert)', () => {
+  // 40 Cent verstimmt, ohne Kontext: wird erkannt wie bisher
+  const notes = [60, 62, 64].map((midi, i) => ({ midi, at: 0.3 + i * 0.7, dur: 0.65, detune: -40 }));
+  assert.deepEqual(runSignal(render(notes, { seconds: 2.6 })).events.map((e) => e.midi), [60, 62, 64]);
+});

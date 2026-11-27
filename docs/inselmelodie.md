@@ -185,3 +185,32 @@ Nach „fühlt sich schon gut an, gerne so weiter“ (Besitzer): die nächsten z
   feier in 3×2 (sechs Sammelstücke), Rundgang „sieben weiße Tasten“ statt „acht“ und Legendenfarben, neue Karte „Das Mittel-C wohnt
   dazwischen“ (`layout: 'grand'` erzwingt das Klaviersystem), Finger der linken Hand unter der Bass-Zeile, kürzere Notenspiel-Titel,
   hochkant: Klaviersystem höher (42vh) und Tastatur mit mindestens 44 px je weißer Taste, scrollt zur gesuchten Taste.
+
+## Hintergrundgeräusche (2026-11-27, Rückmeldung vom echten Klavier)
+
+Besitzer: „Im Mikrofonmodus funktioniert es im ersten Anlauf schon ganz gut. Wenn im Hintergrund Leute erzählen, trifft er oft
+falsche Töne.“ Nachgestellt mit künstlicher Sprache (`tests/helpers/piano-synth.mjs speech()`: stimmhafte Silben mit gleitender
+Tonhöhe, Vokal-Formanten, Silbenrhythmus, Zischlaute; Männer 90–170 Hz, Frauen 170–260 Hz, Kinder 240–400 Hz).
+
+`tracker.js` hat jetzt vier Filter, `mic.setContext({want, lo, hi})` liefert dem Verfolger den Spielkontext (gesuchte Note,
+Tastenbereich der Insel; Lernen und Spielen setzen ihn bei jedem Zielwechsel, Kalibrierung und Probe laufen ohne Kontext):
+1. **Tonhöhe steht still**: alle Fenster eines Kandidaten innerhalb 15 Cent (`jitterCents`); Sprache gleitet.
+2. **Tastenbereich**: mit Kontext nur Töne im Bereich der Insel ± 2 Halbtöne (`rangePad`).
+3. **Stimmung**: mit Kontext muss eine FALSCHE Note innerhalb 30 Cent der kalibrierten Stimmung liegen (`tuneCents`). Bewusst nicht
+   für die gesuchte Note: ein einzelner schief gestimmter Ton eines alten Klaviers darf das Spiel nie blockieren.
+4. **Falsche Noten brauchen mehr Beweise**: deutlicher Anschlag, 6 stabile Fenster (`strictFrames`, ~100 ms), Klarheit ≥ 0,9 in
+   allen Fenstern, Tonhöhe auf 10 Cent ruhig (`strictJitter`). Die gesuchte Note wird so schnell angenommen wie vorher.
+
+Gemessen (synthetisch, je 20 s Dauergerede, Spiel wartet auf C4, Insel C4–C5; Fehlgriffe pro Minute):
+
+| Stimmen | vorher | strictFrames 4 | **strictFrames 6 (gewählt)** |
+|---|---|---|---|
+| Männer | 97 | 0 | **0** |
+| Frauen | 104 | 1,9 | **0** |
+| Kinder | 110 | 7,9 | **0,8** |
+
+„Hänschen klein“ mit Gerede darunter: alle Noten erkannt (65/65), echte Fehlgriffe am Klavier weiter alle gemeldet. Probiert und
+verworfen: „falsche Note muss abklingen“ (keine messbare Wirkung). Browser-Probe mit WAV statt Mikrofon (zwei Stimmen reden
+durch das Stück): 3 Sterne, alle Noten auf Anhieb. **Nicht gemessen: echte Sprache im echten Raum** – Grenzen der Nachbildung:
+gesungene Töne oder ein Kind, das die Melodie mitsummt, sehen für die Erkennung aus wie Töne und werden weiter gemeldet.
+Nebenbei behoben: die Mikrofon-Schleife plante sich nach `stop()` (am Stückende) noch einmal ein.

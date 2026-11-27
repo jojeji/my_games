@@ -9,6 +9,10 @@
 //  (b) Tonwechsel ohne deutlichen Sprung (gebunden gespielt, leise): andere Note, `stableFrames + 1` Frames stabil.
 // Ein Ton gilt als beendet, wenn der Pegel unter das Tor fällt oder die Klarheit länger fehlt.
 
+// Störfestigkeit gegen Sprache im Raum (Fassung 4, siehe docs/inselmelodie.md „Hintergrundgeräusche“):
+//  - Tonhöhe muss stillstehen: alle Fenster eines Kandidaten innerhalb `jitterCents` (Sprache gleitet, Klavier nicht).
+//  - Mit Kontext (Spiel): nur Töne im Tastenbereich der Aufgabe, nur Töne nah an der kalibrierten Stimmung (`tuneCents`),
+//    und eine FALSCHE Note braucht mehr Beweise als die gesuchte (Anschlag + `strictFrames` + `strictClarity`).
 import { nearest } from './notes.js';
 
 export const TRACKER_DEFAULTS = {
@@ -22,6 +26,12 @@ export const TRACKER_DEFAULTS = {
   releaseMs: 180, // so lange ohne Ton, dann gilt die Taste als losgelassen
   minMidi: 36,
   maxMidi: 96,
+  jitterCents: 15, // so weit darf die Tonhöhe innerhalb eines Kandidaten wandern
+  tuneCents: 30, // mit Kontext: so weit darf ein Ton von der kalibrierten Note abweichen
+  strictFrames: 6, // mit Kontext: so viele stabile Fenster (~100 ms) braucht eine falsche Note (4: Kinderstimmen 7,9 Fehlgriffe/min, 6: 0,8)
+  strictClarity: 0.9, // mit Kontext: Mindest-Klarheit (in allen Fenstern) für eine falsche Note
+  rangePad: 2, // mit Kontext: Halbtöne Spielraum um den Tastenbereich
+  strictJitter: 10, // mit Kontext: so ruhig muss die Tonhöhe einer falschen Note sein (Cent)
 };
 
 export function createTracker(opt = {}) {
@@ -34,6 +44,7 @@ export function createTracker(opt = {}) {
     active: null, // Note, die gerade klingt (gemeldet)
     lastGood: -1,
     offset: opt.offsetCents ?? 0,
+    ctx: null, // {want, lo, hi} aus dem Spiel, sonst null (Probe, Kalibrierung)
   };
 
   function gate() {
@@ -68,14 +79,32 @@ export function createTracker(opt = {}) {
     st.lastGood = f.t;
     const { midi, cents } = nearest(f.freq, st.offset);
     if (midi < o.minMidi || midi > o.maxMidi) return null;
+    const ctx = st.ctx;
+    if (ctx) {
+      if (midi < ctx.lo - o.rangePad || midi > ctx.hi + o.rangePad) return reject();
+      // Stimmungsfilter nur für FALSCHE Noten: ein einzelner schief gestimmter Ton des Klaviers darf das Spiel nie blockieren
+      if (midi !== ctx.want && Math.abs(cents) > o.tuneCents) return reject();
+    }
 
-    if (st.cand && st.cand.midi === midi) {
+    if (st.cand && st.cand.midi === midi && Math.abs(cents - st.cand.c0) <= o.jitterCents) {
       st.cand.n++;
       st.cand.cents.push(cents);
-    } else st.cand = { midi, n: 1, cents: [cents] };
+      st.cand.minClar = Math.min(st.cand.minClar, f.clarity);
+      st.cand.lo = Math.min(st.cand.lo, cents);
+      st.cand.hi = Math.max(st.cand.hi, cents);
+    } else st.cand = { midi, n: 1, cents: [cents], c0: cents, lo: cents, hi: cents, minClar: f.clarity };
+    if (st.cand.hi - st.cand.lo > o.jitterCents) { st.cand = null; return null; } // Tonhöhe gleitet: Sprache
 
     const armed = st.armedAt >= 0;
-    const need = armed ? o.stableFrames : o.stableFrames + 1;
+    const wanted = !ctx || ctx.want == null || midi === ctx.want;
+    let need = armed ? o.stableFrames : o.stableFrames + 1;
+    if (!wanted) {
+      // falsche Note: nur mit deutlichem Anschlag, länger stabil und sehr klar (sonst zählt Gerede als Fehlgriff)
+      if (!armed && midi !== st.active) need = Infinity;
+      need = Math.max(need, o.strictFrames);
+      if (st.cand.minClar < o.strictClarity) need = Infinity;
+      if (st.cand.hi - st.cand.lo > o.strictJitter) need = Infinity;
+    }
     if (st.cand.n >= need && (armed || midi !== st.active)) {
       const cs = st.cand.cents.slice().sort((a, b) => a - b);
       const ev = { midi, cents: cs[cs.length >> 1], t: f.t, rms: f.rms, clarity: f.clarity, onset: armed };
@@ -87,8 +116,15 @@ export function createTracker(opt = {}) {
     return null;
   }
 
+  function reject() {
+    st.cand = null;
+    return null;
+  }
+
   return {
     push,
+    /** Kontext aus dem Spiel: gesuchte Note und Tastenbereich (null = ohne Kontext, wie die Probe). */
+    setContext(c) { st.ctx = c ? { want: c.want ?? null, lo: c.lo ?? o.minMidi, hi: c.hi ?? o.maxMidi } : null; },
     setOffset(c) { st.offset = c; },
     get offset() { return st.offset; },
     get floor() { return st.floor; },
