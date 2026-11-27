@@ -66,7 +66,7 @@ export const ISLANDS = [
         ],
       },
       learn('C4'),
-      song('erster-ton', 'Erster Ton', 'C4 C4 C4 C4 | C4:2 C4:2 | C4:4', { own: true }),
+      song('erster-ton', 'Lang und kurz', 'C4 C4 C4:2 | C4:4 | C4:2 C4 C4 | C4:4', { own: true }),
     ],
   },
   {
@@ -159,11 +159,11 @@ export const PRAISE = ['Super!', 'Weiter so!', 'Klasse!', 'Du bist richtig drin!
 export const MAP_SAY = {
   start: 'Unsere erste Insel! Tipp drauf, dann legen wir an.',
   sail: 'Leinen los! Auf zur {I}!',
-  arrived: 'Land in Sicht! Die {I} gehört jetzt dir.',
+  arrived: 'Land in Sicht! Die {I} gehört jetzt dir. Tipp auf „Weiter üben“!',
   locked: 'Da kommen wir noch hin. Erst schaffen wir die {I}.',
   here: 'Tipp auf die {I}, dann geht es weiter.',
   sailTip: 'Leinen los! Auf zur {I}! Tipp aufs Wasser, dann segeln wir schneller.',
-  finale: 'Du hast alle Inseln geschafft! Die Höhleninsel öffnet bald. Bis dahin kannst du Sterne sammeln.',
+  finale: 'Die Höhleninsel öffnet bald. Bis dahin kannst du überall Sterne sammeln.',
   allDone: 'Alle Inseln geschafft! Hol dir noch fehlende Sterne.',
 };
 

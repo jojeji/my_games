@@ -385,6 +385,20 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 #app .confetti i { position: absolute; top: -20px; width: 12px; height: 18px; border-radius: 3px; animation: fall 2.8s ease-in forwards; transform: rotate(var(--r)); }
 @keyframes fall { to { transform: translateY(110vh) rotate(calc(var(--r) + 540deg)); } }
 
+/* Fassung 2, Runde 3 */
+#app .btn.pulse { animation: gopulse 1.4s ease-in-out infinite; }
+@keyframes gopulse { 50% { transform: scale(1.06); box-shadow: 0 5px 0 #c9502f, 0 0 0 10px #ff7a5933; } }
+#app .map-coach.tucked .bubble { display: none; }
+#app .boat.docking .boat-inner { animation: dock 0.9s ease; }
+@keyframes dock { 25% { transform: scaleX(var(--flip, 1)) rotate(-8deg) translateY(4px); } 55% { transform: scaleX(var(--flip, 1)) rotate(6deg) translateY(-6px); } 100% { transform: scaleX(var(--flip, 1)) rotate(0) translateY(0); } }
+#app .btn.wait-in { opacity: 0.35; }
+#app .count { align-items: center; }
+#app .count-num { font-weight: 900; font-size: 18px; color: var(--muted); margin-left: 4px; }
+#app .tour-kbd.few-labels .key.white:not(.middle) .lbl { display: none; }
+#app .staff .tail { fill: var(--c); opacity: 0.9; }
+#app .staff .eye { fill: #fff; stroke: #1d3b45; stroke-width: 2; }
+#app .staff .note.arrive { animation-fill-mode: backwards; }
+
 /* Album, Einstellungen, Kalibrierung */
 #app .album-hint { align-self: flex-start; font-size: 17px; }
 #app .adults summary { font-weight: 900; font-size: 18px; cursor: pointer; min-height: 44px; display: flex; align-items: center; }

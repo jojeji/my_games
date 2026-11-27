@@ -80,6 +80,7 @@ export function defaultProgress() {
     calib: { offset: 0, done: false },
     boat: 'i0', // hier liegt das Boot
     finale: false, // Abschluss aller Inseln schon gefeiert
+    collectShow: null, // Sammelstück, dessen Feier noch nicht gezeigt wurde (überlebt Neu laden)
     revealed: ['i0'], // Inseln, deren Freischaltung schon gezeigt wurde
   };
 }
@@ -115,6 +116,7 @@ export function record(p, taskId, stars) {
   if (done && COLLECT[island.id] && !p.collect.includes(COLLECT[island.id])) {
     collect = COLLECT[island.id];
     p.collect.push(collect);
+    p.collectShow = collect;
   }
   const idx = ISLANDS.indexOf(island);
   const next = done && collect ? ISLANDS[idx + 1] : null;

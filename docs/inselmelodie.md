@@ -151,3 +151,14 @@ mehr Energie, Animationen mit Liebe, Prüfung durch spielende Agenten in mehrere
 - **Layout-Regel**: der Papagei hat überall eine eigene Spalte/Zeile. `tools/ui-inselmelodie.cjs` spielt den Ablauf in
   beliebiger Größe durch und meldet verdeckte oder abgeschnittene Texte (geprüft: 1280×800, 1024×600, 844×390, 390×844, 360×740).
 - **Album**: Tiere antippbar (Karte mit Note im Notensystem und Ton), Sammelstücke sagen, woher sie stammen.
+
+### Spieltest Runde 3 (eingearbeitet)
+
+- Hochkant verdeckten Blase/Papagei auf der Karte Inselnamen (die Prüfung hatte Karteninhalt unter den Leisten pauschal
+  ausgenommen): Fokus jetzt mittig im freien Band zwischen den Leisten, die Blase klappt nach 6 s ein (Tippen auf den Papagei
+  zeigt sie wieder), die Prüfung meldet die Insel mit dem Boot (`.island.here`) wieder, wenn eine Leiste sie verdeckt.
+- Anlegen: Boot wippt, Spritzer, Vibration; „Weiter üben“ pulsiert nach der Freischaltung; Sätze sagen, was als Nächstes kommt.
+- Sammelstück-Feier überlebt Neu laden (`p.collectShow`), Ergebnis-Knöpfe erst nach den Sternen, Fahrten zu besuchten Inseln
+  schneller (`travel(id, {fast})`), Zurück nach „Fortschritt löschen“ führt zum Start.
+- Notenspiel: drei **Notenfische** (Notenkopf mit Schwanzflosse und Auge, ohne Hals) schwimmen gestaffelt heran.
+- Erstes Stück heißt „Lang und kurz“ (C in Vierteln, Halben, Ganzen statt 7× derselbe Wert).

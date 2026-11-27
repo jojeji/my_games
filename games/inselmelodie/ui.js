@@ -96,6 +96,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     showMap();
   }
   addEventListener('popstate', () => {
+    if (!p.birdName) { stack.length = 0; stack.push([showWelcome, []]); showWelcome(); return; }
     if (stack.length > 1) stack.pop();
     const [fn, args] = stack[stack.length - 1] || [showMap, []];
     fn(...args);
@@ -229,7 +230,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     async function sailTo(isl) {
       if (p.boat === isl.id) return;
       coach.say(fill(MAP_SAY.sailTip, { I: isl.name }), 'zeigt');
-      await map.travel(isl.id);
+      await map.travel(isl.id, { fast: true });
       p.boat = isl.id;
       save();
     }
@@ -253,7 +254,20 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       go(showTask, nx.task.id);
     });
 
-    if (pending) {
+    // Hochkant: die Blase klappt nach einer Weile ein (Inseln bleiben frei), Tippen auf den Papagei zeigt sie wieder
+    const bubble = coach.querySelector('.bubble');
+    let tuckT = 0;
+    const tuck = () => { clearTimeout(tuckT); tuckT = setTimeout(() => coach.classList.add('tucked'), 6000); };
+    coach.addEventListener('click', () => { coach.classList.remove('tucked'); tuck(); });
+    const say0 = coach.say;
+    coach.say = (t, m) => { coach.classList.remove('tucked'); say0(t, m); tuck(); };
+    tuck();
+    void bubble;
+
+    if (p.collectShow) {
+      // die Feier des Sammelstücks wurde (z. B. durch Neu laden) verpasst: zuerst nachholen, die Fahrt folgt danach
+      showCollect(p.collectShow);
+    } else if (pending) {
       (async () => {
         await wait(700);
         coach.say(fill(MAP_SAY.sailTip, { I: pending.name }), 'jubel');
@@ -264,6 +278,8 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         await map.reveal(pending, ISLANDS.indexOf(pending));
         audio.sfx.unlock();
         coach.say(fill(MAP_SAY.arrived, { I: pending.name }), 'jubel');
+        await wait(1200);
+        goBtn.classList.add('pulse');
       })();
     } else if (finished && !p.finale) {
       p.finale = true;
@@ -372,7 +388,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
   function tourArt(kind) {
     const box = h('div', { class: 'tour-art art-' + kind });
     if (kind === 'groups' || kind === 'middlec') {
-      const kbBox = h('div', { class: 'tour-kbd' });
+      const kbBox = h('div', { class: 'tour-kbd' + (innerWidth < 700 ? ' few-labels' : '') });
       box.append(kbBox);
       const kb = createKeyboard(kbBox, { lo: 48, hi: 83, labels: kind === 'middlec', playable: true, onKey: (m) => { audio.note(m); if (kind === 'middlec' && m === 60) { burst(kbBox.querySelector('.key.target'), noteColor(60), 16); buzz(15); } } });
       if (kind === 'groups') {
@@ -423,7 +439,8 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     const label = noteLabel(task.note);
     const need = 3;
     let got = 0;
-    const count = h('div', { class: 'count', 'aria-label': 'Treffer' }, ...Array.from({ length: need }, () => h('span')));
+    const countNum = h('b', { class: 'count-num', text: `0/${need}` });
+    const count = h('div', { class: 'count', 'aria-label': 'Treffer' }, ...Array.from({ length: need }, () => h('span')), countNum);
     const coach = parrot('zeigt', sayB('learnPlay', { N: label }), 'row coach');
     const staffHost = h('div', { class: 'staff-host single' });
     const kbHost = h('div', { class: 'kbd-host' });
@@ -451,6 +468,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       if (m === task.note) {
         got++;
         count.children[got - 1].classList.add('on');
+        countNum.textContent = `${got}/${need}`;
         staff.pop(0);
         kb?.flash(m, 'good');
         burst(staff.head(0), noteColor(m), 14);
@@ -499,7 +517,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       h('div', { class: 'stage' }, h('div', { class: 'coach-col' }, coach), staffHost),
       kbHost), 'play-screen');
     if (isGame) staffHost.classList.add('water');
-    const staff = createStaff(staffHost, { notes, help, reveal: isGame ? 1 : 0 });
+    const staff = createStaff(staffHost, { notes, help, reveal: isGame ? 3 : 0, fish: isGame });
     let kb = null;
     let missHere = 0;
     let streak = 0;
@@ -605,6 +623,8 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         h('div', { class: 'row' }, again, next)),
       confetti());
     root.append(overlay);
+    for (const b of [again, next]) { b.disabled = true; b.classList.add('wait-in'); }
+    setTimeout(() => { for (const b of [again, next]) { b.disabled = false; b.classList.remove('wait-in'); kick(b, 'pop-in', 500); } }, 600 + nStars * 420);
     [...row.children].forEach((s, i) => {
       if (i >= nStars) return;
       setTimeout(() => {
@@ -634,7 +654,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         h('h2', { text: 'Insel geschafft!' }),
         h('div', { class: 'collect-glow' }, img),
         h('p', { text: `Du bekommst ${ARTIKEL[item]} ${COLLECT_NAMES[item]} für dein Inselalbum.` }),
-        h('button', { class: 'btn primary big', onClick: () => { overlay.remove(); home(); } }, icon('map'), ' Leinen los!')),
+        h('button', { class: 'btn primary big', onClick: () => { p.collectShow = null; save(); overlay.remove(); home(); } }, icon('map'), ' Leinen los!')),
       confetti());
     root.append(overlay);
     setTimeout(() => burst(img, '#ffc21a', 26, 170), 600);
@@ -721,6 +741,9 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
               Object.assign(p, defaultProgress());
               save();
               stack.length = 0;
+              stack.push([showWelcome, []]);
+              history.replaceState({ d: 1 }, '');
+              greeted = false;
               showWelcome();
             }
           } })),

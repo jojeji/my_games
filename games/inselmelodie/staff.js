@@ -65,7 +65,7 @@ export function createStaff(host, opt) {
   let x = 0;
   const groups = opt.notes.map((n, i) => {
     xs.push(x);
-    const g = drawNote(n, x, { ...opt.help, bubbles: !!opt.reveal }, track);
+    const g = drawNote(n, x, { ...opt.help, bubbles: !!opt.reveal, fish: !!opt.fish }, track);
     if (n.bar && !opt.single && i < opt.notes.length - 1) {
       const bx = x + (GAP + (n.beats - 1) * BEAT_EXTRA) / 2 + 6;
       el('line', { class: 'bar', x1: bx, x2: bx, y1: BOTTOM - 4 * S, y2: BOTTOM }, track);
@@ -90,8 +90,9 @@ export function createStaff(host, opt) {
           g.classList.remove('far');
           g.classList.remove('arrive');
           void g.getBoundingClientRect();
+          g.style.animationDelay = instant ? (k - i) * 0.45 + 's' : '0s';
           g.classList.add('arrive');
-          setTimeout(() => g.classList.remove('arrive'), 2600);
+          setTimeout(() => g.classList.remove('arrive'), 2600 + (instant ? (k - i) * 450 : 0));
         } else if (far) g.classList.add('far');
       }
     });
@@ -154,7 +155,11 @@ function drawNote(n, x, help, parent) {
   const hw = el('g', { class: 'hw' }, g);
   el('ellipse', { class: hollow ? 'head hollow' : 'head', cx: x, cy, rx: 21, ry: 15, transform: `rotate(-20 ${x} ${cy})` }, hw);
   if (n.beats === 3) el('circle', { class: 'dot', cx: x + 32, cy: cy - (step % 2 === 0 ? 9 : 0), r: 5 }, g);
-  if (n.beats < 4) {
+  if (help.fish) {
+    // Notenfisch: Schwanzflosse rechts (schwimmt nach links), Auge; der Hals fällt weg (für die Tonhöhe egal)
+    el('path', { class: 'tail', d: `M${x + 17},${cy} L${x + 38},${cy - 13} L${x + 34},${cy} L${x + 38},${cy + 13} Z` }, hw);
+    el('circle', { class: 'eye', cx: x - 9, cy: cy - 3, r: 3.2 }, hw);
+  } else if (n.beats < 4) {
     const up = step < 6;
     const sx = up ? x + 19 : x - 19;
     el('line', { class: 'stem', x1: sx, x2: sx, y1: cy + (up ? -4 : 4), y2: up ? cy - 118 : cy + 118 }, g);

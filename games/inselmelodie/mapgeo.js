@@ -78,6 +78,8 @@ export function layoutMap(view) {
     len,
     total: len[len.length - 1],
     islands,
+    padTop,
+    padBottom,
     islandSize: size,
     deco: DECO.map((d) => ({ ...d, ...toXY(d.u, d.v) })),
     /** Punkt und Richtung bei Weglänge `d` (px). */

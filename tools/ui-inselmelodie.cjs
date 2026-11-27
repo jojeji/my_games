@@ -45,7 +45,8 @@ function layoutProblems() {
       const top = document.elementFromPoint(x, y);
       if (!top || el.contains(top) || top.contains(el)) continue;
       if (top.closest('.fx-layer,.confetti,.overlay') && !el.closest('.overlay')) continue;
-      if (el.closest('.map-scroll') && top.closest('.map-top,.map-bottom')) continue; // scrollt unter der Leiste durch
+      // Karte scrollt unter den Leisten durch: das ist nur dann ein Befund, wenn es die Insel ist, an der das Boot liegt
+      if (el.closest('.map-scroll') && top.closest('.map-top,.map-bottom') && !el.closest('.island.here')) continue;
       hidden++;
       by = top;
     }

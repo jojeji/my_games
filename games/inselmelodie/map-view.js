@@ -115,7 +115,7 @@ export function createMap(host, opt) {
     const at = geo.islands[id];
     const sz = geo.islandSize;
     const right = geo.portrait && at.x < geo.width / 2;
-    return { x: at.x + (right ? sz * 0.55 : -sz * 0.52), y: at.y + sz * 0.1, face: right ? -1 : 1 };
+    return { x: at.x + (right ? sz * 0.6 : -sz * 0.6), y: at.y + sz * 0.2, face: right ? -1 : 1 };
   }
   function boatAtHarbor(id) {
     const h = harbor(id);
@@ -144,8 +144,12 @@ export function createMap(host, opt) {
   function focusPoint(p, smooth = true) {
     const r = scroll.getBoundingClientRect();
     const left = geo.portrait ? 0 : p.x - r.width * 0.45;
-    const top = geo.portrait ? p.y - r.height * 0.36 : 0;
+    const top = geo.portrait ? p.y - bandMid(r) : 0;
     scroll.scrollTo({ left, top, behavior: smooth ? 'smooth' : 'instant' });
+  }
+  /** Mitte des freien Bands zwischen Kopfleiste und Papagei/Knopf (hochkant), in px vom oberen Rand. */
+  function bandMid(r) {
+    return (geo.padTop + (r.height - geo.padBottom)) / 2;
   }
 
   // Maus: Karte mit gedrückter Taste ziehen (Touch scrollt nativ mit Schwung)
@@ -192,7 +196,7 @@ export function createMap(host, opt) {
   }, 9000);
 
   /** Boot legt ab, fährt auf dem Seeweg und legt im Hafen der Insel `toId` an. Tippen beschleunigt. */
-  async function travel(toId) {
+  async function travel(toId, { fast = false } = {}) {
     busy = true;
     hurry = false;
     const fromH = harbor(opt.boatAt);
@@ -200,7 +204,7 @@ export function createMap(host, opt) {
     const from = boatLen;
     const to = geo.dockAt(toId);
     const dist = Math.abs(to - from);
-    const dur = Math.max(1600, Math.min(3600, dist * 2.2 + 600));
+    const dur = fast ? Math.max(1100, Math.min(1900, dist * 1.2 + 500)) : Math.max(1600, Math.min(3600, dist * 2.2 + 600));
     opt.audio.sfx.sail?.();
     boat.classList.add('sailing');
     let t = 0;
@@ -225,7 +229,7 @@ export function createMap(host, opt) {
         setBoat(x, y, t > 0.95 ? toH.face : dir);
         if (boatLen > reachedLen) gold.setAttribute('d', geo.pathTo(boatLen));
         const r = scroll.getBoundingClientRect();
-        if (geo.portrait) scroll.scrollTop += (y - r.height * 0.36 - scroll.scrollTop) * 0.12;
+        if (geo.portrait) scroll.scrollTop += (y - bandMid(r) - scroll.scrollTop) * 0.12;
         else scroll.scrollLeft += (x - r.width * 0.45 - scroll.scrollLeft) * 0.12;
         if (now - lastWake > 70 && t > 0.05 && t < 0.97) {
           lastWake = now;
@@ -242,6 +246,11 @@ export function createMap(host, opt) {
       requestAnimationFrame(step);
     });
     boat.classList.remove('sailing');
+    boat.classList.add('docking');
+    setTimeout(() => boat.classList.remove('docking'), 900);
+    const r0 = boat.getBoundingClientRect();
+    burst({ x: r0.left + r0.width / 2, y: r0.bottom - r0.height * 0.15 }, '#ffffff', 12, 60);
+    buzz(15);
     opt.boatAt = toId;
     reachedLen = Math.max(reachedLen, boatLen);
     opt.audio.sfx.arrive?.();
