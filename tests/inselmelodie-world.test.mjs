@@ -19,14 +19,17 @@ test('Notenschrift: parseNote, parseMelody, Lage im Notensystem', () => {
   assert.equal(fingerOf(60), 1);
   assert.equal(fingerOf(67), 5);
   assert.equal(fingerOf(69), null);
+  assert.equal(fingerOf(48), 5); // linke Hand: kleiner Finger auf dem tiefen C
+  assert.equal(fingerOf(55), 1); // Daumen auf dem G
+  assert.equal(fingerOf(57), null);
   assert.equal(noteColor(72), NOTE_COLORS.C);
 });
 
-test('Jedes Stück nutzt nur Noten, die bis zu seiner Insel eingeführt sind', () => {
+test('Jedes Stück nutzt nur Noten, die VORHER eingeführt sind (Reihenfolge der Aufgaben)', () => {
   const known = new Set();
   for (const isl of ISLANDS) {
-    for (const t of isl.tasks) if (t.kind === 'learn') known.add(t.note);
     for (const t of isl.tasks) {
+      if (t.kind === 'learn') known.add(t.note);
       const notes = t.kind === 'song' ? t.notes.map((n) => n.midi) : t.kind === 'game' ? t.pool : [];
       for (const m of notes) {
         assert.ok(known.has(m), `${isl.name} / ${t.title}: Note ${m} ist noch nicht eingeführt`);
@@ -113,4 +116,28 @@ test('Fortschritt: Inseln öffnen nacheinander, Sammelstück bei geschaffter Ins
   assert.equal(p.tasks['erster-ton'].stars, 3);
   assert.equal(record(p, 'erster-ton', 1).collect, null); // nur einmal
   assert.equal(p.tasks['erster-ton'].stars, 3);
+});
+
+test('Notensystem: Violinschlüssel, Bassschlüssel oder beide, je nach Noten', async () => {
+  const { staffLayout, clefFor } = await import('../games/inselmelodie/staff.js');
+  assert.equal(staffLayout([60, 64, 72]).kind, 'treble');
+  assert.equal(staffLayout([48, 52, 55]).kind, 'bass');
+  const g = staffLayout([48, 60]);
+  assert.equal(g.kind, 'grand');
+  assert.equal(clefFor(g, 60), 't'); // Mittel-C spielt die rechte Hand
+  assert.equal(clefFor(g, 59), 'b');
+  // jede Insel ab der Höhle hat tiefe Töne, die Tastatur reicht dafür
+  for (const isl of ISLANDS.slice(4)) {
+    const notes = isl.tasks.flatMap((t) => (t.notes ? t.notes.map((n) => n.midi) : t.pool || []));
+    assert.ok(notes.some((m) => m < 60), isl.name);
+    assert.ok(isl.range[0] <= Math.min(...notes) && isl.range[1] >= Math.max(...notes), isl.name);
+  }
+});
+
+test('Stücke der linken Hand und beider Hände bleiben in den Fünf-Finger-Lagen (C3-G3 links, C4-G4 rechts)', () => {
+  for (const isl of ISLANDS.slice(4)) for (const t of isl.tasks) {
+    for (const m of t.notes ? t.notes.map((n) => n.midi) : t.pool || []) {
+      assert.ok(fingerOf(m), `${t.title}: Note ${m} ohne Finger in der C-Lage`);
+    }
+  }
 });

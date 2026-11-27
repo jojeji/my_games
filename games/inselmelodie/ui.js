@@ -15,7 +15,7 @@ import { noteName, sciName, calibrate, MITTEL_C } from './notes.js';
 import { noteColor } from './music.js';
 
 const IMG = (name) => `img/${name}.webp`;
-const noteLabel = (midi) => (midi === 72 ? 'hohe C' : midi === 60 ? 'Mittel-C' : noteName(midi));
+const noteLabel = (midi) => (midi === 72 ? 'hohe C' : midi === 60 ? 'Mittel-C' : midi === 48 ? 'tiefe C' : noteName(midi));
 /** Satz zum Fehlgriff. Gleicher Tonname in anderer Oktave wird eigens erklärt (sonst: „Das war ein C, wir suchen das C“). */
 function wrongLine(m, want) {
   if (noteName(m) === noteName(want)) {
@@ -25,8 +25,8 @@ function wrongLine(m, want) {
   }
   return null;
 }
-const COLLECT_NAMES = { muschel: 'Muschel', seestern: 'Seestern', schneckenhaus: 'Schneckenhaus', truhe: 'Schatztruhe' };
-const ARTIKEL = { muschel: 'eine', seestern: 'einen', schneckenhaus: 'ein', truhe: 'eine' };
+const COLLECT_NAMES = { muschel: 'Muschel', seestern: 'Seestern', schneckenhaus: 'Schneckenhaus', truhe: 'Schatztruhe', kristall: 'Höhlenkristall', kompass: 'Kompass' };
+const ARTIKEL = { muschel: 'eine', seestern: 'einen', schneckenhaus: 'ein', truhe: 'eine', kristall: 'einen', kompass: 'einen' };
 
 /** Bild mit Ersatz: fehlt die Datei, bleibt ein farbiger Kreis mit Anfangsbuchstaben. */
 function pic(name, cls = '', alt = '') {
@@ -281,8 +281,8 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         await wait(1200);
         goBtn.classList.add('pulse');
       })();
-    } else if (finished && !p.finale) {
-      p.finale = true;
+    } else if (finished && p.finale !== ISLANDS.length) {
+      p.finale = ISLANDS.length;
       save();
       setTimeout(() => showFinale(), 600);
     }
@@ -396,16 +396,41 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         kb.mark([54, 56, 58, 66, 68, 70, 78, 80, 82], 'g3');
         box.append(h('div', { class: 'legend' }, h('span', { class: 'lg g2', text: 'zwei' }), h('span', { class: 'lg g3', text: 'drei' })));
       } else kb.setTarget(60);
-    } else if (kind === 'hand') {
-      box.innerHTML = `<svg viewBox="-40 -10 380 240" class="hand">
-        <rect x="70" y="110" width="160" height="100" rx="40" class="palm"/>
-        ${[[40, 120, 1, -35], [92, 40, 2, -6], [137, 28, 3, 0], [182, 40, 4, 6], [222, 70, 5, 12]].map(([x, y, n, r]) =>
-          `<g class="fing" style="--d:${n * 0.12}s" transform="rotate(${r} ${x + 18} ${y + 60})"><rect x="${x}" y="${y}" width="36" height="${n === 1 ? 70 : 100}" rx="18" class="finger"/><text x="${x + 18}" y="${y + 34}">${n}</text></g>`).join('')}
-      </svg>`;
+    } else if (kind === 'hand' || kind === 'lefthand') {
+      box.innerHTML = handSvg(kind === 'lefthand');
+      if (kind === 'lefthand') box.append(h('div', { class: 'legend' }, h('span', { class: 'lg g3', text: 'linke Hand' })));
+    } else if (kind === 'lowc' || kind === 'hands') {
+      const kbBox = h('div', { class: 'tour-kbd' + (innerWidth < 700 ? ' few-labels' : '') });
+      box.append(kbBox);
+      const kb = createKeyboard(kbBox, { lo: kind === 'lowc' ? 36 : 48, hi: kind === 'lowc' ? 71 : 67, labels: true, playable: true, onKey: (m) => { audio.note(m); if (kind === 'lowc' && m === 48) { burst(kbBox.querySelector('.key.target'), noteColor(48), 16); buzz(15); } } });
+      if (kind === 'lowc') { kb.setTarget(48); kb.mark([60], 'mc'); }
+      else { kb.mark([48, 50, 52, 53, 55], 'lh'); kb.mark([60, 62, 64, 65, 67], 'rh'); }
+      box.append(h('div', { class: 'legend' }, ...(kind === 'lowc'
+        ? [h('span', { class: 'lg g2', text: 'tiefes C' }), h('span', { class: 'lg mc', text: 'Mittel-C' })]
+        : [h('span', { class: 'lg g3', text: 'linke Hand' }), h('span', { class: 'lg g2', text: 'rechte Hand' })])));
+    } else if (kind === 'bass' || kind === 'grand') {
+      const sh = h('div', { class: 'staff-host tour-staff' });
+      box.append(sh);
+      const notes = kind === 'bass' ? [{ midi: 53, beats: 1 }] : [{ midi: 48, beats: 2 }, { midi: 60, beats: 2 }, { midi: 55, beats: 2 }, { midi: 67, beats: 2 }];
+      createStaff(sh, { notes, help: { colors: true, names: true, fingers: true }, single: kind === 'bass' });
     } else {
       box.append(pic('papagei-zeigt', 'tour-bird', B()));
     }
     return box;
+  }
+
+  /** Hand mit Fingernummern; gespiegelt = linke Hand (Daumen rechts). */
+  function handSvg(mirror) {
+    const F = [[40, 120, 1, -35], [92, 40, 2, -6], [137, 28, 3, 0], [182, 40, 4, 6], [222, 70, 5, 12]];
+    const fx = (x) => (mirror ? 300 - x - 36 : x);
+    return `<svg viewBox="-40 -10 380 240" class="hand">
+      <rect x="70" y="110" width="160" height="100" rx="40" class="palm"/>
+      ${F.map(([x, y, n, r]) => {
+        const X = fx(x);
+        const R = mirror ? -r : r;
+        return `<g class="fing" style="--d:${n * 0.12}s" transform="rotate(${R} ${X + 18} ${y + 60})"><rect x="${X}" y="${y}" width="36" height="${n === 1 ? 70 : 100}" rx="18" class="finger"/><text x="${X + 18}" y="${y + 34}">${n}</text></g>`;
+      }).join('')}
+    </svg>`;
   }
 
   function showTour(task) {
@@ -674,7 +699,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         kick(hint, 'in', 400);
       } }, pic(c, 'album-pic', COLLECT_NAMES[c]), h('span', { text: have ? COLLECT_NAMES[c] : '?' }));
     });
-    const animals = Object.entries(ANIMALS).map(([k, a]) => {
+    const animals = Object.entries(ANIMALS).filter(([, a]) => !a.bass).map(([k, a]) => {
       const have = taskDone(p, 'learn-' + k);
       return h('button', { class: 'album-item' + (have ? '' : ' missing'), disabled: !have, onClick: () => showAnimal(k) },
         pic(a.img, 'album-pic', a.name), h('span', { text: have ? `${k === 'C5' ? 'hohes C' : k[0]} · ${a.name}` : '?' }));

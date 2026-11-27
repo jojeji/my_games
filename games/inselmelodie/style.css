@@ -399,6 +399,16 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 #app .staff .eye { fill: #fff; stroke: #1d3b45; stroke-width: 2; }
 #app .staff .note.arrive { animation-fill-mode: backwards; }
 
+/* Höhle + Brücke */
+#app .staff .clef-dot { fill: var(--ink); }
+#app .staff .brace { stroke: var(--ink); stroke-width: 6; }
+#app .staff .finger.left { fill: #c06a0a; }
+#app .tour-staff { position: relative; width: 100%; height: 100%; }
+#app .kbd .key.white.lh { background: #fde6c8; }
+#app .kbd .key.white.rh { background: #d6e9fb; }
+#app .kbd .key.white.mc { background: #e4f4dc; }
+#app .legend .mc { background: #6fae4f; }
+
 /* Album, Einstellungen, Kalibrierung */
 #app .album-hint { align-self: flex-start; font-size: 17px; }
 #app .adults summary { font-weight: 900; font-size: 18px; cursor: pointer; min-height: 44px; display: flex; align-items: center; }

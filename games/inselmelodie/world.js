@@ -44,10 +44,39 @@ export const ANIMALS = {
     where: 'Das hohe C schwimmt im dritten Zwischenraum. Es ist auch ein C, nur acht Töne höher.',
     key: 'Das hohe C ist das nächste C rechts vom Mittel-C: wieder links neben zwei schwarzen Tasten.',
   },
+  // Linke Hand im Bassschlüssel: dieselben Tiere (gleicher Tonname = gleiches Tier), eigene Lage. bass: nicht doppelt ins Album.
+  C3: {
+    name: 'Chamäleon', img: 'tier-c-chamaeleon', bass: true,
+    where: 'Im Bassschlüssel wohnt das tiefe C im zweiten Zwischenraum von unten.',
+    key: 'Das tiefe C ist das nächste C links vom Mittel-C, wieder links neben zwei schwarzen Tasten. Dein kleiner Finger (5) liegt darauf.',
+  },
+  D3: {
+    name: 'Delfin', img: 'tier-d-delfin', bass: true,
+    where: 'Das tiefe D liegt genau auf der mittleren Linie.',
+    key: 'Das D liegt zwischen den zwei schwarzen Tasten. Hier spielt der Ringfinger (4).',
+  },
+  E3: {
+    name: 'Eule', img: 'tier-e-eule', bass: true,
+    where: 'Das tiefe E sitzt im dritten Zwischenraum, direkt über der mittleren Linie.',
+    key: 'Das E liegt rechts neben den zwei schwarzen Tasten. Hier spielt der Mittelfinger (3).',
+  },
+  F3: {
+    name: 'Flamingo', img: 'tier-f-flamingo', bass: true,
+    where: 'Das tiefe F steht auf der Linie zwischen den zwei Punkten des Bassschlüssels. Darum heißt er auch F-Schlüssel.',
+    key: 'Das F liegt links neben den drei schwarzen Tasten. Hier spielt der Zeigefinger (2).',
+  },
+  G3: {
+    name: 'Gecko', img: 'tier-g-gecko', bass: true,
+    where: 'Das tiefe G hängt im obersten Zwischenraum.',
+    key: 'Das G liegt zwischen der ersten und zweiten der drei schwarzen Tasten. Hier spielt der Daumen (1).',
+  },
 };
 
 const song = (id, title, melody, extra = {}) => ({ id, kind: 'song', title, notes: parseMelody(melody), ...extra });
-const learn = (note) => ({ id: 'learn-' + note, kind: 'learn', note: parseNote(note), noteKey: note, title: 'Neue Note: ' + (note === 'C5' ? 'hohes C' : note.replace(/\d$/, '')) });
+const learn = (note) => ({
+  id: 'learn-' + note, kind: 'learn', note: parseNote(note), noteKey: note,
+  title: note === 'C5' ? 'Neue Note: hohes C' : note === 'C3' ? 'Linke Hand: tiefes C' : note.endsWith('3') ? 'Linke Hand: ' + note[0] : 'Neue Note: ' + note[0],
+});
 const game = (id, notes, title = 'Notenspiel') => ({ id, kind: 'game', title, pool: notes.map(parseNote), count: 16 });
 
 export const ISLANDS = [
@@ -110,10 +139,49 @@ export const ISLANDS = [
     ],
   },
   {
-    id: 'i4', name: 'Höhleninsel', img: 'insel-hoehle', x: 89, y: 55, soon: true,
-    intro: 'In der Höhle ist es tief und dunkel. Hier lernst du später die tiefen Töne mit der linken Hand.',
+    id: 'i4', name: 'Höhleninsel', img: 'insel-hoehle', x: 0, y: 0,
+    intro: 'In der Höhle klingt alles tiefer. Hier spielt deine linke Hand, im Bassschlüssel.',
     range: [48, 60],
-    tasks: [],
+    tasks: [
+      {
+        id: 'tour-bass', kind: 'tour', title: 'Die linke Hand',
+        cards: [
+          { title: 'Der Bassschlüssel', text: 'Tiefe Töne stehen in einer eigenen Notenzeile mit dem Bassschlüssel. Seine zwei Punkte umarmen eine Linie: das ist das F.', art: 'bass' },
+          { title: 'Die linke Hand hat auch Nummern', text: 'Auch links ist der Daumen die 1 und der kleine Finger die 5. Weil die Hand gespiegelt ist, liegt der kleine Finger jetzt ganz links.', art: 'lefthand' },
+          { title: 'Das tiefe C', text: 'Geh vom Mittel-C acht weiße Tasten nach links. Da wohnt das tiefe C. Darauf liegt dein kleiner Finger.', art: 'lowc' },
+        ],
+      },
+      learn('C3'),
+      learn('D3'),
+      learn('E3'),
+      game('game-bass-ce', ['C3', 'D3', 'E3'], 'Notenspiel: tief unten'),
+      song('tropfen', 'Tropfen', 'C3 D3 E3 E3 | D3 C3 D3:2 | E3 E3 D3 D3 | C3:4', { own: true }),
+      learn('F3'),
+      learn('G3'),
+      game('game-bass-cg', ['C3', 'D3', 'E3', 'F3', 'G3'], 'Notenspiel: Höhlenfische'),
+      song('hoehlenecho', 'Höhlenecho', 'C3 E3 G3:2 | G3 F3 E3:2 | D3 E3 F3 D3 | C3:4', { own: true }),
+      song('haenschen-links', 'Hänschen klein (links)', 'G3 E3 E3:2 | F3 D3 D3:2 | C3 D3 E3 F3 | G3 G3 G3:2 | G3 E3 E3:2 | F3 D3 D3:2 | C3 E3 G3 G3 | C3:4', { trad: 'Volkslied' }),
+      song('ode-links', 'Ode an die Freude (links)', 'E3 E3 F3 G3 | G3 F3 E3 D3 | C3 C3 D3 E3 | E3 D3 D3:2 | E3 E3 F3 G3 | G3 F3 E3 D3 | C3 C3 D3 E3 | D3 C3 C3:2', { trad: 'Ludwig van Beethoven' }),
+    ],
+  },
+  {
+    id: 'i5', name: 'Brückeninsel', img: 'insel-bruecke', x: 0, y: 0,
+    intro: 'Über die Brücke reichen sich beide Hände die Melodie weiter. Oben spielt rechts, unten spielt links.',
+    range: [48, 67],
+    tasks: [
+      {
+        id: 'tour-grand', kind: 'tour', title: 'Zwei Zeilen, zwei Hände',
+        cards: [
+          { title: 'Zwei Zeilen zusammen', text: 'Beim Klavier stehen beide Notenzeilen übereinander. Oben der Violinschlüssel für die rechte Hand, unten der Bassschlüssel für die linke.', art: 'grand' },
+          { title: 'Beide Hände liegen bereit', text: 'Die rechte Hand liegt mit dem Daumen auf dem Mittel-C, die linke mit dem kleinen Finger auf dem tiefen C. So erreichst du alle Töne, ohne zu rutschen.', art: 'hands' },
+        ],
+      },
+      game('game-grand', ['C3', 'D3', 'E3', 'F3', 'G3', 'C4', 'D4', 'E4', 'F4', 'G4'], 'Notenspiel: oben oder unten?'),
+      song('schaukel', 'Wellenschaukel', 'C4:2 C3:2 | E4:2 E3:2 | G4:2 G3:2 | C4:4', { own: true }),
+      song('frage-antwort', 'Frage und Antwort', 'C4 D4 E4 F4 | G4:4 | G3 F3 E3 D3 | C3:4 | E4 F4 G4:2 | E3 D3 C3:2', { own: true }),
+      song('haenschen-echo', 'Hänschen klein mit Echo', 'G4 E4 E4:2 | G3 E3 E3:2 | F4 D4 D4:2 | F3 D3 D3:2 | C4 E4 G4 G4 | C3 E3 G3 G3 | C4:4', { trad: 'Volkslied' }),
+      song('ode-zwei', 'Ode an die Freude (zwei Hände)', 'E4 E4 F4 G4 | G4 F4 E4 D4 | C4 C4 D4 E4 | E4 D4 D4:2 | E3 E3 F3 G3 | G3 F3 E3 D3 | C3 C3 D3 E3 | D3 C3 C3:2', { trad: 'Ludwig van Beethoven' }),
+    ],
   },
 ];
 
@@ -163,7 +231,7 @@ export const MAP_SAY = {
   locked: 'Da kommen wir noch hin. Erst schaffen wir die {I}.',
   here: 'Tipp auf die {I}, dann geht es weiter.',
   sailTip: 'Leinen los! Auf zur {I}! Tipp aufs Wasser, dann segeln wir schneller.',
-  finale: 'Die Höhleninsel öffnet bald. Bis dahin kannst du überall Sterne sammeln.',
+  finale: 'Jetzt spielst du mit beiden Händen! Bald kommen neue Inseln. Bis dahin kannst du überall Sterne sammeln.',
   allDone: 'Alle Inseln geschafft! Hol dir noch fehlende Sterne.',
 };
 

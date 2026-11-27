@@ -63,7 +63,7 @@ export function noteGameNotes(pool, count, seed) {
 
 // ---- Fortschritt ----------------------------------------------------------
 
-export const COLLECT = { i0: 'muschel', i1: 'seestern', i2: 'schneckenhaus', i3: 'truhe' };
+export const COLLECT = { i0: 'muschel', i1: 'seestern', i2: 'schneckenhaus', i3: 'truhe', i4: 'kristall', i5: 'kompass' };
 
 export function defaultProgress() {
   return {
@@ -79,7 +79,7 @@ export function defaultProgress() {
     },
     calib: { offset: 0, done: false },
     boat: 'i0', // hier liegt das Boot
-    finale: false, // Abschluss aller Inseln schon gefeiert
+    finale: 0, // Anzahl Inseln bei der letzten Abschlussfeier (neue Inseln = neue Feier am Ende)
     collectShow: null, // Sammelstück, dessen Feier noch nicht gezeigt wurde (überlebt Neu laden)
     revealed: ['i0'], // Inseln, deren Freischaltung schon gezeigt wurde
   };

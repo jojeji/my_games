@@ -1,7 +1,7 @@
 // Geometrie der Abenteuerkarte (DOM-frei): ein geschwungener Seeweg durch alle Inseln.
 // Weltkoordinaten (u, v): u = entlang der Reise 0..L, v = quer dazu 0..B. Quer liegt u waagrecht, hochkant senkrecht.
 
-export const L = 3000;
+export const L = 3450;
 export const B = 1000;
 
 /** Wegpunkte des Seewegs. `island` markiert den Anlegepunkt einer Insel. */
@@ -20,6 +20,9 @@ export const WAYPOINTS = [
   { u: 2360, v: 140 },
   { u: 2500, v: 520 },
   { u: 2720, v: 690, island: 'i4' },
+  { u: 2950, v: 870 },
+  { u: 3100, v: 500 },
+  { u: 3330, v: 300, island: 'i5' },
 ];
 
 /** Kleiner Schmuck auf dem Meer (Wellen, Felsen, Möwen), in Weltkoordinaten. */
@@ -29,6 +32,7 @@ export const DECO = [
   { k: 'rock', u: 1380, v: 210 }, { k: 'wave', u: 1650, v: 300 }, { k: 'gull', u: 1840, v: 180 },
   { k: 'wave', u: 2020, v: 820 }, { k: 'rock', u: 2280, v: 640 }, { k: 'wave', u: 2440, v: 330 },
   { k: 'gull', u: 2620, v: 160 }, { k: 'wave', u: 2860, v: 880 }, { k: 'rock', u: 2900, v: 250 },
+  { k: 'wave', u: 3150, v: 820 }, { k: 'gull', u: 3250, v: 640 }, { k: 'rock', u: 3380, v: 760 },
 ];
 
 /** Catmull-Rom durch die Wegpunkte, fein abgetastet. */

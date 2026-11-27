@@ -52,11 +52,18 @@ export function staffStep(midi) {
   return { step: (oct - 4) * 7 + STEP_IN_OCT[pc], sharp };
 }
 
-/** Fingernummer in der C-Lage der rechten Hand (C=1 ... G=5), sonst null (Lagenwechsel kommen später). */
+/**
+ * Fingernummer in der C-Lage: rechte Hand C4..G4 = 1..5 (Daumen auf dem Mittel-C),
+ * linke Hand C3..G3 = 5..1 (kleiner Finger auf dem tiefen C, Daumen auf dem G). Sonst null (Lagenwechsel kommen später).
+ */
 export function fingerOf(midi) {
-  const i = [60, 62, 64, 65, 67].indexOf(midi);
-  return i < 0 ? null : i + 1;
+  const r = [60, 62, 64, 65, 67].indexOf(midi);
+  if (r >= 0) return r + 1;
+  const l = [48, 50, 52, 53, 55].indexOf(midi);
+  return l < 0 ? null : 5 - l;
 }
+/** Hand für eine Note: unter dem Mittel-C links, sonst rechts. */
+export const handOf = (midi) => (midi < 60 ? 'L' : 'R');
 
 /** Notenwert-Name für Erklärungen. */
 export const valueName = (beats) => ({ 1: 'Viertel', 2: 'Halbe', 3: 'punktierte Halbe', 4: 'Ganze' })[beats] || 'Note';
