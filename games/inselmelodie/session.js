@@ -3,7 +3,8 @@ import { rngNext } from '../../engine/kit/rng.js';
 import { ISLANDS, findTask } from './world.js';
 
 /** Sterne nach Fehlgriffen: 0 -> 3, bis 10 % (mind. 1) -> 2, sonst 1. */
-export function starsFor(misses, n) {
+export function starsFor(misses, n, lenient = false) {
+  if (lenient) return misses <= 1 ? 3 : misses <= Math.max(3, Math.round(n * 0.25)) ? 2 : 1; // Notenspiel
   if (misses === 0) return 3;
   if (misses <= Math.max(1, Math.round(n * 0.1))) return 2;
   return 1;
@@ -13,7 +14,7 @@ export function starsFor(misses, n) {
  * Wartemodus: die Noten warten, bis der richtige Ton kommt. Ein falscher Ton ist ein Fehlgriff (zählt nur für die Sterne).
  * @param {{midi:number, beats:number}[]} notes
  */
-export function createRun(notes) {
+export function createRun(notes, { lenient = false } = {}) {
   const st = { i: 0, misses: 0, missAt: new Set() };
   return {
     notes,
@@ -31,7 +32,7 @@ export function createRun(notes) {
       st.missAt.add(st.i);
       return { result: 'miss', index: st.i, want };
     },
-    stars: () => starsFor(st.misses, notes.length),
+    stars: () => starsFor(st.misses, notes.length, lenient),
   };
 }
 

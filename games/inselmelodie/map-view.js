@@ -7,7 +7,7 @@ const NS = 'http://www.w3.org/2000/svg';
 
 const DECO_SVG = {
   wave: '<svg viewBox="0 0 60 20"><path d="M2 14 Q 12 4 22 14 T 42 14 T 58 10" /></svg>',
-  rock: '<svg viewBox="0 0 60 40"><ellipse cx="30" cy="32" rx="28" ry="7" class="foam"/><path d="M8 32 C 10 16 22 8 32 12 C 44 6 54 20 52 32 Z" class="stone"/></svg>',
+  rock: '<svg viewBox="0 0 60 40"><ellipse cx="30" cy="33" rx="29" ry="7" class="foam"/><path d="M6 33 C 8 18 20 10 30 13 C 42 6 55 18 54 33 Z" class="stone"/><path d="M14 22 C 18 15 26 13 31 16 C 27 18 21 20 16 25 Z" class="hl"/><path d="M33 12 C 40 9 47 13 50 19 C 44 16 39 15 35 16 Z" class="moss"/></svg>',
   gull: '<svg viewBox="0 0 40 16"><path d="M2 10 Q 10 0 20 10 Q 30 0 38 10" /></svg>',
 };
 
@@ -39,7 +39,7 @@ export function createMap(host, opt) {
     world.className = 'world';
     world.style.width = geo.width + 'px';
     world.style.height = geo.height + 'px';
-    world.style.backgroundImage = `url(${IMG('meer')})`;
+    world.style.backgroundImage = `url(${IMG(geo.portrait ? 'meer-hoch' : 'meer-quer')})`;
 
     const svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('class', 'route-svg');
@@ -105,9 +105,25 @@ export function createMap(host, opt) {
     scroll.replaceChildren(world);
     boatLen = geo.dockAt(opt.boatAt);
     reachedLen = geo.dockAt(opt.reached);
-    placeBoat(boatLen, 1);
+    boatAtHarbor(opt.boatAt);
     gold.setAttribute('d', geo.pathTo(Math.max(reachedLen, boatLen)));
-    focusLen(boatLen, false);
+    focusPoint(harbor(opt.boatAt), false);
+  }
+
+  /** Hafen einer Insel: neben dem Inselbild, nie auf dem Namensschild. */
+  function harbor(id) {
+    const at = geo.islands[id];
+    const sz = geo.islandSize;
+    const right = geo.portrait && at.x < geo.width / 2;
+    return { x: at.x + (right ? sz * 0.55 : -sz * 0.52), y: at.y + sz * 0.1, face: right ? -1 : 1 };
+  }
+  function boatAtHarbor(id) {
+    const h = harbor(id);
+    setBoat(h.x, h.y, h.face);
+  }
+  function setBoat(x, y, flip) {
+    boat.style.transform = `translate(${x}px, ${y}px)`;
+    boat.firstChild.style.setProperty('--flip', flip < 0 ? -1 : 1);
   }
 
   function paintIsland(isl, idx, st) {
@@ -124,18 +140,11 @@ export function createMap(host, opt) {
     badge.hidden = !badge.textContent && !badge.innerHTML;
   }
 
-  function placeBoat(len, dir) {
-    const p = geo.pointAt(len);
-    const flip = (dir ?? Math.sign(p.dx)) < 0 ? -1 : 1;
-    boat.style.transform = `translate(${p.x}px, ${p.y}px)`;
-    boat.firstChild.style.setProperty('--flip', flip);
-  }
-
-  function focusLen(len, smooth = true) {
-    const p = geo.pointAt(len);
+  /** Ausschnitt so legen, dass der Punkt über der unteren Leiste gut sichtbar ist. */
+  function focusPoint(p, smooth = true) {
     const r = scroll.getBoundingClientRect();
     const left = geo.portrait ? 0 : p.x - r.width * 0.45;
-    const top = geo.portrait ? p.y - r.height * 0.42 : 0;
+    const top = geo.portrait ? p.y - r.height * 0.36 : 0;
     scroll.scrollTo({ left, top, behavior: smooth ? 'smooth' : 'instant' });
   }
 
@@ -157,11 +166,21 @@ export function createMap(host, opt) {
   const onUp = () => { drag = null; setTimeout(() => { dragged = false; }, 0); };
   addEventListener('pointermove', onMove);
   addEventListener('pointerup', onUp);
+  // Mausrad scrollt die Karte quer (am Rechner)
+  scroll.addEventListener('wheel', (e) => {
+    if (geo && !geo.portrait && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      scroll.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }
+  }, { passive: false });
+  // Tippen während der Fahrt: schneller ankommen
+  let hurry = false;
+  scroll.addEventListener('pointerdown', () => { if (busy) hurry = true; });
 
   // ab und zu springt ein Delfin in der Nähe des Bootes
   const dolphinTimer = setInterval(() => {
     if (!alive || document.hidden || !geo) return;
-    const p = geo.pointAt(boatLen + (Math.random() - 0.3) * 600);
+    const p = geo.pointAt(Math.max(0, boatLen + (Math.random() - 0.3) * 600));
     const d = document.createElement('img');
     d.className = 'dolphin';
     d.src = IMG('tier-d-delfin');
@@ -172,34 +191,48 @@ export function createMap(host, opt) {
     setTimeout(() => d.remove(), 2200);
   }, 9000);
 
-  /** Boot fährt von seiner Anlegestelle zur Anlegestelle der Insel `toId`. */
+  /** Boot legt ab, fährt auf dem Seeweg und legt im Hafen der Insel `toId` an. Tippen beschleunigt. */
   async function travel(toId) {
     busy = true;
+    hurry = false;
+    const fromH = harbor(opt.boatAt);
+    const toH = harbor(toId);
     const from = boatLen;
     const to = geo.dockAt(toId);
     const dist = Math.abs(to - from);
-    const dur = Math.max(1200, Math.min(3400, dist * 2.2));
+    const dur = Math.max(1600, Math.min(3600, dist * 2.2 + 600));
     opt.audio.sfx.sail?.();
     boat.classList.add('sailing');
-    const t0 = performance.now();
+    let t = 0;
+    let last = performance.now();
     let lastWake = 0;
+    const blend = (a, b, w) => a + (b - a) * w;
+    const smooth = (x) => x * x * (3 - 2 * x);
     await new Promise((done) => {
       const step = (now) => {
         if (!alive) return done();
-        const t = Math.min(1, (now - t0) / dur);
+        t = Math.min(1, t + ((now - last) / dur) * (hurry ? 5 : 1));
+        last = now;
         boatLen = from + (to - from) * ease(t);
         const p = geo.pointAt(boatLen);
-        placeBoat(boatLen, Math.sign(to - from) * Math.sign(p.dx || 1));
+        // die ersten und letzten 15 %: vom Hafen auf den Weg und vom Weg in den Hafen gleiten
+        const wIn = smooth(Math.min(1, t / 0.15));
+        const wOut = smooth(Math.min(1, (1 - t) / 0.15));
+        let x = p.x, y = p.y;
+        if (wIn < 1) { x = blend(fromH.x, x, wIn); y = blend(fromH.y, y, wIn); }
+        if (wOut < 1) { x = blend(toH.x, x, wOut); y = blend(toH.y, y, wOut); }
+        const dir = Math.sign(to - from) * Math.sign(p.dx || 1);
+        setBoat(x, y, t > 0.95 ? toH.face : dir);
         if (boatLen > reachedLen) gold.setAttribute('d', geo.pathTo(boatLen));
         const r = scroll.getBoundingClientRect();
-        if (geo.portrait) scroll.scrollTop += (p.y - r.height * 0.42 - scroll.scrollTop) * 0.12;
-        else scroll.scrollLeft += (p.x - r.width * 0.45 - scroll.scrollLeft) * 0.12;
-        if (now - lastWake > 70) {
+        if (geo.portrait) scroll.scrollTop += (y - r.height * 0.36 - scroll.scrollTop) * 0.12;
+        else scroll.scrollLeft += (x - r.width * 0.45 - scroll.scrollLeft) * 0.12;
+        if (now - lastWake > 70 && t > 0.05 && t < 0.97) {
           lastWake = now;
           const w = document.createElement('i');
           w.className = 'wake';
-          w.style.left = p.x + 'px';
-          w.style.top = p.y + 'px';
+          w.style.left = x + 'px';
+          w.style.top = y + 'px';
           world.append(w);
           setTimeout(() => w.remove(), 1200);
         }
@@ -209,6 +242,7 @@ export function createMap(host, opt) {
       requestAnimationFrame(step);
     });
     boat.classList.remove('sailing');
+    opt.boatAt = toId;
     reachedLen = Math.max(reachedLen, boatLen);
     opt.audio.sfx.arrive?.();
     busy = false;
@@ -240,7 +274,7 @@ export function createMap(host, opt) {
     travel,
     reveal,
     get busy() { return busy; },
-    focusIsland: (id, smooth) => focusLen(geo.dockAt(id), smooth),
+    focusIsland: (id, smooth) => focusPoint(harbor(id), smooth),
     destroy() {
       alive = false;
       clearInterval(dolphinTimer);

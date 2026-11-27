@@ -30,7 +30,7 @@ const CLEF =
  * @param {{notes:{midi:number,beats:number,bar?:boolean}[], help:{colors,names,fingers}, single?:boolean}} opt
  */
 export function createStaff(host, opt) {
-  const svg = el('svg', { class: 'staff', viewBox: `0 0 1600 ${H}`, preserveAspectRatio: 'xMinYMid meet', role: 'img', 'aria-label': 'Notenzeile' });
+  const svg = el('svg', { class: 'staff' + (opt.reveal ? ' swimming' : ''), viewBox: `0 0 1600 ${H}`, preserveAspectRatio: 'xMinYMid meet', role: 'img', 'aria-label': 'Notenzeile' });
   host.append(svg);
   // Breite des Ausschnitts folgt der Form des Platzes (Höhe ist fest 400 Einheiten)
   const fit = () => {
@@ -75,6 +75,14 @@ export function createStaff(host, opt) {
     groups.forEach((g, k) => {
       g.classList.toggle('done', k < i);
       g.classList.toggle('now', k === i);
+      if (opt.reveal) {
+        // Notenspiel: nur die nächsten Noten sind zu sehen, neue schwimmen heran
+        const far = k > i + opt.reveal;
+        if (!far && g.classList.contains('far')) {
+          g.classList.remove('far');
+          if (!instant) { g.classList.add('swim-in'); setTimeout(() => g.classList.remove('swim-in'), 700); }
+        } else if (far) g.classList.add('far');
+      }
     });
     const target = NOW_X - (xs[Math.min(i, xs.length - 1)] ?? 0) - (i >= xs.length ? GAP : 0);
     track.style.transition = instant ? 'none' : '';
@@ -82,6 +90,7 @@ export function createStaff(host, opt) {
   }
 
   function ghost(midi) {
+    ghosts.replaceChildren(); // immer nur eine Geisternote
     const { step, sharp } = staffStep(midi);
     const g = el('g', { class: 'ghost' }, ghosts);
     const cy = stepY(step);
@@ -97,7 +106,7 @@ export function createStaff(host, opt) {
     const g = groups[i];
     if (!g) return;
     g.classList.remove('pop');
-    void g.getBBox; // Neustart der Animation
+    void g.getBoundingClientRect(); // Neustart der Animation erzwingen
     g.classList.add('pop');
   }
 
@@ -107,11 +116,11 @@ export function createStaff(host, opt) {
   const head = (i) => groups[i]?.querySelector('.head') || null;
   /** Alle Noten hüpfen nacheinander (Abschluss eines Stücks). */
   function wave() {
-    groups.forEach((g, k) => setTimeout(() => { g.classList.remove('pop'); void g.getBBox; g.classList.add('pop'); }, k * 45));
+    groups.forEach((g, k) => setTimeout(() => { g.classList.remove('pop'); void g.getBoundingClientRect(); g.classList.add('pop'); }, k * 45));
   }
   function shake() {
     svg.classList.remove('shake');
-    void svg.getBBox;
+    void svg.getBoundingClientRect();
     svg.classList.add('shake');
   }
   return { svg, setIndex, ghost, pop, groups, head, wave, shake, destroy: () => ro?.disconnect() };
@@ -130,7 +139,9 @@ function drawNote(n, x, help, parent) {
   g.style.setProperty('--c', color);
   ledgers(step, x, g);
   const hollow = n.beats >= 2;
-  el('ellipse', { class: hollow ? 'head hollow' : 'head', cx: x, cy, rx: 21, ry: 15, transform: `rotate(-20 ${x} ${cy})` }, g);
+  // Hülle für Animationen (Hüpfen, Wackeln): die Schrägstellung des Kopfes bleibt am Kopf selbst
+  const hw = el('g', { class: 'hw' }, g);
+  el('ellipse', { class: hollow ? 'head hollow' : 'head', cx: x, cy, rx: 21, ry: 15, transform: `rotate(-20 ${x} ${cy})` }, hw);
   if (n.beats === 3) el('circle', { class: 'dot', cx: x + 32, cy: cy - (step % 2 === 0 ? 9 : 0), r: 5 }, g);
   if (n.beats < 4) {
     const up = step < 6;

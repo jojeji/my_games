@@ -48,7 +48,7 @@ export const ANIMALS = {
 
 const song = (id, title, melody, extra = {}) => ({ id, kind: 'song', title, notes: parseMelody(melody), ...extra });
 const learn = (note) => ({ id: 'learn-' + note, kind: 'learn', note: parseNote(note), noteKey: note, title: 'Neue Note: ' + (note === 'C5' ? 'hohes C' : note.replace(/\d$/, '')) });
-const game = (id, notes, title = 'Notenspiel') => ({ id, kind: 'game', title, pool: notes.map(parseNote), count: 12 });
+const game = (id, notes, title = 'Notenspiel') => ({ id, kind: 'game', title, pool: notes.map(parseNote), count: 16 });
 
 export const ISLANDS = [
   {
@@ -127,6 +127,7 @@ export function findTask(id) {
 export const SAY = {
   hello: 'Hallo! Ich bin dein Papagei und segle mit dir über die Inseln. Wie soll ich heißen?',
   named: 'Super, ab jetzt heiße ich {B}. Komm, wir fahren zur ersten Insel!',
+  renamed: 'Gefällt mir! Ab jetzt heiße ich {B}.',
   mapHint: 'Tipp eine Insel an, oder nimm einfach „Weiter üben“.',
   learnPlay: 'Spiel jetzt das {N} auf dem Klavier.',
   learnDone: 'Genau das war es! Das {N} kennst du jetzt.',
@@ -135,7 +136,7 @@ export const SAY = {
   stars3: 'Wow, ohne einen einzigen Fehlgriff!',
   stars2: 'Richtig gut gespielt!',
   stars1: 'Geschafft! Nochmal spielen bringt mehr Sterne.',
-  gameStart: 'Die Noten schwimmen heran. Spiel jede, sobald du sie erkennst.',
+  gameStart: 'Die Noten schwimmen heran! Spiel jede, sobald du sie erkennst. Diesmal ohne Namen.',
   islandDone: 'Diese Insel hast du geschafft! Die nächste wartet schon.',
   soon: 'Hier kommen wir später hin. Erst lernen wir die Töne der anderen Inseln.',
   doneToday: 'Für heute hast du richtig viel geschafft. Du darfst aber gern weiterspielen.',

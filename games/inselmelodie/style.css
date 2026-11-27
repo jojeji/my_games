@@ -119,7 +119,7 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 #app .logo { font-weight: 900; font-size: clamp(30px, min(8vh, 11vw), 64px); color: var(--sea); letter-spacing: 0.5px; text-shadow: 0 4px 0 #fff; display: flex; }
 #app .logo span { display: inline-block; animation: letter 2.6s ease-in-out infinite; }
 @keyframes letter { 0%, 70%, 100% { transform: translateY(0); } 80% { transform: translateY(-10px); } }
-#app .logo.small { font-size: 26px; color: #fff; text-shadow: 0 2px 0 #0e6e78, 0 3px 6px #0004; }
+#app .logo.small { font-size: clamp(20px, 6vw, 26px); color: #fff; text-shadow: 0 2px 0 #0e6e78, 0 3px 6px #0004; }
 #app .welcome .parrot.big { animation: popin 0.6s cubic-bezier(.3, 1.5, .5, 1) 0.2s both; }
 #app .name-box { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 #app .name-input {
@@ -149,7 +149,9 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 #app .deco-wave path { fill: none; stroke: #ffffffb0; stroke-width: 4px; stroke-linecap: round; }
 @keyframes wave { 0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) translateX(-8px); } 50% { opacity: 0.9; transform: translate(-50%, -50%) translateX(8px); } }
 #app .deco-rock { width: 70px; height: 46px; }
-#app .deco-rock .stone { fill: #8fa3a6; stroke: #6d8487; stroke-width: 2; }
+#app .deco-rock .stone { fill: #9a8f80; stroke: #6f6457; stroke-width: 2; }
+#app .deco-rock .hl { fill: #c9bfae; }
+#app .deco-rock .moss { fill: #7fb04a; }
 #app .deco-rock .foam { fill: #ffffff90; animation: foam 3s ease-in-out infinite; transform-origin: center; }
 @keyframes foam { 50% { transform: scaleX(1.15); opacity: 0.5; } }
 #app .deco-gull { width: 44px; height: 18px; animation: gull 7s ease-in-out infinite; }
@@ -172,7 +174,7 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 #app .island.unlocking .badge { animation: lockpop 0.45s ease forwards; }
 @keyframes unlock { 0% { transform: scale(1); } 40% { transform: scale(0.9) rotate(-3deg); } 70% { transform: scale(1.15) rotate(2deg); } 100% { transform: scale(1); } }
 @keyframes lockpop { 30% { transform: scale(1.4) rotate(-15deg); } 100% { transform: scale(0) rotate(40deg); opacity: 0; } }
-#app .boat { position: absolute; left: 0; top: 0; width: 110px; height: 110px; margin: -80px 0 0 -55px; pointer-events: none; z-index: 3; transition: none; }
+#app .boat { position: absolute; left: 0; top: 0; width: 110px; height: 110px; margin: -80px 0 0 -55px; pointer-events: none; z-index: 1; transition: none; }
 #app .boat-inner { position: relative; width: 100%; height: 100%; transform: scaleX(var(--flip, 1)); animation: bob 3s ease-in-out infinite; }
 #app .boat-inner img { position: absolute; }
 #app .boat-inner img:first-child { left: 0; bottom: 0; width: 100%; filter: drop-shadow(0 5px 4px #0004); }
@@ -227,7 +229,8 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 #app .stone-ico.k-tour { background: #6c7ae0; }
 #app .stone-ico.k-song { background: var(--accent); }
 #app .stone-ico.k-game { background: var(--sea); }
-#app .stone-title { font-weight: 900; font-size: 17px; line-height: 1.15; background: #ffffffb0; border-radius: 8px; padding: 0 6px; }
+#app .stone-title { font-weight: 900; font-size: 17px; line-height: 1.15; background: #fffdf5; border-radius: 8px; padding: 1px 7px; box-shadow: 0 0 0 3px #fffdf5; }
+#app .stone-sub { background: #fffdf5; border-radius: 6px; padding: 0 5px; }
 #app .stone-sub { font-size: 13px; color: var(--muted); line-height: 1.15; }
 #app .stone .stars { font-size: 20px; }
 #app .stone .stars-gap { height: 20px; }
@@ -270,9 +273,15 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 #app .staff .bar.end { stroke-width: 7; }
 #app .staff .note.done { opacity: 0.28; }
 #app .staff .note.now .head { filter: drop-shadow(0 0 6px var(--c)); }
-#app .staff .note { transform-box: fill-box; transform-origin: center; }
-#app .staff .note.pop { animation: notepop 0.5s ease; }
-@keyframes notepop { 40% { transform: scale(1.35) translateY(-6px); } 100% { transform: scale(1); } }
+#app .staff .note .hw { transform-box: fill-box; transform-origin: center; }
+#app .staff .note.pop .hw { animation: notepop 0.5s ease; }
+@keyframes notepop { 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
+#app .staff .note { transition: opacity 0.4s; }
+#app .staff .note.far { opacity: 0; }
+#app .staff .note.swim-in { animation: swimin 0.7s cubic-bezier(.3, 1.3, .5, 1); }
+@keyframes swimin { from { transform: translateX(160px); opacity: 0; } }
+#app .staff.swimming .note:not(.done):not(.now) .hw { animation: wobble 1.6s ease-in-out infinite; }
+@keyframes wobble { 50% { transform: translateY(-5px) rotate(-6deg); } }
 #app .staff .ghost ellipse { fill: #9aa9ad; opacity: 0.85; }
 #app .staff .ghost { animation: ghost 1.4s ease forwards; }
 #app .staff .ghost-name { font-size: 30px; font-weight: 900; text-anchor: middle; fill: #9aa9ad; }
@@ -368,7 +377,14 @@ body { overflow: hidden; user-select: none; -webkit-user-select: none; }
 #app .album-body, #app .more-body { flex: 1; overflow-y: auto; padding: 0 var(--gutter) 20px; display: flex; flex-direction: column; gap: 12px; }
 #app .album-body h2 { font-size: 22px; font-weight: 900; }
 #app .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
-#app .album-item { background: #fff; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 800; text-align: center; }
+#app .album-item { background: #fff; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 800; text-align: center; border: 0; font-size: 16px; color: var(--ink); cursor: pointer; box-shadow: 0 3px 0 #0000000f; }
+#app button.album-item:active:not(:disabled) { transform: translateY(2px); }
+#app .album-item:disabled { cursor: default; }
+#app .animal-modal { text-align: left; align-items: stretch; }
+#app .animal-modal p { font-size: 17px; }
+#app .animal-modal-body { display: flex; gap: 12px; align-items: center; height: min(30vh, 220px); }
+#app .animal-modal-body .animal { height: 100%; width: auto; max-width: 45%; object-fit: contain; }
+#app .staff-host.mini { position: relative; flex: 1; height: 100%; }
 #app .album-item .album-pic { width: 100%; aspect-ratio: 1; object-fit: contain; }
 #app .album-item.missing .album-pic { filter: brightness(0) opacity(0.15); }
 #app .album-item.missing span { color: var(--muted); }

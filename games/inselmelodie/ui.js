@@ -15,7 +15,16 @@ import { noteName, sciName, calibrate, MITTEL_C } from './notes.js';
 import { noteColor } from './music.js';
 
 const IMG = (name) => `img/${name}.webp`;
-const noteLabel = (midi) => (midi === 72 ? 'hohe C' : noteName(midi));
+const noteLabel = (midi) => (midi === 72 ? 'hohe C' : midi === 60 ? 'Mittel-C' : noteName(midi));
+/** Satz zum Fehlgriff. Gleicher Tonname in anderer Oktave wird eigens erklärt (sonst: „Das war ein C, wir suchen das C“). */
+function wrongLine(m, want) {
+  if (noteName(m) === noteName(want)) {
+    return m > want
+      ? `Fast! Das war ein ${noteName(m)}, aber zu hoch. Das ${noteLabel(want)} liegt weiter links.`
+      : `Fast! Das war ein ${noteName(m)}, aber zu tief. Das ${noteLabel(want)} liegt weiter rechts.`;
+  }
+  return null;
+}
 const COLLECT_NAMES = { muschel: 'Muschel', seestern: 'Seestern', schneckenhaus: 'Schneckenhaus', truhe: 'Schatztruhe' };
 const ARTIKEL = { muschel: 'eine', seestern: 'einen', schneckenhaus: 'ein', truhe: 'eine' };
 
@@ -150,7 +159,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       save();
       audio.sfx.collect();
       burst(pr.querySelector('.bird'), '#ffc21a', 24, 160);
-      pr.say(sayB('named'), 'jubel');
+      pr.say(sayB(rename ? 'renamed' : 'named'), 'jubel');
       ok.disabled = true;
       await wait(1900);
       if (rename) back(); else home();
@@ -433,7 +442,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         staff.shake();
         kb?.flash(m, 'bad');
         buzz(35);
-        coach.say(`Das war ein ${noteName(m)}. Wir suchen das ${label}.`, 'staunt');
+        coach.say(wrongLine(m, task.note) || `Das war ein ${noteName(m)}. Wir suchen das ${label}.`, 'staunt');
       }
     }
   }
@@ -442,7 +451,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
   function showPlay(task) {
     const isGame = task.kind === 'game';
     const notes = isGame ? noteGameNotes(task.pool, task.count, Date.now() & 0xffffffff) : task.notes;
-    const run = createRun(notes);
+    const run = createRun(notes, { lenient: isGame });
     const help = { ...p.settings.help };
     if (isGame) { help.names = false; help.keys = false; help.fingers = false; } // im Notenspiel wird gelesen, nicht abgelesen
     const isl = findTask(task.id).island;
@@ -460,7 +469,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       voyage,
       h('div', { class: 'stage' }, h('div', { class: 'coach-col' }, coach), staffHost),
       kbHost), 'play-screen');
-    const staff = createStaff(staffHost, { notes, help });
+    const staff = createStaff(staffHost, { notes, help, reveal: isGame ? 2 : 0 });
     let kb = null;
     let missHere = 0;
     let streak = 0;
@@ -474,22 +483,31 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
       voyage.style.setProperty('--f', f);
     }
     let playing = false;
+    let hearTimer = 0;
+    const listenLbl = listenBtn?.querySelector('.lbl-wide');
+    function stopHear() {
+      if (!playing) return;
+      clearTimeout(hearTimer);
+      audio.stop();
+      playing = false;
+      listenBtn.classList.remove('on');
+      if (listenLbl) listenLbl.textContent = 'Anhören';
+      staff.setIndex(run.index);
+      showTarget();
+      if (p.settings.input === 'mic') mic.mute(400);
+    }
     function hear() {
-      if (playing) return;
+      if (playing) return stopHear();
       playing = true;
       listenBtn.classList.add('on');
+      if (listenLbl) listenLbl.textContent = 'Stopp';
       if (p.settings.input === 'mic') mic.mute(1e9);
       const dur = audio.playMelody(notes, { onNote: (i) => { staff.setIndex(i); staff.pop(i); kb?.setTarget(notes[i].midi); } });
-      setTimeout(() => {
-        playing = false;
-        listenBtn.classList.remove('on');
-        staff.setIndex(run.index);
-        showTarget();
-        if (p.settings.input === 'mic') mic.mute(400);
-      }, dur * 1000 + 300);
+      hearTimer = setTimeout(stopHear, dur * 1000 + 300);
     }
     function onNote(m) {
-      if (playing || run.done) return;
+      if (playing) stopHear(); // eine Taste beendet das Vorspielen, der Ton zählt
+      if (run.done) return;
       const r = run.input(m);
       if (r.result === 'hit') {
         const head = staff.head(r.index);
@@ -508,7 +526,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         }
         if (streak > 0 && streak % 5 === 0) {
           audio.sfx.streak(streak / 5);
-          floatText(head || staffHost, `Serie ${streak}!`, noteColor(m), 'big');
+          floatText(streakChip, `Serie ${streak}!`, '#c25e00', 'big');
           coach.say(PRAISE[praise++ % PRAISE.length], 'jubel');
         } else if (run.index === Math.floor(notes.length / 2)) coach.say('Halb geschafft!', 'jubel');
         showTarget();
@@ -522,7 +540,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         kb?.flash(m, 'bad');
         buzz(35);
         showTarget();
-        coach.say(sayB('wrong', { N: noteLabel(r.want) }), 'staunt');
+        coach.say(wrongLine(m, r.want) || sayB('wrong', { N: noteLabel(r.want) }), 'staunt');
       }
     }
     async function finish() {
@@ -582,7 +600,7 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
         h('h2', { text: 'Insel geschafft!' }),
         h('div', { class: 'collect-glow' }, img),
         h('p', { text: `Du bekommst ${ARTIKEL[item]} ${COLLECT_NAMES[item]} für dein Inselalbum.` }),
-        h('button', { class: 'btn primary big', onClick: () => { overlay.remove(); home(); } }, icon('map'), ' Zur Karte: Leinen los!')),
+        h('button', { class: 'btn primary big', onClick: () => { overlay.remove(); home(); } }, icon('map'), ' Leinen los!')),
       confetti());
     root.append(overlay);
     setTimeout(() => burst(img, '#ffc21a', 26, 170), 600);
@@ -596,13 +614,30 @@ export function mountApp(root, { progress: p, save, audio, mic }) {
     });
     const animals = Object.entries(ANIMALS).map(([k, a]) => {
       const have = taskDone(p, 'learn-' + k);
-      return h('div', { class: 'album-item' + (have ? '' : ' missing') }, pic(a.img, 'album-pic', a.name), h('span', { text: have ? `${k === 'C5' ? 'hohes C' : k[0]} · ${a.name}` : '?' }));
+      return h('button', { class: 'album-item' + (have ? '' : ' missing'), disabled: !have, onClick: () => showAnimal(k) },
+        pic(a.img, 'album-pic', a.name), h('span', { text: have ? `${k === 'C5' ? 'hohes C' : k[0]} · ${a.name}` : '?' }));
     });
     setScreen(h('div', { class: 'album' },
       topbar({ title: 'Inselalbum', right: [starPill()] }),
       h('div', { class: 'album-body' },
         h('h2', { text: 'Sammelstücke' }), h('div', { class: 'album-grid' }, ...items),
         h('h2', { text: 'Inseltiere' }), h('div', { class: 'album-grid' }, ...animals))), 'album-screen');
+  }
+
+  /** Tierkarte aus dem Album: Merkhilfe zum Nachlesen, mit der Note im Notensystem. */
+  function showAnimal(k) {
+    const a = ANIMALS[k];
+    const midi = { C4: 60, D4: 62, E4: 64, F4: 65, G4: 67, A4: 69, H4: 71, C5: 72 }[k];
+    audio.note(midi);
+    const staffBox = h('div', { class: 'staff-host mini' });
+    const overlay = h('div', { class: 'overlay', onClick: (e) => { if (e.target === overlay) overlay.remove(); } },
+      h('div', { class: 'result card pop-in animal-modal', style: { '--c': noteColor(midi) } },
+        h('div', { class: 'result-top' }, h('h2', {}, h('span', { class: 'big-letter', text: k === 'C5' ? 'hohes C' : k[0] }), ` wie ${a.name}`),
+          h('button', { class: 'icon-btn', 'aria-label': 'Schließen', onClick: () => overlay.remove() }, icon('check'))),
+        h('div', { class: 'animal-modal-body' }, pic(a.img, 'animal', a.name), staffBox),
+        h('p', { text: a.where }), h('p', { text: a.key })));
+    root.append(overlay);
+    createStaff(staffBox, { notes: [{ midi, beats: 1 }], help: { colors: true, names: true, fingers: true }, single: true });
   }
 
   // ---- Einstellungen -----------------------------------------------------------

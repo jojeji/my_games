@@ -20,7 +20,6 @@ export const WAYPOINTS = [
   { u: 2360, v: 140 },
   { u: 2500, v: 520 },
   { u: 2720, v: 690, island: 'i4' },
-  { u: 2940, v: 560 },
 ];
 
 /** Kleiner Schmuck auf dem Meer (Wellen, Felsen, Möwen), in Weltkoordinaten. */
